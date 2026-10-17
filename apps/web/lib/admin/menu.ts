@@ -29,6 +29,7 @@ const RULES: readonly MenuRule[] = [
     paths: ["/admin/reviews"],
   },
   { id: "placement", label: "기사 배치", href: "/admin/placement", when: (a) => a.has("article.sort"), paths: ["/admin/placement"] },
+  { id: "home", label: "홈 배치", href: "/admin/home", when: (a) => a.has("article.home"), paths: ["/admin/home"] },
   { id: "categories", label: "분야", href: "/admin/categories", when: (a) => a.has("category.edit"), paths: ["/admin/categories"] },
   { id: "dictionaries", label: "사전", href: "/admin/dictionaries", when: (a) => a.has("dictionary.edit"), paths: ["/admin/dictionaries"] },
   {
@@ -46,8 +47,8 @@ const RULES: readonly MenuRule[] = [
   { id: "members", label: "회원·역할", href: "/admin/members", when: (a) => a.has("member.read") && a.has("role.grant"), paths: ["/admin/members"] },
 ];
 
-/** 기사 승인·정렬·발행 메뉴 — 편집국 외 역할에게 0 (ADM-01 수용 기준) */
-export const APPROVE_SORT_PUBLISH_MENU_IDS = ["reviews", "placement"] as const;
+/** 기사 승인·정렬·발행·홈 배치 메뉴 — 편집국 외 역할에게 0 (ADM-01 수용 기준 · PRD-00 6장 홈 배치는 편집 책임자) */
+export const APPROVE_SORT_PUBLISH_MENU_IDS = ["reviews", "placement", "home"] as const;
 /** 상품·광고(제휴사 관리 포함)·전문가 등재·브랜드 관리 메뉴 — 편집자에게 0 (ADM-01 수용 기준) */
 export const OPERATIONS_MENU_IDS = ["sponsored", "partners", "store", "brand", "experts"] as const;
 /** 관리자 전용 메뉴 — 운영 설정 · 회원·역할 (ADM-02) */

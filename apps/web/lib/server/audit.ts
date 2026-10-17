@@ -29,6 +29,7 @@ export const targetOf = {
   glossary: (id: number | string) => `glossary_terms:${id}`,
   partner: (id: number | string) => `partners:${id}`,
   member: (userId: string) => `members:${userId}`,
+  homeCuration: (id: number | string) => `home_curations:${id}`,
 };
 
 /** 감사 로그 한 줄. 실패하면 예외 — 감사 기록 없는 변경을 성공으로 알리지 않는다 */

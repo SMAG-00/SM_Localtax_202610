@@ -3,7 +3,12 @@
 //  · 검사를 지난 값은 발행 판정 설정 읽기(lib/server/articles/gate.ts parseGateSettings)를 그대로 통과한다 — 같은 키·같은 모양.
 //  · 버전이 있는 값(사전·유사도 기준)은 내용을 바꾸면 버전도 바꿔야 한다 — 점검 기록에 남는 버전이 값과 어긋나지 않게.
 import { normalizeText } from "@ltr/editorial";
+// 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
+import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
+import { SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings";
 import { phraseError } from "./dictionary-rules";
+
+const SEARCH_CHIP_RANGE = [SEARCH_CHIPS_MIN, SEARCH_CHIPS_MAX] as const;
 
 type Obj = Record<string, unknown>;
 export type SettingCheck = { ok: true; value: unknown } | { ok: false; errors: string[] };
@@ -88,6 +93,71 @@ function confirmedStage(value: unknown): string[] {
   return typeof value === "string" && (AMENDMENT_STAGES as readonly string[]).includes(value) ? [] : [`값: ${AMENDMENT_STAGES.join("·")} 중 하나여야 합니다`];
 }
 
+// ── W2-b 공개 설정 (docs/dev/W2-b_설계.md 2.3·2.4) — 공개 데이터 함수(lib/server/public/settings.ts)가 같은 모양으로 읽는다 ──
+
+const SECTIONS_4 = ["tax", "realestate", "finance", "local"] as const;
+/** 화면 안내 문장 상한 (R8 — 60자, 공백 포함) */
+const SCREEN_SENTENCE_MAX = 60;
+const CHIP_MAX_CHARS = 20;
+const HUB_LIMIT_MAX = 12;
+const chars = (s: string) => [...s].length;
+
+function screenSentence(value: unknown): string[] {
+  if (typeof value !== "string" || value.trim() === "") return ["값: 따옴표로 감싼 문구 한 줄이어야 합니다"];
+  return chars(value.trim()) > SCREEN_SENTENCE_MAX ? [`값: ${SCREEN_SENTENCE_MAX}자 이하여야 합니다 (R8 — 지금 ${chars(value.trim())}자)`] : [];
+}
+
+function searchChips(value: unknown): string[] {
+  if (!Array.isArray(value)) return ["값: 글자 목록이어야 합니다 — 비우면 []"];
+  const errors: string[] = [];
+  if (value.length !== 0 && (value.length < SEARCH_CHIP_RANGE[0] || value.length > SEARCH_CHIP_RANGE[1])) {
+    errors.push(`값: 추천 검색어는 ${SEARCH_CHIP_RANGE[0]}~${SEARCH_CHIP_RANGE[1]}개이거나 0개(칩 줄 숨김)여야 합니다 (HOME-01 — 지금 ${value.length}개)`);
+  }
+  const seen = new Set<string>();
+  value.forEach((c, i) => {
+    if (typeof c !== "string" || c.trim() === "") return errors.push(`[${i}]: 빈칸이 아닌 글자여야 합니다`);
+    if (chars(c.trim()) > CHIP_MAX_CHARS) return errors.push(`[${i}]: ${CHIP_MAX_CHARS}자 이하여야 합니다`);
+    const n = normalizeText(c);
+    if (seen.has(n)) return errors.push(`[${i}]: 같은 검색어가 앞에 있습니다`);
+    seen.add(n);
+  });
+  return errors;
+}
+
+function hubIntros(value: unknown): string[] {
+  if (!isObj(value)) return ["값은 JSON 객체여야 합니다 — { \"tax\": \"…\" }"];
+  const errors: string[] = [];
+  for (const [k, v] of Object.entries(value)) {
+    if (!(SECTIONS_4 as readonly string[]).includes(k)) errors.push(`${k}: 4대 분야(${SECTIONS_4.join("·")})만 씁니다`);
+    else errors.push(...screenSentence(v).map((e) => e.replace(/^값: /, `${k}: `)));
+  }
+  return errors;
+}
+
+function hubLimit(value: unknown): string[] {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= HUB_LIMIT_MAX ? [] : [`값: 1~${HUB_LIMIT_MAX} 정수여야 합니다 (UX-05 초기값 4)`];
+}
+
+function featureFlags(value: unknown): string[] {
+  if (!isObj(value)) return ["값은 JSON 객체여야 합니다 — { \"search\": true, … }"];
+  const errors: string[] = [];
+  for (const [k, v] of Object.entries(value)) {
+    if (!(FEATURE_KEYS as readonly string[]).includes(k)) errors.push(`${k}: 모르는 기능 키입니다`);
+    else if (typeof v !== "boolean") errors.push(`${k}: true/false여야 합니다`);
+  }
+  return errors;
+}
+
+function priority(value: unknown): string[] {
+  if (!Array.isArray(value) || value.length === 0) return ["값: 버튼 키 목록이어야 합니다 (1개 이상)"];
+  const errors: string[] = [];
+  value.forEach((k, i) => {
+    if (!(NEXT_ACTION_KEYS as readonly unknown[]).includes(k)) errors.push(`[${i}]: ${NEXT_ACTION_KEYS.join("·")} 중 하나여야 합니다`);
+    else if (value.indexOf(k) !== i) errors.push(`[${i}]: 같은 버튼이 앞에 있습니다`);
+  });
+  return errors;
+}
+
 export interface SettingSpec {
   /** 화면 이름 */
   label: string;
@@ -120,6 +190,36 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "개정 '확정' 기준 단계 (TX-08)",
     guide: `따옴표로 감싼 단계 이름 하나 — ${AMENDMENT_STAGES.map((s) => `${s}(${AMENDMENT_STAGE_LABELS[s]})`).join(" · ")}`,
     check: (value) => confirmedStage(value),
+  },
+  home_core_message: {
+    label: "홈 핵심 메시지 (HOME-01 · CORE-02)",
+    guide: `따옴표로 감싼 문구 한 줄 — ${SCREEN_SENTENCE_MAX}자 이하. 바꾸면 배포 없이 다음 요청부터 홈 히어로에 보입니다`,
+    check: (value) => screenSentence(value),
+  },
+  home_search_chips: {
+    label: "홈 추천 검색어 칩 (HOME-01)",
+    guide: `["취득세", "개편안", "책임준공"] — ${SEARCH_CHIP_RANGE[0]}~${SEARCH_CHIP_RANGE[1]}개, 비우면 [] (칩 줄 숨김)`,
+    check: (value) => searchChips(value),
+  },
+  hub_intros: {
+    label: "4대 분야 허브 한 줄 소개 (CAT-02)",
+    guide: '{ "tax": "…", "realestate": "…", "finance": "…", "local": "…" } — 분야마다 60자 이하, 없는 분야는 소개 줄 없음',
+    check: (value) => hubIntros(value),
+  },
+  hub_situation_limit: {
+    label: "허브 상황 카드 상한 (UX-05)",
+    guide: `1~${HUB_LIMIT_MAX} 숫자 하나 — 분야 허브 상황 카드 줄에 보이는 최대 장 수. DB가 이 값을 넘는 허브 자리를 거부합니다`,
+    check: (value) => hubLimit(value),
+  },
+  feature_flags: {
+    label: "기능 공개 목록 (HOME-02 · ART-06 · HELP-05)",
+    guide: `{ "기능 키": true/false } — 켠 기능만 메뉴·링크·버튼이 나옵니다. 키: ${FEATURE_KEYS.join(" · ")}`,
+    check: (value) => featureFlags(value),
+  },
+  next_action_priority: {
+    label: "다음 행동 버튼 우선순위 (ART-06)",
+    guide: `버튼 키 목록 — 열린 버튼 중 앞의 2개만 보입니다. 키: ${NEXT_ACTION_KEYS.join(" · ")}`,
+    check: (value) => priority(value),
   },
 };
 

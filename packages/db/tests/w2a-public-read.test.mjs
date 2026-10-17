@@ -84,28 +84,24 @@ async function world(fn) {
   }
 }
 
+// W2-b에서 공개 행·칸만 연 표(settings 공개 키 · glossary_terms · tags · article_tags · 게재된 article_corrections ·
+// 실질 수정 article_revisions)는 여기서 빼고 tests/w2b-public-read.test.mjs가 공개·비공개 행을 함께 시험한다 (docs/dev/W2-b_설계.md 4장)
 const PRIVATE = [
   "article_evidence",
   "article_datasets",
   "article_interviews",
   "editorial_reviews",
   "staff_roles",
-  "settings",
   "story_assignments",
   "story_assignment_events",
-  "article_revisions",
-  "article_corrections",
   "seo_checks",
   "inquiries",
   "raw_snapshots",
   "legacy_category_map",
-  "glossary_terms",
-  "tags",
-  "article_tags",
 ];
 
 for (const role of ["anon", "authenticated"]) {
-  test(`${role} — 비공개 취재 근거·초안 기록·승인 기록·역할·설정 표는 0행 (행이 있어도)`, () =>
+  test(`${role} — 비공개 취재 근거·승인 기록·역할·기획·점검 표는 0행 (행이 있어도)`, () =>
     world(async () => {
       for (const table of PRIVATE) {
         const owner = await attempt(`select count(*)::int n from public.${table}`);

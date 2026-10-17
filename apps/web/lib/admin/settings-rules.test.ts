@@ -105,3 +105,46 @@ describe("바뀐 값인가", () => {
     expect(sameJson("promulgated", "effective")).toBe(false);
   });
 });
+
+describe("W2-b 공개 설정 — 관리자 화면이 고치는 값과 공개 데이터 함수가 읽는 모양이 같다 (설계 2.3·2.4)", () => {
+  test("공개 키 6개 모두 고칠 수 있다", () => {
+    for (const key of ["home_core_message", "home_search_chips", "hub_intros", "hub_situation_limit", "feature_flags", "next_action_priority"]) {
+      expect(isEditableSetting(key)).toBe(true);
+    }
+  });
+
+  test("핵심 메시지 — 60자는 통과, 61자·빈 글자·글자 아님은 거부 (R8)", () => {
+    expect(validateSettingValue("home_core_message", "가".repeat(60), null).ok).toBe(true);
+    expect(errorsOf(validateSettingValue("home_core_message", "가".repeat(61), null))[0]).toMatch(/60자 이하/);
+    expect(validateSettingValue("home_core_message", "  ", null).ok).toBe(false);
+    expect(validateSettingValue("home_core_message", 3, null).ok).toBe(false);
+  });
+
+  test("추천 검색어 — 0개·3개·6개 통과, 2개·7개·중복·빈 글자·21자 거부 (HOME-01)", () => {
+    for (const ok of [[], ["취득세", "개편안", "책임준공"], ["a", "b", "c", "d", "e", "f"]]) expect(validateSettingValue("home_search_chips", ok, null).ok).toBe(true);
+    for (const bad of [["취득세", "개편안"], ["a", "b", "c", "d", "e", "f", "g"], ["취득세", "취득세 ", "개편안"], ["취득세", "", "개편안"], ["가".repeat(21), "b", "c"], "취득세"]) {
+      expect(validateSettingValue("home_search_chips", bad, null).ok).toBe(false);
+    }
+  });
+
+  test("허브 소개 — 4대 분야 키만, 60자 이하", () => {
+    expect(validateSettingValue("hub_intros", { tax: "지방세 개정과 해석을 쉽게 풉니다" }, null).ok).toBe(true);
+    expect(errorsOf(validateSettingValue("hub_intros", { tourism: "관광" }, null))).toEqual(["tourism: 4대 분야(tax·realestate·finance·local)만 씁니다"]);
+    expect(validateSettingValue("hub_intros", { local: "가".repeat(61) }, null).ok).toBe(false);
+  });
+
+  test("허브 상황 카드 상한 — 1~12 정수", () => {
+    for (const ok of [1, 4, 12]) expect(validateSettingValue("hub_situation_limit", ok, null).ok).toBe(true);
+    for (const bad of [0, 13, 4.5, "4"]) expect(validateSettingValue("hub_situation_limit", bad, null).ok).toBe(false);
+  });
+
+  test("기능 공개 목록 — 아는 키에 true/false만", () => {
+    expect(validateSettingValue("feature_flags", { search: true, calc: false }, null).ok).toBe(true);
+    expect(errorsOf(validateSettingValue("feature_flags", { tourism: true, search: "yes" }, null))).toEqual(["tourism: 모르는 기능 키입니다", "search: true/false여야 합니다"]);
+  });
+
+  test("다음 행동 우선순위 — 아는 버튼 키, 중복 없이 1개 이상", () => {
+    expect(validateSettingValue("next_action_priority", ["expert_finder", "situation"], null).ok).toBe(true);
+    for (const bad of [[], ["situation", "situation"], ["call_us"], "situation"]) expect(validateSettingValue("next_action_priority", bad, null).ok).toBe(false);
+  });
+});

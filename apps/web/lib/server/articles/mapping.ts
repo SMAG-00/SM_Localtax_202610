@@ -28,7 +28,7 @@ import type { AdLabel, ArticleForLint, LintContext, SimilarityStatus } from "@lt
 import type { SimilaritySource } from "@ltr/similarity";
 import { displayTitle, sponsorLabelText, type ArticleView, type RenderedFacts, type SponsorLabel } from "@ltr/structured-data";
 import { evidenceRef, readChecklists, readStoredBody, readStoredSolvedCase, readStoredTaxLens, sourceRef } from "./content";
-import type { ArticleGraph, ReviewRow } from "./rows";
+import type { ArticleGraph, ArticleRow, MediaRow, PartnerRow, PersonRow, ReviewRow } from "./rows";
 
 export interface ViewOptions {
   /** 사이트 절대 주소 (NEXT_PUBLIC_SITE_URL, 끝 / 없음). 없으면 canonical을 만들지 않는다 */
@@ -224,7 +224,18 @@ function absolute(siteUrl: string | undefined, path: string): string {
   return `${siteUrl ?? ""}/${path.replace(/^\/+/, "")}`;
 }
 
-export function toArticleView(graph: ArticleGraph, opts: ViewOptions): ArticleView {
+/**
+ * 화면 데이터가 쓰는 칸만 — 편집국 기사 한 판(ArticleGraph)과 공개 기사 보기(lib/server/public, anon으로 읽은 공개 칸)가
+ * 같은 함수로 화면 제목·저자·날짜·대표 이미지·JSON-LD를 만든다 (OPT-02 — 화면과 구조화 데이터가 같은 소스)
+ */
+export interface ArticleViewSource {
+  article: Pick<ArticleRow, "slug" | "title" | "label" | "summary" | "section" | "first_published_at" | "substantive_updated_at" | "lead_media_id">;
+  author: Pick<PersonRow, "name" | "slug"> | null;
+  partner: Pick<PartnerRow, "name"> | null;
+  media: readonly Pick<MediaRow, "id" | "path" | "rights_status">[];
+}
+
+export function toArticleView(graph: ArticleViewSource, opts: ViewOptions): ArticleView {
   const a = graph.article;
   const lead = a.lead_media_id === null ? undefined : graph.media.find((m) => m.id === a.lead_media_id);
   const sponsorship = sponsorshipOf(a.label, graph.partner?.name);

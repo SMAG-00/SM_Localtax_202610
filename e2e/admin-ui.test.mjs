@@ -17,7 +17,7 @@ const SITE = "https://e2e.example.test";
 const ADMIN_EMAIL = "admin-ui-e2e@example.test";
 const NON_NEWSROOM = ["ad_ops", "store_ops", "brand_ops", "expert_ops"];
 const OWN_MENU = { ad_ops: "광고·협찬 콘텐츠", store_ops: "스토어·구독", brand_ops: "브랜드 관리", expert_ops: "전문가 등재" };
-const APPROVE_SORT_PUBLISH_MENUS = ["검토·발행", "기사 배치"];
+const APPROVE_SORT_PUBLISH_MENUS = ["검토·발행", "기사 배치", "홈 배치"];
 // 편집자 화면에 없어야 하는 운영 메뉴 — 편집국 외 역할 4종의 자기 메뉴 + 제휴사 관리(광고 편집 메뉴, 4-2)
 const OPERATIONS_MENUS = [...Object.values(OWN_MENU), "제휴사"];
 const STATUS_LABEL = { idea: "아이디어", assigned: "배정", reporting: "취재 중", fact_check: "사실 확인", review: "검토", published: "발행", held: "보류" };
@@ -594,7 +594,7 @@ test("d) 편집국 외 역할 4종 — 승인·정렬·발행 메뉴 0, 검토·
     for (const label of APPROVE_SORT_PUBLISH_MENUS) assert.ok(!menu.includes(label), `${role} 메뉴에 '${label}'`);
     assert.ok(!menu.includes("기사"), `${role} 메뉴에 기사(편집국) 메뉴`);
     assert.ok(menu.includes(OWN_MENU[role]), `${role} 메뉴에 자기 메뉴 '${OWN_MENU[role]}': ${menu}`);
-    for (const path of ["/admin/reviews", `/admin/reviews/${id}`, "/admin/placement", `/admin/articles/${id}`, "/admin/stories"]) {
+    for (const path of ["/admin/reviews", `/admin/reviews/${id}`, "/admin/placement", "/admin/home", `/admin/articles/${id}`, "/admin/stories"]) {
       const res = await open(page, path);
       assert.equal(res.status(), 403, `${role} ${path}`);
       await page.getByRole("heading", { name: "이 화면을 쓸 권한이 없습니다" }).waitFor();
@@ -606,13 +606,14 @@ test("d) 편집국 외 역할 4종 — 승인·정렬·발행 메뉴 0, 검토·
 
   const editor = await login(u.editor);
   const menu = await menuLabels(editor);
-  assert.deepEqual(menu, ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "분야", "사전"]);
+  assert.deepEqual(menu, ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "분야", "사전"]);
+  assert.equal((await open(editor, "/admin/home")).status(), 200, "편집자 홈 배치 화면");
   for (const label of OPERATIONS_MENUS) assert.ok(!menu.includes(label));
   for (const path of ["/admin/store", "/admin/brand", "/admin/experts"]) assert.equal((await open(editor, path)).status(), 403, `편집자 ${path}`);
 
   const reporter = await login(u.reporter);
   assert.deepEqual(await menuLabels(reporter), ["첫 화면", "기사 기획", "기사"]);
-  for (const path of ["/admin/reviews", "/admin/placement"]) assert.equal((await open(reporter, path)).status(), 403, `기자 ${path}`);
+  for (const path of ["/admin/reviews", "/admin/placement", "/admin/home"]) assert.equal((await open(reporter, path)).status(), 403, `기자 ${path}`);
 
   // 편집자가 쓰는 백오피스 화면 전부 — AI 도우미 런처 0 (open이 확인한다)
   for (const path of ["/admin", "/admin/articles", `/admin/articles/${id}`, "/admin/articles/new", "/admin/stories", "/admin/reviews", `/admin/reviews/${id}`, "/admin/placement"]) {

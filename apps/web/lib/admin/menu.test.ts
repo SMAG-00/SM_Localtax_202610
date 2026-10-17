@@ -10,8 +10,8 @@ const ids = (v: Viewer) => adminMenu(v).map((m) => m.id);
 
 const EXPECTED: [string, Viewer, string[]][] = [
   ["기자", viewer(["reporter"]), ["dashboard", "assignments", "articles"]],
-  ["편집 책임자 — 분야·사전 편집 메뉴, 제휴사는 편집 메뉴 아님(목록 화면만 읽기)", viewer(["editor"]), ["dashboard", "assignments", "articles", "reviews", "placement", "categories", "dictionaries"]],
-  ["편집 책임자 + 기자", viewer(["editor", "reporter"]), ["dashboard", "assignments", "articles", "reviews", "placement", "categories", "dictionaries"]],
+  ["편집 책임자 — 분야·사전 편집 메뉴, 제휴사는 편집 메뉴 아님(목록 화면만 읽기)", viewer(["editor"]), ["dashboard", "assignments", "articles", "reviews", "placement", "home", "categories", "dictionaries"]],
+  ["편집 책임자 + 기자", viewer(["editor", "reporter"]), ["dashboard", "assignments", "articles", "reviews", "placement", "home", "categories", "dictionaries"]],
   ["세무 감수위원", viewer(["reviewer"]), ["dashboard", "articles", "reviews"]],
   ["광고·협찬 담당 — 제휴사 관리", viewer(["ad_ops"]), ["dashboard", "sponsored", "partners"]],
   ["스토어·구독 담당", viewer(["store_ops"]), ["dashboard", "store"]],

@@ -19,7 +19,7 @@ export default async function PlacementPage() {
   const canHot = can(viewer, "article.hot");
   return (
     <>
-      <PageTitle title="기사 배치" description="발행한 기사의 HOT 고정과 뉴스 전송 후보를 정합니다. 홈 큐레이션 화면은 홈 작업(W2-b)에서 엽니다." />
+      <PageTitle title="기사 배치" description="발행한 기사의 HOT 고정과 뉴스 전송 후보를 정합니다. 홈의 개정 트래커 하이라이트·해설 스토리는 홈 배치 화면(/admin/home)에서 정합니다." />
       {rows.length === 0 && <EmptyNote>발행한 기사가 없습니다.</EmptyNote>}
       <ul className="space-y-4">
         {rows.map((a) => (
