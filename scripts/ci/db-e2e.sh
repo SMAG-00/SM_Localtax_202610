@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# CI 2단계 — 로컬 Supabase(Docker)를 띄워 DB 시험 · RLS 검증 · 웹 E2E · Docker 이미지 E2E (FND-03·04·07·10)
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+
+step() { printf '\n== %s\n' "$1"; }
+
+step "의존성 설치 (lockfile 고정)"
+pnpm install --frozen-lockfile
+
+step "로컬 Supabase 시작 (마이그레이션 적용)"
+(cd packages/db && supabase start -x vector,logflare,edge-runtime,imgproxy,realtime,studio)
+
+step "DB 시험 (감사 로그·관리자 권한·RLS)"; pnpm --filter @ltr/db test
+step "RLS 검증 (anon·authenticated 접근 0)"; node packages/db/scripts/verify-rls.mjs
+step "개발 서버 3001 고정 E2E";              node e2e/dev-port.mjs
+step "웹 E2E (standalone 빌드)";            node --test --test-concurrency=1 e2e/api-health-jobs.test.mjs
+step "Docker 이미지 E2E";                   node e2e/run-docker.mjs

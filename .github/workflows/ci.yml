@@ -1,0 +1,48 @@
+# CI (FND-03) — GitHub Actions는 scripts/ci/의 셸 스크립트만 부른다 (PRD-00 7장 이식성 규칙).
+# 같은 스크립트를 로컬에서 돌리면 CI와 같은 판정이 나온다.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: 정적 검사
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0 # 커밋 작성자 검사(FND-01)가 전체 이력을 본다
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - name: 정적 검사
+        run: bash scripts/ci/static.sh
+        env:
+          FORBIDDEN_IDENTIFIERS: ${{ secrets.FORBIDDEN_IDENTIFIERS }}
+
+  db-e2e:
+    name: DB · E2E · Docker
+    runs-on: ubuntu-24.04
+    needs: static
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - uses: supabase/setup-cli@v3.0.1
+        with:
+          version: 2.120.0
+      - name: DB · E2E · Docker
+        run: bash scripts/ci/db-e2e.sh
