@@ -1,0 +1,16 @@
+{
+  "name": "@ltr/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/*.test.mjs\"",
+    "lint:migrations": "node scripts/lint-migrations.mjs supabase/migrations",
+    "verify:rls": "node scripts/verify-rls.mjs",
+    "db:start": "supabase start -x vector,logflare,edge-runtime,imgproxy,realtime",
+    "db:reset": "supabase db reset"
+  },
+  "devDependencies": {
+    "pg": "8.23.1"
+  }
+}
