@@ -15,4 +15,6 @@ step "DB 시험 (감사 로그·관리자 권한·RLS)"; pnpm --filter @ltr/db t
 step "RLS 검증 (anon·authenticated 접근 0)"; node packages/db/scripts/verify-rls.mjs
 step "개발 서버 3001 고정 E2E";              node e2e/dev-port.mjs
 step "웹 E2E (standalone 빌드)";            node --test --test-concurrency=1 e2e/api-health-jobs.test.mjs
+step "브라우저 설치 (Playwright Chromium)";  pnpm exec playwright install --with-deps chromium
+step "견본 페이지 브라우저 E2E (70종·가로 스크롤 0)"; node --test --test-concurrency=1 e2e/design-page.test.mjs
 step "Docker 이미지 E2E";                   node e2e/run-docker.mjs

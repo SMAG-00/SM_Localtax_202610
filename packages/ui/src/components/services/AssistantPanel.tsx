@@ -264,7 +264,7 @@ export function AssistantPanel({
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="궁금한 점을 적어 주세요"
-            className="min-h-11 min-w-0 flex-1 rounded-xl border border-navy-100 bg-white px-4 text-[16px] text-navy-900 placeholder:text-navy-400 focus-visible:border-navy-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500 disabled:cursor-not-allowed disabled:bg-navy-50"
+            className="min-h-11 w-0 min-w-0 flex-1 rounded-xl border border-navy-100 bg-white px-4 text-[16px] text-navy-900 placeholder:text-navy-400 focus-visible:border-navy-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500 disabled:cursor-not-allowed disabled:bg-navy-50"
           />
           <PrimaryButton type="submit" disabled={!confirmed || busy}>
             보내기

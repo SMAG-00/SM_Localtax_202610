@@ -45,6 +45,10 @@ export function buildWeb() {
   }
   execFileSync("pnpm", ["--filter", "@ltr/web", "build"], { cwd: ROOT, stdio: "inherit", shell });
   if (!fs.existsSync(STANDALONE_SERVER)) throw new Error(`standalone 서버가 없습니다: ${STANDALONE_SERVER}`);
+  // standalone 산출물에는 정적 자산(CSS·JS·글꼴)과 public이 들어 있지 않다 — Docker 이미지(deploy/Dockerfile)와 같게 옆에 복사한다
+  const appDir = path.dirname(STANDALONE_SERVER);
+  fs.cpSync(path.join(WEB, ".next", "static"), path.join(appDir, ".next", "static"), { recursive: true });
+  if (fs.existsSync(path.join(WEB, "public"))) fs.cpSync(path.join(WEB, "public"), path.join(appDir, "public"), { recursive: true });
 }
 
 async function waitHealthy(base, isDead, log) {

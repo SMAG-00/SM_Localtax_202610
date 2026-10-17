@@ -21,6 +21,7 @@
     "test:e2e:docker": "node e2e/run-docker.mjs"
   },
   "devDependencies": {
-    "pg": "8.23.1"
+    "pg": "8.23.1",
+    "playwright": "1.63.0"
   }
 }
