@@ -20,5 +20,6 @@ step "마이그레이션 RLS";      node packages/db/scripts/lint-migrations.mjs
 step "디자인 린트";           node scripts/check-design.mjs
 step "디자인 토큰·명칭 시험";   pnpm --filter @ltr/ui test
 step "점검·유사도·구조화 데이터 견본 시험 (W1-b)"; pnpm --filter @ltr/seo-lint --filter @ltr/similarity --filter @ltr/structured-data --filter @ltr/editorial test
+step "접근 판정·기사 변환 시험 (웹 서버 기능)"; pnpm --filter @ltr/web test
 step "빌드 산출물 비밀값 검사 (가짜 비밀값으로 빌드)"; node scripts/scan-bundle-secrets.mjs --build
 step "검사 스크립트 단위 시험"; node --test "scripts/__tests__/*.test.mjs"

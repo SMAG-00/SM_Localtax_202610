@@ -87,3 +87,35 @@ PRD-01A 9장 W2-a를 구현할 때 DB(packages/db)·발행 판정(packages/edito
 - 세무 감수 서명은 `reviewer` 역할만 할 수 있다.
 - 편집국 외 역할(`ad_ops`·`store_ops`·`brand_ops`·`expert_ops`)은 기사 승인·정렬 API를 부르면 403이고, 그 시도는 감사 로그에 남는다.
 - 서버 쓰기는 권한 판정을 통과한 뒤 service_role로 한다. 브라우저 역할(anon·authenticated)에는 쓰기 정책이 없다.
+
+## 6. 서버 기능 (3단계 — apps/web)
+
+- 접근 판정: `apps/web/lib/access.ts`의 `check()` 하나다. 로그인 확인과 역할 읽기는 `lib/server/dal.ts`가 한다.
+  - 세션은 쿠키 또는 `Authorization: Bearer`이다. 둘 다 Supabase Auth 서버에 확인한다.
+  - 역할은 `staff_roles`에서만 읽고, 관리자는 `ADMIN_EMAILS`(이메일 확인된 계정)로만 정한다. 가입 메타데이터는 보지 않는다.
+  - 쿠키 세션의 쓰기 요청은 같은 사이트에서 온 것만 받는다. 본문은 `application/json`이어야 한다.
+- 편집국 API (`/api/admin/…`, 로그인 안 하면 401)
+
+| 경로 | 하는 일 | 주요 응답 |
+|---|---|---|
+| `GET me` | 로그인한 사람·역할·허용 작업 (역할별 메뉴) | 200 |
+| `POST articles` · `GET`·`PATCH articles/[id]` | 초안 작성 · 열람 · 수정 (발행 뒤 수정은 수정 종류·사유 필수, 버전으로 동시 수정 막음) | 201 · 200 · 403 · 409 · 422 |
+| `POST articles/[id]/sources` · `evidence` · `evidence/[evidenceId]` | 출처 · 비공개 취재 근거 | 201 · 422 |
+| `POST articles/[id]/submit` | 검토 요청 | 200 |
+| `POST articles/[id]/reviews` | 편집 승인(desk_edit) · 세무 감수(tax_review) · 광고 표기 확인 | 201 · 403 · 409 |
+| `GET articles/[id]/check` | 발행 판정 미리 보기 (저장하지 않음) | 200 |
+| `POST articles/[id]/publish` | 발행 — 점검 결과를 `seo_checks`에 남긴다 | 200 · 409(이미 발행) · 422 `{ failed, findings }` |
+| `POST articles/[id]/correction-requests` · `corrections` | 정정 요청 · 정정 결정(전후 버전·이유) | 201 · 403 · 422 |
+| `POST articles/[id]/placement` | 정렬 · HOT · 홈 배치 | 200 · 403 |
+| `POST assignments` · `PATCH assignments/[id]` | 기사 기획 등록 · 상태 변경 | 201 · 200 · 409 |
+| `POST roles` | 역할 부여·회수 (관리자만) | 200 · 403 · 409 |
+
+- 거부 응답 403 가운데 승인·정렬·발행·정정 결정·역할 부여는 감사 로그에 남는다.
+- DB 제약·트리거 오류는 409·422와 한국어 문장으로 바꾼다. 스택·SQL 원문은 응답에 넣지 않는다.
+- 비공개 확인 목록(NAV-10 '인과 단정 없음' · NAV-11 인용별 확인)은 `articles.check_log.checklists`에 둔다. `body`는 공개 칸이라서다.
+  - 근거 참조는 `src:<출처 번호>` · `ev:<근거 번호>`로 쓴다.
+  - 이미지 권리는 본문이 아니라 `media` 표에서 읽는다.
+- 쓰기 순서는 정해져 있다. PostgREST에는 트랜잭션이 없어서, 실패하면 앞 단계를 되돌린다.
+- 아직 안 한 것
+  - 화면 경로의 `proxy.ts` 막기, 분야·사전·설정 편집 API: 4단계
+  - 예약 발행

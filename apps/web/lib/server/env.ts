@@ -18,6 +18,20 @@ export function cronSecret(): string | undefined {
   return process.env.CRON_SECRET || undefined;
 }
 
+/** 관리자 이메일 화이트리스트 (ACC-04 — 관리자 권한은 DB가 아니라 배포 환경변수). 쉼표로 나누고 대소문자를 가리지 않는다 */
+export function adminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter((e) => e.length > 0);
+}
+
+/** 사이트 절대 주소 (canonical·구조화 데이터). 없으면 canonical을 만들지 않는다 — 발행 점검이 막는다 (OPT-11) */
+export function siteUrl(): string | undefined {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  return raw ? raw.replace(/\/+$/, "") : undefined;
+}
+
 /** Vercel이 주는 배포 환경 (production · preview · development). Vercel 밖에서는 없다 */
 export function vercelEnv(): string | undefined {
   return process.env.VERCEL_ENV || undefined;
