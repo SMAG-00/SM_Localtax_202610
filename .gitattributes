@@ -1,0 +1,6 @@
+# 줄바꿈은 LF로 통일한다 — CI·Docker(리눅스)에서 셸 스크립트가 그대로 돌아야 한다
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
