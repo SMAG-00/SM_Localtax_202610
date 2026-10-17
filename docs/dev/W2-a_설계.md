@@ -30,6 +30,10 @@ PRD-01A 9장 W2-a를 구현할 때 DB(packages/db)·발행 판정(packages/edito
 | article_corrections.kind | `correction` · `rebuttal` · `follow_up` · `deletion` · `title_change` |
 | story_assignments.status | `idea` · `assigned` · `reporting` · `fact_check` · `review` · `published` · `held` |
 | staff_roles.role | `reporter` · `editor` · `reviewer` · `ad_ops` · `store_ops` · `brand_ops` · `expert_ops` |
+| 권리 상태 rights_status | 근거(article_evidence): `unconfirmed` · `confirmed` · `restricted` / 이미지(media): `unconfirmed` · `confirmed` · `rejected` — `confirmed`만 통과 |
+| 검증 상태 verification_status | `pending` · `verified` · `rejected` — `verified`만 통과 |
+| 편집 승인 editorial_status | `pending` · `approved` · `rejected` · `held` |
+| 세무 감수 tax_review_status | `not_required` · `pending` · `approved` · `rejected` · `held` |
 | 개정 단계 (amendment_events.stage, 01B TX-07) | `announced`(발표) · `pre_notice`(입법예고) · `submitted`(국회 제출) · `passed`(의결) · `promulgated`(공포) · `effective`(시행) |
 
 ## 3. DB가 직접 막는 것 (직접 SQL로도 깨지지 않아야 하는 규칙)
