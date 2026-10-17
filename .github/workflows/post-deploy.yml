@@ -1,0 +1,19 @@
+# 배포 후 점검 (FND-02) — Vercel이 GitHub에 알리는 배포 완료(deployment_status)마다 Production 배포의 상태 확인을 부른다.
+# 실패하면(예: 운영 배포가 시험 DB를 가리킴) 이 작업이 실패하고 GitHub이 저장소 소유자에게 알린다.
+# 미리보기(Preview) 배포는 Vercel 로그인 보호로 막혀 있어 점검하지 않는다 — 미리보기 설정은 scripts/check-vercel-env.mjs로 본다.
+name: Post-deploy
+
+on: deployment_status
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    name: 배포 후 상태 확인
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: 상태 확인
+        run: bash scripts/ci/post-deploy.sh "${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}"

@@ -17,3 +17,8 @@ export function supabaseServiceRoleKey(): string | undefined {
 export function cronSecret(): string | undefined {
   return process.env.CRON_SECRET || undefined;
 }
+
+/** Vercel이 주는 배포 환경 (production · preview · development). Vercel 밖에서는 없다 */
+export function vercelEnv(): string | undefined {
+  return process.env.VERCEL_ENV || undefined;
+}

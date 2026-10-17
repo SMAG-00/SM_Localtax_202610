@@ -4,11 +4,14 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import pg from "pg";
-import { buildWeb, localSupabase, startServer, freePort } from "./lib/local.mjs";
+import fs from "node:fs";
+import path from "node:path";
+import { ROOT, buildWeb, localSupabase, startServer, freePort } from "./lib/local.mjs";
 
 const SECRET = crypto.randomBytes(24).toString("hex");
 const JOB = "scheduler-heartbeat";
 let sb, ok, dbDown, noSecret, db;
+const REFS = JSON.parse(fs.readFileSync(path.join(ROOT, "apps", "web", "config", "environments.json"), "utf8")).supabaseRef;
 const createdRuns = [];
 
 before(async () => {
@@ -102,4 +105,48 @@ test("없는 작업 이름은 인증이 맞아도 404이고 기록이 생기지 
   const res = await fetch(`${ok.base}/api/jobs/no-such-job`, { method: "POST", headers: { authorization: `Bearer ${SECRET}` } });
   assert.equal(res.status, 404);
   assert.equal((await db.query("select count(*)::int n from public.agent_runs")).rows[0].n, before);
+});
+
+// FND-02 — 배포 환경과 DB가 엇갈리면 상태 확인이 실패하고 실패 항목에 env가 있다 (배포 후 점검이 알림을 낸다)
+test("Production 배포가 staging DB를 가리키면 /api/health 503, 실패 항목 env", async () => {
+  const s = await startServer({ VERCEL_ENV: "production", NEXT_PUBLIC_SUPABASE_URL: `https://${REFS.staging}.supabase.co`, NEXT_PUBLIC_SUPABASE_ANON_KEY: "x" });
+  try {
+    const res = await fetch(`${s.base}/api/health`);
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.ok(body.failed.includes("env"), JSON.stringify(body));
+    assert.ok(!JSON.stringify(body).includes(REFS.staging), "응답에 ref를 찍지 않는다");
+  } finally {
+    s.stop();
+  }
+});
+
+test("Preview 배포가 prod DB를 가리키면 실패 항목 env", async () => {
+  const s = await startServer({ VERCEL_ENV: "preview", NEXT_PUBLIC_SUPABASE_URL: `https://${REFS.production}.supabase.co`, NEXT_PUBLIC_SUPABASE_ANON_KEY: "x" });
+  try {
+    const body = await (await fetch(`${s.base}/api/health`)).json();
+    assert.ok(body.failed.includes("env"), JSON.stringify(body));
+  } finally {
+    s.stop();
+  }
+});
+
+test("Preview 배포가 staging(또는 로컬) DB를 가리키면 env 검사는 통과", async () => {
+  const s = await startServer({
+    VERCEL_ENV: "preview",
+    NEXT_PUBLIC_SUPABASE_URL: sb.url,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: sb.anonKey,
+  });
+  try {
+    const body = await (await fetch(`${s.base}/api/health`)).json();
+    assert.equal(body.checks.env, "ok", JSON.stringify(body));
+  } finally {
+    s.stop();
+  }
+});
+
+test("Vercel 밖(사내 서버·로컬)에서는 env 검사를 하지 않는다고 표시한다", async () => {
+  const body = await (await fetch(`${ok.base}/api/health`)).json();
+  assert.equal(body.checks.env, "skipped");
+  assert.ok(!body.failed.includes("env"));
 });
