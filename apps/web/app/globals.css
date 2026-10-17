@@ -1,3 +1,5 @@
 @import "tailwindcss";
+@import "@ltr/ui/theme.css";
 
-/* 디자인 토큰은 W1-c에서 packages/ui로 옮긴다 (SM 부동산 세금 플랫폼 토큰 복사, DS-01) */
+/* packages/ui의 컴포넌트에서 쓰는 클래스도 Tailwind가 찾도록 */
+@source "../../../packages/ui/src";

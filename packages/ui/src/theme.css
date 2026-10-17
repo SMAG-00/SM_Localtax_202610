@@ -1,0 +1,49 @@
+/*
+ * 디자인 토큰 — Tailwind v4 테마 (DS-01·DS-04, PRD-00 8.3·8.4)
+ * 값은 src/tokens.ts와 같다 (tests/tokens.test.mjs가 대조). 앱의 globals.css에서
+ *   @import "tailwindcss";  @import "@ltr/ui/theme.css";
+ * 순서로 불러 쓴다. 글꼴 파일은 apps/web의 next/font/local이 셀프 호스팅한다 (외부 CDN 요청 0).
+ */
+@theme {
+  --color-navy-50: #EEF3F8;
+  --color-navy-100: #D6E2EE;
+  --color-navy-200: #A9C1D9;
+  --color-navy-300: #6F93B8;
+  --color-navy-400: #3D6A96;
+  --color-navy-500: #1E4E7C;
+  --color-navy-600: #153C63;
+  --color-navy-700: #0E2E4D;
+  --color-navy-800: #0A2540;
+  --color-navy-900: #06182A;
+  --color-hermes-50: #FFF4EC;
+  --color-hermes-100: #FFE4D1;
+  --color-hermes-200: #FFC49B;
+  --color-hermes-300: #FF9D5C;
+  --color-hermes-400: #FA8231;
+  --color-hermes-500: #F26A1B;
+  --color-hermes-600: #DE5A0E;
+  --color-hermes-700: #C2410C;
+  --color-hermes-800: #9A3412;
+  --color-hermes-900: #7C2D12;
+  --color-ivory: #FAF7F2;
+  --color-ivory-dark: #F1EBE1;
+
+  /* 글꼴 — Pretendard(셀프 호스팅) → 시스템 글꼴. 고정폭 글자 속 한글은 Pretendard로 떨어진다 (8.4) */
+  --font-sans: var(--font-pretendard), -apple-system, BlinkMacSystemFont, "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, var(--font-pretendard), monospace;
+}
+
+@layer base {
+  html {
+    /* 시니어 사용자를 고려한 기본 17px (SM과 같다) */
+    font-size: 17px;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    line-height: 1.75;
+    color: var(--color-navy-900);
+    background-color: var(--color-ivory);
+    word-break: keep-all; /* 한국어 단어 단위 줄바꿈 */
+  }
+}

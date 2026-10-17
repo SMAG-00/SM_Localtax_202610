@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   // 모노레포 루트 기준으로 추적해 workspace 패키지를 standalone 산출물에 포함한다
   outputFileTracingRoot: path.join(__dirname, "../../"),
   // workspace 패키지(TypeScript 원본)를 앱과 함께 컴파일한다
-  transpilePackages: ["@ltr/workflows"],
+  transpilePackages: ["@ltr/workflows", "@ltr/ui"],
   poweredByHeader: false,
 };
 

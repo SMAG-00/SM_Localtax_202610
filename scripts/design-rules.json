@@ -1,0 +1,16 @@
+{
+  "$comment": "디자인 린트 규칙 (PRD-00 8.2·8.3, DS-01·UX-02·UX-04). scan=검사할 화면 코드 폴더. hexAllowed=색 값을 직접 적어도 되는 토큰 파일. gradientAllowed=SM 네이비 그라데이션을 쓰는 컴포넌트(헤더·히어로·바닥글·전문가 안내 카드, R5). shadowAllowed=SM 임의 그림자 3종(카드 호버 2·주 버튼 1, R6).",
+  "scan": ["apps/web/app", "apps/web/components", "packages/ui/src"],
+  "hexAllowed": ["packages/ui/src/tokens.ts", "packages/ui/src/theme.css"],
+  "gradientAllowed": [
+    "packages/ui/src/components/Header.tsx",
+    "packages/ui/src/components/Hero.tsx",
+    "packages/ui/src/components/Footer.tsx",
+    "packages/ui/src/components/ExpertGuideCard.tsx"
+  ],
+  "shadowAllowed": [
+    "shadow-[0_8px_30px_-12px_rgba(6,24,42,0.35)]",
+    "shadow-[0_8px_40px_-20px_rgba(6,24,42,0.25)]",
+    "shadow-[0_2px_20px_-8px_rgba(242,106,27,0.35)]"
+  ]
+}

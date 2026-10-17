@@ -16,4 +16,6 @@ step "의존성 규칙";          node scripts/check-deps.mjs
 step "커밋 작성자";          node scripts/check-commit-authors.mjs
 step "SM 플랫폼 식별자";      node scripts/check-forbidden-ids.mjs
 step "마이그레이션 RLS";      node packages/db/scripts/lint-migrations.mjs packages/db/supabase/migrations
+step "디자인 린트";           node scripts/check-design.mjs
+step "디자인 토큰·명칭 시험";   pnpm --filter @ltr/ui test
 step "검사 스크립트 단위 시험"; node --test "scripts/__tests__/*.test.mjs"
