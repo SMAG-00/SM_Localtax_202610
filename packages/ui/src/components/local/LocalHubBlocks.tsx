@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from "react";
 import { Eyebrow } from "../base";
+import { UiLink } from "../link";
 import { MONO, TEXT_LINK } from "./shared";
 
 /** 블록 하나의 내용 — 카드(핫뉴스 항목·기사·프로젝트·분양 정보·행사·공식 자료 카드)는 바깥에서 만들어 넣는다 */
@@ -67,9 +68,9 @@ function Block({ id, blockKey, eyebrow, title, content }: { id: string; blockKey
       )}
       {content.more && (
         <p className="mt-4">
-          <a href={content.more.href} className={TEXT_LINK}>
+          <UiLink href={content.more.href} className={TEXT_LINK}>
             {content.more.label}
-          </a>
+          </UiLink>
         </p>
       )}
     </section>

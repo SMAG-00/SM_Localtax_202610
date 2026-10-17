@@ -9,10 +9,10 @@ const viewer = (roles: StaffRole[], isAdmin = false): Viewer => ({ userId: "u-1"
 const ids = (v: Viewer) => adminMenu(v).map((m) => m.id);
 
 const EXPECTED: [string, Viewer, string[]][] = [
-  ["기자", viewer(["reporter"]), ["dashboard", "assignments", "articles"]],
-  ["편집 책임자 — 분야·사전 편집 메뉴, 제휴사는 편집 메뉴 아님(목록 화면만 읽기)", viewer(["editor"]), ["dashboard", "assignments", "articles", "reviews", "placement", "home", "categories", "dictionaries"]],
-  ["편집 책임자 + 기자", viewer(["editor", "reporter"]), ["dashboard", "assignments", "articles", "reviews", "placement", "home", "categories", "dictionaries"]],
-  ["세무 감수위원", viewer(["reviewer"]), ["dashboard", "articles", "reviews"]],
+  ["기자", viewer(["reporter"]), ["dashboard", "assignments", "articles", "situations"]],
+  ["편집 책임자 — 분야·사전 편집 메뉴, 제휴사는 편집 메뉴 아님(목록 화면만 읽기)", viewer(["editor"]), ["dashboard", "assignments", "articles", "reviews", "placement", "home", "situations", "categories", "dictionaries"]],
+  ["편집 책임자 + 기자", viewer(["editor", "reporter"]), ["dashboard", "assignments", "articles", "reviews", "placement", "home", "situations", "categories", "dictionaries"]],
+  ["세무 감수위원 — 상황 카드는 감수 서명만", viewer(["reviewer"]), ["dashboard", "articles", "reviews", "situations"]],
   ["광고·협찬 담당 — 제휴사 관리", viewer(["ad_ops"]), ["dashboard", "sponsored", "partners"]],
   ["스토어·구독 담당", viewer(["store_ops"]), ["dashboard", "store"]],
   ["브랜드 관리 담당", viewer(["brand_ops"]), ["dashboard", "brand"]],
@@ -20,7 +20,7 @@ const EXPECTED: [string, Viewer, string[]][] = [
   [
     "관리자(역할 없음) — 편집 행위 메뉴 없음, 설정·회원·역할",
     viewer([], true),
-    ["dashboard", "assignments", "articles", "categories", "dictionaries", "sponsored", "partners", "store", "brand", "experts", "settings", "members"],
+    ["dashboard", "assignments", "articles", "situations", "categories", "dictionaries", "sponsored", "partners", "store", "brand", "experts", "settings", "members"],
   ],
   ["역할 없음", viewer([]), ["dashboard"]],
 ];
@@ -71,6 +71,8 @@ describe("지금 보는 메뉴 (aria-current)", () => {
     ["/admin/reviews/3", "reviews"],
     ["/admin/stories", "assignments"],
     ["/admin/placement", "placement"],
+    ["/admin/situations", "situations"],
+    ["/admin/situations/7", "situations"],
     ["/admin/categories", "categories"],
     ["/admin/dictionaries", "dictionaries"],
     ["/admin/partners", ""],

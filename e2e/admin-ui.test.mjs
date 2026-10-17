@@ -606,13 +606,13 @@ test("d) 편집국 외 역할 4종 — 승인·정렬·발행 메뉴 0, 검토·
 
   const editor = await login(u.editor);
   const menu = await menuLabels(editor);
-  assert.deepEqual(menu, ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "분야", "사전"]);
+  assert.deepEqual(menu, ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "상황 카드", "분야", "사전"]);
   assert.equal((await open(editor, "/admin/home")).status(), 200, "편집자 홈 배치 화면");
   for (const label of OPERATIONS_MENUS) assert.ok(!menu.includes(label));
   for (const path of ["/admin/store", "/admin/brand", "/admin/experts"]) assert.equal((await open(editor, path)).status(), 403, `편집자 ${path}`);
 
   const reporter = await login(u.reporter);
-  assert.deepEqual(await menuLabels(reporter), ["첫 화면", "기사 기획", "기사"]);
+  assert.deepEqual(await menuLabels(reporter), ["첫 화면", "기사 기획", "기사", "상황 카드"]);
   for (const path of ["/admin/reviews", "/admin/placement", "/admin/home"]) assert.equal((await open(reporter, path)).status(), 403, `기자 ${path}`);
 
   // 편집자가 쓰는 백오피스 화면 전부 — AI 도우미 런처 0 (open이 확인한다)

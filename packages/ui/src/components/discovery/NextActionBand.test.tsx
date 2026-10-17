@@ -93,11 +93,12 @@ describe("다음 행동 띠", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("루트는 '다음 행동' 이름의 흰 카드 영역, data-ui=next-action-band", () => {
+  it("루트는 '다음 행동' 이름의 흰 영역 — 640px 이상은 카드, 그 아래는 위아래 선과 좌우 16px 띠(버튼 = 화면 폭 − 32px, UX-06)", () => {
     render(<NextActionBand similarCases={cases(1)} actions={[SITUATION]} />);
     const region = screen.getByRole("region", { name: "다음 행동" });
     expect(region.getAttribute("data-ui")).toBe("next-action-band");
-    expect(region.className).toContain("bg-white");
-    expect(region.className).toContain("rounded-2xl");
+    const tokens = region.className.split(/\s+/);
+    expect(tokens).toEqual(expect.arrayContaining(["bg-white", "border-y", "px-[16px]", "sm:rounded-2xl", "sm:border", "sm:p-6"]));
+    expect(tokens).not.toContain("rounded-2xl");
   });
 });

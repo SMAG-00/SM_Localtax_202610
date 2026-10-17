@@ -1,5 +1,6 @@
 // shell 묶음 — 이 묶음의 컴포넌트를 여기서 내보낸다 (PRD-00 8.6 — 헤더·히어로·바닥글·단계 타임라인·세목 아코디언·폼 요소·홈 큰 입력창·표시 배지)
 export { Header, HEADER_SECTIONS, HEADER_UTILITIES, type HeaderProps, type HeaderSectionKey, type HeaderUtilityKey } from "./Header";
+export type { HeaderNavLink } from "./HeaderNav";
 export { Hero, type HeroProps } from "./Hero";
 export { Footer, type FooterProps, type FooterLink, type FooterInfo } from "./Footer";
 export { StepTimeline, type StepTimelineItem } from "./StepTimeline";

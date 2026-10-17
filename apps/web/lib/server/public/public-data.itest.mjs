@@ -99,6 +99,11 @@ beforeAll(async () => {
   w.solved = await art("solved", { subtype: "solved_case", category_id: w.interpretations, first_published_at: daysAgo(20) });
   w.draft = await art("draft", { status: "draft", category_id: w.interpretations });
   w.digest = await art("digest", { section: "local", content_type: "digest", digest_id: 1 });
+  // 지자체뉴스 — 편집 분야(editorial_field)별 기사: 지방세 · 도시정책 · 편집 분야 없음 (허브 탭·LG-08 블록)
+  w.localTax = await art("local-tax", { section: "local", editorial_field: "local_tax", first_published_at: daysAgo(1) });
+  w.localUrban = await art("local-urban", { section: "local", editorial_field: "urban_policy", first_published_at: daysAgo(4) });
+  w.localPlain = await art("local-plain", { section: "local", first_published_at: daysAgo(5) });
+  w.localDraft = await art("local-draft", { section: "local", editorial_field: "local_finance", status: "draft" });
 
   const photo = (path, confirmed) =>
     insert(
@@ -239,7 +244,38 @@ describe("화면 틀·홈·허브·뉴스 전체 (HOME-01·02·04 · CAT-02)", (
     expect(idsOf(hub.latest)).not.toContain(Number(w.draft.id));
     expect(idsOf(hub.latest)).not.toContain(Number(w.digest.id));
     expect(hub.terms.map((t) => t.id)).toContain(Number(w.term.id));
-    expect(hub.tabs.map((t) => t.slug)).toContain("interpretations");
+    expect(hub.tabs.map((t) => t.id)).toContain("interpretations");
+    expect(hub.tabs[0]).toEqual({ id: "all", label: "전체", href: "/tax" });
+    expect(hub.taxPoint).toBeNull();
+    expect(hub.blocks).toBeNull();
+  });
+
+  test("지자체뉴스 허브 — 탭은 기사 있는 편집 분야(초안만 있는 분야 0), 전체 보기에 LG-08 ② 지방세·지방재정 ③ 부동산·개발 블록", async () => {
+    const hub = await api.getHubData("local");
+    const tabIds = hub.tabs.map((t) => t.id);
+    expect(tabIds.slice(0, 1)).toEqual(["all"]);
+    expect(tabIds).toEqual(expect.arrayContaining(["local_tax", "urban_policy"]));
+    expect(hub.tabs.find((t) => t.id === "local_tax")?.href).toBe("/local?topic=local_tax");
+    // 탭에 있는 분야는 기사가 있고, 탭에 없는 분야는 기사가 없다 (초안만 있는 지방재정은 그 기사가 보이지 않는다)
+    for (const topic of ["local_tax", "local_finance", "realestate", "urban_policy"]) {
+      const filtered = await api.getHubData("local", { topic });
+      expect(tabIds.includes(topic)).toBe(filtered.latest.length > 0);
+      expect(filtered.noindex).toBe(filtered.latest.length === 0);
+      expect(filtered.blocks).toBeNull();
+      expect(filtered.latest.every((a) => a.editorialField === topic)).toBe(true);
+      expect(idsOf(filtered.latest)).not.toContain(Number(w.localDraft.id));
+    }
+    expect(idsOf(hub.blocks.localTax)).toContain(Number(w.localTax.id));
+    expect(idsOf(hub.blocks.realEstate)).toContain(Number(w.localUrban.id));
+    for (const block of [hub.blocks.localTax, hub.blocks.realEstate]) expect(idsOf(block)).not.toContain(Number(w.localPlain.id));
+    expect(idsOf(hub.latest)).toEqual(expect.arrayContaining([Number(w.localTax.id), Number(w.localUrban.id), Number(w.localPlain.id)]));
+    expect(idsOf(hub.latest)).not.toContain(Number(w.digest.id));
+    const urban = await api.getHubData("local", { topic: "urban_policy" });
+    expect(urban).toMatchObject({ topic: "urban_policy", currentTab: "urban_policy", noindex: false });
+    expect(idsOf(urban.latest)).toContain(Number(w.localUrban.id));
+    expect(await api.getHubData("local", { topic: "tourism" })).toMatchObject({ topic: null, currentTab: "all" });
+    const chrome = await api.getSiteChrome();
+    expect(chrome.sections[3].children.map((c) => c.href)).toEqual([...hub.tabs.slice(1).map((t) => t.href), "/news?section=local"]);
   });
 
   test("뉴스 전체 — 편집 승인된 reported_news만 (해설·승인 전 보도 0)", async () => {
@@ -247,7 +283,10 @@ describe("화면 틀·홈·허브·뉴스 전체 (HOME-01·02·04 · CAT-02)", (
     expect(idsOf(news.items)).toContain(Number(w.report.id));
     expect(idsOf(news.items)).not.toContain(Number(w.reportPending.id));
     expect(idsOf(news.items)).not.toContain(Number(w.explainer.id));
-    expect(news.tabs).toHaveLength(4);
+    expect(news.tabs.map((t) => t.id)).toEqual(["all", "tax", "realestate", "finance", "local"]);
+    expect(news.currentTab).toBe("tax");
+    expect(news.policyLinks).toEqual([]);
+    expect(idsOf((await api.getNewsList({ section: "local" })).items)).not.toContain(Number(w.localTax.id));
   });
 
   test("하위 분야 목록 — 공개 분야는 목록, 없는 분야는 null, 기사 0건이면 noindex", async () => {
@@ -257,7 +296,13 @@ describe("화면 틀·홈·허브·뉴스 전체 (HOME-01·02·04 · CAT-02)", (
     expect(list.category.needsDisclaimer).toBe(true);
     expect(await api.getCategoryList("tax", `no-such-${RUN}`)).toBeNull();
     const empty = await api.getCategoryList("finance", w.emptyCategory.slug);
-    expect(empty).toMatchObject({ total: 0, noindex: true, hubHref: "/finance", items: [] });
+    expect(empty).toMatchObject({ total: 0, noindex: true, hubHref: "/finance", items: [], hub: { name: "부동산개발금융", href: "/finance" } });
+    expect(empty.tabs.map((t) => t.id)).not.toContain(w.emptyCategory.slug);
+    expect(list.tabs.map((t) => t.id)).toContain("interpretations");
+    expect(await api.getCategoryList("local", "reporting")).toBeNull();
+    // 목록 끝을 넘긴 쪽은 오류가 아니라 빈 쪽 (화면이 404로 그린다)
+    expect(await api.getCategoryList("tax", "interpretations", 999)).toMatchObject({ items: [], page: 999, hasMore: false });
+    expect((await api.getNewsList({ page: 999 })).items).toEqual([]);
     const chrome = await api.getSiteChrome();
     expect(chrome.sections[2].children.map((c) => c.label)).not.toContain(w.emptyCategory.name);
   });
@@ -316,7 +361,9 @@ describe("상황 페이지·인물 (UX-05 · CAT-03 · ART-04)", () => {
     expect(idsOf(p.articles)).toEqual([Number(w.explainer.id), Number(w.report.id)]);
     expect(idsOf(p.solvedCases)).toEqual([Number(w.solved.id)]);
     expect(p.terms.map((t) => t.id)).toEqual([Number(w.term.id)]);
-    expect(p.nextActions).toEqual([]);
+    // 열린 기능이 없으면 [같은 분야 더 보기](허브)만 — 연결 칸의 전문가 찾기는 기능 키가 꺼져 0
+    expect(p.nextActions.map((a) => [a.key, a.href])).toEqual([["same_section", "/tax"]]);
+    expect(p.reviewedOn).toBe(KST_TODAY);
     expect(p.regionSelect.sido).toHaveLength(17);
     expect(await api.getSituationPage(w.hiddenSituation.slug)).toBeNull();
   });

@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cx } from "./cx";
+import { UiLink } from "./link";
 
 const ACTIVE = "border-b-[3px] border-hermes-500 font-bold text-navy-900";
 const INACTIVE = "border-b-[3px] border-transparent font-semibold text-navy-400 hover:text-navy-700";
@@ -60,16 +61,19 @@ export function Tabs({ label, items, defaultId }: { label: string; items: TabIte
 
 export type TabNavItem = { id: string; label: string; href: string };
 
-/** 링크 탭 — 주소(쿼리)로 상태를 두는 탭. 서버에서 렌더하고 JS 없이 동작한다 (분야 필터 등) */
+/**
+ * 링크 탭 — 주소(쿼리)로 상태를 두는 탭. 서버에서 렌더하고 JS 없이 동작한다 (분야 필터 등).
+ * 사이트 안 주소는 앱 링크(화면 전환 — FND-09), 앱 링크가 없으면(견본·관리자) 보통의 a 요소다
+ */
 export function TabNav({ label, items, current }: { label: string; items: TabNavItem[]; current: string }) {
   return (
     <nav data-ui="tab-nav" aria-label={label} className="border-b border-navy-100">
       <ul className="flex flex-wrap gap-1">
         {items.map((item) => (
           <li key={item.id}>
-            <a href={item.href} aria-current={item.id === current ? "page" : undefined} className={cx(ITEM, "inline-block", item.id === current ? ACTIVE : INACTIVE)}>
+            <UiLink href={item.href} aria-current={item.id === current ? "page" : undefined} className={cx(ITEM, "inline-block", item.id === current ? ACTIVE : INACTIVE)}>
               {item.label}
-            </a>
+            </UiLink>
           </li>
         ))}
       </ul>

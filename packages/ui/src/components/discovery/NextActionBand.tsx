@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { DarkButton } from "../base";
+import { UiLink } from "../link";
 
 export type SimilarCaseItem = {
   href: string;
@@ -42,6 +43,7 @@ function NewWindowMark() {
 /**
  * 다음 행동 띠 — 기사 하단 흰 카드: 비슷한 사례 3건 + 어두운 버튼 2개 이하 (PRD-00 8.6, ART-06 · BM-L5)
  * 그 단계에 열린 기능의 버튼만 렌더한다 — '준비 중' 링크·비활성 버튼 없음. 띠 안에 주 버튼 0 (R2)
+ * 640px 미만에서는 위아래 선만 있는 띠(안쪽 좌우 16px — 루트 글자가 17px이라 rem 대신 px)다 — 화면 폭으로 펼쳐 두면(바깥이 좌우 여백을 상쇄) 버튼 너비가 화면 폭 − 32px (UX-06: 360px에서 328px)
  */
 export function NextActionBand({ similarCases, actions }: NextActionBandProps) {
   const casesHeadingId = useId();
@@ -50,7 +52,7 @@ export function NextActionBand({ similarCases, actions }: NextActionBandProps) {
   if (cases.length === 0 && buttons.length === 0) return null;
 
   return (
-    <section data-ui="next-action-band" aria-label="다음 행동" className="rounded-2xl border border-navy-100 bg-white p-6">
+    <section data-ui="next-action-band" aria-label="다음 행동" className="border-y border-navy-100 bg-white px-[16px] py-6 sm:rounded-2xl sm:border sm:p-6">
       {cases.length > 0 && (
         <>
           <h2 id={casesHeadingId} className="text-[17px] font-black text-navy-900">
@@ -59,13 +61,13 @@ export function NextActionBand({ similarCases, actions }: NextActionBandProps) {
           <ul aria-labelledby={casesHeadingId} className="mt-2 divide-y divide-navy-100">
             {cases.map((c, i) => (
               <li key={`${i}-${c.href}`}>
-                <a
+                <UiLink
                   href={c.href}
                   className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 py-2 text-[16px] font-semibold text-navy-900 transition hover:text-hermes-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500"
                 >
                   {c.kind && <span className="text-[13px] font-bold text-hermes-800">{c.kind}</span>}
                   <span>{c.title}</span>
-                </a>
+                </UiLink>
               </li>
             ))}
           </ul>

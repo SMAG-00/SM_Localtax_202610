@@ -10,6 +10,13 @@ import { ArticleCard } from "./discovery/ArticleCard";
 import { LinkCard } from "./Card";
 import { DarkButton } from "./Button";
 import { LinkProvider, UiLink, isInternalHref, type UiLinkProps } from "./link";
+import { TabNav } from "./Tabs";
+import { StepTimeline } from "./shell/StepTimeline";
+import { SituationCard } from "./discovery/SituationCard";
+import { NextActionBand } from "./discovery/NextActionBand";
+import { SolvedCaseCard } from "./discovery/SolvedCaseCard";
+import { FieldTaxPoint } from "./local/FieldTaxPoint";
+import { LocalHubBlocks } from "./local/LocalHubBlocks";
 
 function AppLink(props: UiLinkProps) {
   return <a data-app-link="" {...props} />;
@@ -105,5 +112,40 @@ describe("공개 화면 컴포넌트의 사이트 안 링크는 앱 링크로 �
     );
     expect(appLinks()).toEqual(["/about", "/search?q=%EC%B7%A8%EB%93%9D%EC%84%B8", "/search?q=%EA%B0%9C%ED%8E%B8%EC%95%88", "/search?q=%EC%9E%AC%EC%82%B0%EC%84%B8", "/news/a", "/tax", "/experts"]);
     expect(plainLinks()).toEqual(["https://www.wetax.go.kr"]);
+  });
+});
+
+describe("허브·상황 화면 컴포넌트의 사이트 안 링크도 앱 링크로 그린다 (W2-b 3단계)", () => {
+  it("헤더 하위 메뉴 · 링크 탭 · 단계 타임라인 링크 단계 · 상황 카드", () => {
+    withApp(
+      <>
+        <Header submenus={{ tax: [{ key: "tax:news", label: "뉴스 전체", href: "/news?section=tax" }] }} />
+        <TabNav label="하위 분야" current="all" items={[{ id: "all", label: "전체", href: "/tax" }, { id: "interpretations", label: "해석", href: "/tax/interpretations" }]} />
+        <StepTimeline steps={[{ title: "취득", href: "/news/acq" }, { title: "보유" }]} />
+        <SituationCard href="/situations/car-sold" pictogram="car-sold" title="차를 팔았어요" description="돌려받을 세금" />
+      </>,
+    );
+    expect(appLinks()).toEqual(["/", "/tax", "/news?section=tax", "/realestate", "/finance", "/local", "/tax", "/tax/interpretations", "/news/acq", "/situations/car-sold"]);
+    expect(plainLinks()).toEqual([]);
+  });
+
+  it("다음 행동 띠(비슷한 사례·버튼) · 해결 사례 제목과 근거 · 분야 지방세 포인트 · 지자체 허브 블록 더 보기 — 외부 근거는 a 요소", () => {
+    withApp(
+      <>
+        <NextActionBand similarCases={[{ href: "/news/case-1", title: "사례" }]} actions={[{ key: "same_section", label: "같은 분야 더 보기", href: "/tax", enabled: true }]} />
+        <SolvedCaseCard
+          title="환급 사례"
+          href="/news/solved-1"
+          situation="상황"
+          issue="쟁점"
+          result={{ conclusion: "accepted", text: "환급", basis: [{ label: "조심2025지0001", href: "https://www.tt.go.kr/a", external: true }, { label: "해석 기사", href: "/news/basis" }] }}
+          lesson="교훈"
+        />
+        <FieldTaxPoint points={["포인트"]} basisDate="2026-10-01" links={[{ label: "해설", href: "/news/explainer" }]} />
+        <LocalHubBlocks localTax={{ items: [<p key="a">기사</p>], more: { href: "/local?topic=local_tax", label: "더 보기" } }} />
+      </>,
+    );
+    expect(appLinks()).toEqual(["/news/case-1", "/tax", "/news/solved-1", "/news/basis", "/news/explainer", "/local?topic=local_tax"]);
+    expect(plainLinks()).toEqual(["https://www.tt.go.kr/a"]);
   });
 });

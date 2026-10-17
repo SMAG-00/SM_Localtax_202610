@@ -39,6 +39,8 @@ export async function rowsOf<T>(query: PromiseLike<Res>, context: string): Promi
 export async function pageOf<T>(query: PromiseLike<Res>, context: string): Promise<{ rows: T[]; total: number }> {
   const res = await query;
   if (res.error) {
+    // 요청한 쪽이 목록 끝을 넘었다(PostgREST 416 Range Not Satisfiable) — 오류가 아니라 빈 쪽. 목록 화면은 2쪽 이상의 빈 쪽을 404로 그린다
+    if (res.error.code === "PGRST103") return { rows: [], total: 0 };
     console.error(`[public] ${context}:`, res.error.code, res.error.message);
     throw new PublicDataError(context, res.error.code);
   }

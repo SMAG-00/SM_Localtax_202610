@@ -1,6 +1,6 @@
 import { brand } from "../../brand";
 import { UiLink } from "../link";
-import { HeaderNav } from "./HeaderNav";
+import { HeaderNav, type HeaderNavLink } from "./HeaderNav";
 
 /** 4대 분야 `section` 값 (PRD-01A ART-01) */
 export type HeaderSectionKey = "tax" | "realestate" | "finance" | "local";
@@ -29,6 +29,11 @@ export type HeaderProps = {
   utilities?: readonly HeaderUtilityKey[];
   /** 지금 보고 있는 분야 — aria-current="page" */
   currentSection?: HeaderSectionKey;
+  /**
+   * 분야별 하위 메뉴 — 분야 데이터(CAT-01)에서 만든 하위 분야 + 공통 `뉴스 전체` (HOME-02). 주는 쪽(공개 화면 틀)이 기사 있는 하위 분야만 넘긴다.
+   * 없거나 빈 분야는 펼침 단추 요소 0
+   */
+  submenus?: Partial<Record<HeaderSectionKey, readonly HeaderNavLink[]>>;
   /** 작은 로그인 버튼 — 주 버튼 컴포넌트가 아니다 (R2 계수 제외) */
   account?: { label: string; href: string };
 };
@@ -38,9 +43,10 @@ export type HeaderProps = {
  * 버튼 rounded-lg hermes-500 + navy-900 굵은 글자. 유틸 메뉴 자리를 더했다 (DS-02). 회사·정책 링크와 AI 도우미는 헤더에 두지 않는다 (HELP-05·HOME-02).
  * 화면 순서: 워드마크 → 분야 메뉴 → 유틸 메뉴 → 계정 버튼 (모바일은 워드마크 · 계정 버튼 · [메뉴] 한 줄, 그 아래 펼친 메뉴).
  */
-export function Header({ utilities = [], currentSection, account }: HeaderProps) {
+export function Header({ utilities = [], currentSection, account, submenus = {} }: HeaderProps) {
   const enabled = new Set(utilities);
   const utilityLinks = HEADER_UTILITIES.filter((u) => enabled.has(u.key));
+  const sections = HEADER_SECTIONS.map((s) => ({ ...s, children: submenus[s.key] ?? [] }));
   return (
     <header data-ui="header" className="bg-navy-800">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 px-4 py-2">
@@ -51,7 +57,7 @@ export function Header({ utilities = [], currentSection, account }: HeaderProps)
           {/* 띄어쓰기는 가운뎃점 span 밖에 둔다 — 화면 읽기 이름이 "SM(선명) · 지방세"로 붙지 않게 */}
           {brand.wordmark.lead} <span className="text-hermes-500">·</span> {brand.wordmark.tail}
         </UiLink>
-        <HeaderNav sections={HEADER_SECTIONS} utilities={utilityLinks} currentSection={currentSection} />
+        <HeaderNav sections={sections} utilities={utilityLinks} currentSection={currentSection} />
         {account && (
           <UiLink
             href={account.href}

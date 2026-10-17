@@ -3,7 +3,8 @@
 //  · 관리자(ADMIN_EMAILS)는 데이터·설정 전권(역할 부여, 분야·사전·설정 편집, 모든 기록 조회)이다.
 //  · 편집 행위(편집 승인·발행·정렬·HOT·홈 배치·발행 뒤 수정·정정 결정)는 editor 역할이 있어야 한다 — 관리자도 같다 (PO 결정 2026-10-17).
 //  · 작성 기자와 편집 승인자는 다른 사람이어야 한다 (NAV-12 — DB 트리거도 막는다).
-//  · 세무 감수 서명은 reviewer만 한다.
+//  · 세무 감수 서명은 reviewer만 한다 (기사와 상황 카드의 '먼저 확인할 것' 모두 — review.tax_review).
+//  · 상황 카드(UX-05)는 기자·편집 책임자·관리자가 쓰고, 공개·허브 배치는 편집 책임자만 한다 (PRD-00 6장 'CMS 작성·상황 카드' 행 · 발행 승인·홈 배치는 editor).
 //  · 편집국 외 역할(ad_ops·store_ops·brand_ops·expert_ops)은 기사 작성·승인·정렬 권한이 없다. ad_ops는 sponsored 콘텐츠만 등록한다.
 
 /** staff_roles.role 7종 (W2-a 설계 §2) */
@@ -46,6 +47,8 @@ export const ACTIONS = {
   "assignment.read": "기사 기획 캘린더 열람",
   "assignment.create": "기사 기획 등록",
   "assignment.update": "기사 기획 수정·상태 변경",
+  "situation.edit": "상황 카드 작성·수정 (먼저 확인할 것·체크리스트·연결 칸)",
+  "situation.publish": "상황 카드 공개·내리기·허브 배치·허브 순서",
   "category.edit": "분야 편집",
   "dictionary.edit": "금지 표현·공포 표현·용어 사전 편집",
   "settings.edit": "운영 설정 편집",
@@ -77,6 +80,7 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "role.revoke",
   "member.suspend",
   "settings.edit",
+  "situation.publish",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -165,6 +169,12 @@ export function check(viewer: Viewer, action: Action, resource?: Resource): Deci
     case "assignment.create":
     case "assignment.update":
       return has(viewer, "reporter", "editor") || viewer.isAdmin ? ALLOW : deny("기사 기획은 기자·편집 책임자가 다룹니다");
+
+    case "situation.edit":
+      return has(viewer, "reporter", "editor") || viewer.isAdmin ? ALLOW : deny("상황 카드는 기자·편집 책임자·관리자가 씁니다 — 세무 감수위원은 감수 서명만 합니다");
+
+    case "situation.publish":
+      return has(viewer, "editor") ? ALLOW : deny(`상황 카드 공개·허브 배치는 ${EDITOR_ONLY}`);
 
     case "category.edit":
     case "dictionary.edit":

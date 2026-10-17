@@ -64,6 +64,8 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "assignment.read":        [O, O, X, X, X, X, X, O, X],
   "assignment.create":      [O, O, X, X, X, X, X, O, X],
   "assignment.update":      [O, O, X, X, X, X, X, O, X],
+  "situation.edit":         [O, O, X, X, X, X, X, O, X], // PRD-00 6장 'CMS 작성·상황 카드' — 편집국(기자·편집 책임자)·관리자
+  "situation.publish":      [X, O, X, X, X, X, X, X, X], // 공개·허브 배치는 발행 승인·홈 배치와 같은 편집 행위 — 관리자도 editor 필요
   "category.edit":          [X, O, X, X, X, X, X, O, X],
   "dictionary.edit":        [X, O, X, X, X, X, X, O, X],
   "settings.edit":          [X, X, X, X, X, X, X, O, X],
@@ -232,5 +234,24 @@ describe("역할 값", () => {
     expect(can(both, "article.create", article())).toBe(true);
     expect(can(both, "review.tax_review", article())).toBe(true);
     expect(can(both, "article.publish", article())).toBe(false);
+  });
+});
+
+describe("상황 카드 (UX-05 · PRD-00 6장) — 쓰기는 편집국·관리자, 공개·허브 배치는 편집 책임자, 감수 서명은 세무 감수위원", () => {
+  test("공개·허브 배치 거부는 감사 대상 — 기자·감수위원·editor 없는 관리자·편집국 외 역할 모두 거부", () => {
+    expect(AUDITED_DENIALS.has("situation.publish")).toBe(true);
+    for (const v of [viewer(["reporter"]), viewer(["reviewer"]), viewer([], true), ...NON_NEWSROOM_ROLES.map((r) => viewer([r]))]) {
+      const decision = check(v, "situation.publish");
+      expect(decision.allowed).toBe(false);
+      if (!decision.allowed) expect(decision.reason).toContain("editor");
+    }
+    expect(can(viewer(["editor"]), "situation.publish")).toBe(true);
+  });
+
+  test("세무 감수위원은 상황 카드 문장을 고치지 못하고 감수 서명만 한다 — 편집자는 서명하지 못한다", () => {
+    expect(can(viewer(["reviewer"]), "situation.edit")).toBe(false);
+    expect(can(viewer(["reviewer"]), "review.tax_review")).toBe(true);
+    expect(can(viewer(["editor"]), "review.tax_review")).toBe(false);
+    expect(can(viewer([], true), "review.tax_review")).toBe(false);
   });
 });

@@ -1,11 +1,42 @@
 {
   "$comment": "UX-02 화면 규칙 측정 대상 — PRD-01A 8.1 주요 화면(01A 20곳 · 01B 7.1 · 01C 3.3)을 화면이 생길 때마다 더한다. enforce=false는 측정만 하고 실패로 치지 않는다(견본 페이지는 컴포넌트를 모두 늘어놓아 R2를 일부러 넘는다).",
   "viewports": [
-    { "width": 360, "height": 740, "r1": true },
-    { "width": 1280, "height": 800, "r1": false }
+    {
+      "width": 360,
+      "height": 740,
+      "r1": true
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "r1": false
+    }
   ],
   "screens": [
-    { "path": "/", "enforce": true, "note": "홈 (W2-b 2단계 — 히어로·4대 분야·최신 자체 취재·개정 트래커 하이라이트 중 DB에 내용이 있는 섹션). 시험 자료를 넣은 폭 360·640·1024 첫 화면은 e2e/site-home.test.mjs가 잰다" },
-    { "path": "/_design", "enforce": false, "note": "디자인 견본 — 측정만" }
+    {
+      "path": "/",
+      "enforce": true,
+      "note": "홈 (W2-b 2단계 — 히어로·4대 분야·최신 자체 취재·개정 트래커 하이라이트 중 DB에 내용이 있는 섹션). 시험 자료를 넣은 폭 360·640·1024 첫 화면은 e2e/site-home.test.mjs가 잰다"
+    },
+    {
+      "path": "/tax",
+      "enforce": true,
+      "note": "분야 허브 공통 골격 (W2-b 3단계 — 지방세. DB에 내용이 있는 부분만). 시험 자료를 넣은 허브·상황 페이지의 폭 360·640·1024는 e2e/site-hubs.test.mjs가 잰다"
+    },
+    {
+      "path": "/local",
+      "enforce": true,
+      "note": "지자체뉴스 허브 (분야 탭·LG-08 블록 자리)"
+    },
+    {
+      "path": "/news",
+      "enforce": true,
+      "note": "뉴스 전체 (취재 기사만, 허브 탭)"
+    },
+    {
+      "path": "/_design",
+      "enforce": false,
+      "note": "디자인 견본 — 측정만"
+    }
   ]
 }

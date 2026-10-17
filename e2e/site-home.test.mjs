@@ -3,7 +3,7 @@
 // (API 쓰기는 공개 데이터 캐시를 바로 만료한다 — 설계 7.1).
 //  a) 홈 섹션 순서 = PRD_최종 §4.1 (설계 2.3 home_sections) — DOM 순서와 화면 위치, 빈 DB 홈은 히어로·4대 분야만(오류 0)
 //  b) 첫 화면 R1(360×740 글자 150자 이하)·R2(뷰포트마다 주 버튼 1개 이하) — 폭 360·640·1024
-//  c) 사이트 안 링크는 화면 전환(Next.js 링크) — 문서 새로고침 0, 페이지 표식 유지. 허브(3단계)가 아직 없어 허브 링크는 '화면 전환 요청'까지 본다
+//  c) 사이트 안 링크는 화면 전환(Next.js 링크) — 홈 → 허브(상단 메뉴·4대 분야 카드) → 뒤로 가기까지 문서 새로고침 0, 페이지 표식 유지 (허브는 3단계 — e2e/site-hubs가 하위 분야·하위 메뉴까지 본다)
 //  d) 기능 키가 모두 꺼지면 /calc·/experts·/store·/edu·/search·정책 페이지 링크 0, 켜면(API) 바로 그 메뉴·링크·검색 폼
 //  e) v1.2 경로·단계 전 경로 링크 0
 //  f) 360px 가로 스크롤 0 · 메뉴 버튼과 메뉴 항목 터치 영역 44px 이상 · 견본(/_design)·백오피스는 공개 틀 밖
@@ -304,7 +304,9 @@ test("d·e) 기능 키가 모두 꺼지면 유틸 메뉴·정책 링크·검색 
   assert.equal(await page.locator('nav[aria-label="유틸 메뉴"]').count(), 0);
   assert.equal(await page.locator('form[action="/search"]').count(), 0);
   assert.equal(await page.locator('nav[aria-label="바닥글 메뉴"]').count(), 0);
-  assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] a', (as) => as.map((a) => a.textContent)), ["지방세", "부동산", "부동산개발금융", "지자체뉴스"]);
+  assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] [data-part="section-link"]', (as) => as.map((a) => a.textContent)), ["지방세", "부동산", "부동산개발금융", "지자체뉴스"]);
+  // 하위 메뉴 — 빈 DB에서는 분야마다 공통 '뉴스 전체'만 (기사 있는 하위 분야가 없다, HOME-02)
+  assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] [data-part="sub-link"]', (as) => as.map((a) => a.getAttribute("href"))), ["/news?section=tax", "/news?section=realestate", "/news?section=finance", "/news?section=local"]);
   for (const word of ["지방세봇", "지역·축제", "AI 도우미"]) assert.equal(await page.locator("header").getByText(word).count(), 0, `헤더에 ${word} 0`);
   await page.close();
 
@@ -340,7 +342,7 @@ test("d·e) 기능 키가 모두 꺼지면 유틸 메뉴·정책 링크·검색 
   await page.close();
 });
 
-test("c) 사이트 안 이동은 화면 전환 — 워드마크로 홈 이동은 문서 새로고침 0·페이지 표식 유지, 허브·분야 카드 링크도 화면 전환 요청(RSC)으로 간다", async () => {
+test("c) 사이트 안 이동은 화면 전환 — 워드마크로 홈, 상단 메뉴·4대 분야 카드로 허브, 뒤로 가기까지 문서 새로고침 0·페이지 표식 유지", async () => {
   const page = await openHome({ width: 1280, height: 800 });
   await page.evaluate(() => {
     window.__e2eMarker = "kept";
@@ -355,23 +357,22 @@ test("c) 사이트 안 이동은 화면 전환 — 워드마크로 홈 이동은
   assert.deepEqual(documents, []);
   assert.equal(await page.evaluate(() => performance.getEntriesByType("navigation").length), 1);
 
-  // 허브(/tax 등)는 3단계가 만든다 — 지금은 없는 화면이라 Next.js가 문서 이동으로 404를 연다. 링크가 화면 전환으로 먼저 요청하는지만 본다
-  for (const selector of ['nav[aria-label="분야 메뉴"] a[href="/tax"]', '[data-ui="field-cards"] a[href="/finance"]']) {
-    const target = await page.locator(selector).getAttribute("href");
-    const seen = [];
-    const onRequest = (r) => {
-      if (new URL(r.url()).pathname === target) seen.push(r.resourceType() === "document" ? "document" : r.headers()["rsc"] === "1" ? "rsc" : r.resourceType());
-    };
-    page.on("request", onRequest);
+  // 허브(3단계) — 상단 메뉴·4대 분야 카드로 가고 뒤로 가기로 돌아와도 같은 문서(표식 유지), 지금 보는 분야 표시
+  for (const [selector, hub, name] of [
+    ['nav[aria-label="분야 메뉴"] a[href="/tax"]', "tax", "지방세"],
+    ['[data-ui="field-cards"] a[href="/finance"]', "finance", "부동산개발금융"],
+  ]) {
     await page.locator(selector).click();
-    await page.waitForURL(`${base}${target}`);
-    await page.waitForLoadState("load");
-    page.off("request", onRequest);
-    assert.equal(seen[0], "rsc", `${target}: 첫 요청이 화면 전환 요청이다 (보통의 a 요소면 document) — ${seen.join(",")}`);
+    await page.waitForURL(`${base}/${hub}`);
+    await page.locator(`[data-ui="hub"][data-hub="${hub}"]`).waitFor();
+    assert.equal(await page.locator('nav[aria-label="분야 메뉴"] a[aria-current="page"]').textContent(), name);
     await page.goBack();
     await page.waitForURL(`${base}/`);
     await page.locator('[data-home-section="fields"]').waitFor();
   }
+  assert.equal(await page.evaluate(() => window.__e2eMarker), "kept", "허브를 오가도 문서 새로고침 0");
+  assert.deepEqual(documents, []);
+  assert.equal(await page.evaluate(() => performance.getEntriesByType("navigation").length), 1);
   await page.close();
 });
 
@@ -380,15 +381,20 @@ test("f) 360px — 가로 스크롤 0(메뉴 닫힘·열림), 메뉴 버튼·메
   const page = await openHome({ width: 360, height: 740 });
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert.ok((await overflow()) <= 0, "메뉴 닫힘");
-  const button = page.getByRole("button", { name: "메뉴" });
+  const button = page.getByRole("button", { name: "메뉴", exact: true });
   const box = await button.boundingBox();
   assert.ok(box.width >= 44 && box.height >= 44, `메뉴 버튼 ${box.width}×${box.height}`);
   await button.click();
   assert.equal(await button.getAttribute("aria-expanded"), "true");
   assert.ok((await overflow()) <= 0, "메뉴 열림");
-  const targets = await page.$$eval('header nav a, nav[aria-label="바닥글 메뉴"] a', (as) => as.map((a) => ({ t: a.textContent, ...a.getBoundingClientRect().toJSON() })));
-  assert.ok(targets.length >= 4 + 2 + 2, `메뉴 항목 ${targets.length}개`);
+  // 펼친 분야의 하위 메뉴까지 — 닫힌 하위 메뉴(hidden)는 화면에 없으므로 보이는 것만 잰다
+  await page.getByRole("button", { name: "지방세 하위 메뉴" }).click();
+  const targets = await page.$$eval('header nav a, header nav button, nav[aria-label="바닥글 메뉴"] a', (els) =>
+    els.filter((e) => e.getClientRects().length > 0).map((e) => ({ t: e.textContent, ...e.getBoundingClientRect().toJSON() })),
+  );
+  assert.ok(targets.length >= 4 + 4 + 1 + 2 + 2, `메뉴 항목 ${targets.length}개 (분야 4 · 펼침 단추 4 · 하위 메뉴 1 · 유틸 2 · 바닥글 2)`);
   for (const t of targets) assert.ok(t.height >= 44 && t.width >= 44, `${t.t}: ${t.width}×${t.height}`);
+  assert.ok((await overflow()) <= 0, "하위 메뉴 펼침");
   await page.close();
   await setFeatures([]);
 });
@@ -456,7 +462,7 @@ test("공개 데이터를 읽지 못하면(접속값 없음·DB 꺼짐) 닫힌 �
       await page.goto(`${down.base}/`, { waitUntil: "networkidle" });
       assert.deepEqual((await sectionLayout(page)).map((s) => s.key), ["fields"]);
       assert.equal(await page.locator('[role="status"]').textContent(), "새 소식을 잠시 불러오지 못했습니다. 잠시 뒤 다시 확인해 주세요.");
-      assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] a', (as) => as.map((a) => a.getAttribute("href"))), ["/tax", "/realestate", "/finance", "/local"]);
+      assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] [data-part="section-link"]', (as) => as.map((a) => a.getAttribute("href"))), ["/tax", "/realestate", "/finance", "/local"]);
       assert.deepEqual(hits(await hrefs(page), GATED), []);
       assert.equal(await page.locator("h1").count(), 1, "페이지 제목 1개 (화면 읽기용)");
       await page.close();

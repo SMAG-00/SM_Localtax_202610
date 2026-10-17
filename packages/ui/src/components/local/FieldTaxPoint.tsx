@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { UiLink } from "../link";
 import { MONO, TEXT_LINK } from "./shared";
 import { filled, isIsoDate, type IsoDate } from "./dates";
 
@@ -35,9 +36,9 @@ export function FieldTaxPoint({ points, basisDate, links }: FieldTaxPointProps) 
       <p className={`mt-2 ${MONO} text-navy-600`}>기준일 {basisDate} · 세무 감수본</p>
       <p className="mt-1 flex flex-wrap gap-x-5">
         {links.map((l) => (
-          <a key={l.href} href={l.href} className={TEXT_LINK}>
+          <UiLink key={l.href} href={l.href} className={TEXT_LINK}>
             {l.label}
-          </a>
+          </UiLink>
         ))}
       </p>
     </section>

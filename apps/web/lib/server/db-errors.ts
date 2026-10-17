@@ -44,6 +44,18 @@ const CHECK_CONSTRAINTS: Record<string, [number, string]> = {
   partners_check: [422, "계약 종료일이 시작일보다 앞입니다 (ART-10)"],
   glossary_terms_plain_check: [422, "쉬운 풀이는 60자 이하여야 합니다 (UX-01)"],
   categories_slug_check: [422, "하위 분야 주소는 영문 소문자·숫자·'-'만 씁니다 (CAT-01)"],
+  // 상황 카드 (UX-05 · FAM-02 — 20261018000010_situations.sql)
+  situations_slug_check: [422, "상황 주소는 영문 소문자·숫자·'-'만 씁니다 (UX-05)"],
+  situations_section_check: [422, "상황 분야는 4대 분야(지방세·부동산·부동산개발금융·지자체뉴스) 중 하나입니다 (UX-05)"],
+  situations_checks_shape: [422, "먼저 확인할 것은 3개 이하이고 항목마다 제목이 있어야 합니다 — 공개하려면 정확히 3개 (UX-05)"],
+  situations_checklist_shape: [422, "일반적 체크리스트는 빈 항목 없는 목록과 고지 문장이 함께 있어야 합니다 (FAM-02)"],
+  situations_mistakes_shape: [422, "자주 틀리는 점은 3개까지, 빈 항목 없이 적습니다"],
+  situations_tool_links_shape: [422, "연결 칸의 기능 키가 비었습니다"],
+  situations_hub_slot_positive: [422, "허브 자리는 1번부터입니다 (UX-05)"],
+  situations_publish_ready: [
+    409,
+    "공개 상황은 먼저 확인할 것 정확히 3개와 세무 감수 기록이 있어야 합니다 — 감수 대상 문장을 고치면 감수 기록이 지워지므로, 먼저 내린 뒤 고치고 다시 감수를 받으세요 (UX-05)",
+  ],
 };
 
 const UNIQUE_CONSTRAINTS: Record<string, string> = {
@@ -54,6 +66,8 @@ const UNIQUE_CONSTRAINTS: Record<string, string> = {
   categories_section_slug_key: "이 분야에 같은 주소(slug)의 하위 분야가 이미 있습니다 (CAT-01)",
   categories_section_name_key: "이 분야에 같은 이름의 하위 분야가 이미 있습니다 (CAT-01)",
   glossary_terms_term_key: "이미 사전에 있는 용어입니다",
+  situations_slug_key: "같은 주소(slug)의 상황이 이미 있습니다 — 다른 주소를 적으세요",
+  situations_hub_slot_unique: "이 분야 허브의 그 자리에 이미 다른 상황 카드가 있습니다 (UX-05)",
 };
 
 const FK_CONSTRAINTS: Record<string, string> = {
@@ -61,6 +75,7 @@ const FK_CONSTRAINTS: Record<string, string> = {
   staff_roles_user_id_fkey: "그런 사용자 계정이 없습니다",
   article_corrections_before_revision: "정정 전 버전은 같은 기사의 수정 이력이어야 합니다",
   article_corrections_after_revision: "정정 뒤 버전은 같은 기사의 수정 이력이어야 합니다",
+  situations_reviewer_id_fkey: "감수자 인물 기록(people)이 없습니다 — 관리자에게 인물 등록을 요청하세요",
 };
 
 const CHECK_NAME = /violates check constraint "([^"]+)"/;

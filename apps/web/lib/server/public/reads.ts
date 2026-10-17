@@ -2,7 +2,8 @@ import "server-only";
 import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { toListItems, type ArticleListItem, type Lookups } from "./cards";
-import { PUBLIC_SETTING_KEYS, type SectionKey } from "./constants";
+import type { LocalTopic } from "@ltr/ui";
+import { LOCAL_TOPICS, PUBLIC_SETTING_KEYS, type SectionKey } from "./constants";
 import { pageOf, publicDb, rowsOf } from "./db";
 import {
   ARTICLE_LIST_COLUMNS,
@@ -42,6 +43,24 @@ export const readCategoryCounts = cache(async (): Promise<Map<number, number>> =
   return new Map(rows.map((r) => [num(r.category_id), num(r.article_count)]));
 });
 
+/**
+ * 지자체뉴스 편집 분야별 공개 목록 기사 수 (`/local` 허브 탭·하위 메뉴 — 기사 0건인 분야는 숨긴다, CAT-02).
+ * 분야마다 수만 센다(head 요청 — 행을 받지 않는다). 목록 기사 규칙은 readArticleList와 같다(유형 있음 · digest 제외)
+ */
+export const readTopicCounts = cache(async (): Promise<Map<LocalTopic, number>> => {
+  const db = publicDb();
+  const counts = await Promise.all(
+    LOCAL_TOPICS.map(async ({ topic }) => {
+      const { total } = await pageOf(
+        db.from("public_articles").select("id", { count: "exact", head: true }).eq("section", "local").eq("editorial_field", topic).not("content_type", "is", null).neq("content_type", "digest"),
+        "지자체뉴스 분야별 기사 수",
+      );
+      return [topic, total] as const;
+    }),
+  );
+  return new Map(counts);
+});
+
 export const readRegions = cache(async (): Promise<RegionRow[]> => rowsOf<RegionRow>(publicDb().from("regions").select(REGION_COLUMNS).order("code"), "행정구역"));
 
 /** 목록 카드가 참조하는 인물·제휴사·분야·지역 — 읽을 수 있는 행만 */
@@ -68,6 +87,8 @@ export interface ListFilter {
   /** 편집 승인된 보도기사만 (HOME-04 · 뉴스 전체) */
   reportedApproved?: boolean;
   categoryId?: number;
+  /** 지자체뉴스 편집 분야 가운데 하나 (editorial_field) */
+  editorialFields?: readonly string[];
   authorId?: number;
   amendmentId?: number;
   subtype?: string;
@@ -91,6 +112,7 @@ export async function readArticleList(db: Db, f: ListFilter): Promise<{ items: A
   if (f.contentType) q = q.eq("content_type", f.contentType);
   if (f.reportedApproved) q = q.eq("reported_approved", true);
   if (f.categoryId !== undefined) q = q.eq("category_id", f.categoryId);
+  if (f.editorialFields?.length) q = q.in("editorial_field", [...f.editorialFields]);
   if (f.authorId !== undefined) q = q.eq("author_id", f.authorId);
   if (f.amendmentId !== undefined) q = q.eq("amendment_id", f.amendmentId);
   if (f.subtype) q = q.eq("subtype", f.subtype);

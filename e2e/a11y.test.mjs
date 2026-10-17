@@ -1,5 +1,6 @@
 // W1-c 완료 증거 — 견본 페이지 접근성 95점 이상 (Lighthouse 접근성 점수, PRD-01A 9장·10.1)
 // W2-b 2단계 — 공개 홈(/)을 내용이 찬 모습(최신 자체 취재·개정 트래커 하이라이트·해설 스토리·검색 폼과 추천 검색어)으로 잰다 (PRD-01A 8.1 주요 화면 · PRD_최종 §9.5 접근성 95)
+// W2-b 3단계 — 지방세 허브(/tax — 탭·최신 목록·상황 카드·용어)와 상황 페이지(먼저 확인할 것 3·자주 틀리는 점·기사·다음 행동)도 같은 기준으로 잰다
 // Playwright Chromium을 원격 디버깅으로 띄우고 Lighthouse를 붙인다. 측정이 문제를 잡는지 역검사 견본(일부러 망가뜨린 페이지)도 잰다.
 // 로컬에서는 standalone 빌드를 로컬 Supabase에 붙이고 시험 자료를 DB에 넣는다(끝나면 지우고 설정은 되돌린다 — 남는 행 0).
 // E2E_BASE_URL(배포된 시험 주소)이면 자료를 넣지 않고 그 주소의 지금 모습을 잰다.
@@ -21,6 +22,7 @@ let fixtureBase;
 let browser;
 let port;
 let staff;
+let situationPath = null;
 
 /** 홈의 모든 섹션이 보이게 — 편집 승인된 보도 2 · 해설 스토리 3(형식 배지 포함) · 확정 전 트래커 1(지정) · 검색 폼과 추천 검색어 */
 async function seedHome() {
@@ -50,6 +52,26 @@ async function seedHome() {
   );
   const cur = await db.query("insert into public.home_curations (kind, amendment_id, starts_on, sort, created_by) values ('tracker', $1, current_date - 1, 10, 'user:e2e') returning id", [am]);
   staff.trackRow("home_curations", cur.rows[0].id);
+  // 지방세 허브·상황 페이지 — 해석 하위 분야의 가이드 기사(홈 해설 스토리에 섞이지 않게 해설이 아닌 유형) · 용어 · 허브 1번 자리의 공개(감수된) 상황
+  const interpretations = (await db.query("select id from public.categories where section = 'tax' and slug = 'interpretations'")).rows[0].id;
+  const { rows: guide } = await db.query(
+    `insert into public.articles (slug, title, summary, section, content_type, status, author_id, category_id, first_published_at)
+     values ($1, '접근성 시험 자동차세 환급 안내', '차를 판 뒤 돌려받는 자동차세를 쉬운 말로 정리했습니다.', 'tax', 'guide', 'published', $2, $3, now() - interval '20 hours') returning id`,
+    [`e2e-a11y-guide-${staff.run}`, reporter.personId, interpretations],
+  );
+  staff.trackArticle(guide[0].id);
+  const termRow = (await db.query("insert into public.glossary_terms (term, plain, section) values ($1, '세금을 매기는 기준 금액', '{tax}') returning id", [`접근성 과세표준 ${staff.run}`])).rows[0];
+  staff.trackRow("glossary_terms", termRow.id);
+  const checks = JSON.stringify([{ title: "자동차세를 1년치 미리 냈는지", when: "판 날", note: "납부 내역을 찾아 둡니다" }, { title: "등록 말소일" }, { title: "환급 받을 계좌" }]);
+  const situation = (
+    await db.query(
+      `insert into public.situations (slug, section, title, subtitle, pictogram, checks, mistakes, article_ids, glossary_ids, hub_slot, visible, reviewer_id, reviewed_at, updated_by)
+       values ($1, 'tax', '차를 팔았어요·폐차했어요', '돌려받을 자동차세가 있는지 확인합니다', 'car-sold', $2, '{"판 날이 아니라 말소일 기준입니다"}', $3, $4, 1, true, $5, now(), 'user:e2e') returning id, slug`,
+      [`e2e-a11y-car-sold-${staff.run}`, checks, [guide[0].id], [termRow.id], editor.personId],
+    )
+  ).rows[0];
+  staff.trackRow("situations", situation.id);
+  situationPath = `/situations/${situation.slug}`;
   await db.query("update public.settings set value = jsonb_set(value, '{search}', 'true') where key = 'feature_flags'");
   await db.query(`update public.settings set value = '["취득세", "개편안", "책임준공"]'::jsonb where key = 'home_search_chips'`);
 }
@@ -121,5 +143,30 @@ test("공개 홈(/) 접근성 95점 이상 — 내용이 찬 모습(최신 자�
     await page.close();
   }
   const r = await accessibility(`${base}/`);
+  assert.ok(r.score >= MIN, `점수 ${r.score} — 실패 항목: ${r.failing.join(", ")}`);
+});
+
+test("지방세 허브(/tax) 접근성 95점 이상 — 탭·최신 목록·상황 카드·관련 용어가 찬 모습", async () => {
+  if (!process.env.E2E_BASE_URL) {
+    const page = await browser.newPage();
+    await page.goto(`${base}/tax`, { waitUntil: "load" });
+    const parts = await page.$$eval("[data-hub-part]", (els) => els.map((e) => e.getAttribute("data-hub-part")));
+    assert.deepEqual(parts, ["head", "latest", "situations", "terms"]);
+    assert.ok((await page.locator('[data-ui="tab-nav"] a').count()) >= 2);
+    await page.close();
+  }
+  const r = await accessibility(`${base}/tax`);
+  assert.ok(r.score >= MIN, `점수 ${r.score} — 실패 항목: ${r.failing.join(", ")}`);
+});
+
+test("상황 페이지 접근성 95점 이상 — 먼저 확인할 것 3·자주 틀리는 점·기사·용어·다음 행동", async (t) => {
+  if (process.env.E2E_BASE_URL) return t.skip("배포 주소에는 시험용 상황이 없다 — 로컬 시험 자료로만 잰다");
+  const page = await browser.newPage();
+  await page.goto(`${base}${situationPath}`, { waitUntil: "load" });
+  assert.equal(await page.locator('[data-situation-part="checks"] [data-ui="step-timeline"] > li').count(), 3);
+  assert.equal(await page.locator('[data-ui="status-box"]').count(), 1);
+  assert.equal(await page.locator('[data-ui="next-action-band"]').count(), 1);
+  await page.close();
+  const r = await accessibility(`${base}${situationPath}`);
   assert.ok(r.score >= MIN, `점수 ${r.score} — 실패 항목: ${r.failing.join(", ")}`);
 });

@@ -30,6 +30,14 @@ const RULES: readonly MenuRule[] = [
   },
   { id: "placement", label: "기사 배치", href: "/admin/placement", when: (a) => a.has("article.sort"), paths: ["/admin/placement"] },
   { id: "home", label: "홈 배치", href: "/admin/home", when: (a) => a.has("article.home"), paths: ["/admin/home"] },
+  {
+    id: "situations",
+    label: "상황 카드",
+    href: "/admin/situations",
+    // 쓰는 사람(편집국·관리자)·공개하는 사람(편집 책임자)·감수 서명하는 사람(세무 감수위원) — 편집국 외 역할에게는 0
+    when: (a) => a.has("situation.edit") || a.has("situation.publish") || a.has("review.tax_review"),
+    paths: ["/admin/situations"],
+  },
   { id: "categories", label: "분야", href: "/admin/categories", when: (a) => a.has("category.edit"), paths: ["/admin/categories"] },
   { id: "dictionaries", label: "사전", href: "/admin/dictionaries", when: (a) => a.has("dictionary.edit"), paths: ["/admin/dictionaries"] },
   {

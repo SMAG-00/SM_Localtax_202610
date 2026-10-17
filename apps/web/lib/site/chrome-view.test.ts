@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { buildChrome } from "@/lib/server/public/chrome-logic";
 import { FEATURE_KEYS } from "@/lib/server/public/constants";
 import { CLOSED_FEATURES } from "@/lib/server/public/settings";
-import { FOOTER_DISCLAIMER, footerLinks, headerUtilityKeys, sectionOfPath } from "./chrome-view";
+import { FOOTER_DISCLAIMER, footerLinks, headerSubmenus, headerUtilityKeys, sectionOfPath } from "./chrome-view";
 
 const allOpen = Object.fromEntries(FEATURE_KEYS.map((k) => [k, true])) as unknown as typeof CLOSED_FEATURES;
 
@@ -56,5 +56,30 @@ describe("지금 보는 분야 (aria-current)", () => {
 
   test.each(["/", "/news/tax-update", "/taxes", "/localnews", "/situations/car-sold", "", null, undefined])("%s → 분야 없음", (path) => {
     expect(sectionOfPath(path)).toBeUndefined();
+  });
+});
+
+describe("헤더 하위 메뉴 (HOME-02 — 분야 데이터에서, 공통 뉴스 전체)", () => {
+  test("분야마다 화면 틀의 하위 메뉴 그대로 — 기사 있는 하위 분야(분야 안 순서) + 뉴스 전체, 지자체뉴스는 기사 있는 편집 분야", () => {
+    const categories = [
+      { id: 1, section: "tax", slug: "interpretations", name: "해석", intro: null, sort: 20, needs_disclaimer: false, needs_tax_lens: false },
+      { id: 2, section: "tax", slug: "columns", name: "칼럼", intro: null, sort: 30, needs_disclaimer: false, needs_tax_lens: false },
+    ];
+    const chrome = buildChrome(categories, new Map([[1, 2]]), CLOSED_FEATURES, new Map([["local_finance", 1]]));
+    const sub = headerSubmenus(chrome.sections);
+    expect(Object.keys(sub)).toEqual(["tax", "realestate", "finance", "local"]);
+    expect(sub.tax?.map((l) => [l.label, l.href])).toEqual([
+      ["해석", "/tax/interpretations"],
+      ["뉴스 전체", "/news?section=tax"],
+    ]);
+    expect(sub.realestate?.map((l) => l.label)).toEqual(["뉴스 전체"]);
+    expect(sub.local?.map((l) => [l.label, l.href])).toEqual([
+      ["지방재정", "/local?topic=local_finance"],
+      ["뉴스 전체", "/news?section=local"],
+    ]);
+  });
+
+  test("모르는 분야 키는 버린다", () => {
+    expect(headerSubmenus([{ key: "tourism", children: [{ key: "x", label: "축제", href: "/local/festivals" }] }])).toEqual({});
   });
 });

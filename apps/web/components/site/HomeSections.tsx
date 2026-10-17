@@ -1,30 +1,11 @@
 import type { ReactNode } from "react";
-import { ArticleCard, ArticleTypeBadge, Callout, Chip, Eyebrow, FieldCards, Hero, HomeSearch, ProgressStageBadge, UiLink, brand, cx } from "@ltr/ui";
-import type { AmendmentsSection, ArticleListItem, HomeData, HomeSection, StoryCard, TrackerCard } from "@/lib/server/public";
-import { HERO_EYEBROW, HERO_HIGHLIGHT, SEARCH_LABEL, SEARCH_PLACEHOLDER, SECTION_HEADINGS, formatBadge, sectionTones, typeBadgeKind, type SectionTone } from "@/lib/site/home-view";
+import { Callout, Chip, Eyebrow, FieldCards, Hero, HomeSearch, ProgressStageBadge, UiLink, brand, cx } from "@ltr/ui";
+import type { AmendmentsSection, HomeData, HomeSection, StoryCard, TrackerCard } from "@/lib/server/public";
+import { HERO_EYEBROW, HERO_HIGHLIGHT, SEARCH_LABEL, SEARCH_PLACEHOLDER, SECTION_HEADINGS, sectionTones, type SectionTone } from "@/lib/site/home-view";
+import { ArticleItem } from "./ArticleItem";
 
 // 홈 섹션 (HOME-01 · HOME-03 · HOME-04 · PRD-01A 3장 홈 골격) — 홈 데이터(getHomeData)가 정한 순서·섹션만 그린다 (내용 0건 섹션은 데이터에 없다).
 // 섹션마다 data-home-section=<키> — E2E가 DOM 순서·화면 위치를 PRD_최종 §4.1 순서와 대조한다.
-
-type CardItem = Pick<ArticleListItem, "href" | "title" | "summary" | "section" | "subsection" | "publishedOn" | "regionLabel" | "authorName" | "contentType" | "format">;
-
-function ArticleItem({ item }: { item: CardItem }) {
-  const type = typeBadgeKind(item.contentType);
-  return (
-    <ArticleCard
-      href={item.href}
-      title={item.title}
-      summary={item.summary}
-      section={item.section}
-      subsection={item.subsection ?? undefined}
-      publishedAt={item.publishedOn}
-      region={item.regionLabel ?? undefined}
-      byline={item.authorName ?? undefined}
-      typeBadge={type ? <ArticleTypeBadge type={type} /> : undefined}
-      format={formatBadge(item.format)}
-    />
-  );
-}
 
 function CardGrid({ part, children }: { part: string; children: ReactNode }) {
   return (

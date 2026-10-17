@@ -45,6 +45,8 @@ export interface SituationPage {
   nextActions: NextAction[];
   externalCalculator: null;
   reviewedAt: string | null;
+  /** 세무 감수일 (한국 날짜) — 감수자 이름은 공개 칸이 아직 없다 (설계 9장 #13) */
+  reviewedOn: string | null;
 }
 
 const REGION_ARTICLES_LIMIT = 10;
@@ -84,7 +86,8 @@ export async function getSituationPage(slug: string, opts: { region?: string | n
     }
   }
 
-  const targets: ActionTargets = {};
+  // 다음 행동 — [같은 분야 더 보기]는 그 분야 허브로, 나머지는 연결 칸(tool_links)의 기능이 열렸을 때만 (UX-05 · ART-06 순서 설정)
+  const targets: ActionTargets = { same_section: { href: SECTION_INFO[section].href } };
   for (const key of toolActionKeys(readToolFeatures(row.tool_links))) {
     if (key === "expert_finder") targets.expert_finder = { href: `/experts?field=${section}` };
     if (key === "self_calculator") targets.self_calculator = { href: "/calc" };
@@ -111,5 +114,6 @@ export async function getSituationPage(slug: string, opts: { region?: string | n
     nextActions: selectNextActions(settings.nextActionPriority, targets, settings.features),
     externalCalculator: null,
     reviewedAt: row.reviewed_at,
+    reviewedOn: row.reviewed_at ? isoToKstDate(row.reviewed_at) : null,
   };
 }

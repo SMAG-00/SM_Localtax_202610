@@ -1,7 +1,9 @@
 // 공개 화면 틀 — 헤더 상단 메뉴·하위 메뉴·유틸 메뉴·정책 링크 (HOME-02 · HELP-05) — 순수 함수 (시험 chrome-logic.test.ts)
 //  · 상단 메뉴는 4대 분야 정확히 4개, 이 순서. 하위 메뉴는 분야 데이터(CAT-01)에서 — 공개 분야 중 목록 기사가 1건 이상인 것 + 공통 `뉴스 전체`
+//    지자체뉴스는 하위 경로(/local/[sido] · /local/events)가 01B 몫이라 하위 분야 대신 기사 있는 편집 분야(/local?topic=…)를 둔다 (설계 9장)
 //  · 유틸 메뉴·정책 링크는 기능 키가 켜진 것만 (꺼지면 링크 요소 0 — 빈 링크 0)
-import { POLICY_LINKS, SECTION_INFO, SECTION_KEYS, UTILITY_LINKS, categoryHref, isBlockedPath, type Features, type SectionKey } from "./constants";
+import type { LocalTopic } from "@ltr/ui";
+import { LOCAL_TOPICS, POLICY_LINKS, SECTION_INFO, SECTION_KEYS, UTILITY_LINKS, categoryHref, isBlockedPath, localTopicHref, type Features, type SectionKey } from "./constants";
 import type { PublicCategoryRow } from "./rows";
 import { CLOSED_FEATURES } from "./settings";
 
@@ -29,13 +31,31 @@ export function listedCategories(categories: readonly PublicCategoryRow[], count
     .sort((a, b) => a.sort - b.sort || Number(a.id) - Number(b.id));
 }
 
-export function buildChrome(categories: readonly PublicCategoryRow[], counts: ReadonlyMap<number, number>, features: Features): SiteChrome {
+/**
+ * 분야의 하위 메뉴 항목(뉴스 전체 빼고) — 허브 탭(CAT-02)과 헤더 하위 메뉴(HOME-02)가 같은 목록을 쓴다. 기사 0건인 것은 없다.
+ * key = "<분야>:<하위 분야 slug 또는 편집 분야 값>"
+ */
+export function subsectionLinks(
+  section: SectionKey,
+  categories: readonly PublicCategoryRow[],
+  counts: ReadonlyMap<number, number>,
+  topicCounts: ReadonlyMap<LocalTopic, number>,
+): NavLink[] {
+  const links =
+    section === "local"
+      ? LOCAL_TOPICS.filter((t) => (topicCounts.get(t.topic) ?? 0) > 0).map((t) => ({ key: `local:${t.topic}`, label: t.label, href: localTopicHref(t.topic) }))
+      : listedCategories(categories, counts, section).map((c) => ({ key: `${section}:${c.slug}`, label: c.name, href: categoryHref(section, c.slug) }));
+  return links.filter((l) => !isBlockedPath(l.href));
+}
+
+export function buildChrome(
+  categories: readonly PublicCategoryRow[],
+  counts: ReadonlyMap<number, number>,
+  features: Features,
+  topicCounts: ReadonlyMap<LocalTopic, number> = new Map(),
+): SiteChrome {
   const sections = SECTION_KEYS.map((key): SectionMenu => {
-    // 지자체뉴스의 하위 경로(/local/[sido] · /local/events)는 01B가 정한다 — 분야 하위 메뉴는 3단계에서 [확인 필요] (설계 7장)
-    const children: NavLink[] =
-      key === "local"
-        ? []
-        : listedCategories(categories, counts, key).map((c) => ({ key: `${key}:${c.slug}`, label: c.name, href: categoryHref(key, c.slug) }));
+    const children: NavLink[] = subsectionLinks(key, categories, counts, topicCounts);
     children.push({ key: `${key}:news`, label: "뉴스 전체", href: `/news?section=${key}` });
     return { key, label: SECTION_INFO[key].name, href: SECTION_INFO[key].href, children: children.filter((c) => !isBlockedPath(c.href)) };
   });

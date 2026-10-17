@@ -237,18 +237,36 @@ describe("분야 허브 머리 (RP-02)", () => {
     expect(screen.getByRole("link", { name: "프로젝트" }).getAttribute("aria-current")).toBe("page");
   });
 
-  it("지방세 외 분야 허브는 탭 아래에 분야 지방세 포인트 블록을 둔다", () => {
+  it("골격 순서 = 머리(아이브로·제목·소개) → 분야 지방세 포인트 → 하위 분야 탭 (CAT-02 '머리 → 지방세 포인트 → 탭')", () => {
     const { container } = render(<FieldHubHead field="realestate" eyebrow="REAL ESTATE" title="부동산" intro="소개" tabs={tabs} taxPoint={taxPoint} />);
-    const nav = container.querySelector('[data-ui="tab-nav"]')!;
-    const point = container.querySelector('[data-ui="field-tax-point"]')!;
-    expect(point).toBeTruthy();
-    expect(nav.compareDocumentPosition(point) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const order = [...container.querySelectorAll('[data-ui="eyebrow"], h1, p, [data-ui="field-tax-point"], [data-ui="tab-nav"]')]
+      .filter((el) => !el.closest('[data-ui="field-tax-point"]') || el.getAttribute("data-ui") === "field-tax-point")
+      .map((el) => el.getAttribute("data-ui") ?? el.tagName.toLowerCase());
+    expect(order).toEqual(["eyebrow", "h1", "p", "field-tax-point", "tab-nav"]);
   });
 
-  it("지방세 허브에는 분야 지방세 포인트 블록이 없다", () => {
-    const tax = { field: "tax", eyebrow: "LOCAL TAX", title: "지방세", intro: "소개", taxPoint } as unknown as Parameters<typeof FieldHubHead>[0];
-    const { container } = render(<FieldHubHead {...tax} />);
-    expect(container.querySelector('[data-ui="field-tax-point"]')).toBeNull();
+  it("지방세 허브·뉴스 전체에는 분야 지방세 포인트 블록이 없다", () => {
+    for (const field of ["tax", "news"]) {
+      const props = { field, eyebrow: "LOCAL TAX", title: "지방세", intro: "소개", taxPoint } as unknown as Parameters<typeof FieldHubHead>[0];
+      const { container, unmount } = render(<FieldHubHead {...props} />);
+      expect(container.querySelector('[data-ui="field-tax-point"]')).toBeNull();
+      expect(container.firstElementChild?.getAttribute("data-field")).toBe(field);
+      unmount();
+    }
+  });
+
+  it("한 줄 소개가 없거나 빈칸이면 소개 문단째 없다 — 빈 문단 0", () => {
+    for (const intro of [undefined, null, "  "]) {
+      const { container, unmount } = render(<FieldHubHead field="finance" eyebrow="DEVELOPMENT FINANCE" title="부동산개발금융" intro={intro} tabs={tabs} />);
+      expect(container.querySelectorAll("header > p:not([data-ui])")).toHaveLength(0);
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("부동산개발금융");
+      unmount();
+    }
+  });
+
+  it("탭이 0개면 탭 요소 0", () => {
+    const { container } = render(<FieldHubHead field="local" eyebrow="LOCAL" title="지자체뉴스" tabs={{ items: [], current: "all" }} />);
+    expect(container.querySelector('[data-ui="tab-nav"]')).toBeNull();
   });
 });
 

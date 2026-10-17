@@ -1,5 +1,5 @@
 // 공개 사이트 공용 값 — docs/dev/W2-b_설계.md 2.3 표와 같다 (시험 constants.test.ts가 설계 문서를 읽어 대조한다). 순수 모듈.
-import { ARTICLE_TYPE_BADGE_LABELS, HEADER_SECTIONS, HEADER_UTILITIES } from "@ltr/ui";
+import { ARTICLE_TYPE_BADGE_LABELS, HEADER_SECTIONS, HEADER_UTILITIES, TOPIC_FILTER_ITEMS, type LocalTopic } from "@ltr/ui";
 
 /** 4대 분야 `section` (W2-a 설계 §2) — 순서는 HOME-01·HOME-02 고정 */
 export const SECTION_KEYS = ["tax", "realestate", "finance", "local"] as const;
@@ -12,6 +12,20 @@ const EYEBROWS: Record<SectionKey, string> = { tax: "LOCAL TAX", realestate: "RE
 export const SECTION_INFO: Readonly<Record<SectionKey, { name: string; href: string; eyebrow: string }>> = Object.fromEntries(
   HEADER_SECTIONS.map((s) => [s.key, { name: s.label, href: s.href, eyebrow: EYEBROWS[s.key] }]),
 ) as Record<SectionKey, { name: string; href: string; eyebrow: string }>;
+
+/**
+ * 지자체뉴스 분야(편집 분야 editorial_field — W2-a articles 값과 같다)와 분야 필터 글자 — 순서는 분야 필터 컴포넌트(@ltr/ui TOPIC_FILTER_ITEMS, PRD-00 8.6)
+ * `/local` 허브의 탭·하위 메뉴는 이 값으로 거른다 (`/local?topic=<값>`) — 지자체뉴스의 하위 경로는 시·도 주소(`/local/[sido]`, 01B)와 겹치므로 쓰지 않는다 (설계 9장)
+ */
+export const LOCAL_TOPICS: ReadonlyArray<{ topic: LocalTopic; label: string }> = TOPIC_FILTER_ITEMS.flatMap((i) => (i.topic === null ? [] : [{ topic: i.topic, label: i.label }]));
+export const isLocalTopic = (v: unknown): v is LocalTopic => typeof v === "string" && LOCAL_TOPICS.some((t) => t.topic === v);
+export const localTopicHref = (topic: LocalTopic) => `${SECTION_INFO.local.href}?topic=${topic}`;
+
+/** 지자체 허브 블록(LG-08) ② 지방세·지방재정 ③ 부동산·개발 에 담는 편집 분야 — 도시정책은 부동산·개발 블록 [확인 필요 — 설계 9장] */
+export const LOCAL_BLOCK_TOPICS = { localTax: ["local_tax", "local_finance"], realEstate: ["realestate", "urban_policy"] } as const satisfies Record<string, readonly LocalTopic[]>;
+
+/** 뉴스 전체(/news)의 허브 탭 글자 (PRD-01A 3장 화면 표 — 탭 지방세·부동산·개발금융·지자체) */
+export const NEWS_TAB_LABELS: Readonly<Record<SectionKey, string>> = { tax: "지방세", realestate: "부동산", finance: "개발금융", local: "지자체" };
 
 /** anon이 읽는 설정 키 (DB 정책 settings_public_read와 같은 목록) */
 export const PUBLIC_SETTING_KEYS = [
@@ -98,6 +112,8 @@ export const LIMITS = {
   /** CAT-02 허브 최신 목록 · 관련 용어 칩 */
   hubLatest: 10,
   hubTerms: 8,
+  /** 지자체 허브 블록 한 칸의 기사 카드 (PRD-00 8.10 — 2~4장) */
+  localBlock: 4,
   /** 목록 한 쪽 */
   pageSize: 20,
 } as const;

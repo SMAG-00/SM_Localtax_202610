@@ -3,6 +3,24 @@ import { describe, expect, test } from "vitest";
 import { mapDbError } from "./db-errors";
 
 describe("DB 오류 변환", () => {
+  test("상황 카드 제약 (UX-05) — 공개 조건은 409, 모양은 422, 주소·허브 자리 중복은 409, 허브 상한 트리거 문장은 그대로", () => {
+    expect(mapDbError({ code: "23514", message: 'new row for relation "situations" violates check constraint "situations_publish_ready"' })).toMatchObject({
+      status: 409,
+      message: expect.stringContaining("먼저 내린 뒤 고치고 다시 감수"),
+      constraint: "situations_publish_ready",
+    });
+    expect(mapDbError({ code: "23514", message: 'new row for relation "situations" violates check constraint "situations_checks_shape"' })).toMatchObject({
+      status: 422,
+      message: expect.stringContaining("3개 이하"),
+    });
+    expect(mapDbError({ code: "23505", message: 'duplicate key value violates unique constraint "situations_slug_key"' })).toMatchObject({
+      status: 409,
+      message: expect.stringContaining("같은 주소(slug)의 상황"),
+    });
+    expect(mapDbError({ code: "23505", message: 'duplicate key value violates unique constraint "situations_hub_slot_unique"' })).toMatchObject({ status: 409, constraint: "situations_hub_slot_unique" });
+    const limit = "허브 상황 카드는 분야마다 4장까지입니다 — 자리 5는 지정할 수 없습니다 (UX-05)";
+    expect(mapDbError({ code: "23514", message: limit })).toEqual({ status: 409, message: limit });
+  });
   test("트리거가 낸 한국어 규칙 문장은 409로 그대로", () => {
     const message = "편집 승인 역할(editor)과 편집국 외 역할은 한 사람에게 함께 줄 수 없습니다 (ACC-04 — 이미 ad_ops, 새로 editor)";
     expect(mapDbError({ code: "23514", message })).toEqual({ status: 409, message });

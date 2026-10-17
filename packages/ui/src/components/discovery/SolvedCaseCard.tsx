@@ -1,4 +1,5 @@
 import { Chip, cx } from "../base";
+import { UiLink } from "../link";
 
 /** 결론 배지 — 결정례 카드와 같은 의미 색 (인용 emerald / 기각 rose / 각하 navy, PRD-00 8.6). 색에 더해 글자로 뜻을 전한다 (8.9) */
 const CONCLUSION = {
@@ -61,14 +62,14 @@ export function SolvedCaseCard({ title, href, situation, issue, result, lesson }
             {result.basis.map((b, i) => (
               <li key={i}>
                 {b.href ? (
-                  <a
+                  <UiLink
                     href={b.href}
                     className="relative z-10 inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500"
                     {...(b.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   >
                     <Chip className="font-mono underline-offset-4 hover:underline">{b.label}</Chip>
                     {b.external && <span className="sr-only"> (새 창)</span>}
-                  </a>
+                  </UiLink>
                 ) : (
                   <Chip className="font-mono">{b.label}</Chip>
                 )}
@@ -86,9 +87,9 @@ export function SolvedCaseCard({ title, href, situation, issue, result, lesson }
       {title && (
         <h3 className="text-[19px] leading-snug font-black text-navy-900">
           {href ? (
-            <a href={href} className="hover:text-hermes-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
+            <UiLink href={href} className="hover:text-hermes-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
               {title}
-            </a>
+            </UiLink>
           ) : (
             title
           )}

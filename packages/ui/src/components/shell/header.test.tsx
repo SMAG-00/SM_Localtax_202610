@@ -177,3 +177,109 @@ describe("헤더 — 360px 메뉴 열기 버튼 (공개·닫기)", () => {
     expect(document.activeElement).toBe(button);
   });
 });
+
+describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 데이터에서, 공통 뉴스 전체')", () => {
+  const SUB = {
+    tax: [
+      { key: "tax:interpretations", label: "해석", href: "/tax/interpretations" },
+      { key: "tax:news", label: "뉴스 전체", href: "/news?section=tax" },
+    ],
+    local: [{ key: "local:news", label: "뉴스 전체", href: "/news?section=local" }],
+  } as const;
+  const topLinks = () => [...document.querySelectorAll('nav[aria-label="분야 메뉴"] [data-part="section-link"]')].map((a) => a.textContent);
+
+  it("하위 메뉴를 줘도 상단 메뉴는 정확히 4개 — 펼침 단추는 하위 메뉴가 있는 분야에만", () => {
+    render(<Header submenus={SUB} />);
+    expect(topLinks()).toEqual(["지방세", "부동산", "부동산개발금융", "지자체뉴스"]);
+    expect(screen.getAllByRole("button", { name: /하위 메뉴$/ }).map((b) => b.textContent)).toEqual(["지방세 하위 메뉴", "지자체뉴스 하위 메뉴"]);
+    // 닫힌 하위 메뉴는 hidden — 화면 읽기·탭 이동에도 없다
+    expect(screen.queryByRole("link", { name: "해석" })).toBeNull();
+    expect(document.querySelectorAll('[data-part="sub-link"]')).toHaveLength(3);
+  });
+
+  it("펼침 단추로 열고 닫는다 — 링크는 그대로 허브로 가고, 한 번에 하나만 열린다", async () => {
+    render(<Header submenus={SUB} />);
+    const tax = screen.getByRole("button", { name: "지방세 하위 메뉴" });
+    const local = screen.getByRole("button", { name: "지자체뉴스 하위 메뉴" });
+    expect(tax.getAttribute("aria-expanded")).toBe("false");
+    await userEvent.click(tax);
+    expect(tax.getAttribute("aria-expanded")).toBe("true");
+    const list = document.getElementById(tax.getAttribute("aria-controls") ?? "")!;
+    expect(pairs(within(list).getAllByRole("link"))).toEqual([
+      ["해석", "/tax/interpretations"],
+      ["뉴스 전체", "/news?section=tax"],
+    ]);
+    expect(screen.getByRole("link", { name: "지방세" }).getAttribute("href")).toBe("/tax");
+    await userEvent.click(local);
+    expect(tax.getAttribute("aria-expanded")).toBe("false");
+    expect(local.getAttribute("aria-expanded")).toBe("true");
+    await userEvent.click(local);
+    expect(local.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("Esc는 하위 메뉴를 먼저 닫고 포커스를 그 펼침 단추로 돌린다 — 펼친 모바일 메뉴는 그대로", async () => {
+    render(<Header submenus={SUB} />);
+    const menu = screen.getByRole("button", { name: "메뉴" });
+    await userEvent.click(menu);
+    const tax = screen.getByRole("button", { name: "지방세 하위 메뉴" });
+    await userEvent.click(tax);
+    screen.getByRole("link", { name: "해석" }).focus();
+    await userEvent.keyboard("{Escape}");
+    expect(tax.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(tax);
+    expect(menu.getAttribute("aria-expanded")).toBe("true");
+    await userEvent.keyboard("{Escape}");
+    expect(menu.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(menu);
+  });
+
+  it("하위 메뉴 항목을 누르면 하위 메뉴와 펼친 메뉴가 함께 닫힌다 (화면 전환)", async () => {
+    const NoReload = (props: UiLinkProps) => (
+      <a
+        {...props}
+        onClick={(e) => {
+          e.preventDefault();
+          props.onClick?.(e);
+        }}
+      />
+    );
+    render(
+      <LinkProvider component={NoReload}>
+        <Header submenus={SUB} />
+      </LinkProvider>,
+    );
+    const menu = screen.getByRole("button", { name: "메뉴" });
+    await userEvent.click(menu);
+    const tax = screen.getByRole("button", { name: "지방세 하위 메뉴" });
+    await userEvent.click(tax);
+    await userEvent.click(screen.getByRole("link", { name: "해석" }));
+    expect(tax.getAttribute("aria-expanded")).toBe("false");
+    expect(menu.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("메뉴 바깥을 누르거나 키보드 포커스가 그 분야 밖으로 나가면 하위 메뉴가 닫힌다", async () => {
+    render(
+      <>
+        <Header submenus={SUB} />
+        <button type="button">바깥</button>
+      </>,
+    );
+    const tax = screen.getByRole("button", { name: "지방세 하위 메뉴" });
+    await userEvent.click(tax);
+    await userEvent.click(screen.getByRole("button", { name: "바깥" }));
+    expect(tax.getAttribute("aria-expanded")).toBe("false");
+    await userEvent.click(tax);
+    screen.getByRole("link", { name: "뉴스 전체" }).focus();
+    await userEvent.tab();
+    expect(document.activeElement?.textContent).toBe("부동산");
+    expect(tax.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("펼침 단추·하위 메뉴 항목의 터치 영역 44px(min-h-11) 이상", async () => {
+    render(<Header submenus={SUB} />);
+    const tax = screen.getByRole("button", { name: "지방세 하위 메뉴" });
+    expect(tokens(tax)).toEqual(expect.arrayContaining(["min-h-11", "min-w-11"]));
+    await userEvent.click(tax);
+    for (const a of within(document.getElementById(tax.getAttribute("aria-controls")!)!).getAllByRole("link")) expect(tokens(a)).toContain("min-h-11");
+  });
+});

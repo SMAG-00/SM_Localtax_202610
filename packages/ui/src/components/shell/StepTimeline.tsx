@@ -1,4 +1,5 @@
 import { Callout, Chip, cx } from "../base";
+import { UiLink } from "../link";
 
 export type StepTimelineItem = {
   /** 단계 이름 (예: 취득) */
@@ -66,9 +67,9 @@ export function StepTimeline({ steps, label }: { steps: readonly StepTimelineIte
           <li key={`${i}-${step.title}`} className="relative">
             {i < steps.length - 1 && <span data-part="connector" aria-hidden="true" className="absolute top-16 left-[27px] h-[calc(100%+0.25rem)] w-px bg-navy-200" />}
             {step.href ? (
-              <a href={step.href} className={cx(CARD, LINKED)}>
+              <UiLink href={step.href} className={cx(CARD, LINKED)}>
                 {body}
-              </a>
+              </UiLink>
             ) : (
               <div className={CARD}>{body}</div>
             )}
