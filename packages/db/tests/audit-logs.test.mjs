@@ -7,7 +7,7 @@ import { connect, dbUrl, isLocal } from "../scripts/db.mjs";
 let client;
 
 before(async () => {
-  assert.ok(isLocal(dbUrl()), "감사 로그 시험은 로컬 DB에서만 돌린다 (DB_URL이 로컬이 아님)");
+  assert.ok(isLocal(dbUrl()), "감사 로그 시험은 로컬 DB에서만 돌린다 (SUPABASE_DB_URL이 로컬이 아님)");
   client = await connect();
 });
 after(async () => client?.end());

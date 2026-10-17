@@ -1,0 +1,27 @@
+{
+  "$comment": "환경변수 범위 목록 (ENV-05, PRD-01A). public=브라우저 공개 가능(RLS 보호) · server=서버 · server-secret=서버 전용 비밀 · ci=CI 전용(GitHub Actions Secrets — Vercel·.env.example 값·저장소 금지). 새 변수는 여기와 .env.example에 같이 더한다. platform은 실행 환경이 주는 변수라 .env.example에 두지 않는다.",
+  "vars": {
+    "NEXT_PUBLIC_SITE_URL": "public",
+    "NEXT_PUBLIC_SUPABASE_URL": "public",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "public",
+    "SITE_INDEXING": "server",
+    "ADMIN_EMAILS": "server",
+    "MAIL_FROM": "server",
+    "SENTRY_DSN": "server",
+    "ANTHROPIC_MODEL_ANSWER": "server",
+    "ANTHROPIC_MODEL_ROUTER": "server",
+    "ASSISTANT_ENABLED": "server",
+    "ASSISTANT_DAILY_TOKEN_BUDGET": "server",
+    "ASSISTANT_RATE_LIMIT": "server",
+    "ASSISTANT_RETENTION_DAYS": "server",
+    "SUPABASE_SERVICE_ROLE_KEY": "server-secret",
+    "ANTHROPIC_API_KEY": "server-secret",
+    "RESEND_API_KEY": "server-secret",
+    "CRON_SECRET": "server-secret",
+    "SUPABASE_DB_URL": "ci",
+    "SUPABASE_ACCESS_TOKEN": "ci",
+    "VERCEL_TOKEN": "ci",
+    "FORBIDDEN_IDENTIFIERS": "ci"
+  },
+  "platform": ["NODE_ENV", "PORT", "HOSTNAME", "CI", "NEXT_RUNTIME", "VERCEL_ENV", "VERCEL_URL", "GITHUB_ACTIONS"]
+}

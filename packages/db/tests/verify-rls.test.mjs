@@ -55,7 +55,7 @@ test("anon에게 열린 정책이 있으면 노출로 판정한다", async () =>
 });
 
 test("현재 로컬 DB 전체 검사 — 스크립트가 종료 코드 0", () => {
-  const r = spawnSync(process.execPath, [SCRIPT], { encoding: "utf8", env: { ...process.env, DB_URL: dbUrl() } });
+  const r = spawnSync(process.execPath, [SCRIPT], { encoding: "utf8", env: { ...process.env, SUPABASE_DB_URL: dbUrl() } });
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /통과/);
 });

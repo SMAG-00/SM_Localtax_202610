@@ -1,4 +1,4 @@
-// DB 접속 주소 — 환경변수 DB_URL이 있으면 그것을 쓰고, 없으면 로컬 Supabase(supabase/config.toml의 [db] port)로 접속한다.
+// DB 접속 주소 — 환경변수 SUPABASE_DB_URL(CI 전용)이 있으면 그것을 쓰고, 없으면 로컬 Supabase(supabase/config.toml의 [db] port)로 접속한다.
 // 로컬 Supabase의 접속 문자열은 비밀이 아니다 (ENV-05). staging·prod 주소는 CI 비밀값으로만 넘긴다.
 import fs from "node:fs";
 import path from "node:path";
@@ -16,7 +16,7 @@ export function localDbUrl() {
 }
 
 export function dbUrl() {
-  return process.env.DB_URL || localDbUrl();
+  return process.env.SUPABASE_DB_URL || localDbUrl();
 }
 
 export function isLocal(url) {

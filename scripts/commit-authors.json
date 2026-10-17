@@ -1,0 +1,5 @@
+{
+  "$comment": "FND-01 커밋 작성자 허용 목록 — 새 플랫폼 계정만. SM 플랫폼 계정·개인 계정은 넣지 않는다. 구성원이 늘면 회사 계정 이메일을 더한다.",
+  "authors": ["admin@sunmyung.kr"],
+  "committers": ["admin@sunmyung.kr", "noreply@github.com"]
+}

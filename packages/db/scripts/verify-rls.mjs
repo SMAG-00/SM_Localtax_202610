@@ -3,7 +3,7 @@
 //  1. public 스키마의 모든 테이블에 RLS가 켜져 있다
 //  2. anon·authenticated 역할로 각 테이블을 읽으면 0행이거나 권한 거부다 (공개 정책이 있는 테이블은 허용 목록으로만)
 // PostgREST는 anon 키 요청을 DB의 anon 역할로 실행하므로, 같은 역할로 직접 읽어 같은 결과를 본다.
-// 사용: DB_URL=... node scripts/verify-rls.mjs   (DB_URL이 없으면 로컬 Supabase)
+// 사용: SUPABASE_DB_URL=... node scripts/verify-rls.mjs   (SUPABASE_DB_URL이 없으면 로컬 Supabase)
 import { pathToFileURL } from "node:url";
 import { connect } from "./db.mjs";
 
