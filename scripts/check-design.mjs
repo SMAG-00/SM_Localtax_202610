@@ -11,7 +11,8 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const CODE_EXT = /\.(tsx|ts|jsx|js|mjs|css)$/;
-const SKIP = /(^|\/)(node_modules|\.next|tests|__tests__)(\/|$)/;
+// 시험 파일은 보지 않는다 — '별점 ★이 없어야 한다'처럼 금지 견본을 일부러 담는다
+const SKIP = /(^|\/)(node_modules|\.next|tests|__tests__)(\/|$)|\.test\.[cm]?[jt]sx?$/;
 // 따옴표·공백·괄호·콜론 등 뒤에 오는 #hex (HTML 엔티티 &#160;·URL 조각 /news#x는 제외)
 const HEX = /(?<=["'`\s[(:,=])#[0-9a-fA-F]{3,8}(?![0-9A-Za-z_-])/g;
 const STRINGS = /"[^"\n]*"|'[^'\n]*'|`[^`]*`/g;

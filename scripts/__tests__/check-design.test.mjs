@@ -84,6 +84,16 @@ test("R6 — 허용 목록 밖의 임의 그림자 shadow-[...]는 오류, 허�
   assert.ok(r.errors[0].includes("apps/web/app/s.tsx"));
 });
 
+test("시험 파일(*.test.tsx)은 보지 않는다 — '별점 ★이 없어야 한다' 같은 금지 견본을 담는다", () => {
+  const r = ok({ "packages/ui/src/components/x/people.test.tsx": 'expect(screen.queryByText("★")).toBeNull(); const c = "#06182A";\n' });
+  assert.deepEqual(r.errors, []);
+});
+
+test("시험 파일이 아닌 같은 폴더의 화면 코드는 그대로 본다", () => {
+  const r = ok({ "packages/ui/src/components/x/People.tsx": 'export const P = () => <span>★ 4.9</span>;\n' });
+  assert.ok(r.errors.some((e) => e.includes("People.tsx") && /이모지/.test(e)), r.errors.join("\n"));
+});
+
 test("검사 범위(scan) 밖 파일은 보지 않는다", () => {
   const r = ok({ "e2e/fixture.tsx": 'export const F = () => <div className="bg-[#000]">🧮</div>;\n' });
   assert.deepEqual(r.errors, []);
