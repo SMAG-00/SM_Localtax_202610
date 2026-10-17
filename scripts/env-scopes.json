@@ -23,5 +23,6 @@
     "VERCEL_TOKEN": "ci",
     "FORBIDDEN_IDENTIFIERS": "ci"
   },
+  "tooling": ["E2E_TARGET"],
   "platform": ["NODE_ENV", "PORT", "HOSTNAME", "CI", "NEXT_RUNTIME", "VERCEL_ENV", "VERCEL_URL", "GITHUB_ACTIONS", "PATH", "SystemRoot"]
 }

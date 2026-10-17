@@ -57,6 +57,9 @@ export function checkEnv({ root }) {
   const scopes = JSON.parse(fs.readFileSync(path.join(root, "scripts", "env-scopes.json"), "utf8"));
   const vars = scopes.vars ?? {};
   const platform = new Set(scopes.platform ?? []);
+  // 시험 도구 옵션 — 앱은 읽지 않고 e2e·scripts만 읽는다 (.env.example에 두지 않는다)
+  const tooling = new Set(scopes.tooling ?? []);
+  const toolingDir = /^(e2e|scripts)\//;
 
   // .env.example
   const examplePath = path.join(root, ".env.example");
@@ -103,7 +106,13 @@ export function checkEnv({ root }) {
     if (!CODE_EXT.test(f) || SKIP_DIR.test(f)) continue;
     const full = path.join(root, f);
     if (!fs.existsSync(full)) continue;
-    for (const name of envReads(fs.readFileSync(full, "utf8"))) if (!reads.has(name)) reads.set(name, f);
+    for (const name of envReads(fs.readFileSync(full, "utf8"))) {
+      if (tooling.has(name)) {
+        if (!toolingDir.test(f)) errors.push(`${f}: 시험 도구 옵션 ${name}는 e2e·scripts에서만 읽는다 — 앱 코드가 읽으면 안 된다`);
+        continue;
+      }
+      if (!reads.has(name)) reads.set(name, f);
+    }
   }
   for (const [name, file] of reads) {
     if (!(name in vars) && !platform.has(name)) errors.push(`${file}: 범위 목록에 없는 환경변수 ${name}를 읽는다 — scripts/env-scopes.json과 .env.example에 범위와 함께 더한다 (ENV-05)`);

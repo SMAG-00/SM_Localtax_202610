@@ -108,6 +108,14 @@ test("ENV-05 — 소문자가 섞인 이름(SystemRoot)도 이름 전체로 판�
   assert.ok(!r.errors.some((e) => /변수 S를/.test(e)), r.errors.join("\n"));
 });
 
+test("시험 도구 옵션(tooling)은 e2e·scripts에서만 읽을 수 있다", () => {
+  const scopes = { ...SCOPES, tooling: ["E2E_TARGET"] };
+  const ok = run(repo({ scopes, extraTracked: { "e2e/lib/x.mjs": "export const t = process.env.E2E_TARGET;\n" } }));
+  assert.deepEqual(ok.errors, []);
+  const bad = run(repo({ scopes, code: CODE + "\nexport const t = process.env.E2E_TARGET;" }));
+  assert.ok(bad.errors.some((e) => /E2E_TARGET/.test(e) && /apps\/web/.test(e)), bad.errors.join("\n"));
+});
+
 test("ENV-02 — 아무 코드도 읽지 않는 변수는 경고만", () => {
   const r = run(repo({ code: "export const a = process.env.NEXT_PUBLIC_SITE_URL;" }));
   assert.deepEqual(r.errors, []);
