@@ -1,10 +1,10 @@
 // 관리자(PO) 전권 — 서버의 관리자 경로(service_role)는 모든 public 표를 읽고·추가하고·고치고·지울 수 있다 (2026-10-17 PO 지시).
-// 예외는 감사 로그뿐이다 (ADM-04 — 추가·조회만, 수정·삭제는 PO 결정에 따른다). 표가 늘어나도 이 시험이 권한 누락을 잡는다.
+// 예외: 감사 기록(audit_logs)은 전용 함수로만 고치고 지운다(PO만, audit-amend.test.mjs), 그 변경 기록(audit_log_changes)은 추가만. 표가 늘어나도 이 시험이 권한 누락을 잡는다.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { connect, dbUrl, isLocal } from "../scripts/db.mjs";
 
-const APPEND_ONLY = new Set(["public.audit_logs"]);
+const APPEND_ONLY = new Set(["public.audit_logs", "public.audit_log_changes"]);
 let client;
 
 before(async () => {
