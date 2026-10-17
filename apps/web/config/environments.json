@@ -1,7 +1,8 @@
 {
-  "$comment": "배포 환경별 Supabase 프로젝트 ref (비밀 아님 — 공개 주소의 일부). FND-02: Production은 prod만, Preview·Development는 staging만 가리킨다. /api/health와 scripts/check-vercel-env.mjs가 이 값으로 오연결을 잡는다.",
+  "$comment": "배포 환경별 Supabase 프로젝트 ref (비밀 아님 — 공개 주소의 일부). FND-02: Production은 prod만, Preview·Development는 staging만 가리킨다. /api/health와 scripts/check-vercel-env.mjs가 이 값으로 오연결을 잡는다. productionUrl은 운영 배포의 공개 주소(전환 전에는 테스트 주소) — 배포 후 점검이 이 주소를 본다.",
   "supabaseRef": {
     "production": "vvwiuwrbvvpsmbzsjkiy",
     "staging": "fvnhqbtdviknitetjuxr"
-  }
+  },
+  "productionUrl": "https://sm-localtax-202610.vercel.app"
 }

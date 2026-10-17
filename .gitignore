@@ -30,3 +30,6 @@ Thumbs.db
 
 # Vercel 프로젝트 연결 정보 (vercel link)
 .vercel/
+
+# 측정 보고서 (CI 기록으로만 남긴다)
+e2e/reports/

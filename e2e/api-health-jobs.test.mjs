@@ -150,3 +150,15 @@ test("Vercel 밖(사내 서버·로컬)에서는 env 검사를 하지 않는다�
   assert.equal(body.checks.env, "skipped");
   assert.ok(!body.failed.includes("env"));
 });
+
+test("상태 확인은 배포된 커밋(앞 7자리)을 version으로 알려 준다 — Vercel 밖에서는 null", async () => {
+  const s = await startServer({ VERCEL_GIT_COMMIT_SHA: "0123456789abcdef0123456789abcdef01234567", NEXT_PUBLIC_SUPABASE_URL: sb.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: sb.anonKey });
+  try {
+    const body = await (await fetch(`${s.base}/api/health`)).json();
+    assert.equal(body.version, "0123456");
+  } finally {
+    s.stop();
+  }
+  const local = await (await fetch(`${ok.base}/api/health`)).json();
+  assert.equal(local.version, null);
+});

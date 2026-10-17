@@ -40,6 +40,7 @@
     "GITHUB_ACTIONS",
     "PATH",
     "SystemRoot",
-    "APPDATA"
+    "APPDATA",
+    "VERCEL_GIT_COMMIT_SHA"
   ]
 }

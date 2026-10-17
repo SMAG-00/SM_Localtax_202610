@@ -22,3 +22,9 @@ export function cronSecret(): string | undefined {
 export function vercelEnv(): string | undefined {
   return process.env.VERCEL_ENV || undefined;
 }
+
+/** 배포된 커밋 앞 7자리 (Vercel이 준다). 배포 후 점검이 새 배포가 반영됐는지 확인할 때 쓴다 — 비밀 아님 */
+export function deployedVersion(): string | null {
+  const sha = process.env.VERCEL_GIT_COMMIT_SHA;
+  return sha ? sha.slice(0, 7) : null;
+}

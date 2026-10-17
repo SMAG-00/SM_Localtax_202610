@@ -17,5 +17,7 @@ step "개발 서버 3001 고정 E2E";              node e2e/dev-port.mjs
 step "웹 E2E (standalone 빌드)";            node --test --test-concurrency=1 e2e/api-health-jobs.test.mjs
 step "브라우저 설치 (Playwright Chromium)";  pnpm exec playwright install --with-deps chromium
 step "견본 페이지 브라우저 E2E (70종·가로 스크롤 0)"; node --test --test-concurrency=1 e2e/design-page.test.mjs
+step "화면 규칙 측정 시험 (R1~R3 경계 견본)"; node --test --test-concurrency=1 e2e/screen-rules.test.mjs
+step "화면 규칙 측정 (주요 화면 × 뷰포트 표)"; node e2e/run-screen-rules.mjs
 step "Docker 이미지 E2E";                   node e2e/run-docker.mjs
 step "사내 서버 구성 E2E (web·scheduler·proxy)"; node --test --test-concurrency=1 e2e/compose.test.mjs
