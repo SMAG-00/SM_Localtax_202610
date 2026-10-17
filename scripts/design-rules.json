@@ -3,10 +3,10 @@
   "scan": ["apps/web/app", "apps/web/components", "packages/ui/src"],
   "hexAllowed": ["packages/ui/src/tokens.ts", "packages/ui/src/theme.css"],
   "gradientAllowed": [
-    "packages/ui/src/components/Header.tsx",
-    "packages/ui/src/components/Hero.tsx",
-    "packages/ui/src/components/Footer.tsx",
-    "packages/ui/src/components/ExpertGuideCard.tsx"
+    "packages/ui/src/components/shell/Header.tsx",
+    "packages/ui/src/components/shell/Hero.tsx",
+    "packages/ui/src/components/shell/Footer.tsx",
+    "packages/ui/src/components/services/ExpertGuideCard.tsx"
   ],
   "shadowAllowed": [
     "shadow-[0_8px_30px_-12px_rgba(6,24,42,0.35)]",
