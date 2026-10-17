@@ -117,5 +117,20 @@ PRD-01A 9장 W2-a를 구현할 때 DB(packages/db)·발행 판정(packages/edito
   - 이미지 권리는 본문이 아니라 `media` 표에서 읽는다.
 - 쓰기 순서는 정해져 있다. PostgREST에는 트랜잭션이 없어서, 실패하면 앞 단계를 되돌린다.
 - 아직 안 한 것
-  - 화면 경로의 `proxy.ts` 막기, 분야·사전·설정 편집 API: 4단계
+  - 분야·사전·설정 편집 API와 화면, 역할 관리 화면(ADM-02): 4-2단계
   - 예약 발행
+
+## 7. 편집 화면 (4단계 — apps/web/app/admin)
+
+- 4-1 로그인·화면 경로 막기·역할별 메뉴·기획·작성/편집·점검 패널·검토·발행·정정·배치
+  - 로그인 `/admin/login` — `POST /api/auth/login`·`POST /api/auth/logout`. 세션은 httpOnly 쿠키(@supabase/ssr)
+    - 실패 문장은 하나다("이메일 또는 비밀번호가 맞지 않습니다"). `next`는 같은 사이트 `/admin` 아래 상대 경로만 받는다
+  - `proxy.ts` — `/admin/*`에 로그인 쿠키가 없으면 로그인 화면으로 보낸다(낙관적 확인). 만료된 토큰만 새로 받는다
+    - 실제 판정은 서버 컴포넌트의 DAL(`getViewer`) + `check()`다. 쓸 수 없는 화면은 `forbidden()` → 403 화면
+  - 화면
+    - `/admin` 첫 화면 · `/admin/stories` 기획 캘린더 · `/admin/articles`·`/new`·`/[id]` 작성·편집
+    - `/admin/reviews`·`/[id]` 검토·발행 · `/admin/placement` 배치 · `/admin/store`·`/brand`·`/experts` 편집국 외 역할 자리
+  - 메뉴는 `lib/admin/menu.ts` — 허용 작업(`allowedActions`)에서만 나온다
+  - 점검 패널의 점수 옆 문구는 seo-lint 고정 문구(`SCORE_DISCLAIMER`)만 쓴다 — 패널 금지어(순위·노출 예측·상위 노출) 규칙
+  - 시험: `apps/web/lib/admin/*.test.ts`, `e2e/admin-ui.test.mjs`
+- 4-2 분야·사전·설정 편집, 역할 관리 화면(ADM-02), 홈 배치

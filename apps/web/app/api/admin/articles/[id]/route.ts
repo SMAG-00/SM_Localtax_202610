@@ -1,6 +1,7 @@
 import { evaluatePublish, validateRevisionForSave, validateSolvedCaseForSave, validateTaxLensForSave, type UpdateKind } from "@ltr/editorial";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
-import { parseChecklistsInput, readChecklists, readStoredBody, readStoredTaxLens } from "@/lib/server/articles/content";
+import { parseChecklistsInput, readChecklists } from "@/lib/server/articles/content";
+import { loadEditorView } from "@/lib/server/articles/editor-view";
 import { POST_PUBLISH_BLOCKERS } from "@/lib/server/articles/gate";
 import { parseArticleInput } from "@/lib/server/articles/input";
 import { toArticleForPublish } from "@/lib/server/articles/mapping";
@@ -10,9 +11,9 @@ import type { ArticleRow } from "@/lib/server/articles/rows";
 import { afterSave, findingsError, nowIso, saveContext, serviceDb } from "@/lib/server/articles/service";
 import { articleSummary, recordCorrection, saveNewVersion } from "@/lib/server/articles/writes";
 import { authorize, requireViewer } from "@/lib/server/dal";
-import { dbError, errorJson, handle, json, parseId, readJson } from "@/lib/server/http";
+import { errorJson, handle, json, parseId, readJson } from "@/lib/server/http";
 
-// 기사 한 건 — GET: 편집 화면용 전체 기록(편집국만) · PATCH: 수정 (ART-05 · NAV-06)
+// 기사 한 건 — GET: 편집 화면용 전체 기록(편집국만 — 백오피스 편집기와 같은 모양, editor-view.ts) · PATCH: 수정 (ART-05 · NAV-06)
 //  · 발행 전: 자유 수정, 저장마다 새 버전 + 수정 이력. 편집 승인은 다시 받는다.
 //  · 발행 뒤: 편집 책임자만, 수정 종류(실질 수정·오탈자·정정)와 사유 필수. 오탈자는 실질 수정일(dateModified)을 바꾸지 않는다.
 //    정정·제목 변경은 정정 이력(article_corrections)에 전후 버전과 함께 남는다. 금지·공포 표현·개인정보 형식은 발행 뒤에도 막는다.
@@ -29,48 +30,7 @@ export const GET = handle(async (request: Request, { params }: Ctx) => {
   const denied = await authorize(viewer, "article.read", targetOf.article(id), await articleResource(db, row));
   if (denied) return denied;
 
-  const graph = await loadArticleGraph(db, row);
-  const { data: revisions, error } = await db
-    .from("article_revisions")
-    .select("id, version, edited_by, edited_at, reason, update_kind")
-    .eq("article_id", id)
-    .order("version");
-  if (error) throw dbError(error, "article_revisions 읽기");
-  return json({
-    article: {
-      ...articleSummary(row),
-      summary: row.summary,
-      body: readStoredBody(row.body),
-      format: row.format,
-      reportingMethod: row.reporting_method,
-      categoryId: row.category_id,
-      subtype: row.subtype,
-      solvedCase: row.solved_case,
-      label: row.label,
-      partnerId: row.partner_id,
-      authorId: row.author_id,
-      storyAssignmentId: row.story_assignment_id,
-      leadMediaId: row.lead_media_id,
-      legalBasisDate: row.legal_basis_date,
-      taxLens: readStoredTaxLens(row.tax_lens),
-      amendmentId: row.amendment_id,
-      regionCodes: row.region_codes,
-      editorialField: row.editorial_field,
-      publicQuestion: row.public_question,
-      navCandidate: row.nav_candidate,
-      hotPinUntil: row.hot_pin_until,
-      checklists: readChecklists(row.check_log),
-    },
-    author: graph.author,
-    sources: graph.sources,
-    evidence: graph.evidence.map((e) => ({
-      ...e,
-      dataset: graph.datasets.find((d) => d.evidence_id === e.id) ?? null,
-      interview: graph.interviews.find((i) => i.evidence_id === e.id) ?? null,
-    })),
-    reviews: graph.reviews,
-    revisions: revisions ?? [],
-  });
+  return json(await loadEditorView(db, row));
 });
 
 /** 감사 로그에 남길 바뀐 칸 — 본문은 수정 이력 번호로 대신한다 */

@@ -1,0 +1,324 @@
+// 기사 편집기 상태 ↔ API 요청 본문 시험 (ART-01 · ART-05 · NAV-10 · NAV-11 · CORE-01)
+// 편집기가 만든 PATCH 본문을 실제 API 입력 검사(parseArticleInput)에 넣어 통과하는지, 저장된 기사를 다시 읽으면 같은 상태가 되는지 본다.
+import { describe, expect, test } from "vitest";
+import { RULES } from "@ltr/editorial";
+import { EMPTY_CHECKLISTS, parseBodyInput, type StoredBody } from "@/lib/server/articles/content";
+import { parseArticleInput } from "@/lib/server/articles/input";
+import {
+  addBlock,
+  editorPayload,
+  editorStateFromArticle,
+  fieldErrorsFromServer,
+  moveBlock,
+  needsActionCheck,
+  qualitativeRecords,
+  quantitativeGroups,
+  removeBlock,
+  rowsToText,
+  textToRows,
+  validateEditor,
+  type EditorArticle,
+  type EditorState,
+} from "./editor-state";
+
+let n = 0;
+const key = () => `k${++n}`;
+
+const QUANT_BODY: StoredBody = {
+  blocks: [
+    { type: "key_summary", lines: ["상반기 취득세 징수액은 1,284억 원입니다.", "1년 전보다 18.4% 줄었습니다."] },
+    { type: "paragraph", text: "편집국이 세목별 징수 실적을 집계했다." },
+    { type: "table", caption: "구별 징수액", rows: [["구", "억 원"], ["한빛구", "512"]], chart: { axis: "구", unit: "억 원", source: "세정과" } },
+    { type: "quote", text: "세입 여건이 어렵습니다.", speaker: "세정과 주무관", origin: "interview", refId: "ev:3" },
+    { type: "callout", kind: "mistake", title: "자주 틀리는 점", text: "신고 기한은 60일입니다.", checklist: { actionWritten: true } },
+  ],
+  claims: [{ id: "claim-1", text: "징수액은 1,284억 원이다.", kind: "fact", evidenceIds: ["ev:3", "src:4"], blockIndex: 1 }],
+};
+
+function article(over: Partial<EditorArticle> = {}): EditorArticle {
+  return {
+    id: 10,
+    slug: "gaon-2026h1",
+    title: "가온시 상반기 취득세 18.4% 감소",
+    summary: "요약입니다.",
+    status: "draft",
+    version: 3,
+    firstPublishedAt: null,
+    section: "local",
+    categoryId: 14,
+    contentType: "reported_news",
+    reportingMethod: "quantitative",
+    format: "general",
+    subtype: "general",
+    label: "none",
+    partnerId: null,
+    leadMediaId: null,
+    legalBasisDate: null,
+    regionCodes: ["11680"],
+    editorialField: null,
+    publicQuestion: null,
+    body: QUANT_BODY,
+    solvedCase: null,
+    taxLens: null,
+    checklists: { ...EMPTY_CHECKLISTS, quantitative: { sourceCrossCheck: "대조함", limitations: null, relatedPartyCheck: null } },
+    ...over,
+  };
+}
+
+const ctx = (s: EditorState, over: Partial<{ published: boolean; version: number }> = {}) => ({ published: false, version: 3, ...over });
+
+describe("저장된 기사 → 편집기 상태 → PATCH 본문", () => {
+  test("PATCH 본문은 API 입력 검사(parseArticleInput patch)를 통과한다", () => {
+    const s = editorStateFromArticle(article(), key);
+    const payload = editorPayload(s, ctx(s));
+    const parsed = parseArticleInput(payload, "patch");
+    expect(parsed.ok, JSON.stringify(parsed)).toBe(true);
+    expect(payload.expectedVersion).toBe(3);
+  });
+
+  test("본문 블록·핵심 주장이 그대로 돌아온다 (왕복)", () => {
+    const s = editorStateFromArticle(article(), key);
+    const body = editorPayload(s, ctx(s)).body as StoredBody;
+    expect(body).toEqual(QUANT_BODY);
+    expect(parseBodyInput(body).ok).toBe(true);
+  });
+
+  test("블록 순서를 바꾸면 핵심 주장의 블록 번호도 따라간다", () => {
+    const s = editorStateFromArticle(article(), key);
+    const moved = { ...s, blocks: moveBlock(s.blocks, 1, -1) };
+    const body = editorPayload(moved, ctx(moved)).body as StoredBody;
+    expect(body.blocks[0]!.type).toBe("paragraph");
+    expect(body.claims[0]!.blockIndex).toBe(0);
+  });
+
+  test("블록을 지우면 그 블록을 가리키던 핵심 주장은 블록 없음(null)", () => {
+    const s = editorStateFromArticle(article(), key);
+    const removed = { ...s, blocks: removeBlock(s.blocks, 1) };
+    const body = editorPayload(removed, ctx(removed)).body as StoredBody;
+    expect(body.blocks).toHaveLength(4);
+    expect(body.claims[0]!.blockIndex).toBeNull();
+  });
+
+  test("새 블록 — 종류별 빈 모양, 자주 틀리는 점 상자는 제목이 고정", () => {
+    let blocks = addBlock([], "callout", key);
+    blocks = [{ ...blocks[0]!, kind: "mistake", title: "다른 제목" }];
+    blocks = addBlock(blocks, "faq", key);
+    blocks = addBlock(blocks, "image", key);
+    const s = { ...editorStateFromArticle(article(), key), blocks, claims: [] };
+    const stored = (editorPayload(s, ctx(s)).body as StoredBody).blocks;
+    expect(stored[0]).toEqual({ type: "callout", kind: "mistake", title: "자주 틀리는 점", text: "" });
+    expect(stored[1]).toEqual({ type: "faq", items: [{ question: "", answer: "" }] });
+    expect(stored[2]).toEqual({ type: "image", mediaId: "", alt: "", caption: "" });
+  });
+
+  test("표 — 줄마다 한 행, 칸은 | 로 나눈다. 축·단위·출처가 모두 비면 표기 없음(null)", () => {
+    expect(textToRows("구 | 억 원\n한빛구|512\n\n누리구 | 431 ")).toEqual([["구", "억 원"], ["한빛구", "512"], ["누리구", "431"]]);
+    expect(rowsToText([["구", "억 원"], ["한빛구", "512"]])).toBe("구 | 억 원\n한빛구 | 512");
+    const s = editorStateFromArticle(article(), key);
+    const blocks = s.blocks.map((b) => (b.type === "table" ? { ...b, axis: "", unit: " ", source: "" } : b));
+    const table = (editorPayload({ ...s, blocks }, ctx(s)).body as StoredBody).blocks[2] as { chart: unknown };
+    expect(table.chart).toBeNull();
+  });
+
+  test("'기한'·'가산세'가 든 블록만 '할 일을 함께 썼다' 확인이 필요하다 (UX-03)", () => {
+    const s = editorStateFromArticle(article(), key);
+    expect(needsActionCheck(s.blocks[4]!)).toBe(true);
+    expect(needsActionCheck(s.blocks[1]!)).toBe(false);
+    expect(needsActionCheck({ ...s.blocks[1]!, text: "가산세가 붙습니다." })).toBe(true);
+    expect(needsActionCheck({ ...s.blocks[0]!, linesText: "신고 기한은 60일" })).toBe(true);
+  });
+
+  test("보도기사가 아니면 취재 방식을 null로 보낸다 (DB 규칙)", () => {
+    const s = { ...editorStateFromArticle(article(), key), contentType: "explainer" };
+    expect(editorPayload(s, ctx(s)).reportingMethod).toBeNull();
+  });
+
+  test("지역 코드·법령 기준일·하위 분야 — 빈 칸은 null·빈 목록", () => {
+    const s = { ...editorStateFromArticle(article(), key), regionCodesText: " 11680, 11650 ,", legalBasisDate: "", categoryId: "" };
+    const p = editorPayload(s, ctx(s));
+    expect(p.regionCodes).toEqual(["11680", "11650"]);
+    expect(p.legalBasisDate).toBeNull();
+    expect(p.categoryId).toBeNull();
+  });
+
+  test("확인 목록 — 빈 글자는 null, 정량형 3칸·관점 기록은 그대로 API 모양", () => {
+    const s = editorStateFromArticle(article(), key);
+    s.checklists = {
+      ...s.checklists,
+      isLocalPolicyIssue: true,
+      quantitative: { sourceCrossCheck: "대조함", limitations: "  ", relatedPartyCheck: "세정과 확인" },
+      perspectives: { local_gov: { status: "interviewed", evidenceId: "ev:3", contactedAt: "2026-10-13" }, residents_taxpayers: { status: "no_response", evidenceId: null, contactedAt: "2026-10-12" }, experts: null },
+      originalTextChecks: [{ sourceId: "src:4", checkedAt: "2026-10-14" }],
+    };
+    const p = editorPayload(s, ctx(s));
+    const parsed = parseArticleInput(p, "patch");
+    expect(parsed.ok).toBe(true);
+    expect((p.checklists as { quantitative: unknown }).quantitative).toEqual({ sourceCrossCheck: "대조함", limitations: null, relatedPartyCheck: "세정과 확인" });
+  });
+});
+
+describe("「지방세로 읽기」 (CORE-01)", () => {
+  test("박스 — 세목은 쉼표, 포인트는 줄마다. 생략 사유는 null", () => {
+    const s = { ...editorStateFromArticle(article(), key), taxLensMode: "box" as const, taxTopicsText: "취득세, 재산세", taxPointsText: "포인트 1\n포인트 2", taxLinks: [{ kind: "explainer" as const, label: "해설", url: "/tax/x" }] };
+    expect(editorPayload(s, ctx(s)).taxLens).toEqual({ topics: ["취득세", "재산세"], points: ["포인트 1", "포인트 2"], links: [{ kind: "explainer", label: "해설", url: "/tax/x" }], omissionReason: null });
+  });
+
+  test("생략 — 박스 칸은 비우고 사유만", () => {
+    const s = { ...editorStateFromArticle(article(), key), taxLensMode: "skip" as const, omissionReason: "세금 영향은 후속 기사에서 다룬다", taxTopicsText: "취득세" };
+    expect(editorPayload(s, ctx(s)).taxLens).toEqual({ topics: [], points: [], links: [], omissionReason: "세금 영향은 후속 기사에서 다룬다" });
+  });
+
+  test("안 씀 — null", () => {
+    const s = editorStateFromArticle(article(), key);
+    expect(s.taxLensMode).toBe("none");
+    expect(editorPayload(s, ctx(s)).taxLens).toBeNull();
+  });
+
+  test("저장된 생략 사유 → 생략 모드로 읽는다", () => {
+    const s = editorStateFromArticle(article({ taxLens: { topics: [], points: [], links: [], skip_reason: "후속 기사", reviewed: false, reviewed_for_version: null } }), key);
+    expect(s.taxLensMode).toBe("skip");
+    expect(s.omissionReason).toBe("후속 기사");
+  });
+});
+
+describe("발행 뒤 수정 (ART-05)", () => {
+  test("발행된 기사는 수정 종류·사유를 함께 보낸다", () => {
+    const s = { ...editorStateFromArticle(article({ status: "published", firstPublishedAt: "2026-10-16T01:00:00Z" }), key), updateKind: "typo", reason: "오탈자 고침" };
+    const p = editorPayload(s, ctx(s, { published: true }));
+    expect(p.updateKind).toBe("typo");
+    expect(p.reason).toBe("오탈자 고침");
+    expect(parseArticleInput(p, "patch").ok).toBe(true);
+  });
+
+  test("발행 전에는 수정 종류·사유를 보내지 않는다", () => {
+    const s = { ...editorStateFromArticle(article(), key), updateKind: "typo", reason: "x" };
+    const p = editorPayload(s, ctx(s));
+    expect("updateKind" in p).toBe(false);
+    expect("reason" in p).toBe(false);
+  });
+
+  test("수정 종류·사유가 없으면 칸마다 오류", () => {
+    const s = editorStateFromArticle(article({ firstPublishedAt: "2026-10-16T01:00:00Z" }), key);
+    const errors = validateEditor(s, { published: true, canSkipTaxLens: true, storedOmissionReason: null });
+    expect(errors["save-update-kind"]).toMatch(/수정 종류/);
+    expect(errors["save-reason"]).toMatch(/사유/);
+  });
+});
+
+describe("저장 전 확인 — 칸마다 오류", () => {
+  const ok = { published: false, canSkipTaxLens: true, storedOmissionReason: null };
+
+  test("통과하는 상태는 오류 0", () => {
+    expect(validateEditor(editorStateFromArticle(article(), key), ok)).toEqual({});
+  });
+
+  test("제목 빔·주소 공백·보도기사 취재 방식 빔", () => {
+    const s = { ...editorStateFromArticle(article(), key), title: " ", slug: "a b", reportingMethod: "" };
+    expect(Object.keys(validateEditor(s, ok)).sort()).toEqual(["meta-reporting-method", "meta-slug", "meta-title"]);
+  });
+
+  test("표기는 광고·협찬에만, 광고·협찬은 표기 필수 (ART-10)", () => {
+    const labeled = { ...editorStateFromArticle(article(), key), label: "ad" };
+    expect(validateEditor(labeled, ok)["meta-label"]).toBeTruthy();
+    const sponsored = { ...editorStateFromArticle(article({ contentType: "sponsored", reportingMethod: null }), key), label: "none" };
+    expect(validateEditor(sponsored, ok)["meta-label"]).toBeTruthy();
+  });
+
+  test("이미지 블록은 media 번호가 있어야 한다", () => {
+    const s = editorStateFromArticle(article(), key);
+    const blocks = addBlock(s.blocks, "image", key);
+    const errors = validateEditor({ ...s, blocks }, ok);
+    expect(errors[`block-${blocks.at(-1)!.key}-mediaId`]).toBeTruthy();
+  });
+
+  test("생략 사유 — 비면 오류, 편집 책임자가 아닌 사람이 새로 쓰면 오류", () => {
+    const s = { ...editorStateFromArticle(article(), key), taxLensMode: "skip" as const, omissionReason: "" };
+    expect(validateEditor(s, ok)["taxlens-omission"]).toBeTruthy();
+    const byReporter = { ...s, omissionReason: "후속 기사에서 다룬다" };
+    expect(validateEditor(byReporter, { ...ok, canSkipTaxLens: false })["taxlens-omission"]).toMatch(/편집 책임자/);
+    expect(validateEditor(byReporter, { ...ok, canSkipTaxLens: false, storedOmissionReason: "후속 기사에서 다룬다" })).toEqual({});
+  });
+});
+
+describe("서버 422 오류 → 칸", () => {
+  test("칸 이름·블록 번호를 화면 칸 id로 바꾼다", () => {
+    const errors = fieldErrorsFromServer(
+      ["title: 비울 수 없습니다", "body.blocks[1].mediaId: media 표의 번호여야 합니다", "body.blocks[2].items[0].question: 글자가 필요합니다", "legalBasisDate: YYYY-MM-DD 날짜여야 합니다", "모르는 칸: x"],
+      undefined,
+      ["a", "b", "c"],
+    );
+    expect(errors).toEqual({
+      "meta-title": "비울 수 없습니다",
+      "block-b-mediaId": "media 표의 번호여야 합니다",
+      "block-c-items": "글자가 필요합니다",
+      "meta-legal-basis-date": "YYYY-MM-DD 날짜여야 합니다",
+      form: "모르는 칸: x",
+    });
+  });
+
+  test("발행 뒤 수정 실패 항목(art05) → 수정 종류·사유 칸", () => {
+    expect(fieldErrorsFromServer(undefined, ["art05.update-kind-required", "art05.reason-required"], [])).toEqual({
+      "save-update-kind": "수정 종류를 골라 주세요 (ART-05)",
+      "save-reason": "수정 사유를 적어 주세요 (ART-05)",
+    });
+  });
+
+  test("같은 칸의 오류 여러 개는 이어 붙인다", () => {
+    expect(fieldErrorsFromServer(["slug: 공백 안 됨", "slug: 예약된 이름"], undefined, [])["meta-slug"]).toBe("공백 안 됨 · 예약된 이름");
+  });
+});
+
+describe("정량형 필수 7묶음 (NAV-10) — 편집기 안내", () => {
+  const fullDataset = {
+    source_url: "https://example.test/data",
+    provider: "가온시 세정과",
+    collected_at: "2026-10-07T00:00:00+09:00",
+    license: "공공누리 제1유형",
+    definition: "취득세 징수액",
+    period: "1~6월",
+    unit: "억 원",
+    region_unit: "구",
+    denominator: "전년 같은 기간",
+    exclusions: "지방교육세",
+    transform: "합산",
+    repro_file_hash: "sha256:abc",
+  };
+
+  test("묶음 id는 발행 판정 규칙(NAV-10 차단 7종)과 같다", () => {
+    const s = editorStateFromArticle(article(), key);
+    const groupIds = quantitativeGroups(s, []).map((g) => g.id);
+    const nav10 = RULES.filter((r) => r.ruleRef === "NAV-10" && r.id !== "nav10.no-causal-claim").map((r) => r.id);
+    expect(groupIds).toEqual(nav10);
+  });
+
+  test("재현 정보 0건이면 1~3묶음이 비고, 다 채우면 채움", () => {
+    const s = editorStateFromArticle(article(), key);
+    s.checklists = { ...s.checklists, quantitative: { sourceCrossCheck: "대조함", limitations: "상관관계만", relatedPartyCheck: "확인함" } };
+    const empty = quantitativeGroups(s, []);
+    expect(empty.filter((g) => !g.filled).map((g) => g.id)).toEqual(["nav10.source-data", "nav10.indicator-definition", "nav10.calculation"]);
+    const full = quantitativeGroups(s, [fullDataset]);
+    expect(full.every((g) => g.filled)).toBe(true);
+  });
+
+  test("분모를 지우면 지표 정의 묶음이 빈다 · 표의 출처를 지우면 그래프·표 표기가 빈다", () => {
+    const s = editorStateFromArticle(article(), key);
+    s.checklists = { ...s.checklists, quantitative: { sourceCrossCheck: "a", limitations: "b", relatedPartyCheck: "c" } };
+    const noDenominator = quantitativeGroups(s, [{ ...fullDataset, denominator: " " }]);
+    expect(noDenominator.find((g) => g.id === "nav10.indicator-definition")!.filled).toBe(false);
+    const blocks = s.blocks.map((b) => (b.type === "table" ? { ...b, source: "" } : b));
+    expect(quantitativeGroups({ ...s, blocks }, [fullDataset]).find((g) => g.id === "nav10.chart-labels")!.filled).toBe(false);
+  });
+});
+
+describe("정성형 필수 기록 (NAV-11) — 편집기 안내", () => {
+  const ev = (id: number, type: string, verified = true) => ({ id, evidence_type: type, verification_status: verified ? "verified" : "pending" });
+
+  test("4칸 + 독립 근거 2건 + 문서 근거 + 인용마다 기록", () => {
+    const s = editorStateFromArticle(article({ reportingMethod: "qualitative" }), key);
+    s.checklists = { ...s.checklists, qualitative: { interviewQuestions: "질문", fieldRecord: "현장", counterPerspective: "반대", conflictsOfInterest: "없음" } };
+    const ok = qualitativeRecords(s, [ev(3, "interview"), ev(5, "document")], [3]);
+    expect(ok.every((r) => r.filled)).toBe(true);
+    const missing = qualitativeRecords(s, [ev(3, "interview"), ev(5, "document", false)], []);
+    expect(missing.filter((r) => !r.filled).map((r) => r.id)).toEqual(["nav11.independent-sources", "nav11.document-evidence", "nav11.quote-record"]);
+  });
+});

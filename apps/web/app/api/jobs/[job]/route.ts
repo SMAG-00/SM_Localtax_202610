@@ -17,9 +17,10 @@ async function run(request: Request, params: Promise<{ job: string }>) {
   if (!db) return json({ error: "server not configured" }, 503);
 
   const trigger = jobTrigger(request.headers);
+  // 시작·끝 시각을 같은 시계(이 서버)로 적는다 — DB 기본값 now()와 섞으면 두 시계 차이만큼 끝이 시작보다 앞설 수 있다
   const { data: started, error: startError } = await db
     .from("agent_runs")
-    .insert({ job: name, trigger })
+    .insert({ job: name, trigger, started_at: new Date().toISOString() })
     .select("id")
     .single();
   if (startError || !started) return json({ error: "run record failed" }, 503);
