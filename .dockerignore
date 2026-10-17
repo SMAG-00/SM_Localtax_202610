@@ -1,0 +1,16 @@
+# Docker 빌드에 넣지 않는 것 — 의존성은 이미지 안에서 lockfile로 다시 설치한다
+**/node_modules
+**/.next
+**/.turbo
+**/coverage
+.git
+docs
+e2e
+**/__tests__
+**/tests
+packages/db/supabase/.temp
+.env
+.env.*
+!.env.example
+*.log
+.claude
