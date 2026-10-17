@@ -1,0 +1,42 @@
+// 관리자(PO) 전권 — 서버의 관리자 경로(service_role)는 모든 public 표를 읽고·추가하고·고치고·지울 수 있다 (2026-10-17 PO 지시).
+// 예외는 감사 로그뿐이다 (ADM-04 — 추가·조회만, 수정·삭제는 PO 결정에 따른다). 표가 늘어나도 이 시험이 권한 누락을 잡는다.
+import { test, before, after } from "node:test";
+import assert from "node:assert/strict";
+import { connect, dbUrl, isLocal } from "../scripts/db.mjs";
+
+const APPEND_ONLY = new Set(["public.audit_logs"]);
+let client;
+
+before(async () => {
+  assert.ok(isLocal(dbUrl()), "이 시험은 로컬 DB에서만 돌린다");
+  client = await connect();
+});
+after(async () => client?.end());
+
+test("감사 로그를 뺀 모든 public 표에서 service_role이 SELECT·INSERT·UPDATE·DELETE 권한을 가진다", async () => {
+  const { rows } = await client.query(`
+    select n.nspname || '.' || c.relname as name,
+      has_table_privilege('service_role', c.oid, 'SELECT') as s,
+      has_table_privilege('service_role', c.oid, 'INSERT') as i,
+      has_table_privilege('service_role', c.oid, 'UPDATE') as u,
+      has_table_privilege('service_role', c.oid, 'DELETE') as d
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relkind in ('r', 'p')
+    order by 1`);
+  const checked = rows.filter((r) => !APPEND_ONLY.has(r.name));
+  assert.ok(checked.length > 0, "검사할 표가 없다");
+  const missing = checked.filter((r) => !(r.s && r.i && r.u && r.d)).map((r) => `${r.name} (S${+r.s} I${+r.i} U${+r.u} D${+r.d})`);
+  assert.deepEqual(missing, []);
+});
+
+test("service_role로 실행 기록(agent_runs) 행을 실제로 지울 수 있다", async () => {
+  await client.query("begin");
+  try {
+    const { rows } = await client.query("insert into public.agent_runs (job, trigger) values ('scheduler-heartbeat', 'manual') returning id");
+    await client.query("set local role service_role");
+    const del = await client.query("delete from public.agent_runs where id = $1", [rows[0].id]);
+    assert.equal(del.rowCount, 1);
+  } finally {
+    await client.query("rollback");
+  }
+});
