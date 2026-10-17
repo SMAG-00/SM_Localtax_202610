@@ -7,8 +7,18 @@
 import { pathToFileURL } from "node:url";
 import { connect } from "./db.mjs";
 
-// 공개 읽기를 허용하는 테이블 — 공개 뷰·정책을 만들 때 여기에 이유와 함께 더한다 (지금은 없음)
-export const PUBLIC_READ_ALLOWLIST = new Map();
+// 공개 읽기를 허용하는 테이블 — 공개 뷰·정책을 만들 때 여기에 이유와 함께 더한다.
+// 정책은 supabase/migrations/20261018000008_public_read.sql, 행·칸 범위 시험은 tests/w2a-public-read.test.mjs
+export const PUBLIC_READ_ALLOWLIST = new Map([
+  ["public.categories", "공개 분야(visible) — CAT-01"],
+  ["public.people", "공개 인물(visibility=public)의 공개 칸, 약력은 증빙 항목만 — BR-01·BR-02"],
+  ["public.articles", "발행 기사(published·대표 이미지 권리 확인 또는 없음·무료)의 공개 칸 — NAV-05"],
+  ["public.media", "공개 기사의 권리 확인 대표 이미지 — NAV-05·REG1-09"],
+  ["public.partners", "공개 제휴사(visible)의 공개 칸 — ART-10"],
+  ["public.article_sources", "공개 기사의 공개 출처 — NAV-03"],
+  ["public.amendments", "공개 개정안(status=public) — TX-07"],
+  ["public.amendment_events", "공개 개정안의 단계 기록 — TX-07·CAT-04"],
+]);
 
 export async function tablesWithoutRls(client) {
   const { rows } = await client.query(`

@@ -4,7 +4,16 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { connect, dbUrl, isLocal } from "../scripts/db.mjs";
 
-const APPEND_ONLY = new Set(["public.audit_logs", "public.audit_log_changes"]);
+// 추가만 되는 표 — 감사 기록 2종(ADM-04) + W2-a 설계 3장의 수정 이력·정정 이력·점검 결과 + 개정 단계 기록(01B TX-07) + 기획 상태 기록(NAV-09, 트리거만 쓴다)
+const APPEND_ONLY = new Set([
+  "public.audit_logs",
+  "public.audit_log_changes",
+  "public.article_revisions",
+  "public.article_corrections",
+  "public.seo_checks",
+  "public.amendment_events",
+  "public.story_assignment_events",
+]);
 let client;
 
 before(async () => {

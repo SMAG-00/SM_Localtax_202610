@@ -9,6 +9,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { PUBLIC_READ_ALLOWLIST } from "./verify-rls.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, "..", "..", "..");
@@ -82,7 +83,9 @@ async function verify(target, ref) {
   const keys = JSON.parse(keysOut.slice(keysOut.indexOf("["), keysOut.lastIndexOf("]") + 1));
   const anon = keys.find((k) => k.name === "anon")?.api_key;
   if (!anon) throw new Error(`${target}: anon 키를 찾지 못했다`);
-  const probe = await probeRest(`https://${ref}.supabase.co`, anon, tables.map((t) => t.name), allFns.filter((n) => !ANON_EXECUTE_ALLOWED.has(n)));
+  // 공개 읽기 허용 표(verify-rls.mjs PUBLIC_READ_ALLOWLIST — 공개 행만 정책으로 연다)는 행이 보이는 것이 정상이라 노출 판정에서 뺀다
+  const probeTables = tables.map((t) => t.name).filter((n) => !PUBLIC_READ_ALLOWLIST.has(`public.${n}`));
+  const probe = await probeRest(`https://${ref}.supabase.co`, anon, probeTables, allFns.filter((n) => !ANON_EXECUTE_ALLOWED.has(n)));
   for (const e of probe.exposed) problems.push(`${e}: anon 키로 읽히거나 실행된다`);
   for (const e of probe.errors) problems.push(e);
   return { tables: tables.length, functions: allFns.length, probed: probe.checked, problems };
