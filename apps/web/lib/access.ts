@@ -49,6 +49,9 @@ export const ACTIONS = {
   "category.edit": "분야 편집",
   "dictionary.edit": "금지 표현·공포 표현·용어 사전 편집",
   "settings.edit": "운영 설정 편집",
+  "partner.read": "제휴사 목록 열람",
+  "member.read": "회원·편집국 계정 조회",
+  "member.suspend": "계정 정지·정지 해제",
   "role.grant": "서비스 역할 부여",
   "role.revoke": "서비스 역할 회수",
   "audit.read": "감사 기록 조회",
@@ -60,7 +63,7 @@ export const ACTIONS = {
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
 
-/** 거부되면 감사 로그에 남기는 작업 — 기사 승인·정렬·발행 (NAV-06 · ACC-04)과 역할 부여 */
+/** 거부되면 감사 로그에 남기는 작업 — 기사 승인·정렬·발행 (NAV-06 · ACC-04)과 역할 부여·계정 정지·운영 설정 (ADM-02) */
 export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "review.desk_edit",
   "review.tax_review",
@@ -72,6 +75,8 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "correction.decide",
   "role.grant",
   "role.revoke",
+  "member.suspend",
+  "settings.edit",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -169,7 +174,13 @@ export function check(viewer: Viewer, action: Action, resource?: Resource): Deci
     case "role.grant":
     case "role.revoke":
     case "audit.read":
+    case "member.read":
+    case "member.suspend":
       return viewer.isAdmin ? ALLOW : deny(ADMIN_ONLY);
+
+    case "partner.read":
+      // 편집 책임자는 공동 기획 표기 확인을 위해 읽기만 한다 — 등록·수정은 sponsored.manage
+      return has(viewer, "editor", "ad_ops") || viewer.isAdmin ? ALLOW : deny("제휴사 목록은 편집 책임자·광고·협찬 담당·관리자만 봅니다");
 
     case "sponsored.manage":
       return has(viewer, "ad_ops") || viewer.isAdmin ? ALLOW : deny("광고·협찬 담당(ad_ops)과 관리자만 합니다");

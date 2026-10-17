@@ -67,6 +67,9 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "category.edit":          [X, O, X, X, X, X, X, O, X],
   "dictionary.edit":        [X, O, X, X, X, X, X, O, X],
   "settings.edit":          [X, X, X, X, X, X, X, O, X],
+  "partner.read":           [X, O, X, O, X, X, X, O, X], // 편집 책임자는 읽기만 (등록·수정은 sponsored.manage)
+  "member.read":            [X, X, X, X, X, X, X, O, X],
+  "member.suspend":         [X, X, X, X, X, X, X, O, X],
   "role.grant":             [X, X, X, X, X, X, X, O, X],
   "role.revoke":            [X, X, X, X, X, X, X, O, X],
   "audit.read":             [X, X, X, X, X, X, X, O, X],
@@ -152,6 +155,23 @@ describe("관리자 — 데이터·설정 전권, 편집 행위는 editor 필요
   test("관리자는 발행 전 원고 작성·수정 허용(데이터 전권), 발행된 기사 수정은 editor 필요", () => {
     expect(can(admin, "article.edit", article({ published: false }))).toBe(true);
     expect(can(admin, "article.edit", article({ published: true }))).toBe(false);
+  });
+});
+
+describe("운영 설정·회원 정지는 관리자만, 거부는 감사 대상 (ADM-02)", () => {
+  test("editor의 설정 편집·계정 정지 거부 + 감사 대상", () => {
+    for (const action of ["settings.edit", "member.suspend"] as Action[]) {
+      const decision = check(viewer(["editor"]), action);
+      expect(decision.allowed, action).toBe(false);
+      if (!decision.allowed) expect(decision.reason).toContain("관리자");
+      expect(AUDITED_DENIALS.has(action), action).toBe(true);
+    }
+  });
+  test("제휴사 — 편집 책임자는 열람만, 등록·수정은 광고·협찬 담당과 관리자", () => {
+    expect(can(viewer(["editor"]), "partner.read")).toBe(true);
+    expect(can(viewer(["editor"]), "sponsored.manage")).toBe(false);
+    expect(can(viewer(["ad_ops"]), "sponsored.manage")).toBe(true);
+    expect(can(viewer(["reporter"]), "partner.read")).toBe(false);
   });
 });
 

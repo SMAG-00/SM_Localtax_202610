@@ -1,5 +1,7 @@
 // 백오피스 역할별 메뉴 (ADM-01) — 메뉴 항목은 접근 판정 한 함수(lib/access.ts)의 허용 작업에서만 나온다.
 // 편집국 외 역할(광고·스토어·브랜드·전문가 담당)에게는 기사 승인·정렬·발행 메뉴가 없고, 편집자에게는 상품·광고·전문가·브랜드 메뉴가 없다.
+// 제휴사(/admin/partners)는 광고·협찬 담당과 관리자의 편집 메뉴다. 편집 책임자는 목록을 읽기만 하므로(partner.read) 메뉴에 두지 않고,
+// 기사 편집기의 제휴사 고르기에서 목록 화면으로 간다 — 편집자 화면에 광고 편집 메뉴 0 (ADM-01 수용 기준).
 import { allowedActions, type Action, type Viewer } from "@/lib/access";
 
 export interface MenuItem {
@@ -27,6 +29,8 @@ const RULES: readonly MenuRule[] = [
     paths: ["/admin/reviews"],
   },
   { id: "placement", label: "기사 배치", href: "/admin/placement", when: (a) => a.has("article.sort"), paths: ["/admin/placement"] },
+  { id: "categories", label: "분야", href: "/admin/categories", when: (a) => a.has("category.edit"), paths: ["/admin/categories"] },
+  { id: "dictionaries", label: "사전", href: "/admin/dictionaries", when: (a) => a.has("dictionary.edit"), paths: ["/admin/dictionaries"] },
   {
     id: "sponsored",
     label: "광고·협찬 콘텐츠",
@@ -34,15 +38,20 @@ const RULES: readonly MenuRule[] = [
     when: (a) => a.has("sponsored.manage"),
     paths: ["/admin/articles"],
   },
+  { id: "partners", label: "제휴사", href: "/admin/partners", when: (a) => a.has("sponsored.manage"), paths: ["/admin/partners"] },
   { id: "store", label: "스토어·구독", href: "/admin/store", when: (a) => a.has("product.manage"), paths: ["/admin/store"] },
   { id: "brand", label: "브랜드 관리", href: "/admin/brand", when: (a) => a.has("brand.manage"), paths: ["/admin/brand"] },
   { id: "experts", label: "전문가 등재", href: "/admin/experts", when: (a) => a.has("expert.manage"), paths: ["/admin/experts"] },
+  { id: "settings", label: "설정", href: "/admin/settings", when: (a) => a.has("settings.edit"), paths: ["/admin/settings"] },
+  { id: "members", label: "회원·역할", href: "/admin/members", when: (a) => a.has("member.read") && a.has("role.grant"), paths: ["/admin/members"] },
 ];
 
 /** 기사 승인·정렬·발행 메뉴 — 편집국 외 역할에게 0 (ADM-01 수용 기준) */
 export const APPROVE_SORT_PUBLISH_MENU_IDS = ["reviews", "placement"] as const;
-/** 상품·광고·전문가 등재·브랜드 관리 메뉴 — 편집자에게 0 (ADM-01 수용 기준) */
-export const OPERATIONS_MENU_IDS = ["sponsored", "store", "brand", "experts"] as const;
+/** 상품·광고(제휴사 관리 포함)·전문가 등재·브랜드 관리 메뉴 — 편집자에게 0 (ADM-01 수용 기준) */
+export const OPERATIONS_MENU_IDS = ["sponsored", "partners", "store", "brand", "experts"] as const;
+/** 관리자 전용 메뉴 — 운영 설정 · 회원·역할 (ADM-02) */
+export const ADMIN_MENU_IDS = ["settings", "members"] as const;
 
 /** 로그인한 사람의 메뉴 — 순서는 위 목록 순서 */
 export function adminMenu(viewer: Viewer): MenuItem[] {

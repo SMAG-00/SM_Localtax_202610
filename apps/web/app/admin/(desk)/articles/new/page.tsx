@@ -7,7 +7,8 @@ import { idOrNull } from "@/lib/admin/form-utils";
 import { isTemplateId, suggestSlug, templateById, templateForMethod, templatesFor } from "@/lib/admin/templates";
 import { pageViewer, queryValue, requirePage } from "@/lib/server/admin/pages";
 import { listCategories, listPartners, loadAssignment } from "@/lib/server/admin/queries";
-import { serviceDb } from "@/lib/server/articles/service";
+import { kstDate } from "@/lib/server/articles/gate";
+import { nowIso, serviceDb } from "@/lib/server/articles/service";
 
 // 새 기사 (/admin/articles/new) — 템플릿 5종(정량형 보도·정성형 보도·세법 해설·해결 사례·광고·협찬). 광고·협찬은 광고 담당만.
 // ?assignment=<기획 번호>면 그 기획의 분야·취재 방식으로 시작하고 기사를 기획에 잇는다 ("이 기획으로 기사 쓰기")
@@ -44,6 +45,7 @@ export default async function NewArticlePage({ searchParams }: Props) {
         templates={templates}
         categories={categories}
         partners={partners}
+        today={kstDate(nowIso())}
         assignment={assignment ? { id: assignment.id, hypothesis: assignment.hypothesis ?? "" } : null}
         initial={{
           templateId,

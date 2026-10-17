@@ -107,7 +107,7 @@ result.warnings;    // 발행 기록(check_log)에 남긴다
 | `ux03.action-not-written` | UX-03 | 차단 | '기한'·'가산세' 블록의 '할 일을 함께 썼다' 미확인 |
 | `ux03.rose-box-title` | UX-03 | 차단 | rose 상자 제목이 '자주 틀리는 점'이 아님 |
 | `art10.label-requires-sponsored` | ART-10 | 차단 | 표기가 있는데 sponsored가 아님 |
-| `art10.co-planned-partner-required` | ART-10 | 차단 | 공동 기획에 제휴사 없음 |
+| `art10.co-planned-partner-required` | ART-10 | 차단 | 공동 기획에 제휴사(이름) 없음 — 배지 '공동 기획 ○○'를 만들 수 없음 |
 | `art10.partner-requires-label` | ART-10 | 차단 | 제휴사를 지정했는데 표기 없음 |
 | `art10.partner-contract-expired` | ART-10 | 차단 | 계약이 끝난 제휴사를 새 기사에 지정 |
 | `art05.update-kind-required` | ART-05 | 차단 | 수정 종류 없음 |
@@ -133,7 +133,7 @@ PO 확인이 필요하면 고치고 이 절과 시험을 함께 바꾼다.
 - **UX-01**: 글자 수는 공백을 빼고 센다(e2e R1 글자 수 검사와 같은 셈법). 기사에서 안내 문장 기준은 요약과 상자 블록(콜아웃·핵심 요약 상자)에 쓰고 본문 문단에는 쓰지 않는다. 전문 용어 첫 등장은 본문 블록에서 찾고, 그 블록 안 어디든 풀이 글자가 있으면 풀었다고 본다. 사전 표현은 연속 공백을 하나로 맞춰 비교한다(붙여 쓴 '절세보장'은 다른 표현 — 필요하면 사전에 따로 넣는다).
 - **UX-03**: '기한'은 '납부기한'처럼 붙여 써도 잡고, '~기하다' 동사 활용(등기한·제기한·포기한·연기한 등)은 뺀다.
 - **CAT-05**: 개인정보 형식 검사는 해결 사례 원고에만 적용한다(일반 기사의 기관 대표 전화 등). 주소는 지번(동·리·가 + 지번)과 시·군·구가 붙은 도로명 + 건물번호를 잡는다. 기업 대표번호(1588 등)는 잡지 않는다. 결과 근거는 번호와 `http(s)://` 링크가 둘 다 있어야 한다.
-- **ART-10**: 공동 기획에는 제휴사가, 제휴사를 지정했으면 표기가 있어야 한다. 계약 종료일 당일까지 유효, 첫 발행 전 기사에만 적용. '공동 기획과 광고 함께 지정'은 표기 칸이 하나라 입력에서 생길 수 없다.
+- **ART-10**: 공동 기획에는 제휴사(이름 포함)가, 제휴사를 지정했으면 표기가 있어야 한다. 계약 종료일 당일까지 유효, 첫 발행 전 기사에만 적용. '공동 기획과 광고 함께 지정'은 표기 칸이 하나라 입력에서 생길 수 없다. 배지 글자는 `sponsorBadge(label, partnerName)` — 광고 `광고`, 공동 기획 `공동 기획 ○○`(PRD 글자 그대로, packages/structured-data `sponsorLabelText`·packages/seo-lint `badgeFormats`와 같다). 제휴사 이름이 비면 배지가 없어(null) `art10.co-planned-partner-required`로 막는다.
 - **ART-05**: 이미 발행된 기사(`firstPublishedAt` 있음)를 다시 발행할 때 수정 종류·사유를 요구한다.
 - **OPT-06**: 유사도 `no_sources`·`no_body`는 경고(seo-lint rules.v1과 같은 등급). seo-lint·유사도 결과가 없으면(null) 차단.
 - **권리·검증 상태 값**: PRD 6.1이 값 목록을 정하지 않아 `rights_status`는 `confirmed`·`unconfirmed`, `verification_status`는 `verified`·`unverified`로 두었다 — W2-a 설계 §2에 더해 DB와 맞춰야 한다.

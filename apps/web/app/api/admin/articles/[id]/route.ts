@@ -4,6 +4,7 @@ import { parseChecklistsInput, readChecklists } from "@/lib/server/articles/cont
 import { loadEditorView } from "@/lib/server/articles/editor-view";
 import { POST_PUBLISH_BLOCKERS } from "@/lib/server/articles/gate";
 import { parseArticleInput } from "@/lib/server/articles/input";
+import { expiredPartnerError } from "@/lib/server/articles/partner-check";
 import { toArticleForPublish } from "@/lib/server/articles/mapping";
 import { planEdit } from "@/lib/server/articles/plan";
 import { articleResource, currentRevisionId, loadArticle, loadArticleGraph, loadGateSettings } from "@/lib/server/articles/repository";
@@ -93,6 +94,13 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   if (plan.omissionReasonChanged) {
     const skipDenied = await authorize(viewer, "article.tax_lens_skip", target);
     if (skipDenied) return skipDenied;
+  }
+
+  // 계약이 끝난 제휴사를 새로 지정하면 저장 거부 — 이미 지정된 제휴사(기존 배지)와 발행된 기사는 그대로 둔다 (ART-10)
+  const newPartner = plan.columns.partner_id;
+  if (!published && typeof newPartner === "number" && newPartner !== before.partner_id) {
+    const expired = await expiredPartnerError(db, newPartner, now);
+    if (expired) return expired;
   }
 
   const [graph, settings] = await Promise.all([loadArticleGraph(db, before), loadGateSettings(db)]);

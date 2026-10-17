@@ -14,7 +14,7 @@ import {
 } from "./generators";
 import { pageJsonLd } from "./page";
 import { EVENT_STATUS_MAP } from "./event-status";
-import { displayTitle } from "./labels";
+import { displayTitle, sponsorLabelText } from "./labels";
 import type { EventScreenStatus } from "./models";
 import {
   extraPassSamples,
@@ -85,8 +85,20 @@ describe("newsArticle", () => {
     expect(newsArticle(samplePartnerArticle).headline).toBe("[공동 기획 예시회계연구소] 지방재정 바로 보기 ① 세입 구조");
   });
 
-  it("제휴사 이름이 없는 공동 기획은 '[공동 기획]'만 붙인다", () => {
-    expect(displayTitle("세입 구조", { kind: "공동 기획" })).toBe("[공동 기획] 세입 구조");
+  it("공동 기획 배지 글자는 '공동 기획 ' + 제휴사 이름, 광고는 '광고' — 이름 앞뒤 공백은 뺀다 (ART-10 · PRD-00 8.8)", () => {
+    expect(sponsorLabelText({ kind: "공동 기획", partnerName: " 가온세무법인 " })).toBe("공동 기획 가온세무법인");
+    expect(sponsorLabelText({ kind: "광고" })).toBe("광고");
+    expect(displayTitle("세입 구조", { kind: "공동 기획", partnerName: "가온세무법인" })).toBe("[공동 기획 가온세무법인] 세입 구조");
+  });
+
+  it("제휴사 이름이 비면 '[공동 기획]'만 붙인다 — PRD 배지('공동 기획 ○○')가 아니므로 seo-lint 광고 표기 점검과 발행 판정이 막는다", () => {
+    expect(displayTitle("세입 구조", { kind: "공동 기획", partnerName: "" })).toBe("[공동 기획] 세입 구조");
+    expect(displayTitle("세입 구조", { kind: "공동 기획", partnerName: "   " })).toBe("[공동 기획] 세입 구조");
+  });
+
+  it("광고와 공동 기획은 한 표기 칸이라 섞이지 않는다 — 광고 기사 headline에 '공동 기획'이 없다", () => {
+    expect(newsArticle(sampleAdArticle).headline).not.toContain("공동 기획");
+    expect(newsArticle(samplePartnerArticle).headline).not.toContain("[광고]");
   });
 
   it("표기가 없는 기사는 원 제목 그대로다", () => {

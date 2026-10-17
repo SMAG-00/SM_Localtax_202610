@@ -101,7 +101,7 @@ export const RULES = [
   { id: "ux03.rose-box-title", ruleRef: "UX-03", level: "block", title: "rose 상자 제목이 '자주 틀리는 점'이 아님" },
   // ART-10 제휴 콘텐츠
   { id: "art10.label-requires-sponsored", ruleRef: "ART-10", level: "block", title: "표기가 있는데 sponsored가 아님" },
-  { id: "art10.co-planned-partner-required", ruleRef: "ART-10", level: "block", title: "공동 기획에 제휴사 없음" },
+  { id: "art10.co-planned-partner-required", ruleRef: "ART-10", level: "block", title: "공동 기획에 제휴사(이름) 없음 — 배지 '공동 기획 ○○'를 만들 수 없음" },
   { id: "art10.partner-requires-label", ruleRef: "ART-10", level: "block", title: "제휴사를 지정했는데 표기 없음" },
   { id: "art10.partner-contract-expired", ruleRef: "ART-10", level: "block", title: "계약이 끝난 제휴사를 새 기사에 지정" },
   // ART-05 수정 표시

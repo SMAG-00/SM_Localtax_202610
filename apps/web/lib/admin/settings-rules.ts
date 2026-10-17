@@ -1,0 +1,155 @@
+// 운영 설정(settings) 값 검사 — 관리자 설정 화면(/admin/settings)과 설정 API가 같이 쓴다. 순수 모듈.
+//  · 아는 키만 고친다. 검사 규칙이 없는 키는 화면에서 고칠 수 없다 (잘못된 모양이 발행 판정을 멈추지 않게 닫힌 쪽으로).
+//  · 검사를 지난 값은 발행 판정 설정 읽기(lib/server/articles/gate.ts parseGateSettings)를 그대로 통과한다 — 같은 키·같은 모양.
+//  · 버전이 있는 값(사전·유사도 기준)은 내용을 바꾸면 버전도 바꿔야 한다 — 점검 기록에 남는 버전이 값과 어긋나지 않게.
+import { normalizeText } from "@ltr/editorial";
+import { phraseError } from "./dictionary-rules";
+
+type Obj = Record<string, unknown>;
+export type SettingCheck = { ok: true; value: unknown } | { ok: false; errors: string[] };
+
+/** 개정 단계 6종 (01B TX-07, W2-a 설계 §2) */
+export const AMENDMENT_STAGES = ["announced", "pre_notice", "submitted", "passed", "promulgated", "effective"] as const;
+export const AMENDMENT_STAGE_LABELS = {
+  announced: "발표",
+  pre_notice: "입법예고",
+  submitted: "국회 제출",
+  passed: "의결",
+  promulgated: "공포",
+  effective: "시행",
+} as const;
+
+const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
+const COMPARATORS = ["gt", "gte"];
+
+function exactKeys(value: Obj, keys: readonly string[], errors: string[]) {
+  for (const k of keys) if (value[k] === undefined) errors.push(`${k}: 필요합니다`);
+  for (const k of Object.keys(value)) if (!keys.includes(k)) errors.push(`${k}: 모르는 칸입니다`);
+}
+
+function versionText(value: Obj, errors: string[]) {
+  if (value.version !== undefined && (typeof value.version !== "string" || value.version.trim() === "" || value.version.length > 80)) {
+    errors.push("version: 버전 글자가 필요합니다");
+  }
+}
+
+const SIMILARITY_KEYS = ["version", "sentenceSimilarity", "sentenceComparator", "articleRatio", "articleComparator", "quoteRatio", "quoteComparator"] as const;
+
+function similarity(value: unknown, current: unknown): string[] {
+  if (!isObj(value)) return ["값은 JSON 객체여야 합니다"];
+  const errors: string[] = [];
+  exactKeys(value, SIMILARITY_KEYS, errors);
+  versionText(value, errors);
+  for (const k of ["sentenceSimilarity", "articleRatio", "quoteRatio"]) {
+    const v = value[k];
+    if (v !== undefined && (typeof v !== "number" || !Number.isFinite(v) || v < 0 || v > 1)) errors.push(`${k}: 0~1 사이 숫자여야 합니다`);
+  }
+  for (const k of ["sentenceComparator", "articleComparator", "quoteComparator"]) {
+    const v = value[k];
+    if (v !== undefined && !COMPARATORS.includes(v as string)) errors.push(`${k}: gt(초과)·gte(이상) 중 하나여야 합니다`);
+  }
+  if (errors.length === 0 && isObj(current) && value.version === current.version) {
+    const changed = SIMILARITY_KEYS.some((k) => k !== "version" && value[k] !== current[k]);
+    if (changed) errors.push(`version: 기준값을 바꾸면 버전도 바꿔야 합니다 (지금 ${String(current.version)})`);
+  }
+  return errors;
+}
+
+function phrases(value: unknown, current: unknown): string[] {
+  if (!isObj(value)) return ["값은 JSON 객체여야 합니다"];
+  const errors: string[] = [];
+  exactKeys(value, ["version", "phrases"], errors);
+  versionText(value, errors);
+  const list = value.phrases;
+  if (list !== undefined) {
+    if (!Array.isArray(list)) errors.push("phrases: 표현 글자 목록이어야 합니다");
+    else if (list.length === 0) errors.push("phrases: 표현이 하나 이상 있어야 합니다");
+    else {
+      const seen = new Map<string, string>();
+      list.forEach((p, i) => {
+        if (typeof p !== "string") return errors.push(`phrases[${i}]: 글자여야 합니다`);
+        const problem = phraseError(p);
+        if (problem) return errors.push(`phrases[${i}]: ${problem}`);
+        const n = normalizeText(p);
+        if (seen.has(n)) return errors.push(`phrases[${i}]: 같은 표현이 앞에 있습니다 (${seen.get(n)})`);
+        seen.set(n, p);
+      });
+    }
+  }
+  if (errors.length === 0 && isObj(current) && value.version === current.version) {
+    const before = Array.isArray(current.phrases) ? current.phrases : [];
+    const after = list as string[];
+    if (before.length !== after.length || before.some((p, i) => p !== after[i])) errors.push(`version: 표현 목록을 바꾸면 버전도 바꿔야 합니다 (지금 ${String(current.version)})`);
+  }
+  return errors;
+}
+
+function confirmedStage(value: unknown): string[] {
+  return typeof value === "string" && (AMENDMENT_STAGES as readonly string[]).includes(value) ? [] : [`값: ${AMENDMENT_STAGES.join("·")} 중 하나여야 합니다`];
+}
+
+export interface SettingSpec {
+  /** 화면 이름 */
+  label: string;
+  /** 고치는 법 (화면 안내) */
+  guide: string;
+  /** 사전 화면에서도 고친다 */
+  dictionaryTab?: "forbidden" | "fear";
+  check: (value: unknown, current: unknown) => string[];
+}
+
+export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
+  forbidden_phrases: {
+    label: "금지 표현 사전 (UX-01)",
+    guide: '{ "version": "새 버전", "phrases": ["표현", …] } — 표현 하나씩 고치기는 사전 화면이 편합니다',
+    dictionaryTab: "forbidden",
+    check: phrases,
+  },
+  fear_phrases: {
+    label: "공포 표현 사전 (UX-03)",
+    guide: '{ "version": "새 버전", "phrases": ["표현", …] } — 표현 하나씩 고치기는 사전 화면이 편합니다',
+    dictionaryTab: "fear",
+    check: phrases,
+  },
+  similarity_internal: {
+    label: "유사도 내부 기준 (OPT-06)",
+    guide: "비율 3개는 0~1 숫자, 비교 연산은 gt(초과)·gte(이상). 기준값을 바꾸면 version도 바꿉니다",
+    check: similarity,
+  },
+  amendment_confirmed_stage: {
+    label: "개정 '확정' 기준 단계 (TX-08)",
+    guide: `따옴표로 감싼 단계 이름 하나 — ${AMENDMENT_STAGES.map((s) => `${s}(${AMENDMENT_STAGE_LABELS[s]})`).join(" · ")}`,
+    check: (value) => confirmedStage(value),
+  },
+};
+
+export const isEditableSetting = (key: string): boolean => Object.hasOwn(SETTING_SPECS, key);
+
+/** 새 값 검사 — current는 지금 저장된 값(버전 규칙에 쓴다) */
+export function validateSettingValue(key: string, value: unknown, current: unknown): SettingCheck {
+  const spec = SETTING_SPECS[key];
+  if (!spec || !Object.hasOwn(SETTING_SPECS, key)) return { ok: false, errors: ["이 설정은 검사 규칙이 아직 없어 화면에서 고칠 수 없습니다"] };
+  const errors = spec.check(value, current);
+  return errors.length ? { ok: false, errors } : { ok: true, value };
+}
+
+/** 편집 칸의 JSON 글 → 값 */
+export function parseJsonText(text: string): { ok: true; value: unknown } | { ok: false; error: string } {
+  if (text.trim() === "") return { ok: false, error: "값을 적어 주세요" };
+  try {
+    return { ok: true, value: JSON.parse(text) };
+  } catch {
+    return { ok: false, error: "JSON 형식이 아닙니다 — 따옴표·쉼표·괄호를 확인하세요" };
+  }
+}
+
+function canonical(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(canonical);
+  if (isObj(v)) return Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])]));
+  return v;
+}
+
+/** 같은 JSON 값인가 — 객체 칸 순서는 보지 않는다 (DB jsonb는 칸 순서를 다시 정한다) */
+export function sameJson(a: unknown, b: unknown): boolean {
+  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+}

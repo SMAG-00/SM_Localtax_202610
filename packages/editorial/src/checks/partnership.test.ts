@@ -6,6 +6,7 @@ import { uniqueIds } from "../../fixtures/helpers";
 import { QUANTITATIVE_NEWS } from "../../fixtures/quantitative";
 import { evaluatePublish } from "../evaluate";
 import type { ArticleForPublish, PartnerRef } from "../model";
+import { sponsorBadge } from "./partnership";
 
 const partner: PartnerRef = { id: "partner-01", name: "가온세무법인", contractFrom: "2026-01-01", contractTo: "2026-12-31" };
 const sponsored: ArticleForPublish = { ...TAX_EXPLAINER, contentType: "sponsored", label: "co_planned", partner };
@@ -27,6 +28,10 @@ describe("ART-10 표기와 유형", () => {
 
   it("공동 기획인데 제휴사가 없으면 배지('공동 기획 ○○')를 만들 수 없어 거부", () => {
     expect(blockers({ ...sponsored, partner: null })).toEqual(["art10.co-planned-partner-required"]);
+  });
+
+  it("제휴사 이름이 비어 있어도 배지('공동 기획 ○○')를 만들 수 없어 거부", () => {
+    expect(blockers({ ...sponsored, partner: { ...partner, name: "  " } })).toEqual(["art10.co-planned-partner-required"]);
   });
 
   it("제휴사를 지정했는데 표기가 '없음'이면 거부", () => {
@@ -66,5 +71,19 @@ describe("ART-10 계약 종료일 (2026-10-17 기준)", () => {
       updatedReason: "오탈자 수정 — '잔금일' 표기",
     };
     expect(blockers(published)).toEqual([]);
+  });
+});
+
+describe("표기 배지 글자 (ART-10 '공동 기획 ○○' · PRD-00 8.8 '광고')", () => {
+  it.each([
+    ["광고", "ad", null, "광고"],
+    ["광고는 제휴사 이름을 붙이지 않는다", "ad", "가온세무법인", "광고"],
+    ["공동 기획 + 제휴사 이름", "co_planned", "가온세무법인", "공동 기획 가온세무법인"],
+    ["이름 앞뒤 공백은 뺀다", "co_planned", " 가온세무법인 ", "공동 기획 가온세무법인"],
+    ["제휴사 이름 없는 공동 기획은 배지 없음", "co_planned", " ", null],
+    ["제휴사 없는 공동 기획은 배지 없음", "co_planned", null, null],
+    ["표기 없음", "none", "가온세무법인", null],
+  ] as const)("%s", (_name, label, partnerName, expected) => {
+    expect(sponsorBadge(label, partnerName)).toBe(expected);
   });
 });

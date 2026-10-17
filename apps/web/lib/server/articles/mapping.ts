@@ -205,10 +205,13 @@ export function toArticleForPublish(graph: ArticleGraph): ArticleForPublish {
 
 // ── 화면 데이터 · 구조화 데이터 ───────────────────────────
 
-/** 광고·제휴 표기. 공동 기획 배지의 제휴사 이름은 seo-lint 표기 형식([공동 기획])과 맞추려고 아직 붙이지 않는다 [확인 필요] */
-export function sponsorshipOf(label: string): SponsorLabel | undefined {
+/**
+ * 광고·제휴 표기 — 광고 "광고", 공동 기획은 제휴 배지 "공동 기획 ○○"(ART-10 · PRD-00 8.8, ○○ = 제휴사 이름).
+ * 화면 제목·메타·JSON-LD headline·seo-lint 점검이 모두 이 값에서 나온다. 제휴사 이름이 없으면 발행 판정이 막는다.
+ */
+export function sponsorshipOf(label: string, partnerName: string | null | undefined): SponsorLabel | undefined {
   if (label === "ad") return { kind: "광고" };
-  if (label === "co_planned") return { kind: "공동 기획" };
+  if (label === "co_planned") return { kind: "공동 기획", partnerName: partnerName ?? "" };
   return undefined;
 }
 
@@ -224,7 +227,7 @@ function absolute(siteUrl: string | undefined, path: string): string {
 export function toArticleView(graph: ArticleGraph, opts: ViewOptions): ArticleView {
   const a = graph.article;
   const lead = a.lead_media_id === null ? undefined : graph.media.find((m) => m.id === a.lead_media_id);
-  const sponsorship = sponsorshipOf(a.label);
+  const sponsorship = sponsorshipOf(a.label, graph.partner?.name);
   return {
     url: canonicalUrl(opts.siteUrl, a.slug) ?? `/news/${encodeURIComponent(a.slug)}`,
     title: a.title,
@@ -304,6 +307,7 @@ export function toLintArticle(graph: ArticleGraph, article: ArticleForPublish, v
     similarity: { status: extras.similarityStatus },
     sponsorship: {
       label: AD_LABELS[a.label] ?? "없음",
+      partnerName: a.label === "co_planned" ? (graph.partner?.name ?? null) : null,
       pageBadge: sponsorship ? sponsorLabelText(sponsorship) : null,
       structuredHeadline: extras.structuredHeadline,
     },
@@ -319,13 +323,22 @@ export function toLintArticle(graph: ArticleGraph, article: ArticleForPublish, v
   };
 }
 
+/** 같은 제목을 쓰는 다른 공개 기사 (고유 제목·canonical 중복 점검) — 공동 기획이면 제휴사 이름까지 */
+export interface TitlePeer {
+  id: number;
+  slug: string;
+  title: string;
+  label: string;
+  partnerName: string | null;
+}
+
 /** 같은 제목을 쓰는 다른 공개 기사 → seo-lint 문맥 */
-export function lintContext(peers: readonly { id: number; slug: string; title: string; label: string }[], siteUrl: string | undefined): LintContext {
+export function lintContext(peers: readonly TitlePeer[], siteUrl: string | undefined): LintContext {
   return {
     publishedArticles: peers.map((p) => ({
       id: String(p.id),
       canonical: canonicalUrl(siteUrl, p.slug) ?? `/news/${p.slug}`,
-      title: displayTitle(p.title, sponsorshipOf(p.label)),
+      title: displayTitle(p.title, sponsorshipOf(p.label, p.partnerName)),
     })),
   };
 }

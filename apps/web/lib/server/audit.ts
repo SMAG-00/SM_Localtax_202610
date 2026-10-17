@@ -24,6 +24,11 @@ export const targetOf = {
   article: (id: number | string) => `articles:${id}`,
   assignment: (id: number | string) => `story_assignments:${id}`,
   staffRole: (userId: string) => `staff_roles:${userId}`,
+  category: (id: number | string) => `categories:${id}`,
+  setting: (key: string) => `settings:${key}`,
+  glossary: (id: number | string) => `glossary_terms:${id}`,
+  partner: (id: number | string) => `partners:${id}`,
+  member: (userId: string) => `members:${userId}`,
 };
 
 /** 감사 로그 한 줄. 실패하면 예외 — 감사 기록 없는 변경을 성공으로 알리지 않는다 */

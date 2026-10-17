@@ -8,7 +8,7 @@ export interface ApiResult {
 }
 
 /** JSON 요청 — 실패해도 예외를 던지지 않고 { status, body }를 돌려준다 */
-export async function adminApi(method: "GET" | "POST" | "PATCH", path: string, body?: unknown): Promise<ApiResult> {
+export async function adminApi(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<ApiResult> {
   try {
     const res = await fetch(path, {
       method,

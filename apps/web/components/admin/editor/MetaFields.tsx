@@ -2,8 +2,11 @@
 
 import { SelectField, TextField } from "@ltr/ui";
 import { withMethodChecklists } from "@/lib/admin/editor-state";
+import { idOrNull } from "@/lib/admin/form-utils";
+import { partnerChoices } from "@/lib/admin/partner-rules";
 import { CONTENT_TYPE_LABELS, EDITORIAL_FIELD_LABELS, EVIDENCE_RIGHTS_LABELS, FORMAT_LABELS, LABEL_LABELS, REPORTING_METHOD_LABELS, SECTION_LABELS, labelOf, optionsOf } from "@/lib/admin/labels";
 import { FieldGroup, TextAreaField } from "../fields";
+import { TEXT_LINK } from "../ui";
 import type { SectionProps } from "./types";
 
 type Category = { id: number; section: string; name: string };
@@ -21,10 +24,24 @@ export function MetaFields({
   partners,
   media,
   contentTypes,
-}: SectionProps & { published: boolean; categories: readonly Category[]; partners: readonly Partner[]; media: readonly Media[]; contentTypes: readonly string[] }) {
+  today,
+  canReadPartners,
+}: SectionProps & {
+  published: boolean;
+  categories: readonly Category[];
+  partners: readonly Partner[];
+  media: readonly Media[];
+  contentTypes: readonly string[];
+  /** 한국 날짜 — 계약 종료 판정 */
+  today: string;
+  canReadPartners: boolean;
+}) {
   const typeOptions = optionsOf(CONTENT_TYPE_LABELS, [...new Set([...contentTypes, state.contentType])]);
   const categoryOptions = categories.filter((c) => c.section === state.section).map((c) => ({ value: String(c.id), label: c.name }));
-  const partnerOptions = partners.map((p) => ({ value: String(p.id), label: p.contract_to ? `${p.name} (계약 ${p.contract_to}까지)` : p.name }));
+  // 계약이 끝난 제휴사는 새로 고를 수 없다 — 지금 지정된 제휴사는 남긴다(기존 배지 유지, ART-10). 저장 API도 같은 규칙으로 막는다
+  const partnerPick = partnerChoices(partners, today, idOrNull(state.partnerId));
+  const expiredNote =
+    partnerPick.expired.length > 0 ? `계약이 끝나 고를 수 없는 제휴사: ${partnerPick.expired.map((p) => `${p.name}(${p.contractTo} 종료)`).join(", ")}` : undefined;
   const mediaOptions = media.map((m) => ({ value: String(m.id), label: `${m.id} · ${m.alt || m.path} (${labelOf(EVIDENCE_RIGHTS_LABELS, m.rights_status)})` }));
 
   function changeType(contentType: string) {
@@ -103,17 +120,25 @@ export function MetaFields({
           error={errors["meta-label"]}
         />
         {state.label === "co_planned" && (
-          <SelectField
-            id="meta-partner"
-            label="제휴사"
-            required
-            disabled={readOnly}
-            options={partnerOptions}
-            placeholder="골라 주세요"
-            value={state.partnerId}
-            onChange={(e) => update({ partnerId: e.target.value })}
-            error={errors["meta-partner"]}
-          />
+          <div className="space-y-1">
+            <SelectField
+              id="meta-partner"
+              label="제휴사"
+              required
+              disabled={readOnly}
+              hint={expiredNote}
+              options={partnerPick.options}
+              placeholder="골라 주세요"
+              value={state.partnerId}
+              onChange={(e) => update({ partnerId: e.target.value })}
+              error={errors["meta-partner"]}
+            />
+            {canReadPartners && (
+              <a href="/admin/partners" className={`${TEXT_LINK} text-[14px]`}>
+                제휴사 목록 보기
+              </a>
+            )}
+          </div>
         )}
         <SelectField
           id="meta-lead-media"

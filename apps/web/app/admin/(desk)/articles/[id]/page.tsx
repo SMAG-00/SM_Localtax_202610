@@ -11,7 +11,8 @@ import { orNotFound, pageId, pageViewer, requirePage } from "@/lib/server/admin/
 import { listCategories, listMedia, listPartners, peopleNames, pendingCorrectionRequests } from "@/lib/server/admin/queries";
 import { loadEditorView } from "@/lib/server/articles/editor-view";
 import { articleResource, loadArticle } from "@/lib/server/articles/repository";
-import { serviceDb } from "@/lib/server/articles/service";
+import { kstDate } from "@/lib/server/articles/gate";
+import { nowIso, serviceDb } from "@/lib/server/articles/service";
 
 // 기사 편집 (/admin/articles/[id]) — 원고·출처·비공개 취재 근거·확인 목록·「지방세로 읽기」 + 최적화 점검 패널.
 // 발행된 기사는 정정 요청(기자)·정정 결정(편집 책임자)·배치(편집 책임자)를 함께 보인다. 접근 판정은 기사별(작성자·유형·발행 여부)로 한다.
@@ -40,6 +41,7 @@ export default async function ArticleEditorPage({ params }: Props) {
     canDecideCorrection: can(viewer, "correction.decide"),
     canPlace: can(viewer, "article.sort"),
     canHot: can(viewer, "article.hot"),
+    canReadPartners: can(viewer, "partner.read"),
     contentTypes: CONTENT_TYPES.filter((t) => can(viewer, "article.edit", { ...resource, contentType: t })),
   };
   const requests = published && perms.canDecideCorrection ? await pendingCorrectionRequests(db, id) : [];
@@ -47,7 +49,7 @@ export default async function ArticleEditorPage({ params }: Props) {
   return (
     <>
       <ArticleHeader view={view} authorName={row.author_id !== null ? (names[row.author_id] ?? null) : null} />
-      <ArticleWorkspace view={view} categories={categories} partners={partners} media={media} perms={perms} />
+      <ArticleWorkspace view={view} categories={categories} partners={partners} media={media} perms={perms} today={kstDate(nowIso())} />
 
       <div className="mt-8 space-y-6">
         {published && row.status !== "deleted" && (perms.canRequestCorrection || perms.canDecideCorrection) && (

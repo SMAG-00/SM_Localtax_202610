@@ -1,6 +1,6 @@
 {
   "$comment": "packages/seo-lint 점검 규칙 파일 (PRD-01A OPT-03 · PRD_최종 §7.3). 점검 규칙·가중치·기준값은 이 파일에 두고 코드 상수로 박지 않는다 (PRD-01A §4.15). version은 결과 ruleVersion → seo_checks.rules_version으로 남는다. level = 위반 때 등급(block 발행 차단 · warn 발행 가능·발행 기록에 남음). weight = 축 점수 가중치 — 축 점수 = round(100 × 통과 항목 가중치 합 ÷ 해당 항목 가중치 합), 해당 없음 항목은 뺀다. 가중치(차단 3 · 경고 1)와 기준값은 W1-b 초기값이며 W7에서 조정한다. 메시지의 {이름} 자리는 엔진이 채운다. 패널 문구 금지어는 엔진(src/text.ts)이 정하고, 금지어가 든 문구는 이 파일을 읽을 때 거부된다.",
-  "version": "2026.10-w1b",
+  "version": "2026.10-w2a",
   "axes": ["SEO", "AEO", "GEO", "공통"],
   "rules": [
     {
@@ -217,15 +217,17 @@
       "id": "common.sponsor-label",
       "axis": "공통",
       "level": "block",
-      "$comment": "markerFormat — 메타 제목·메타 설명·JSON-LD headline에 넣는 표기 형식 [확인 필요: 표기 형식 PO 확정]. labels — 표기가 있는 label 값(articles.label 없음 외)",
+      "$comment": "표기 글자는 PRD 그대로 — 공동 기획은 제휴 배지 '공동 기획 ○○'(PRD-01A ART-10, ○○ = partners.name), 광고는 '광고'(PRD-00 8.8). labels와 badgeFormats는 같은 순서({partner} = 제휴사 이름). markerFormat — 메타 제목·메타 설명·JSON-LD headline에 넣는 모양({badge} = 배지 글자, packages/structured-data displayTitle과 같다)",
       "name": "광고 표기 불일치",
       "weight": 3,
-      "source": "PRD-01A §4.15 점검 표 공통 「광고 표기 일치」(차단) · OPT-02(광고·공동 기획 기사는 메타 제목·설명·JSON-LD headline에 화면과 같은 표기) · OPT-03",
-      "params": { "labels": ["공동 기획", "광고"], "markerFormat": "[{label}]" },
+      "source": "PRD-01A §4.15 점검 표 공통 「광고 표기 일치」(차단) · OPT-02(광고·공동 기획 기사는 메타 제목·설명·JSON-LD headline에 화면과 같은 표기) · ART-10(제휴 배지 '공동 기획 ○○') · PRD-00 8.8(제휴 '공동 기획', 광고 '광고' — 섞지 않는다) · OPT-03",
+      "params": { "labels": ["공동 기획", "광고"], "badgeFormats": ["공동 기획 {partner}", "광고"], "markerFormat": "[{badge}]" },
       "messages": {
         "pass": "광고 표기가 화면·메타·구조화 데이터에서 일치합니다",
         "missing": "「{label}」 표기가 빠졌습니다 — {places}",
         "unlabeled": "광고 표기가 없는 기사인데 표기가 있습니다 — {places}",
+        "mixed": "공동 기획과 광고 표기를 함께 썼습니다 — {places}",
+        "partnerMissing": "공동 기획 배지에 제휴사 이름이 없습니다 — 배지는 ‘공동 기획 ○○’입니다",
         "place.badge": "화면 제휴 배지",
         "place.metaTitle": "메타 제목",
         "place.metaDescription": "메타 설명",

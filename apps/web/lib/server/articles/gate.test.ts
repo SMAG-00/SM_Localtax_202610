@@ -1,5 +1,7 @@
 // DB 기사 한 판 → 발행 판정 — 매핑(mapping.ts)과 판정 묶음(gate.ts) 시험. 견본은 test-graph.ts (발행 통과 상태)에서 한 곳만 바꾼다.
 import { describe, expect, test } from "vitest";
+import { sponsorBadge } from "@ltr/editorial";
+import { sponsorLabelText } from "@ltr/structured-data";
 import { runGate, kstDate, parseGateSettings, saveChecks } from "./gate";
 import { renderedFacts, similarityDraft, similaritySources, toArticleForPublish, toArticleView, toLintArticle } from "./mapping";
 import { AUTHOR_PERSON, EDITOR_PERSON, GATE_OPTIONS, SETTINGS, articleRow, graph } from "./test-graph";
@@ -125,8 +127,47 @@ describe("최적화 점검 입력 (seo-lint)", () => {
     const lint = toLintArticle(g, toArticleForPublish(g), view, GATE_OPTIONS, { similarityStatus: "pass", structuredDataMismatches: [], structuredHeadline: "[광고] 가온시 상반기 취득세 18.4% 감소" });
     expect(lint.metaTitle).toBe("[광고] 가온시 상반기 취득세 18.4% 감소");
     expect(lint.metaDescription.startsWith("[광고] ")).toBe(true);
-    expect(lint.sponsorship).toEqual({ label: "광고", pageBadge: "광고", structuredHeadline: "[광고] 가온시 상반기 취득세 18.4% 감소" });
+    expect(lint.sponsorship).toEqual({ label: "광고", partnerName: null, pageBadge: "광고", structuredHeadline: "[광고] 가온시 상반기 취득세 18.4% 감소" });
     expect(runGate(g, SETTINGS, GATE_OPTIONS).lint.blockers).not.toContain("common.sponsor-label");
+  });
+});
+
+describe("공동 기획 표기 — 발행 판정·구조화 데이터·seo-lint가 같은 PRD 글자 '공동 기획 ○○'를 쓴다 (ART-10 · PRD-00 8.8)", () => {
+  const partner = { id: 9, name: "가온세무법인", contract_from: "2026-01-01", contract_to: "2026-12-31" };
+  const coPlanned = (name: string) =>
+    graph({ partner: { ...partner, name } }, { label: "co_planned", partner_id: 9, content_type: "sponsored", reporting_method: null });
+  const TITLE = "가온시 상반기 취득세 18.4% 감소";
+
+  test("배지 글자 — editorial sponsorBadge = structured-data sponsorLabelText = seo-lint 화면 배지, 제목은 '[공동 기획 가온세무법인] 제목'", () => {
+    const g = coPlanned("가온세무법인");
+    const view = toArticleView(g, GATE_OPTIONS);
+    expect(view.sponsorship).toEqual({ kind: "공동 기획", partnerName: "가온세무법인" });
+    expect(sponsorLabelText(view.sponsorship!)).toBe("공동 기획 가온세무법인");
+    expect(sponsorBadge("co_planned", "가온세무법인")).toBe(sponsorLabelText(view.sponsorship!));
+    const result = runGate(g, SETTINGS, GATE_OPTIONS);
+    expect(renderedFacts(view).title).toBe(`[공동 기획 가온세무법인] ${TITLE}`);
+    const lint = toLintArticle(g, toArticleForPublish(g), view, GATE_OPTIONS, { similarityStatus: "pass", structuredDataMismatches: [], structuredHeadline: `[공동 기획 가온세무법인] ${TITLE}` });
+    expect(lint.sponsorship).toEqual({ label: "공동 기획", partnerName: "가온세무법인", pageBadge: "공동 기획 가온세무법인", structuredHeadline: `[공동 기획 가온세무법인] ${TITLE}` });
+    expect(lint.metaTitle).toBe(`[공동 기획 가온세무법인] ${TITLE}`);
+    expect(lint.metaDescription.startsWith("[공동 기획 가온세무법인] ")).toBe(true);
+    expect(result.lint.blockers).not.toContain("common.sponsor-label");
+    expect(result.structuredDataMismatches).toEqual([]);
+    expect(result.failed.filter((id) => id.startsWith("art10.") || id === "common.sponsor-label")).toEqual([]);
+  });
+
+  test("제휴사 이름이 비면 발행 판정과 seo-lint 둘 다 막는다 (배지를 만들 수 없음)", () => {
+    const result = runGate(coPlanned("  "), SETTINGS, GATE_OPTIONS);
+    expect(result.failed).toEqual(expect.arrayContaining(["art10.co-planned-partner-required", "common.sponsor-label"]));
+    expect(result.lint.items.find((i) => i.id === "common.sponsor-label")!.message).toBe("공동 기획 배지에 제휴사 이름이 없습니다 — 배지는 ‘공동 기획 ○○’입니다");
+  });
+
+  test("광고 기사는 제휴사가 있어도 '광고'만 — 공동 기획과 섞지 않는다", () => {
+    const g = graph({ partner }, { label: "ad", partner_id: 9, content_type: "sponsored", reporting_method: null });
+    const view = toArticleView(g, GATE_OPTIONS);
+    expect(view.sponsorship).toEqual({ kind: "광고" });
+    const result = runGate(g, SETTINGS, GATE_OPTIONS);
+    expect(result.lint.blockers).not.toContain("common.sponsor-label");
+    expect(renderedFacts(view).title).toBe(`[광고] ${TITLE}`);
   });
 });
 

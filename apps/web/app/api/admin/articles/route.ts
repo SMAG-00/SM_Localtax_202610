@@ -3,6 +3,7 @@ import type { ArticleResource } from "@/lib/access";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { EMPTY_CHECKLISTS, parseChecklistsInput } from "@/lib/server/articles/content";
 import { parseArticleInput } from "@/lib/server/articles/input";
+import { expiredPartnerError } from "@/lib/server/articles/partner-check";
 import { planCreate } from "@/lib/server/articles/plan";
 import { loadGateSettings, requirePersonForUser } from "@/lib/server/articles/repository";
 import type { ArticleRow } from "@/lib/server/articles/rows";
@@ -49,6 +50,10 @@ export const POST = handle(async (request: Request) => {
   }
 
   const { columns } = planCreate(input, author.id, checklists.value);
+  if (typeof columns.partner_id === "number") {
+    const expired = await expiredPartnerError(db, columns.partner_id, now);
+    if (expired) return expired;
+  }
   const { data, error } = await db.from("articles").insert(columns).select("*").single();
   if (error || !data) throw dbError(error ?? {}, "articles 추가");
   const created = data as ArticleRow;

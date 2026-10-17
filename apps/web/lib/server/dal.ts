@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { AUDITED_DENIALS, check, isStaffRole, type Action, type Resource, type Viewer } from "@/lib/access";
+import { isSuspended } from "@/lib/admin/member-rules";
 import { actorOf, writeAudit } from "./audit";
 import { adminEmails, siteUrl, supabaseAnonKey, supabaseUrl } from "./env";
 import { HttpError, errorJson } from "./http";
@@ -13,6 +14,7 @@ import { adminClient } from "./supabase";
 //   (서명을 확인하지 않은 JWT 내용은 믿지 않는다). 서버 컴포넌트(백오피스 화면)는 요청 객체 없이 쿠키 세션으로 부른다.
 // · 역할: staff_roles(service_role로 읽음)에서만. 가입 메타데이터(user_metadata·app_metadata)는 보지 않는다 (ACC-04).
 // · 관리자: ADMIN_EMAILS 화이트리스트(대소문자 무시) + 이메일 확인된 계정.
+// · 정지된 계정(Supabase Auth banned_until이 지금보다 뒤)은 로그인 안 한 것으로 본다 — 정지 전에 받은 토큰·쿠키 세션도 거부한다 (ADM-02).
 
 const NO_PERSIST = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } } as const;
 
@@ -20,6 +22,7 @@ interface AuthUser {
   id: string;
   email?: string | null;
   email_confirmed_at?: string | null;
+  banned_until?: string | null;
 }
 
 function bearerToken(request: Request): string | null | undefined {
@@ -56,6 +59,7 @@ export const getViewer = cache(async (request?: Request): Promise<Viewer | null>
   if (token === null) return null;
   const user = token === undefined ? await userFromCookies() : await userFromToken(token, url, anonKey);
   if (!user) return null;
+  if (isSuspended(user.banned_until, Date.now())) return null;
 
   const { data, error } = await db.from("staff_roles").select("role").eq("user_id", user.id);
   if (error) {

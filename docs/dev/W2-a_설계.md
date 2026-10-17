@@ -108,17 +108,36 @@ PRD-01A 9장 W2-a를 구현할 때 DB(packages/db)·발행 판정(packages/edito
 | `POST articles/[id]/correction-requests` · `corrections` | 정정 요청 · 정정 결정(전후 버전·이유) | 201 · 403 · 422 |
 | `POST articles/[id]/placement` | 정렬 · HOT · 홈 배치 | 200 · 403 |
 | `POST assignments` · `PATCH assignments/[id]` | 기사 기획 등록 · 상태 변경 | 201 · 200 · 409 |
-| `POST roles` | 역할 부여·회수 (관리자만) | 200 · 403 · 409 |
+| `POST roles` | 역할 부여·회수 (관리자만) | 201 · 200 · 403 · 409 |
+| `GET`·`POST categories` · `PATCH categories/[id]` · `POST categories/order` | 하위 분야 목록·더하기·고치기·순서 (편집 책임자·관리자, CAT-01) | 200 · 201 · 403 · 409 · 422 |
+| `GET dictionaries` · `POST dictionaries/[forbidden·fear]` | 금지·공포 표현 사전 보기·표현 하나 더하기/빼기 (편집 책임자·관리자, UX-01·UX-03) | 200 · 403 · 404 · 409 · 422 |
+| `POST glossary` · `PATCH`·`DELETE glossary/[id]` | 쉬운 말 사전 용어 (편집 책임자·관리자, UX-01) | 201 · 200 · 403 · 409 · 422 |
+| `GET settings` · `PATCH settings/[key]` | 운영 설정 (관리자만 — 거부는 감사 로그) | 200 · 403 · 404 · 409 · 422 |
+| `GET`·`POST partners` · `PATCH partners/[id]` | 제휴사 목록(편집 책임자 읽기)·등록·고치기(광고·협찬 담당·관리자, ART-10) | 200 · 201 · 403 · 422 |
+| `GET members` · `POST members/[id]/suspension` | 편집국 계정 목록·이메일 검색 · 계정 정지/해제 (관리자만, ADM-02) | 200 · 403 · 404 · 409 · 422 |
 
-- 거부 응답 403 가운데 승인·정렬·발행·정정 결정·역할 부여는 감사 로그에 남는다.
+- 거부 응답 403 가운데 승인·정렬·발행·정정 결정·역할 부여·계정 정지·운영 설정은 감사 로그에 남는다 (`<작업>.denied`).
+- 4-2 운영 API (2026-10-18)
+  - 분야: 허브(section)는 4개로 고정 — 고치기에서 section은 422. 발행 판정이 주소로 찾는 하위 분야(지방세 > `amendments`, CAT-04)는 주소 변경 409.
+    이름·소개는 저장 때 화면 문구 검사(UX-01·UX-03 `checkScreenCopy`) — 금지·공포 표현은 422, 긴 문장·풀이 없는 용어는 경고(`checks`)만. 순서는 그 분야 전부를 받아 10 간격으로 고친다.
+  - 사전: 발행 판정이 읽는 `settings` 키·모양 그대로(`forbidden_phrases`·`fear_phrases` = `{ version, phrases }`). 버전은 날짜.번호로 오른다.
+    공백만 다른 표현은 같은 표현(409), 마지막 표현은 뺄 수 없다(422). 동시에 고치면 `updated_at`을 보고 다시 읽어 최대 3번 다시 한다.
+    용어(`glossary_terms`)는 쉬운 풀이 60자 이하(공백 포함 — DB와 같은 셈), 전문 용어로 표시하면 풀이 필수. 바꾸면 배포 없이 다음 점검부터 적용된다.
+  - 설정: 검사 규칙이 있는 키만 고친다(`lib/admin/settings-rules.ts` — 사전 2종·`similarity_internal`·`amendment_confirmed_stage`). 본문은 `{ valueJson }`(JSON 글) 또는 `{ value }`.
+    틀리면 422 `{ errors: ["칸: 문장"] }`. 버전이 있는 값은 내용을 바꾸면 버전도 바꿔야 한다. `updatedAt`이 다르면 409. 감사 로그에 전후 값.
+  - 제휴사: 계약 상태(계약 중·종료·시작 전)는 한국 날짜 기준 — 종료일 당일까지 유효(발행 판정과 같은 경계). 계약이 끝난 제휴사를 기사에 **새로** 지정하면 기사 저장 API가 422(`art10.partner-contract-expired`) — 이미 지정된 기사의 배지는 남는다.
+  - 회원: 목록 = 서비스 역할 또는 인물이 있는 계정. `?q=`(이메일 일부)는 인증 서버의 관리 API로 모든 계정에서 찾는다(처음 역할을 받을 계정).
+    정지는 Supabase Auth ban(해제할 때까지). 정지된 계정은 로그인이 막히고(인증 서버), 정지 전에 받은 토큰·쿠키 세션도 `getViewer`가 `banned_until`을 보고 거부한다(401 — 인증 서버도 403 user_banned로 거부하는 이중 확인). 자기 계정·관리자(ADMIN_EMAILS) 계정은 정지하지 않는다(409).
+  - 광고·공동 기획 표기 글자(2026-10-18 정리): 광고 `광고`, 공동 기획 제휴 배지 `공동 기획 ○○`(ART-10, ○○ = 제휴사 이름). 제목·메타·JSON-LD headline은 `[배지] 제목`.
+    packages/editorial `sponsorBadge` · packages/structured-data `sponsorLabelText` · packages/seo-lint 규칙 `common.sponsor-label`(`badgeFormats`, 규칙 파일 `2026.10-w2a`)이 같은 글자를 쓴다. 제휴사 이름이 없으면 셋 모두 막는다.
 - DB 제약·트리거 오류는 409·422와 한국어 문장으로 바꾼다. 스택·SQL 원문은 응답에 넣지 않는다.
 - 비공개 확인 목록(NAV-10 '인과 단정 없음' · NAV-11 인용별 확인)은 `articles.check_log.checklists`에 둔다. `body`는 공개 칸이라서다.
   - 근거 참조는 `src:<출처 번호>` · `ev:<근거 번호>`로 쓴다.
   - 이미지 권리는 본문이 아니라 `media` 표에서 읽는다.
 - 쓰기 순서는 정해져 있다. PostgREST에는 트랜잭션이 없어서, 실패하면 앞 단계를 되돌린다.
 - 아직 안 한 것
-  - 분야·사전·설정 편집 API와 화면, 역할 관리 화면(ADM-02): 4-2단계
   - 예약 발행
+  - 홈 배치(HOME-03 해설 스토리 카드·트래커 하이라이트 — 순서·노출 기간·6장 상한): 저장할 칸(표)이 정해지지 않았다 [결정 필요 — 4-2 보고]
 
 ## 7. 편집 화면 (4단계 — apps/web/app/admin)
 
@@ -133,4 +152,18 @@ PRD-01A 9장 W2-a를 구현할 때 DB(packages/db)·발행 판정(packages/edito
   - 메뉴는 `lib/admin/menu.ts` — 허용 작업(`allowedActions`)에서만 나온다
   - 점검 패널의 점수 옆 문구는 seo-lint 고정 문구(`SCORE_DISCLAIMER`)만 쓴다 — 패널 금지어(순위·노출 예측·상위 노출) 규칙
   - 시험: `apps/web/lib/admin/*.test.ts`, `e2e/admin-ui.test.mjs`
-- 4-2 분야·사전·설정 편집, 역할 관리 화면(ADM-02), 홈 배치
+- 4-2 분야·사전·설정·제휴사 편집, 회원·역할 화면(ADM-02)
+  - 화면
+    - `/admin/categories` 분야 — 4대 분야(허브)별 하위 분야. 위로·아래로(순서 저장)·고치기·더하기. 편집 책임자·관리자
+    - `/admin/dictionaries?tab=forbidden|fear|glossary` 사전 — 금지 표현·공포 표현(표현 하나씩 더하기·빼기)·쉬운 말 사전(용어 더하기·고치기·지우기). 편집 책임자·관리자
+    - `/admin/settings` 운영 설정 — 행마다 설명·지금 값·JSON 편집(화면과 서버가 같은 규칙으로 검사, 칸 오류). 관리자만
+    - `/admin/partners` 제휴사 — 광고·협찬 담당·관리자는 등록·고치기, 편집 책임자는 읽기만(폼 0). 계약 상태 배지와 배지가 붙은 기사 수
+    - `/admin/members` 회원·역할 — 편집국 계정 목록·이메일 검색·역할 주기/거두기·계정 정지/해제. 관리자만.
+      겸직 금지 조합(편집 책임자 + 광고·스토어·브랜드·전문가 담당)은 고르는 즉시 사유를 보이고, [역할 주기]를 눌러도 역할 API를 부르지 않는다(`lib/admin/role-rules.ts`).
+      화면이 본 역할이 낡았으면 서버 409 문장을 그대로 보인다
+    - 기사 편집기·새 기사의 제휴사 고르기 — 계약이 끝난 제휴사는 선택지에서 빼고 이름을 알린다(지금 지정된 제휴사는 남긴다). 한국 날짜는 서버가 넘긴다
+  - 메뉴 (`lib/admin/menu.ts`, 허용 작업에서만): 편집 책임자 + `분야`·`사전` · 광고·협찬 담당 + `제휴사` · 관리자 + `분야`·`사전`·`제휴사`·`설정`·`회원·역할`.
+    편집 책임자에게 제휴사 메뉴는 없다 — 제휴사 관리는 광고 편집 메뉴로 친다(ADM-01 "편집자 화면에 광고 편집 메뉴 0"). 목록은 기사 편집기의 [제휴사 목록 보기]로 읽기만 한다
+  - 접근 작업 더함 (`lib/access.ts`): `partner.read`(편집 책임자·광고 담당·관리자) · `member.read`·`member.suspend`(관리자)
+  - 시험: `apps/web/lib/admin/{category,dictionary,glossary,settings,partner,member,role}-rules.test.ts`, `e2e/admin-settings-api.test.mjs`, `e2e/admin-settings-ui.test.mjs`
+  - 홈 배치는 하지 않았다 — 위 6장 '아직 안 한 것' 

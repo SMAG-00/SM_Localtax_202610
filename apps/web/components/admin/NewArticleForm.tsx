@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { PrimaryButton, RadioField, SelectField, TextField } from "@ltr/ui";
 import { adminApi, apiErrorDetails, apiErrorMessage } from "@/lib/admin/api-client";
 import type { FieldErrors } from "@/lib/admin/form-utils";
+import { partnerChoices } from "@/lib/admin/partner-rules";
 import { LABEL_LABELS, REPORTING_METHOD_LABELS, SECTION_LABELS, optionsOf } from "@/lib/admin/labels";
 import { newArticlePayload, templateById, validateNewArticle, type ArticleTemplate, type NewArticleForm as Form } from "@/lib/admin/templates";
 import { ErrorSummary, TextAreaField } from "./fields";
@@ -20,12 +21,15 @@ export function NewArticleForm({
   partners,
   assignment,
   initial,
+  today,
 }: {
   templates: readonly ArticleTemplate[];
   categories: readonly Category[];
   partners: readonly Partner[];
   assignment: { id: number; hypothesis: string } | null;
   initial: Form;
+  /** 한국 날짜 YYYY-MM-DD (서버가 정한다 — 제휴사 계약 종료 판정) */
+  today: string;
 }) {
   const hydrated = useHydrated();
   const router = useRouter();
@@ -70,8 +74,11 @@ export function NewArticleForm({
   }
 
   const sectionCategories = categories.filter((c) => c.section === form.section).map((c) => ({ value: String(c.id), label: c.name }));
-  const today = new Date().toISOString().slice(0, 10);
-  const usablePartners = partners.filter((p) => p.contract_to === null || p.contract_to >= today).map((p) => ({ value: String(p.id), label: p.name }));
+  // 계약이 끝난 제휴사는 새 기사에 고를 수 없다 (ART-10) — 선택지에서 빼고 이름을 알린다
+  const partnerPick = partnerChoices(partners, today, null);
+  const usablePartners = partnerPick.options;
+  const expiredNote =
+    partnerPick.expired.length > 0 ? `계약이 끝나 고를 수 없는 제휴사: ${partnerPick.expired.map((p) => `${p.name}(${p.contractTo} 종료)`).join(", ")}` : undefined;
 
   return (
     <form onSubmit={submit} noValidate className="space-y-6 rounded-2xl border border-navy-100 bg-white p-6">
@@ -156,7 +163,17 @@ export function NewArticleForm({
             error={errors["new-label"]}
           />
           {form.label === "co_planned" && (
-            <SelectField id="new-partner" label="제휴사" required options={usablePartners} placeholder="골라 주세요" value={form.partnerId} onChange={set("partnerId")} error={errors["new-partner"]} />
+            <SelectField
+              id="new-partner"
+              label="제휴사"
+              required
+              hint={expiredNote}
+              options={usablePartners}
+              placeholder="골라 주세요"
+              value={form.partnerId}
+              onChange={set("partnerId")}
+              error={errors["new-partner"]}
+            />
           )}
         </div>
       )}

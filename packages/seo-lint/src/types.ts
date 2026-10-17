@@ -78,10 +78,15 @@ export interface ArticleForLint {
   structuredDataMismatches: readonly string[];
   /** packages/similarity 결과 — 공통 **「유사도」(차단)** (OPT-06) */
   similarity: { status: SimilarityStatus };
-  /** 광고 표기 — 공통 **「광고 표기 일치」(차단)** (OPT-02) */
+  /**
+   * 광고 표기 — 공통 **「광고 표기 일치」(차단)** (OPT-02). 표기 글자는 PRD 그대로: 광고는 "광고"(PRD-00 8.8),
+   * 공동 기획은 제휴 배지 "공동 기획 ○○"(ART-10 — ○○ = 제휴사 이름). 메타 제목·설명·headline에는 "[배지]" 모양으로 넣는다.
+   */
   sponsorship: {
     /** `articles.label` */
     label: AdLabel;
+    /** 공동 기획의 제휴사 이름(`partners.name`). 광고·표기 없음은 null. 공동 기획인데 비면 배지를 만들 수 없어 차단 */
+    partnerName: string | null;
     /** 화면 제휴 배지 글자(배지가 없으면 null) */
     pageBadge: string | null;
     /** packages/structured-data가 만든 JSON-LD `headline` 값 */

@@ -32,7 +32,7 @@ const ruleOf = (raw: RawRules, id: string) => raw.rules.find((r) => r.id === id)
 
 describe("규칙 파일 버전", () => {
   it("규칙 파일 version이 결과 ruleVersion에 그대로 실린다 (seo_checks.rules_version)", () => {
-    expect(rawRules.version).toBe("2026.10-w1b");
+    expect(rawRules.version).toBe("2026.10-w2a");
     const result = lintArticle(PASSING_SAMPLE.article, PASSING_SAMPLE.context, RULES_V1);
     expect(result.ruleVersion).toBe(rawRules.version);
   });

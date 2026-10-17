@@ -41,6 +41,9 @@ const CHECK_CONSTRAINTS: Record<string, [number, string]> = {
     "지역 태그가 있는 기획은 편집 분야와 공익적 질문이 있어야 assigned 이후 상태로 바꿀 수 있습니다 (REG1-17)",
   ],
   media_confirmed_complete: [422, "권리 확인 이미지는 출처·이용 조건·확인일(사진은 촬영자도)이 필요합니다"],
+  partners_check: [422, "계약 종료일이 시작일보다 앞입니다 (ART-10)"],
+  glossary_terms_plain_check: [422, "쉬운 풀이는 60자 이하여야 합니다 (UX-01)"],
+  categories_slug_check: [422, "하위 분야 주소는 영문 소문자·숫자·'-'만 씁니다 (CAT-01)"],
 };
 
 const UNIQUE_CONSTRAINTS: Record<string, string> = {
@@ -48,6 +51,9 @@ const UNIQUE_CONSTRAINTS: Record<string, string> = {
   staff_roles_pkey: "이미 부여된 역할입니다",
   people_staff_user_id_key: "이 계정에는 이미 인물이 등록되어 있습니다",
   article_revisions_article_id_version_key: "다른 사람이 먼저 고쳤습니다 — 새로 불러온 뒤 다시 저장하세요",
+  categories_section_slug_key: "이 분야에 같은 주소(slug)의 하위 분야가 이미 있습니다 (CAT-01)",
+  categories_section_name_key: "이 분야에 같은 이름의 하위 분야가 이미 있습니다 (CAT-01)",
+  glossary_terms_term_key: "이미 사전에 있는 용어입니다",
 };
 
 const FK_CONSTRAINTS: Record<string, string> = {

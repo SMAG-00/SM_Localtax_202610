@@ -43,7 +43,7 @@ describe("축 점수", () => {
       evidence: [],
       structuredDataMismatches: ["headline"],
       similarity: { status: "blocked" },
-      sponsorship: { label: "광고", pageBadge: null, structuredHeadline: base.title },
+      sponsorship: { label: "광고", partnerName: null, pageBadge: null, structuredHeadline: base.title },
       internalLinkCount: 0,
       images: [{ alt: "" }],
       summaryBoxLines: [],

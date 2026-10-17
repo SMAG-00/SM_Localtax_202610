@@ -35,9 +35,11 @@ export interface AuthorRef {
 
 /**
  * 광고·제휴 표기 (`articles.label` — 없음·공동 기획·광고, ART-10 · PRD-00 8.8).
- * 표기가 없으면 칸을 비운다. 둘을 함께 고를 수 없다.
+ * 표기가 없으면 칸을 비운다. 둘을 함께 고를 수 없다(칸이 하나다).
+ * 공동 기획의 배지 글자는 "공동 기획 ○○" — ○○ = 제휴사 이름(`partners.name`, 필수). 이름이 비면 "공동 기획"만 남는데,
+ * PRD 배지가 아니므로 seo-lint 「광고 표기 일치」와 발행 판정(art10.co-planned-partner-required)이 그 기사를 막는다.
  */
-export type SponsorLabel = { kind: "광고" } | { kind: "공동 기획"; partnerName?: string };
+export type SponsorLabel = { kind: "광고" } | { kind: "공동 기획"; partnerName: string };
 
 /** 기사 `/news/[slug]` */
 export interface ArticleView {

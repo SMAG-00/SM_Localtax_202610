@@ -5,7 +5,7 @@ import { RULES_V1, lintArticle, type LintResult } from "@ltr/seo-lint";
 import { INTERNAL_SIMILARITY_RULES, checkSimilarity, selectThresholds, type InternalSimilaritySettings, type SimilarityResult } from "@ltr/similarity";
 import { compareRendered, newsArticle } from "@ltr/structured-data";
 import type { ArticleGraph } from "./rows";
-import { lintContext, renderedFacts, similarityDraft, similaritySources, toArticleForPublish, toArticleView, toLintArticle } from "./mapping";
+import { lintContext, renderedFacts, similarityDraft, similaritySources, toArticleForPublish, toArticleView, toLintArticle, type TitlePeer } from "./mapping";
 
 export interface GateSettings {
   dictionaries: Dictionaries;
@@ -18,7 +18,7 @@ export interface GateOptions {
   siteUrl: string | undefined;
   publisherName: string;
   /** 같은 제목의 다른 공개 기사 (고유 제목·canonical 중복 점검) */
-  peers: readonly { id: number; slug: string; title: string; label: string }[];
+  peers: readonly TitlePeer[];
 }
 
 export interface GateResult {

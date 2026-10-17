@@ -61,12 +61,15 @@ export function ArticleWorkspace({
   partners,
   media,
   perms,
+  today,
 }: {
   view: EditorView;
   categories: readonly Category[];
   partners: readonly Partner[];
   media: readonly Media[];
   perms: EditorPermissions;
+  /** 한국 날짜 YYYY-MM-DD (서버가 정한다 — 제휴사 계약 종료 판정) */
+  today: string;
 }) {
   const hydrated = useHydrated();
   const router = useRouter();
@@ -159,6 +162,8 @@ export function ArticleWorkspace({
             partners={partners}
             media={media}
             contentTypes={perms.contentTypes}
+            today={today}
+            canReadPartners={perms.canReadPartners}
           />
         </Panel>
 

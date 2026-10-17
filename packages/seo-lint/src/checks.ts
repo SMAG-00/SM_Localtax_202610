@@ -228,27 +228,46 @@ export const CHECKS: Readonly<Record<string, CheckDef>> = {
   }),
 
   "common.sponsor-label": define({
-    params: { labels: "strings", markerFormat: "string" },
-    messageKeys: ["pass", "missing", "unlabeled", "place.badge", "place.metaTitle", "place.metaDescription", "place.headline"],
+    // labels = [공동 기획 label, 광고 label] (articles.label 표기 값), badgeFormats = 같은 순서의 배지 모양({partner} = 제휴사 이름),
+    // markerFormat = 메타·headline에 넣는 모양({badge} = 배지 글자)
+    params: { labels: "strings", badgeFormats: "strings", markerFormat: "string" },
+    messageKeys: ["pass", "missing", "unlabeled", "mixed", "partnerMissing", "place.badge", "place.metaTitle", "place.metaDescription", "place.headline"],
     run(a, _ctx, p, text) {
-      const { label, pageBadge, structuredHeadline } = a.sponsorship;
-      const marker = (l: string) => p.markerFormat.replaceAll("{label}", l);
+      const { label, partnerName, pageBadge, structuredHeadline } = a.sponsorship;
       const texts = [
         ["metaTitle", a.metaTitle],
         ["metaDescription", a.metaDescription],
         ["headline", structuredHeadline],
       ] as const;
-      const places: string[] = [];
+      const formatOf = (l: string) => p.badgeFormats[p.labels.indexOf(l)] ?? l;
+      const marker = (badge: string) => p.markerFormat.replaceAll("{badge}", badge);
+      // 표기 형식 찾기 (표기 없는 기사·섞인 표기) — 배지 모양의 {partner} 자리는 아무 이름이나, 이름이 빠진 "[공동 기획]"도 표기로 본다
+      const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const pattern = (l: string) => {
+        const [before, after] = p.markerFormat.split("{badge}") as [string, string | undefined];
+        const format = formatOf(l);
+        const name = format.includes("{partner}") ? "(?:\\s[^\\]\\n]*)?" : "";
+        const badge = escape(format.replace(/\s*\{partner\}/, "")) + name;
+        return new RegExp(`${escape(before)}${badge}${escape(after ?? "")}`);
+      };
+      const where = (places: readonly string[]) => places.map((pl) => text(`place.${pl}`)).join(", ");
+
       if (label === "없음") {
+        const places: string[] = [];
         if (!blank(pageBadge)) places.push("badge");
-        for (const [place, value] of texts) if (p.labels.some((l) => value.includes(marker(l)))) places.push(place);
-      } else {
-        if ((pageBadge ?? "").trim() !== label) places.push("badge");
-        for (const [place, value] of texts) if (!value.includes(marker(label))) places.push(place);
+        for (const [place, value] of texts) if (p.labels.some((l) => pattern(l).test(value))) places.push(place);
+        return places.length === 0 ? pass() : fail("unlabeled", { places: where(places) });
       }
-      if (places.length === 0) return pass();
-      const where = places.map((pl) => text(`place.${pl}`)).join(", ");
-      return label === "없음" ? fail("unlabeled", { places: where }) : fail("missing", { label, places: where });
+      const needsPartner = formatOf(label).includes("{partner}");
+      if (needsPartner && blank(partnerName)) return fail("partnerMissing");
+      const badge = formatOf(label).replaceAll("{partner}", (partnerName ?? "").trim());
+      const missing: string[] = [];
+      if ((pageBadge ?? "").trim() !== badge) missing.push("badge");
+      for (const [place, value] of texts) if (!value.includes(marker(badge))) missing.push(place);
+      if (missing.length > 0) return fail("missing", { label: badge, places: where(missing) });
+      const others = p.labels.filter((l) => l !== label);
+      const mixed = texts.filter(([, value]) => others.some((l) => pattern(l).test(value))).map(([place]) => place);
+      return mixed.length === 0 ? pass() : fail("mixed", { places: where(mixed) });
     },
   }),
 };

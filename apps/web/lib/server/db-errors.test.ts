@@ -27,6 +27,15 @@ describe("DB 오류 변환", () => {
     });
     expect(mapDbError({ code: "22P02", message: "invalid input syntax for type bigint" })).toEqual({ status: 422, message: "값 형식이 틀립니다" });
   });
+  test("분야·용어 중복과 제휴사 계약 기간 — 4-2 편집 화면의 DB 제약도 한국어 문장으로", () => {
+    expect(mapDbError({ code: "23505", message: 'duplicate key value violates unique constraint "categories_section_slug_key"' })).toEqual({
+      status: 409,
+      message: "이 분야에 같은 주소(slug)의 하위 분야가 이미 있습니다 (CAT-01)",
+      constraint: "categories_section_slug_key",
+    });
+    expect(mapDbError({ code: "23505", message: 'duplicate key value violates unique constraint "glossary_terms_term_key"' }).message).toBe("이미 사전에 있는 용어입니다");
+    expect(mapDbError({ code: "23514", message: 'new row for relation "partners" violates check constraint "partners_check"' })).toMatchObject({ status: 422, message: expect.stringContaining("계약 종료일") });
+  });
   test("권한 오류의 영문 원문은 숨기고, 추가만 되는 표의 트리거 문장은 보인다", () => {
     expect(mapDbError({ code: "42501", message: "permission denied for table audit_logs" })).toEqual({ status: 409, message: "이 기록은 바꿀 수 없습니다" });
     expect(mapDbError({ code: "42501", message: "article_revisions는 추가만 할 수 있습니다 (UPDATE 거부)" }).message).toContain("추가만");

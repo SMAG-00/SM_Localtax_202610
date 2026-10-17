@@ -26,7 +26,7 @@ const decision = publishDecision(result);
 | `SCORE_DISCLAIMER` · `FORBIDDEN_PANEL_WORDS` | 패널 고정 문구(금지어가 들어가도 되는 유일한 문구)와 금지어 목록 |
 | `PASSING_SAMPLE` · `BLOCKING_SAMPLES` | 견본 원고 — 통과 1종, 차단 8종 |
 
-## 규칙 파일 `rules/rules.v1.json` (version `2026.10-w1b`)
+## 규칙 파일 `rules/rules.v1.json` (version `2026.10-w2a`)
 
 규칙·가중치·기준값은 이 파일에 두고 코드에 박지 않는다. 규칙마다 `id · axis · level(block|warn) · name · weight · source(PRD 근거) · params · messages`.
 
@@ -41,7 +41,11 @@ const decision = publishDecision(result);
 - **법령 기준일**은 지방세 분야(`section` = `tax`, 규칙 파일 값) · 세무 감수 대상 · 「지방세로 읽기」가 있는 기사에서만 필수다.
 - **발행/수정일**은 시간대가 붙은 ISO 8601만 읽는다(같은 순간이면 같은 값, 1분이라도 다르면 차단). 화면에 날짜만 보이면 한국 시각(규칙 파일 `displayUtcOffsetMinutes` 540) 날짜로 비교한다. 수정일이 발행일보다 앞서면 차단.
 - **유사도 '비교 대상 없음'**(`no_sources`)은 통과로 표시하지 않고 **경고**로 남긴다(점수에서도 통과로 세지 않음). 기준 '초과'가 아니라 비교하지 못한 상태이고 OPT-06은 '통과로 표시하지 않음'만 정하기 때문이다. 차단으로 바꾸려면 규칙 파일의 `unverifiedLevel`을 `block`으로 바꾼다.
-- **광고 표기**는 광고·공동 기획 기사의 화면 배지 · 메타 제목 · 메타 설명 · JSON-LD `headline`에 같은 표기(`markerFormat` `[{label}]` — 형식은 확인 필요)가 있는지, 표기 없는 기사에 표기가 없는지 본다.
+- **광고 표기**는 광고·공동 기획 기사의 화면 배지 · 메타 제목 · 메타 설명 · JSON-LD `headline`에 같은 표기가 있는지, 표기 없는 기사에 표기가 없는지, 둘을 섞지 않았는지 본다.
+  - 배지 글자는 PRD 그대로다 — 광고 `광고`(PRD-00 8.8), 공동 기획 제휴 배지 `공동 기획 ○○`(PRD-01A ART-10, ○○ = 제휴사 이름 `sponsorship.partnerName`). 규칙 파일 `badgeFormats` `["공동 기획 {partner}", "광고"]`.
+  - 메타·headline에는 `markerFormat` `[{badge}]` 모양으로 넣는다 — `[광고] 제목` · `[공동 기획 가온세무법인] 제목` (packages/structured-data `displayTitle`과 같다).
+  - 공동 기획인데 제휴사 이름이 비면 배지를 만들 수 없어 차단(`partnerMissing`). 공동 기획 기사에 `[광고]`, 광고 기사에 `[공동 기획 …]`이 함께 있으면 차단(`mixed`).
+  - 2026-10-18 바꿈(W2-a 4-2): 이전 `2026.10-w1b`는 제휴사 이름 없는 `[공동 기획]`을 기대해 structured-data의 `공동 기획 ○○`와 어긋났다.
 
 ## 견본 원고 `fixtures/`
 

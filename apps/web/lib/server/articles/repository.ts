@@ -4,6 +4,7 @@ import type { ArticleResource } from "@/lib/access";
 import { HttpError, dbError } from "../http";
 import { readStoredBody } from "./content";
 import { parseGateSettings, type GateSettings } from "./gate";
+import type { TitlePeer } from "./mapping";
 import type {
   ArticleGraph,
   ArticleRow,
@@ -145,12 +146,19 @@ export async function loadGateSettings(db: Db): Promise<GateSettings> {
   return settings;
 }
 
-/** 같은 제목의 다른 공개 기사 — 고유 제목 점검 문맥 */
-export async function loadTitlePeers(db: Db, article: ArticleRow): Promise<{ id: number; slug: string; title: string; label: string }[]> {
-  return rows(
-    db.from("articles").select("id, slug, title, label").eq("status", "published").eq("title", article.title).neq("id", article.id).limit(20),
+/** 같은 제목의 다른 공개 기사 — 고유 제목 점검 문맥 (공동 기획은 제휴사 이름까지 — 화면 제목 '[공동 기획 ○○] 제목') */
+export async function loadTitlePeers(db: Db, article: ArticleRow): Promise<TitlePeer[]> {
+  const list = await rows<{ id: number; slug: string; title: string; label: string; partner: { name: string } | null }>(
+    db
+      .from("articles")
+      .select("id, slug, title, label, partner:partners(name)")
+      .eq("status", "published")
+      .eq("title", article.title)
+      .neq("id", article.id)
+      .limit(20),
     "articles 읽기",
   );
+  return list.map((p) => ({ id: p.id, slug: p.slug, title: p.title, label: p.label, partnerName: p.partner?.name ?? null }));
 }
 
 /** 현재 버전의 수정 이력 행 번호 (정정의 전 버전) */

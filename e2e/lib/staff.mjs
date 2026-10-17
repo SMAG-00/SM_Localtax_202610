@@ -22,6 +22,11 @@ export class StaffFixture {
     this.personIds = new Set();
     this.articleIds = new Set();
     this.assignmentIds = new Set();
+    /** 시험이 만든 운영 행 — 분야·제휴사·용어 (기사를 지운 뒤 지운다) */
+    this.extraRows = { categories: new Set(), partners: new Set(), glossary_terms: new Set() };
+    /** 시험 전 운영 설정·분야 행 — 끝나면 그대로 되돌린다 (씨앗 데이터 시험이 값을 대조한다) */
+    this.settingsSnapshot = null;
+    this.categoriesSnapshot = null;
     this.run = `${Date.now().toString(36)}${crypto.randomBytes(3).toString("hex")}`;
   }
 
@@ -109,6 +114,43 @@ export class StaffFixture {
     if (id) this.assignmentIds.add(Number(id));
   }
 
+  /** 시험이 만든 분야(categories)·제휴사(partners)·용어(glossary_terms) 행 */
+  trackRow(table, id) {
+    if (!this.extraRows[table]) throw new Error(`지울 수 없는 표: ${table}`);
+    if (id) this.extraRows[table].add(Number(id));
+  }
+
+  /** 운영 설정·분야를 시험 전 모습으로 기억한다 — cleanup이 되돌린다 */
+  async snapshotOperations() {
+    this.settingsSnapshot = (await this.db.query("select key, value, updated_by from public.settings")).rows;
+    this.categoriesSnapshot = (
+      await this.db.query("select id, slug, name, intro, sort, visible, needs_disclaimer, needs_tax_lens from public.categories")
+    ).rows;
+  }
+
+  async #restoreOperations(q) {
+    for (const table of ["glossary_terms", "partners", "categories"]) {
+      const ids = [...this.extraRows[table]];
+      if (ids.length) await q(`delete from public.${table} where id = any($1::bigint[])`, [ids]);
+    }
+    if (this.settingsSnapshot) {
+      for (const r of this.settingsSnapshot) {
+        await q(
+          "update public.settings set value = $2::jsonb, updated_by = $3 where key = $1 and (value is distinct from $2::jsonb or updated_by is distinct from $3)",
+          [r.key, JSON.stringify(r.value), r.updated_by],
+        );
+      }
+    }
+    if (this.categoriesSnapshot) {
+      for (const c of this.categoriesSnapshot) {
+        await q(
+          "update public.categories set slug = $2, name = $3, intro = $4, sort = $5, visible = $6, needs_disclaimer = $7, needs_tax_lens = $8 where id = $1",
+          [c.id, c.slug, c.name, c.intro, c.sort, c.visible, c.needs_disclaimer, c.needs_tax_lens],
+        );
+      }
+    }
+  }
+
   async #cleanUserRows(userIds) {
     if (userIds.length === 0) return;
     const actors = userIds.map((id) => `user:${id}`);
@@ -167,10 +209,15 @@ export class StaffFixture {
         await q("delete from public.story_assignment_events where assignment_id = any($1::bigint[])", [assignmentIds]);
         await q("delete from public.story_assignments where id = any($1::bigint[])", [assignmentIds]);
       }
+      await this.#restoreOperations(q);
       const targets = [
         ...articleIds.map((id) => `articles:${id}`),
         ...assignmentIds.map((id) => `story_assignments:${id}`),
         ...userIds.map((id) => `staff_roles:${id}`),
+        ...userIds.map((id) => `members:${id}`),
+        ...[...this.extraRows.categories].map((id) => `categories:${id}`),
+        ...[...this.extraRows.partners].map((id) => `partners:${id}`),
+        ...[...this.extraRows.glossary_terms].map((id) => `glossary_terms:${id}`),
       ];
       await q("delete from public.audit_logs where actor = any($1::text[]) or target = any($2::text[])", [actors, targets]);
       if (personIds.length) await q("delete from public.people where id = any($1::bigint[])", [personIds]);

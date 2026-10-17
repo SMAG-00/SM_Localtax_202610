@@ -204,31 +204,72 @@ describe("구조화 데이터와 화면 일치 — packages/structured-data 결�
   });
 });
 
-describe("광고 표기 일치", () => {
+describe("광고 표기 일치 — 배지 '공동 기획 ○○'(ART-10)·'광고'(PRD-00 8.8), 메타·headline은 [배지]", () => {
   const ad = (sponsorship: ArticleForLint["sponsorship"], over: Partial<ArticleForLint> = {}) =>
     item(art({ sponsorship, ...over }), "common.sponsor-label");
-  const labeled = { metaTitle: `[광고] ${base.metaTitle}`, metaDescription: `[광고] ${base.metaDescription}` };
-
-  it("광고 기사가 배지·메타 제목·메타 설명·headline에 같은 표기를 하면 통과", () => {
-    expect(ad({ label: "광고", pageBadge: "광고", structuredHeadline: `[광고] ${base.title}` }, labeled).level).toBe("pass");
+  const marked = (marker: string) => ({ metaTitle: `${marker} ${base.metaTitle}`, metaDescription: `${marker} ${base.metaDescription}` });
+  const coPlanned = (partnerName: string | null, over: Partial<ArticleForLint["sponsorship"]> = {}): ArticleForLint["sponsorship"] => ({
+    label: "공동 기획",
+    partnerName,
+    pageBadge: partnerName ? `공동 기획 ${partnerName}` : "공동 기획",
+    structuredHeadline: `[공동 기획${partnerName ? ` ${partnerName}` : ""}] ${base.title}`,
+    ...over,
   });
 
-  it("표기가 빠진 곳을 모두 적는다 — 배지 글자가 label과 다른 것도 빠진 것으로 본다", () => {
-    expect(ad({ label: "공동 기획", pageBadge: "광고", structuredHeadline: base.title })).toMatchObject({
+  it("광고 기사가 배지·메타 제목·메타 설명·headline에 같은 '[광고]' 표기를 하면 통과", () => {
+    expect(ad({ label: "광고", partnerName: null, pageBadge: "광고", structuredHeadline: `[광고] ${base.title}` }, marked("[광고]")).level).toBe("pass");
+  });
+
+  it("공동 기획 기사는 배지 '공동 기획 ○○'와 메타·headline의 '[공동 기획 ○○]'가 같으면 통과", () => {
+    expect(ad(coPlanned("가온세무법인"), marked("[공동 기획 가온세무법인]")).level).toBe("pass");
+  });
+
+  it("공동 기획인데 제휴사 이름 없이 '[공동 기획]'만 쓰면 차단 — 배지를 만들 수 없다", () => {
+    expect(ad(coPlanned(null), marked("[공동 기획]"))).toMatchObject({ level: "block", message: "공동 기획 배지에 제휴사 이름이 없습니다 — 배지는 ‘공동 기획 ○○’입니다" });
+    expect(ad(coPlanned("  "), marked("[공동 기획]")).level).toBe("block");
+  });
+
+  it("다른 제휴사 이름·이름 빠진 표기는 빠진 것으로 본다", () => {
+    expect(ad(coPlanned("가온세무법인"), marked("[공동 기획]"))).toMatchObject({
       level: "block",
-      message: "「공동 기획」 표기가 빠졌습니다 — 화면 제휴 배지, 메타 제목, 메타 설명, 구조화 데이터 headline",
+      message: "「공동 기획 가온세무법인」 표기가 빠졌습니다 — 메타 제목, 메타 설명",
     });
-  });
-
-  it("광고 표기가 없는 기사에 제휴 배지나 [광고] 표기가 있으면 차단", () => {
-    expect(ad({ label: "없음", pageBadge: "광고", structuredHeadline: base.title }).message).toBe("광고 표기가 없는 기사인데 표기가 있습니다 — 화면 제휴 배지");
-    expect(ad({ label: "없음", pageBadge: null, structuredHeadline: base.title }, { metaTitle: `[광고] ${base.metaTitle}` }).message).toBe(
-      "광고 표기가 없는 기사인데 표기가 있습니다 — 메타 제목",
+    expect(ad(coPlanned("가온세무법인", { pageBadge: "공동 기획 누리일보" }), marked("[공동 기획 가온세무법인]")).message).toBe(
+      "「공동 기획 가온세무법인」 표기가 빠졌습니다 — 화면 제휴 배지",
     );
   });
 
-  it("제목에 '광고'라는 낱말이 있어도 표기 형식([광고])이 아니면 광고 표기로 보지 않는다", () => {
-    expect(ad({ label: "없음", pageBadge: null, structuredHeadline: "옥외광고물 등록면허세 정리" }, { metaTitle: "옥외광고물 등록면허세 정리" }).level).toBe("pass");
+  it("표기가 빠진 곳을 모두 적는다 — 배지 글자가 표기와 다른 것도 빠진 것으로 본다", () => {
+    expect(ad({ label: "공동 기획", partnerName: "가온세무법인", pageBadge: "광고", structuredHeadline: base.title })).toMatchObject({
+      level: "block",
+      message: "「공동 기획 가온세무법인」 표기가 빠졌습니다 — 화면 제휴 배지, 메타 제목, 메타 설명, 구조화 데이터 headline",
+    });
+  });
+
+  it("공동 기획과 광고를 섞으면 차단 — 표기는 하나만 (PRD-00 8.8)", () => {
+    expect(ad(coPlanned("가온세무법인", { structuredHeadline: `[광고] [공동 기획 가온세무법인] ${base.title}` }), marked("[공동 기획 가온세무법인]"))).toMatchObject({
+      level: "block",
+      message: "공동 기획과 광고 표기를 함께 썼습니다 — 구조화 데이터 headline",
+    });
+    expect(
+      ad({ label: "광고", partnerName: null, pageBadge: "광고", structuredHeadline: `[광고] ${base.title}` }, {
+        metaTitle: `[광고] ${base.metaTitle}`,
+        metaDescription: `[광고] [공동 기획 가온세무법인] ${base.metaDescription}`,
+      }).message,
+    ).toBe("공동 기획과 광고 표기를 함께 썼습니다 — 메타 설명");
+  });
+
+  it("광고 표기가 없는 기사에 제휴 배지나 [광고]·[공동 기획 ○○] 표기가 있으면 차단", () => {
+    const none = { label: "없음" as const, partnerName: null, pageBadge: null, structuredHeadline: base.title };
+    expect(ad({ ...none, pageBadge: "광고" }).message).toBe("광고 표기가 없는 기사인데 표기가 있습니다 — 화면 제휴 배지");
+    expect(ad(none, { metaTitle: `[광고] ${base.metaTitle}` }).message).toBe("광고 표기가 없는 기사인데 표기가 있습니다 — 메타 제목");
+    expect(ad(none, { metaDescription: `[공동 기획 가온세무법인] ${base.metaDescription}` }).message).toBe("광고 표기가 없는 기사인데 표기가 있습니다 — 메타 설명");
+    expect(ad({ ...none, structuredHeadline: `[공동 기획] ${base.title}` }).message).toBe("광고 표기가 없는 기사인데 표기가 있습니다 — 구조화 데이터 headline");
+  });
+
+  it("제목에 '광고'·'공동 기획'이라는 낱말이 있어도 표기 형식([…])이 아니면 표기로 보지 않는다", () => {
+    expect(ad({ label: "없음", partnerName: null, pageBadge: null, structuredHeadline: "옥외광고물 등록면허세 정리" }, { metaTitle: "옥외광고물 등록면허세 정리" }).level).toBe("pass");
+    expect(ad({ label: "없음", partnerName: null, pageBadge: null, structuredHeadline: "지자체 공동 기획 사업의 세금" }, { metaTitle: "지자체 공동 기획 사업의 세금" }).level).toBe("pass");
   });
 });
 
@@ -300,7 +341,7 @@ describe("문구 자리 채움", () => {
     const variants = [
       base,
       art({ canonical: null, lawBasisDate: null, authors: [], claims: base.claims.map((c) => ({ ...c, evidenceIds: [] })) }),
-      art({ structuredDataMismatches: ["headline"], similarity: { status: "no_sources" }, sponsorship: { label: "광고", pageBadge: null, structuredHeadline: base.title } }),
+      art({ structuredDataMismatches: ["headline"], similarity: { status: "no_sources" }, sponsorship: { label: "광고", partnerName: null, pageBadge: null, structuredHeadline: base.title } }),
       withDates({ publishedAt: null }, {}),
       art({ section: "finance", taxReviewTarget: false, hasTaxLens: false, lawBasisDate: null, summaryBoxLines: ["1", "2", "3", "4"] }),
     ];

@@ -43,6 +43,7 @@ export const PASSING_SAMPLE: LintSample = {
     similarity: { status: "pass" },
     sponsorship: {
       label: "없음",
+      partnerName: null,
       pageBadge: null,
       structuredHeadline: "생애최초 주택 취득세 감면, 신청 시기와 추징 요건 정리",
     },

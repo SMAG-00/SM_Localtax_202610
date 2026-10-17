@@ -39,8 +39,13 @@ export const BLOCKING_SAMPLES: readonly LintSample[] = [
   derive("block-similarity-exceeded", "common.similarity", "보도자료 문장을 대부분 옮겨 유사도 기준을 넘었다(packages/similarity 결과)", {
     similarity: { status: "blocked" },
   }),
-  derive("block-sponsor-label-mismatch", "common.sponsor-label", "공동 기획 기사인데 메타 제목에만 「[공동 기획]」 표기가 빠졌다", {
-    metaDescription: `[공동 기획] ${base.metaDescription}`,
-    sponsorship: { label: "공동 기획", pageBadge: "공동 기획", structuredHeadline: `[공동 기획] ${base.title}` },
+  derive("block-sponsor-label-mismatch", "common.sponsor-label", "공동 기획 기사인데 메타 제목에만 「[공동 기획 예시회계연구소]」 표기가 빠졌다", {
+    metaDescription: `[공동 기획 예시회계연구소] ${base.metaDescription}`,
+    sponsorship: {
+      label: "공동 기획",
+      partnerName: "예시회계연구소",
+      pageBadge: "공동 기획 예시회계연구소",
+      structuredHeadline: `[공동 기획 예시회계연구소] ${base.title}`,
+    },
   }),
 ];
