@@ -13,6 +13,7 @@ step "타입 검사";            pnpm -r --if-present typecheck
 step "린트";                pnpm -r --if-present lint
 step "환경변수 규칙";         node scripts/check-env.mjs
 step "의존성 규칙";          node scripts/check-deps.mjs
+step "버전 고정";            node scripts/check-pins.mjs
 step "커밋 작성자";          node scripts/check-commit-authors.mjs
 step "SM 플랫폼 식별자";      node scripts/check-forbidden-ids.mjs
 step "마이그레이션 RLS";      node packages/db/scripts/lint-migrations.mjs packages/db/supabase/migrations
