@@ -16,6 +16,8 @@ function withHighlight(title: string, highlight?: string): ReactNode {
 }
 
 export type HeroProps = {
+  /** 제목 수준 — 기본 1(페이지 제목). 다른 제목 아래에 둘 때 2·3 (접근성 heading-order) */
+  titleLevel?: 1 | 2 | 3;
   /** 영문 아이브로 (어두운 바탕 톤) */
   eyebrow?: string;
   /** 핵심 메시지 — settings 한 곳에서 온 문구 (HOME-01) */
@@ -31,7 +33,8 @@ export type HeroProps = {
  * 히어로 — SM 홈 히어로 그대로 (PRD-00 8.6). navy-700 → 800 → 900 대각 그라데이션 + 오렌지 빛번짐(bg-hermes-500/20 blur-3xl 원, R3 면적 계산에서 뺀다).
  * 그라데이션은 헤더·히어로·바닥글 파일에만 허용된다 (R5).
  */
-export function Hero({ eyebrow, title, highlight, description, children }: HeroProps) {
+export function Hero({ eyebrow, title, highlight, description, children, titleLevel = 1 }: HeroProps) {
+  const Title = `h${titleLevel}` as "h1" | "h2" | "h3";
   return (
     <section data-ui="hero" className="relative overflow-hidden bg-gradient-to-br from-navy-700 via-navy-800 to-navy-900">
       {/* 오른쪽 위 오렌지 광원 — 넓게 칠하지 않고 은은하게만 */}
@@ -43,7 +46,7 @@ export function Hero({ eyebrow, title, highlight, description, children }: HeroP
 
       <div className="relative mx-auto max-w-5xl px-4 py-20 sm:py-28">
         {eyebrow && <Eyebrow tone="dark">{eyebrow}</Eyebrow>}
-        <h1 className="mt-6 text-[2.6rem] leading-[1.15] font-black tracking-tight text-white sm:text-[3.75rem]">{withHighlight(title, highlight)}</h1>
+        <Title className="mt-6 text-[2.6rem] leading-[1.15] font-black tracking-tight text-white sm:text-[3.75rem]">{withHighlight(title, highlight)}</Title>
         {description && <p className="mt-7 max-w-2xl text-[18px] leading-[1.75] text-navy-100">{description}</p>}
         {children && <div className="mt-10">{children}</div>}
       </div>

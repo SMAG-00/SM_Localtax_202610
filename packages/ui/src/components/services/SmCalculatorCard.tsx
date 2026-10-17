@@ -34,7 +34,8 @@ export function SmCalculatorCard({ calcKey, link, fallback, usageNote }: SmCalcu
 
   return (
     <div data-ui="sm-calculator-card" data-calc={calcKey} data-state={isFallback ? "fallback" : "primary"}>
-      <LinkCard href={target.url} external aria-label={`${what} — ${destination}, ${OPEN_LABEL}`}>
+      {/* 이름은 보이는 글자 + 화면 읽기 전용 안내 — aria-label로 덮어쓰지 않는다 (WCAG 2.5.3 Label in Name) */}
+      <LinkCard href={target.url} external>
         <span className="flex">
           <TaxKindLabel kind={national ? "national" : "local"} />
         </span>
@@ -49,6 +50,10 @@ export function SmCalculatorCard({ calcKey, link, fallback, usageNote }: SmCalcu
         <span className="mt-1 block text-[15px] text-navy-600">{isFallback ? "지금은 공식 안내로 연결합니다" : usageNote}</span>
         <span className={`mt-2 block ${MONO}`}>
           링크 확인일 <DateText value={target.checkedAt} />
+        </span>
+        <span className="sr-only">
+          {" "}
+          — {what}, {OPEN_LABEL}
         </span>
       </LinkCard>
     </div>

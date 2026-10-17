@@ -254,3 +254,26 @@ describe("상품 카드 (BIZ-01 · BIZ-02 · BIZ-03)", () => {
     expect(render(<ProductCard {...own} approved saleStatus="stopped" />).container.innerHTML).toBe("");
   });
 });
+
+describe("계산기 연결 카드 — 보이는 글자가 접근 가능한 이름 안에 순서대로 있다 (WCAG 2.5.3 Label in Name)", () => {
+  const nameOf = (el: HTMLElement) => (el.getAttribute("aria-label") ?? el.textContent ?? "").replace(/\s+/g, " ").trim();
+  const visibleOf = (el: HTMLElement) => {
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll(".sr-only").forEach((n) => n.remove());
+    return (clone.textContent ?? "").replace(/\s+/g, " ").trim();
+  };
+
+  it("외부 계산기 연결 카드 — aria-label로 이름을 덮어쓰지 않고, 이름이 보이는 글자로 시작하며 '새 창에서 별도 사이트 열기'를 담는다", () => {
+    render(<ExternalCalculatorCard link={ok("https://inherit-calc.example.org/")} fallback={ok("https://www.nts.go.kr/inheritance", "2026-10-11")} />);
+    const a = screen.getByRole("link", { name: /새 창에서 별도 사이트 열기/ });
+    expect(a.getAttribute("aria-label")).toBeNull();
+    expect(nameOf(a).startsWith(visibleOf(a))).toBe(true);
+  });
+
+  it("SM 계산기 카드 — 같은 규칙", () => {
+    render(<SmCalculatorCard calcKey="acquisition" link={ok("https://sm-calc.example.org/calc/acquisition")} fallback={ok("https://www.wetax.go.kr/")} usageNote="승인 회원 전용" />);
+    const a = screen.getByRole("link", { name: /새 창에서 별도 사이트 열기/ });
+    expect(a.getAttribute("aria-label")).toBeNull();
+    expect(nameOf(a).startsWith(visibleOf(a))).toBe(true);
+  });
+});

@@ -108,7 +108,7 @@ export function ShellSection() {
         </Specimen>
 
         <Specimen name="히어로">
-          <Hero
+          <Hero titleLevel={3}
             eyebrow="LOCAL TAX NEWS"
             title="지방세·부동산·지자체 소식을 쉬운 말로"
             highlight="쉬운 말로"

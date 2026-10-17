@@ -151,3 +151,18 @@ describe("바닥글", () => {
     expect(screen.getByText(brand.productName)).toBeTruthy();
   });
 });
+
+describe("히어로 제목 수준 (접근성 heading-order)", () => {
+  it("기본은 페이지 제목 h1", () => {
+    render(<Hero title="지방세 소식을 쉽게" />);
+    expect(screen.getByRole("heading", { level: 1, name: "지방세 소식을 쉽게" })).toBeTruthy();
+  });
+
+  it("다른 제목 아래에 둘 때는 수준을 지정할 수 있다 (h2·h3)", () => {
+    const { rerender } = render(<Hero title="지방세 소식을 쉽게" titleLevel={2} />);
+    expect(screen.getByRole("heading", { level: 2, name: "지방세 소식을 쉽게" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    rerender(<Hero title="지방세 소식을 쉽게" titleLevel={3} />);
+    expect(screen.getByRole("heading", { level: 3, name: "지방세 소식을 쉽게" })).toBeTruthy();
+  });
+});

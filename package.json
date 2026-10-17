@@ -23,6 +23,7 @@
     "verify:rls:remote": "pnpm --filter @ltr/db verify:rls:remote"
   },
   "devDependencies": {
+    "lighthouse": "13.5.0",
     "pg": "8.23.1",
     "playwright": "1.63.0"
   }

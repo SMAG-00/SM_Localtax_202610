@@ -29,7 +29,8 @@ export function ExternalCalculatorCard({ link, fallback }: ExternalCalculatorCar
 
   return (
     <div data-ui="external-calculator-card" data-state={isFallback ? "fallback" : "primary"}>
-      <LinkCard href={target.url} external aria-label={`${isFallback ? `상속세·증여세 ${fallbackName}` : EXTERNAL_CALCULATOR_TITLE} — ${OPEN_LABEL}`}>
+      {/* 이름은 보이는 글자 + 화면 읽기 전용 안내 — aria-label로 덮어쓰지 않는다 (WCAG 2.5.3 Label in Name) */}
+      <LinkCard href={target.url} external>
         <span className="flex">
           <TaxKindLabel kind="national" />
         </span>
@@ -42,6 +43,7 @@ export function ExternalCalculatorCard({ link, fallback }: ExternalCalculatorCar
         <span className={`mt-2 block ${MONO}`}>
           링크 확인일 <DateText value={target.checkedAt} />
         </span>
+        <span className="sr-only"> — {OPEN_LABEL}</span>
       </LinkCard>
     </div>
   );
