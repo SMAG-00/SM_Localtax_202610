@@ -1,0 +1,29 @@
+# 의존성·빌드 산출물
+node_modules/
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# 환경변수 — 값은 저장소에 두지 않는다 (ENV-02). 키 이름은 .env.example에만 적는다
+.env
+.env*.local
+.env.*
+!.env.example
+
+# 로컬 Supabase·테스트 결과
+supabase/.temp/
+packages/db/supabase/.temp/
+playwright-report/
+test-results/
+
+# 편집기·OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Claude Code 로컬 설정
+.claude/settings.local.json

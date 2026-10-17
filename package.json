@@ -1,0 +1,21 @@
+{
+  "name": "sm-localtax-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SM(선명) 지방세·부동산·지자체뉴스 종합 플랫폼 (가칭) — 모노레포",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=24.7.0 <25"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @ltr/web dev",
+    "build": "pnpm --filter @ltr/web build",
+    "start": "pnpm --filter @ltr/web start",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm test:scripts && pnpm -r --if-present test",
+    "test:scripts": "node --test \"scripts/__tests__/*.test.mjs\"",
+    "check:port": "node scripts/check-port.mjs 3001",
+    "verify:dev-port": "node e2e/dev-port.mjs"
+  }
+}
