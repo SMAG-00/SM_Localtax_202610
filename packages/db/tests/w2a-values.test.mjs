@@ -216,7 +216,49 @@ const TARGETS = [
       });
     },
   },
+  {
+    list: "article_evidence.rights_status",
+    table: "article_evidence",
+    column: "rights_status",
+    make: async (v) => tryInsert("article_evidence", { article_id: (await article()).id, evidence_type: "document", location: "보관함 A-1", rights_status: v }),
+  },
+  {
+    list: "media.rights_status",
+    table: "media",
+    column: "rights_status",
+    // 권리 확인(confirmed)은 출처·이용 조건·확인일·촬영자가 있어야 한다 — 모두 채워 값 자체만 시험한다
+    make: (v) =>
+      tryInsert("media", { path: uniq("m"), credit: "가온시", license: "공공누리 제1유형", checked_at: new Date(), photographer: "시험 촬영자", rights_status: v }),
+  },
+  {
+    list: "article_evidence.verification_status",
+    table: "article_evidence",
+    column: "verification_status",
+    make: async (v) => tryInsert("article_evidence", { article_id: (await article()).id, evidence_type: "document", location: "보관함 A-1", verification_status: v }),
+  },
+  {
+    list: "articles.editorial_status",
+    table: "articles",
+    column: "editorial_status",
+    // approved는 편집 승인 기록(desk_edit approve)으로만 된다 (3장) — 기록을 넣어 저장되는지 본다
+    make: (v) => (v === "approved" ? approvedByReview("desk_edit", "editorial_status") : tryInsert("articles", { slug: uniq("a"), title: "t", section: "tax", content_type: "explainer", editorial_status: v })),
+  },
+  {
+    list: "articles.tax_review_status",
+    table: "articles",
+    column: "tax_review_status",
+    make: (v) => (v === "approved" ? approvedByReview("tax_review", "tax_review_status") : tryInsert("articles", { slug: uniq("a"), title: "t", section: "tax", content_type: "explainer", tax_review_status: v })),
+  },
 ];
+
+/** 다른 사람의 승인 기록을 넣은 뒤 기사의 상태 칸이 approved로 저장됐는지 */
+async function approvedByReview(kind, column) {
+  const a = await article({ author_id: (await person()).id });
+  const r = await tryInsert("editorial_reviews", { article_id: a.id, kind, reviewer_id: (await person()).id, decision: "approve" });
+  if (!r.ok) return r;
+  const { rows } = await client.query(`select ${column} as status from public.articles where id = $1`, [a.id]);
+  return rows[0].status === "approved" ? { ok: true, rows } : { ok: false, message: `승인 기록 뒤 ${column} = ${rows[0].status}` };
+}
 
 test("설계 문서 2장의 값 목록을 모두 읽었다 (시험 대상이 빠지지 않는다)", () => {
   const listed = new Set(TARGETS.map((t) => t.list));
@@ -224,6 +266,8 @@ test("설계 문서 2장의 값 목록을 모두 읽었다 (시험 대상이 빠
   assert.equal(LISTS.get("section").length, 4);
   assert.equal(LISTS.get("staff_roles.role").length, 7);
   assert.equal(LISTS.get("개정").length, 6);
+  assert.deepEqual(LISTS.get("media.rights_status"), ["unconfirmed", "confirmed", "rejected"]);
+  assert.deepEqual(LISTS.get("articles.tax_review_status"), ["not_required", "pending", "approved", "rejected", "held"]);
 });
 
 async function checkValues(table, column) {
