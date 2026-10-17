@@ -39,12 +39,13 @@ function trackedFiles(root) {
 
 export function envReads(source) {
   const names = new Set();
-  for (const m of source.matchAll(/process\.env\.([A-Z_][A-Z0-9_]*)/g)) names.add(m[1]);
-  for (const m of source.matchAll(/process\.env\[\s*["'`]([A-Z_][A-Z0-9_]*)["'`]\s*\]/g)) names.add(m[1]);
+  // 이름 전체를 잡는다 (SystemRoot처럼 소문자가 섞인 이름을 앞 글자만 잘라 읽지 않게)
+  for (const m of source.matchAll(/process\.env\.([A-Za-z_][A-Za-z0-9_]*)/g)) names.add(m[1]);
+  for (const m of source.matchAll(/process\.env\[\s*["'`]([A-Za-z_][A-Za-z0-9_]*)["'`]\s*\]/g)) names.add(m[1]);
   for (const m of source.matchAll(/\{([^{}]*)\}\s*=\s*process\.env\b/g)) {
     for (const part of m[1].split(",")) {
       const name = part.split(/[:=]/)[0].trim();
-      if (/^[A-Z_][A-Z0-9_]*$/.test(name)) names.add(name);
+      if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) names.add(name);
     }
   }
   return names;

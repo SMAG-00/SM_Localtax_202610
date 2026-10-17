@@ -102,6 +102,12 @@ test("ENV-02·05 — 코드가 범위 목록에 없는 변수를 읽으면 오�
   assert.ok(r.errors.some((e) => /SECRET_THING/.test(e)), r.errors.join("\n"));
 });
 
+test("ENV-05 — 소문자가 섞인 이름(SystemRoot)도 이름 전체로 판정한다", () => {
+  const r = run(repo({ code: CODE + "\nexport const s = process.env.SystemRoot;" }));
+  assert.ok(r.errors.some((e) => /SystemRoot/.test(e)), r.errors.join("\n"));
+  assert.ok(!r.errors.some((e) => /변수 S를/.test(e)), r.errors.join("\n"));
+});
+
 test("ENV-02 — 아무 코드도 읽지 않는 변수는 경고만", () => {
   const r = run(repo({ code: "export const a = process.env.NEXT_PUBLIC_SITE_URL;" }));
   assert.deepEqual(r.errors, []);

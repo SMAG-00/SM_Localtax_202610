@@ -16,6 +16,10 @@
     "test": "pnpm test:scripts && pnpm -r --if-present test",
     "test:scripts": "node --test \"scripts/__tests__/*.test.mjs\"",
     "check:port": "node scripts/check-port.mjs 3001",
-    "verify:dev-port": "node e2e/dev-port.mjs"
+    "verify:dev-port": "node e2e/dev-port.mjs",
+    "test:e2e": "node --test --test-concurrency=1 \"e2e/*.test.mjs\""
+  },
+  "devDependencies": {
+    "pg": "8.23.1"
   }
 }

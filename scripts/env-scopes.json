@@ -23,5 +23,5 @@
     "VERCEL_TOKEN": "ci",
     "FORBIDDEN_IDENTIFIERS": "ci"
   },
-  "platform": ["NODE_ENV", "PORT", "HOSTNAME", "CI", "NEXT_RUNTIME", "VERCEL_ENV", "VERCEL_URL", "GITHUB_ACTIONS"]
+  "platform": ["NODE_ENV", "PORT", "HOSTNAME", "CI", "NEXT_RUNTIME", "VERCEL_ENV", "VERCEL_URL", "GITHUB_ACTIONS", "PATH", "SystemRoot"]
 }
