@@ -44,4 +44,4 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
     reason: `하위 분야 고치기 (${changed.join(", ")})`,
   });
   return json({ category: after, changed, checks: copy.warnings });
-});
+}, { revalidatesPublic: true });

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cx } from "./cx";
+import { UiLink } from "./link";
 
 export type CardLinkProps = {
   href: string;
@@ -12,10 +13,10 @@ export type CardLinkProps = {
 
 function CardLink({ href, children, external, className, ui, ...aria }: CardLinkProps & { ui: string }) {
   return (
-    <a href={href} data-ui={ui} className={className} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})} {...aria}>
+    <UiLink href={href} data-ui={ui} className={className} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})} {...aria}>
       {children}
       {external && <span className="sr-only"> (새 창)</span>}
-    </a>
+    </UiLink>
   );
 }
 

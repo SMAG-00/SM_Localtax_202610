@@ -10,7 +10,9 @@ import { brand } from "../src/brand.ts";
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const files = execFileSync("git", ["-C", ROOT, "ls-files", "-z", "--cached", "--others", "--exclude-standard", "apps", "packages", "workflows"], { encoding: "utf8" })
   .split("\0")
-  .filter((f) => /\.(ts|tsx|js|jsx|mjs|css)$/.test(f) && !/(^|\/)(tests|__tests__)\//.test(f));
+  .filter((f) => /\.(ts|tsx|js|jsx|mjs|css)$/.test(f) && !/(^|\/)(tests|__tests__)\//.test(f))
+  // 지웠지만 아직 커밋하지 않은 파일은 건너뛴다 (scripts/check-design.mjs와 같은 규칙)
+  .filter((f) => fs.existsSync(path.join(ROOT, f)));
 const read = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");
 
 test("제품명·워드마크 값이 비어 있지 않다", () => {

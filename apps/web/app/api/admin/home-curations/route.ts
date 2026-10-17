@@ -104,4 +104,4 @@ export const POST = handle(async (request: Request) => {
   });
   const [item] = await describeCurations(db, [row], today);
   return json({ curation: item }, 201);
-});
+}, { revalidatesPublic: true });

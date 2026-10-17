@@ -57,4 +57,4 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
     reason: "기사 배치 변경",
   });
   return json({ article: { ...articleSummary(article), hotPinUntil: article.hot_pin_until, navCandidate: article.nav_candidate } });
-});
+}, { revalidatesPublic: true });

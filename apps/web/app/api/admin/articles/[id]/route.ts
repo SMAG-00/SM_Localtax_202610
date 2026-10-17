@@ -156,4 +156,4 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
     reason: reason ?? (published ? "발행 뒤 수정" : "발행 전 수정"),
   });
   return json({ article: articleSummary(article), revisionId: saved.revisionId, changed: plan.changed, corrections, checks });
-});
+}, { revalidatesPublic: true });

@@ -1,4 +1,5 @@
 import { brand } from "../../brand";
+import { UiLink } from "../link";
 import { HeaderNav } from "./HeaderNav";
 
 /** 4대 분야 `section` 값 (PRD-01A ART-01) */
@@ -43,21 +44,21 @@ export function Header({ utilities = [], currentSection, account }: HeaderProps)
   return (
     <header data-ui="header" className="bg-navy-800">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 px-4 py-2">
-        <a
+        <UiLink
           href="/"
           className="order-1 mr-auto inline-flex min-h-11 items-center text-[17px] font-extrabold tracking-tight text-white transition hover:text-hermes-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:mr-4"
         >
           {/* 띄어쓰기는 가운뎃점 span 밖에 둔다 — 화면 읽기 이름이 "SM(선명) · 지방세"로 붙지 않게 */}
           {brand.wordmark.lead} <span className="text-hermes-500">·</span> {brand.wordmark.tail}
-        </a>
+        </UiLink>
         <HeaderNav sections={HEADER_SECTIONS} utilities={utilityLinks} currentSection={currentSection} />
         {account && (
-          <a
+          <UiLink
             href={account.href}
             className="order-2 inline-flex min-h-11 items-center rounded-lg bg-hermes-500 px-4 text-[14px] font-bold text-navy-900 transition hover:bg-hermes-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:order-3 lg:ml-3"
           >
             {account.label}
-          </a>
+          </UiLink>
         )}
       </div>
     </header>

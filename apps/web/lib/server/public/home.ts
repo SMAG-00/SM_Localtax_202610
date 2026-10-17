@@ -4,7 +4,7 @@ import { isoToKstDate } from "@/lib/admin/form-utils";
 import { latestChangedTracker, trackerState, type ArticleListItem, type TrackerSource } from "./cards";
 import { LIMITS } from "./constants";
 import { publicDb, rowsOf } from "./db";
-import { activeCurations, homeSections, latestReports, pickStories, pickTrackers, type AmendmentsSection, type HomeSection } from "./home-logic";
+import { activeCurations, closedHomeSections, homeSections, latestReports, pickStories, pickTrackers, type AmendmentsSection, type HomeSection } from "./home-logic";
 import { readArticleList, readPublicSettings } from "./reads";
 import { AMENDMENT_COLUMNS, AMENDMENT_EVENT_COLUMNS, CURATION_COLUMNS, num, type AmendmentEventRow, type AmendmentRow, type CurationRow } from "./rows";
 import type { ProgressStageKey } from "@ltr/ui";
@@ -16,6 +16,13 @@ export interface HomeData {
   /** 판정 기준 한국 날짜 */
   today: string;
   sections: HomeSection[];
+  /** 공개 데이터를 읽지 못해 닫힌 홈(4대 분야 카드만)을 보이는 중 — 화면이 짧은 안내를 붙인다 */
+  unavailable?: true;
+}
+
+/** 닫힌 홈 — 공개 데이터를 읽지 못할 때 공개 홈이 쓴다 (DB가 필요 없는 4대 분야 카드만) */
+export function closedHomeData(now: Date = new Date()): HomeData {
+  return { today: isoToKstDate(now.toISOString()), sections: closedHomeSections(), unavailable: true };
 }
 
 /** 공개 트래커와 단계 기록 → 트래커 상태 (읽을 수 있는 공개 개정안만) */
@@ -48,6 +55,7 @@ export async function getHomeAmendments(now: Date = new Date()): Promise<{ today
   const storyCards = pickStories(stories, new Map(designatedStories.items.map((a): [number, ArticleListItem] => [a.id, a])), explainers.items);
   const sections = homeSections({
     coreMessage: null,
+    searchEnabled: false,
     searchChips: [],
     latestReports: [],
     weeklyHot: null,
@@ -69,6 +77,7 @@ export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
   ]);
   const sections = homeSections({
     coreMessage: settings.coreMessage,
+    searchEnabled: settings.features.search,
     searchChips: settings.searchChips,
     latestReports: latestReports(latest.items),
     weeklyHot: null,

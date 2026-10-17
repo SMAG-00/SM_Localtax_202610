@@ -1,6 +1,7 @@
 export { colors, contrastRatio, type ColorToken } from "./tokens";
 export { brand } from "./brand";
 export * from "./components/base";
+export { LinkProvider, UiLink, isInternalHref, type LinkComponent, type UiLinkProps } from "./components/link";
 export * from "./components/shell";
 export * from "./components/discovery";
 export * from "./components/local";

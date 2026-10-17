@@ -42,4 +42,4 @@ export const POST = handle(async (request: Request) => {
   const row = data as CategoryRow;
   await writeAudit(db, { actor: actorOf(viewer), action: "category.create", target: targetOf.category(row.id), before: null, after: row, reason: "하위 분야 더하기" });
   return json({ category: row, checks: copy.warnings }, 201);
-});
+}, { revalidatesPublic: true });

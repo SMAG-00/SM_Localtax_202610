@@ -1,6 +1,6 @@
 // 공개 화면 틀 — 상단 메뉴·하위 메뉴·유틸 메뉴·정책 링크 (HOME-02 · HELP-05)
 import { describe, expect, test } from "vitest";
-import { buildChrome } from "./chrome-logic";
+import { buildChrome, closedChrome } from "./chrome-logic";
 import { isBlockedPath } from "./constants";
 import type { PublicCategoryRow } from "./rows";
 import { CLOSED_FEATURES } from "./settings";
@@ -79,5 +79,15 @@ describe("헤더 메뉴 (HOME-02)", () => {
     const c = buildChrome(CATEGORIES, new Map(CATEGORIES.map((x) => [x.id, 1])), Object.fromEntries(Object.keys(CLOSED_FEATURES).map((k) => [k, true])) as typeof CLOSED_FEATURES);
     const hrefs = [...c.sections.flatMap((s) => [s.href, ...s.children.map((x) => x.href)]), ...c.utilities.map((u) => u.href), ...c.policyLinks.map((p) => p.href)];
     expect(hrefs.filter(isBlockedPath)).toEqual([]);
+  });
+});
+
+describe("닫힌 화면 틀 (공개 데이터를 읽지 못할 때)", () => {
+  test("상단 메뉴 4개와 공통 뉴스 전체만 — 유틸 메뉴·정책 링크 0", () => {
+    const c = closedChrome();
+    expect(c.sections.map((s) => s.href)).toEqual(["/tax", "/realestate", "/finance", "/local"]);
+    expect(c.sections.map((s) => s.children.map((x) => x.label))).toEqual([["뉴스 전체"], ["뉴스 전체"], ["뉴스 전체"], ["뉴스 전체"]]);
+    expect(c.utilities).toEqual([]);
+    expect(c.policyLinks).toEqual([]);
   });
 });

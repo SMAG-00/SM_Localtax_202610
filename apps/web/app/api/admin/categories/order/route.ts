@@ -50,4 +50,4 @@ export const POST = handle(async (request: Request) => {
     });
   }
   return json({ section, categories: after, changed: plan.value.length });
-});
+}, { revalidatesPublic: true });

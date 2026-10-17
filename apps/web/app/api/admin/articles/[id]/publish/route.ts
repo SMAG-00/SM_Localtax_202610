@@ -55,4 +55,4 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
     reason: gate.warnings.length ? `발행 — 경고 ${gate.warnings.length}개 기록` : "발행",
   });
   return json({ article: articleSummary(article), seoCheckId, warnings: gate.warnings });
-});
+}, { revalidatesPublic: true });

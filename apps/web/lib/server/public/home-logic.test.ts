@@ -2,7 +2,7 @@
 import { describe, expect, test } from "vitest";
 import { trackerState, type TrackerSource } from "./cards";
 import { HOME_SECTION_KEYS } from "./constants";
-import { activeCurations, homeSections, latestReports, pickStories, pickTrackers, type HomeInput } from "./home-logic";
+import { activeCurations, closedHomeSections, homeSections, latestReports, pickStories, pickTrackers, type HomeInput } from "./home-logic";
 import { CLOSED_FEATURES } from "./settings";
 import { curation, listItem, stageEvent } from "./test-items";
 
@@ -104,6 +104,12 @@ describe("해설 스토리 카드 3~6장 (HOME-03)", () => {
     expect(pickStories(designate(40, 41, 99, 1, 2, 3), mixed, latestExplainers).map((s) => s.id)).toEqual([1, 2, 3]);
   });
 
+  test("스토리 카드는 기사 카드에 그릴 값(하위 분야·유형·발행일·기자·지역)을 기사 그대로 옮긴다", () => {
+    const a = listItem({ id: 50, subsection: "해석", publishedOn: "2026-10-10", authorName: "김가온", regionLabel: "서울특별시", contentType: "explainer", typeLabel: "해설" });
+    const [s] = pickStories(designate(50), new Map([[50, a]]), []);
+    expect(s).toMatchObject({ id: 50, subsection: "해석", publishedOn: "2026-10-10", authorName: "김가온", regionLabel: "서울특별시", contentType: "explainer", typeLabel: "해설", designated: true });
+  });
+
   test("형식 배지는 기사 형식 값 그대로 — 일반 기사는 null", () => {
     const formats = new Map([
       [1, article(1, { format: "cardnews" })],
@@ -130,6 +136,7 @@ describe("최신 자체 취재 (HOME-04)", () => {
 describe("홈 섹션 순서 (HOME-01)", () => {
   const empty: HomeInput = {
     coreMessage: "부동산과 지자체의 변화를 읽고 대응하려면 지방세 이해가 필수다",
+    searchEnabled: false,
     searchChips: [],
     latestReports: [],
     weeklyHot: null,
@@ -143,7 +150,22 @@ describe("홈 섹션 순서 (HOME-01)", () => {
   test("내용이 없는 섹션은 빠지고 히어로·4대 분야 카드만 남는다", () => {
     const s = homeSections(empty);
     expect(s.map((x) => x.key)).toEqual(["hero", "fields"]);
-    expect(s[0]).toEqual({ key: "hero", coreMessage: empty.coreMessage, searchChips: [], searchAction: "/search" });
+    expect(s[0]).toEqual({ key: "hero", coreMessage: empty.coreMessage, search: null });
+  });
+
+  test("검색 화면이 공개되기 전(기능 키 search 꺼짐)에는 검색 폼·추천 검색어 칩 0 — 칩이 지정돼 있어도", () => {
+    const hero = homeSections({ ...empty, searchChips: ["취득세", "개편안", "책임준공"] })[0]!;
+    expect(hero).toEqual({ key: "hero", coreMessage: empty.coreMessage, search: null });
+  });
+
+  test("검색 화면이 공개되면 히어로에 /search로 제출하는 폼과 지정한 칩", () => {
+    const hero = homeSections({ ...empty, searchEnabled: true, searchChips: ["취득세", "개편안", "책임준공"] })[0]!;
+    expect(hero).toEqual({ key: "hero", coreMessage: empty.coreMessage, search: { action: "/search", chips: ["취득세", "개편안", "책임준공"] } });
+  });
+
+  test("핵심 메시지가 비고 검색도 닫혀 있으면 히어로째 뺀다 — 검색만 열려 있으면 검색 폼만 있는 히어로", () => {
+    expect(homeSections({ ...empty, coreMessage: null }).map((x) => x.key)).toEqual(["fields"]);
+    expect(homeSections({ ...empty, coreMessage: null, searchEnabled: true })[0]).toEqual({ key: "hero", coreMessage: null, search: { action: "/search", chips: [] } });
   });
 
   test("4대 분야 카드는 정확히 4장 — 지방세 /tax · 부동산 /realestate · 부동산개발금융 /finance · 지자체뉴스 /local", () => {
@@ -184,5 +206,13 @@ describe("홈 섹션 순서 (HOME-01)", () => {
 
   test("금주 핫뉴스 항목이 0건이면 섹션 숨김", () => {
     expect(homeSections({ ...empty, weeklyHot: { key: "weekly_hot", weekHref: "/local/seoul/weekly/2026-42", items: [] } }).some((x) => x.key === "weekly_hot")).toBe(false);
+  });
+});
+
+describe("닫힌 홈 (공개 데이터를 읽지 못할 때)", () => {
+  test("4대 분야 카드만 — 히어로(핵심 메시지·검색 폼)·목록 섹션 0", () => {
+    const s = closedHomeSections();
+    expect(s.map((x) => x.key)).toEqual(["fields"]);
+    expect(s[0]!.key === "fields" && s[0]!.cards.map((c) => c.href)).toEqual(["/tax", "/realestate", "/finance", "/local"]);
   });
 });

@@ -5,7 +5,7 @@
     { "width": 1280, "height": 800, "r1": false }
   ],
   "screens": [
-    { "path": "/", "enforce": true, "note": "홈 자리 (W2-b에서 홈 골격으로 바뀐다)" },
+    { "path": "/", "enforce": true, "note": "홈 (W2-b 2단계 — 히어로·4대 분야·최신 자체 취재·개정 트래커 하이라이트 중 DB에 내용이 있는 섹션). 시험 자료를 넣은 폭 360·640·1024 첫 화면은 e2e/site-home.test.mjs가 잰다" },
     { "path": "/_design", "enforce": false, "note": "디자인 견본 — 측정만" }
   ]
 }

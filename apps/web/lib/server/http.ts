@@ -1,5 +1,7 @@
 import "server-only";
 import { mapDbError, type DbErrorLike } from "./db-errors";
+import { revalidatePublicData } from "./public/cache";
+import { shouldRevalidatePublic } from "./public/cache-policy";
 
 // 편집국 API 공용 — JSON 응답, 요청 본문 읽기, 오류 → 응답 변환. 스택·SQL 원문은 응답에 넣지 않는다.
 
@@ -59,11 +61,18 @@ export function parseId(raw: string, what = "기사"): number {
 
 type Handler<C> = (request: Request, context: C) => Promise<Response>;
 
+export interface HandleOptions {
+  /** 공개 화면에 보이는 값을 쓰는 API — 쓰기가 성공하면 공개 데이터 캐시를 바로 만료한다 (HOME-03·04 "1분 안에 홈에 반영", 설계 7.1) */
+  revalidatesPublic?: boolean;
+}
+
 /** 라우트 처리기 감싸기 — HttpError는 그 응답으로, 예상 못 한 오류는 500(내용 숨김)으로 */
-export function handle<C>(fn: Handler<C>): Handler<C> {
+export function handle<C>(fn: Handler<C>, options: HandleOptions = {}): Handler<C> {
   return async (request, context) => {
     try {
-      return await fn(request, context);
+      const response = await fn(request, context);
+      if (options.revalidatesPublic && shouldRevalidatePublic(request.method, response.status)) revalidatePublicData();
+      return response;
     } catch (err) {
       if (err instanceof HttpError) return errorJson(err.status, err.message, err.extra);
       console.error("[api] 처리 중 오류:", err instanceof Error ? err.message : String(err));

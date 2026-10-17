@@ -116,4 +116,4 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
     reason,
   });
   return json({ correction: { id: correctionId, kind, beforeRevisionId: correction.beforeRevisionId, afterRevisionId: correction.afterRevisionId }, article: articleSummary(article) }, 201);
-});
+}, { revalidatesPublic: true });

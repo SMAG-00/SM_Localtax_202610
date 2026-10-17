@@ -1,0 +1,109 @@
+// 사이트 안 이동 링크 (FND-09) — 앱이 넘긴 링크 컴포넌트는 사이트 안·같은 창 주소에만 쓰고, 외부·새 창·내려받기·쪽 안 이동은 보통의 a 요소다.
+// 앱 링크 대신 표식(data-app-link)을 붙이는 시험용 링크 컴포넌트로 어느 쪽으로 그렸는지 본다.
+import type { ReactNode } from "react";
+import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { Footer } from "./shell/Footer";
+import { Header } from "./shell/Header";
+import { HomeSearch } from "./shell/HomeSearch";
+import { ArticleCard } from "./discovery/ArticleCard";
+import { LinkCard } from "./Card";
+import { DarkButton } from "./Button";
+import { LinkProvider, UiLink, isInternalHref, type UiLinkProps } from "./link";
+
+function AppLink(props: UiLinkProps) {
+  return <a data-app-link="" {...props} />;
+}
+
+const withApp = (ui: ReactNode) => render(<LinkProvider component={AppLink}>{ui}</LinkProvider>);
+const appLinks = () => [...document.querySelectorAll("a[data-app-link]")].map((a) => a.getAttribute("href"));
+const plainLinks = () => [...document.querySelectorAll("a:not([data-app-link])")].map((a) => a.getAttribute("href"));
+
+describe("사이트 안 주소 판정", () => {
+  it.each([
+    ["/", true],
+    ["/tax", true],
+    ["/news/abc?x=1#h", true],
+    ["//evil.example.com/x", false],
+    ["https://www.mois.go.kr/a", false],
+    ["#main", false],
+    ["mailto:desk@example.com", false],
+    ["", false],
+  ])("%s → %s", (href, expected) => expect(isInternalHref(href)).toBe(expected));
+});
+
+describe("UiLink", () => {
+  it("앱 링크가 없으면(견본·관리자 화면) 언제나 보통의 a 요소다", () => {
+    render(<UiLink href="/tax">지방세</UiLink>);
+    const a = screen.getByRole("link", { name: "지방세" });
+    expect(a.hasAttribute("data-app-link")).toBe(false);
+    expect(a.getAttribute("href")).toBe("/tax");
+  });
+
+  it("앱 링크가 있으면 사이트 안·같은 창 주소만 앱 링크로 — 외부·새 창·내려받기·쪽 안 이동·다른 사이트(//)는 a 요소", () => {
+    withApp(
+      <>
+        <UiLink href="/tax">허브</UiLink>
+        <UiLink href="/news/a" target="_self">
+          같은 창
+        </UiLink>
+        <UiLink href="https://www.mois.go.kr/a">외부</UiLink>
+        <UiLink href="/news/b" target="_blank" rel="noopener noreferrer">
+          새 창
+        </UiLink>
+        <UiLink href="/files/a.pdf" download="">
+          내려받기
+        </UiLink>
+        <UiLink href="#main">본문으로</UiLink>
+        <UiLink href="//evil.example.com/">다른 사이트</UiLink>
+      </>,
+    );
+    expect(appLinks()).toEqual(["/tax", "/news/a"]);
+    expect(plainLinks()).toEqual(["https://www.mois.go.kr/a", "/news/b", "/files/a.pdf", "#main", "//evil.example.com/"]);
+    expect(screen.getByRole("link", { name: "새 창" }).getAttribute("target")).toBe("_blank");
+    expect(screen.getByRole("link", { name: "내려받기" }).hasAttribute("download")).toBe(true);
+  });
+
+  it("클래스·aria·data 속성과 누름 처리를 그대로 넘긴다", () => {
+    let clicked = 0;
+    withApp(
+      <UiLink href="/local" className="x" aria-current="page" data-field="local" onClick={(e) => {
+          e.preventDefault(); // 시험 환경(jsdom)은 문서 이동을 하지 않는다
+          clicked++;
+        }}>
+        지자체뉴스
+      </UiLink>,
+    );
+    const a = screen.getByRole("link", { name: "지자체뉴스" });
+    expect(a.className).toBe("x");
+    expect(a.getAttribute("aria-current")).toBe("page");
+    expect(a.getAttribute("data-field")).toBe("local");
+    a.click();
+    expect(clicked).toBe(1);
+  });
+});
+
+describe("공개 화면 컴포넌트의 사이트 안 링크는 앱 링크로 그린다", () => {
+  it("헤더 — 워드마크·4대 분야·유틸 메뉴·계정 버튼", () => {
+    withApp(<Header utilities={["search"]} account={{ label: "로그인", href: "/login" }} />);
+    expect(appLinks()).toEqual(["/", "/tax", "/realestate", "/finance", "/local", "/search", "/login"]);
+    expect(plainLinks()).toEqual([]);
+  });
+
+  it("바닥글 링크 · 추천 검색어 칩 · 기사 카드 제목 · 링크 카드 · 어두운 버튼 링크", () => {
+    withApp(
+      <>
+        <Footer disclaimer="면책" links={[{ label: "회사 소개", href: "/about" }]} />
+        <HomeSearch suggestions={["취득세", "개편안", "재산세"]} />
+        <ArticleCard href="/news/a" title="제목" summary="요약" section="tax" publishedAt="2026-10-18" />
+        <LinkCard href="/tax">지방세</LinkCard>
+        <LinkCard href="https://www.wetax.go.kr" external>
+          위택스
+        </LinkCard>
+        <DarkButton href="/experts">전문가</DarkButton>
+      </>,
+    );
+    expect(appLinks()).toEqual(["/about", "/search?q=%EC%B7%A8%EB%93%9D%EC%84%B8", "/search?q=%EA%B0%9C%ED%8E%B8%EC%95%88", "/search?q=%EC%9E%AC%EC%82%B0%EC%84%B8", "/news/a", "/tax", "/experts"]);
+    expect(plainLinks()).toEqual(["https://www.wetax.go.kr"]);
+  });
+});

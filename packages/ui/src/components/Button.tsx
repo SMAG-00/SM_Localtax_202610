@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cx } from "./cx";
+import { UiLink } from "./link";
 
 type Common = { children: ReactNode; className?: string };
 type AsButton = Common & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children"> & { href?: undefined };
@@ -11,9 +12,9 @@ function renderButton(base: string, ui: string, props: ButtonProps) {
     const { href, children, className } = props;
     const external = "external" in props && props.external;
     return (
-      <a href={href} data-ui={ui} className={cx(base, className)} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+      <UiLink href={href} data-ui={ui} className={cx(base, className)} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
         {children}
-      </a>
+      </UiLink>
     );
   }
   const { children, className, type = "button", ...rest } = props;

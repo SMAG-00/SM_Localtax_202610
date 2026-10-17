@@ -58,7 +58,7 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   });
   const [item] = await describeCurations(db, [after], today);
   return json({ curation: item, changed });
-});
+}, { revalidatesPublic: true });
 
 export const DELETE = handle(async (request: Request, { params }: Ctx) => {
   const id = parseId((await params).id, "홈 배치 카드");
@@ -81,4 +81,4 @@ export const DELETE = handle(async (request: Request, { params }: Ctx) => {
     reason: `홈 배치 빼기 — ${CURATION_KIND_LABELS[before.kind]}`,
   });
   return json({ deleted: id });
-});
+}, { revalidatesPublic: true });

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { brand } from "../../brand";
+import { LinkProvider, type UiLinkProps } from "../link";
 import { Header } from "./Header";
 
 const tokens = (el: Element | null) => (el?.getAttribute("class") ?? "").split(/\s+/);
@@ -140,6 +141,31 @@ describe("헤더 — 360px 메뉴 열기 버튼 (공개·닫기)", () => {
     await userEvent.keyboard("{Escape}");
     expect(button.getAttribute("aria-expanded")).toBe("false");
     expect(document.activeElement).toBe(button);
+  });
+
+  it("펼친 메뉴의 항목을 누르면 메뉴가 닫힌다 — 화면 전환(새로고침 없음)에서는 헤더가 그대로 남기 때문", async () => {
+    // 앱 링크 자리 — 화면 전환처럼 문서 이동을 하지 않는다
+    const NoReload = (props: UiLinkProps) => (
+      <a
+        {...props}
+        onClick={(e) => {
+          e.preventDefault();
+          props.onClick?.(e);
+        }}
+      />
+    );
+    render(
+      <LinkProvider component={NoReload}>
+        <Header utilities={["search"]} />
+      </LinkProvider>,
+    );
+    const button = screen.getByRole("button", { name: "메뉴" });
+    for (const name of ["부동산", "검색"]) {
+      await userEvent.click(button);
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+      await userEvent.click(screen.getByRole("link", { name }));
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+    }
   });
 
   it("닫힌 상태에서 Esc는 아무것도 바꾸지 않는다", async () => {

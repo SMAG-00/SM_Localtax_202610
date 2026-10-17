@@ -76,6 +76,19 @@ describe("기사 카드", () => {
     expect(bad).toBe("라이브");
   });
 
+  it("기자명은 있을 때만 발행일 앞에 글자로 보이고(링크 아님), 공백뿐이면 자리가 없다", () => {
+    const { container, rerender } = render(<ArticleCard {...BASE} byline="  김가온 기자 " />);
+    const byline = container.querySelector('[data-part="byline"]')!;
+    expect(byline.textContent).toBe("김가온 기자");
+    expect(byline.closest("a")).toBeNull();
+    expect(byline.compareDocumentPosition(screen.getByText(BASE.publishedAt)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+    rerender(<ArticleCard {...BASE} byline="   " />);
+    expect(container.querySelector('[data-part="byline"]')).toBeNull();
+    rerender(<ArticleCard {...BASE} />);
+    expect(container.querySelector('[data-part="byline"]')).toBeNull();
+  });
+
   it("루트는 article 요소이고 data-ui=article-card, 호버 때 hermes-400 테두리", () => {
     const { container } = render(<ArticleCard {...BASE} />);
     const root = container.firstElementChild!;

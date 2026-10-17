@@ -34,10 +34,17 @@ export interface StoryCard {
   summary: string;
   section: SectionKey;
   sectionName: string;
+  /** 하위 분야 이름 (분야 칩 "지방세 › 해석") */
+  subsection: string | null;
+  contentType: string | null;
   typeLabel: string | null;
   /** 형식 배지 — 일반 기사는 null (HOME-03) */
   format: string | null;
   sponsorBadge: string | null;
+  /** 최초 발행일 (한국 날짜) · 기자 이름 · 지역 — 기사 카드 (PRD-00 8.6) */
+  publishedOn: string;
+  authorName: string | null;
+  regionLabel: string | null;
   designated: boolean;
 }
 
@@ -82,9 +89,14 @@ function storyCard(a: ArticleListItem, designated: boolean): StoryCard {
     summary: a.summary,
     section: a.section,
     sectionName: a.sectionName,
+    subsection: a.subsection,
+    contentType: a.contentType,
     typeLabel: a.typeLabel,
     format: a.format,
     sponsorBadge: a.sponsorBadge,
+    publishedOn: a.publishedOn,
+    authorName: a.authorName,
+    regionLabel: a.regionLabel,
     designated,
   };
 }
@@ -109,10 +121,11 @@ export function pickStories(designated: readonly CurationRow[], articles: Readon
 export interface HeroSection {
   key: "hero";
   coreMessage: string | null;
-  /** 추천 검색어 칩 3~6개 — 없으면 칩 줄 숨김 */
-  searchChips: string[];
-  /** 통합 검색 폼 주소 (HOME-01 — 4단계 이후에도 통합 검색) */
-  searchAction: "/search";
+  /**
+   * 통합 검색 폼 (HOME-01 — 4단계 이후에도 통합 검색). 검색 화면(/search, W2-d)이 공개되기 전(기능 키 search 꺼짐)에는 null —
+   * 없는 화면으로 가는 폼·칩을 두지 않는다 (HOME-02 빈 링크 0, 설계 9장 #18)
+   */
+  search: { action: "/search"; chips: string[] } | null;
 }
 export interface FieldsSection {
   key: "fields";
@@ -153,6 +166,8 @@ export type HomeSection = HeroSection | FieldsSection | LatestReportsSection | W
 
 export interface HomeInput {
   coreMessage: string | null;
+  /** 검색 화면 공개 여부 (기능 키 search) */
+  searchEnabled: boolean;
   searchChips: string[];
   latestReports: readonly ArticleListItem[];
   weeklyHot: WeeklyHotSection | null;
@@ -174,7 +189,11 @@ export function latestReports(items: readonly ArticleListItem[]): ArticleListIte
 /** 섹션 목록 — 설계 2.3 순서, 내용 0건이면 뺀다 */
 export function homeSections(input: HomeInput): HomeSection[] {
   const byKey: Record<HomeSectionKey, HomeSection | null> = {
-    hero: { key: "hero", coreMessage: input.coreMessage, searchChips: input.searchChips, searchAction: "/search" },
+    // 핵심 메시지도 검색 폼도 없으면 히어로째 뺀다 (빈 섹션 0)
+    hero:
+      input.coreMessage || input.searchEnabled
+        ? { key: "hero", coreMessage: input.coreMessage, search: input.searchEnabled ? { action: "/search", chips: input.searchChips } : null }
+        : null,
     fields: { key: "fields", cards: SECTION_KEYS.map((s) => ({ section: s, name: SECTION_INFO[s].name, href: SECTION_INFO[s].href })) },
     latest_reports: input.latestReports.length ? { key: "latest_reports", items: input.latestReports.slice(0, LIMITS.homeLatestReports) } : null,
     weekly_hot: input.weeklyHot && input.weeklyHot.items.length ? input.weeklyHot : null,
@@ -188,4 +207,20 @@ export function homeSections(input: HomeInput): HomeSection[] {
     experts: input.experts && input.experts.items.length ? input.experts : null,
   };
   return HOME_SECTION_KEYS.flatMap((k) => (byKey[k] ? [byKey[k]!] : []));
+}
+
+/** 닫힌 홈 — 공개 데이터를 읽지 못할 때(DB 연결 실패). DB가 필요 없는 4대 분야 카드만 (핵심 메시지·검색 폼·목록 0 — 닫힌 쪽, 설계 2.4) */
+export function closedHomeSections(): HomeSection[] {
+  return homeSections({
+    coreMessage: null,
+    searchEnabled: false,
+    searchChips: [],
+    latestReports: [],
+    weeklyHot: null,
+    trackers: { items: [], source: "none" },
+    stories: [],
+    column: null,
+    product: null,
+    experts: null,
+  });
 }

@@ -56,4 +56,4 @@ export const POST = handle(async (request: Request) => {
     });
   }
   return json({ kind, order: after.map((r) => r.id), changed: plan.value.length });
-});
+}, { revalidatesPublic: true });

@@ -85,6 +85,9 @@ export async function startServer(env) {
     await waitHealthy(base, () => !alive(), log);
     return { base, port, id, stop: () => spawnSync("docker", ["rm", "-f", id], { stdio: "ignore" }), log };
   }
+  // 시험마다 빈 데이터 캐시에서 시작한다 — 앞 시험의 서버가 디스크에 남긴 공개 데이터 캐시(30초 재검증, 설계 7.1)를 새 서버가 한 번 보이지 않게.
+  // 새 Docker 컨테이너·새 배포와 같은 출발점이다
+  fs.rmSync(path.join(path.dirname(STANDALONE_SERVER), ".next", "cache", "fetch-cache"), { recursive: true, force: true });
   const child = spawn(process.execPath, [STANDALONE_SERVER], {
     env: { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, PORT: String(port), HOSTNAME: "127.0.0.1", NODE_ENV: "production", ...env },
     stdio: ["ignore", "pipe", "pipe"],

@@ -26,4 +26,4 @@ export const POST = handle(async (request: Request) => {
   const row = data as GlossaryRow;
   await writeAudit(db, { actor: actorOf(viewer), action: "glossary.create", target: targetOf.glossary(row.id), before: null, after: row, reason: `용어 더하기 — ${row.term}` });
   return json({ term: row }, 201);
-});
+}, { revalidatesPublic: true });

@@ -39,7 +39,7 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
     reason: `용어 고치기 — ${after.term}`,
   });
   return json({ term: after });
-});
+}, { revalidatesPublic: true });
 
 export const DELETE = handle(async (request: Request, { params }: Ctx) => {
   const id = parseId((await params).id, "용어");
@@ -58,4 +58,4 @@ export const DELETE = handle(async (request: Request, { params }: Ctx) => {
   if (!data || data.length === 0) throw new HttpError(404, "용어를 찾을 수 없습니다");
   await writeAudit(db, { actor: actorOf(viewer), action: "glossary.delete", target, before, after: null, reason: `${reason} — ${before.term}` });
   return json({ deleted: id });
-});
+}, { revalidatesPublic: true });

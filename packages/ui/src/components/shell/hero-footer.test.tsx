@@ -73,6 +73,18 @@ describe("히어로", () => {
     expect(screen.getByText("입력창 자리")).toBeTruthy();
   });
 
+  it("제목(핵심 메시지)이 없거나 공백뿐이면 제목 요소가 없고 아래 자리만 그린다 — 페이지 제목은 쓰는 쪽이 둔다", () => {
+    const { rerender } = render(
+      <Hero eyebrow="LOCAL TAX">
+        <p>입력창 자리</p>
+      </Hero>,
+    );
+    expect(screen.queryByRole("heading")).toBeNull();
+    expect(screen.getByText("입력창 자리")).toBeTruthy();
+    rerender(<Hero title="   " />);
+    expect(screen.queryByRole("heading")).toBeNull();
+  });
+
   it("아이브로·설명을 주지 않으면 그 요소가 없다", () => {
     const { container } = render(<Hero title="지방세 소식" />);
     expect(container.querySelector('[data-ui="eyebrow"]')).toBeNull();

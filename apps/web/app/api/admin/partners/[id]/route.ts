@@ -42,4 +42,4 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
     reason: `제휴사 고치기 — ${after.name}`,
   });
   return json({ partner: { ...after, status: partnerStatus(after, kstDate(nowIso())) } });
-});
+}, { revalidatesPublic: true });

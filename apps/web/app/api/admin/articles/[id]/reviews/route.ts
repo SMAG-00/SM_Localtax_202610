@@ -91,4 +91,4 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
     reason: reason ?? `${kind} ${decision}`,
   });
   return json({ review: data, article: articleSummary(after) }, 201);
-});
+}, { revalidatesPublic: true });

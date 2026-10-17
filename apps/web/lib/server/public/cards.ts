@@ -114,6 +114,8 @@ export interface TrackerState {
   label: string;
   /** 확정 기준 단계(settings)에 이르렀는지 — false면 `확정 아님` 칩 */
   confirmed: boolean;
+  /** 확정 기준 단계(settings 값) — 단계 배지 컴포넌트가 같은 기준으로 `확정 아님`을 그린다 */
+  confirmStage: ProgressStageKey;
   effectivePending: boolean;
   /** 현재 단계의 날짜 (한국 날짜) */
   currentOn: string | null;
@@ -149,6 +151,7 @@ export function trackerState(rows: readonly AmendmentEventRow[], confirmStage: P
     current: resolved.current,
     label: resolved.currentLabel,
     confirmed: resolved.confirmed,
+    confirmStage,
     effectivePending: resolved.effectivePending,
     currentOn: currentRow?.occurred_on ?? null,
     sourceUrl: currentRow?.source_url ?? null,

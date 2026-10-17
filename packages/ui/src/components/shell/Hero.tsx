@@ -20,8 +20,8 @@ export type HeroProps = {
   titleLevel?: 1 | 2 | 3;
   /** 영문 아이브로 (어두운 바탕 톤) */
   eyebrow?: string;
-  /** 핵심 메시지 — settings 한 곳에서 온 문구 (HOME-01) */
-  title: string;
+  /** 핵심 메시지 — settings 한 곳에서 온 문구 (HOME-01). 비면 제목 요소 0 — 페이지 제목(h1)은 쓰는 쪽이 따로 둔다 */
+  title?: string;
   /** 제목 안에서 hermes-400으로 칠할 단어 */
   highlight?: string;
   description?: ReactNode;
@@ -46,7 +46,9 @@ export function Hero({ eyebrow, title, highlight, description, children, titleLe
 
       <div className="relative mx-auto max-w-5xl px-4 py-20 sm:py-28">
         {eyebrow && <Eyebrow tone="dark">{eyebrow}</Eyebrow>}
-        <Title className="mt-6 text-[2.6rem] leading-[1.15] font-black tracking-tight text-white sm:text-[3.75rem]">{withHighlight(title, highlight)}</Title>
+        {title?.trim() && (
+          <Title className="mt-6 text-[2.6rem] leading-[1.15] font-black tracking-tight text-white sm:text-[3.75rem]">{withHighlight(title.trim(), highlight)}</Title>
+        )}
         {description && <p className="mt-7 max-w-2xl text-[18px] leading-[1.75] text-navy-100">{description}</p>}
         {children && <div className="mt-10">{children}</div>}
       </div>

@@ -66,4 +66,4 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
     reason: "출처 추가",
   });
   return json({ source: { ...source, ref: sourceRef(source.id) } }, 201);
-});
+}, { revalidatesPublic: true });

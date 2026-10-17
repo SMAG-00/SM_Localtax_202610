@@ -49,4 +49,4 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   const reason = typeof raw.reason === "string" && raw.reason.trim() ? raw.reason.trim() : `설정 고치기 — ${key}`;
   await writeAudit(db, { actor: actorOf(viewer), action: "settings.update", target, before: { value: current.value }, after: { value: saved.value }, reason });
   return json({ setting: saved });
-});
+}, { revalidatesPublic: true });

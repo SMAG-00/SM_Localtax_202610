@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState, type FormEvent } from "react";
 import { Chip, PrimaryButton } from "../base";
+import { UiLink } from "../link";
 
 /** 추천 검색어 칩 상한 — 편집자가 settings에 3~6개를 지정한다 (HOME-01) */
 const MAX_SUGGESTIONS = 6;
@@ -46,7 +47,8 @@ export function HomeSearch({ label = "검색어", placeholder, suggestions = [] 
       <label htmlFor={inputId} className="block text-[15px] font-bold text-navy-100">
         {label}
       </label>
-      <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+      {/* 360px에서는 입력창 아래에 글자 폭의 주 버튼 — 화면 폭 버튼은 오렌지 면적이 뷰포트의 5%를 넘는다 (R3) */}
+      <div className="mt-2 flex flex-col items-start gap-3 sm:flex-row sm:items-stretch">
         <input
           ref={inputRef}
           id={inputId}
@@ -71,12 +73,12 @@ export function HomeSearch({ label = "검색어", placeholder, suggestions = [] 
         <ul aria-label="추천 검색어" className="mt-4 flex flex-wrap gap-x-2">
           {chips.map((s) => (
             <li key={s}>
-              <a
+              <UiLink
                 href={`/search?q=${encodeURIComponent(s)}`}
                 className="inline-flex min-h-11 items-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400"
               >
                 <Chip className="transition hover:border-hermes-400">{s}</Chip>
-              </a>
+              </UiLink>
             </li>
           ))}
         </ul>

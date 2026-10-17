@@ -1,5 +1,6 @@
 import { brand } from "../../brand";
 import { cx } from "../base";
+import { UiLink } from "../link";
 
 export type FooterLink = {
   label: string;
@@ -35,7 +36,7 @@ export function Footer({ disclaimer, links, info = [] }: FooterProps) {
             <ul className="flex flex-wrap gap-x-4 text-[13px]">
               {links.map((link) => (
                 <li key={`${link.href}-${link.label}`}>
-                  <a
+                  <UiLink
                     href={link.href}
                     className={cx(
                       "inline-flex min-h-11 items-center underline underline-offset-4 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400",
@@ -43,7 +44,7 @@ export function Footer({ disclaimer, links, info = [] }: FooterProps) {
                     )}
                   >
                     {link.label}
-                  </a>
+                  </UiLink>
                 </li>
               ))}
             </ul>

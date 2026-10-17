@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { cx } from "../base";
+import { UiLink } from "../link";
 
 export type HeaderNavLink = { key: string; label: string; href: string };
 
@@ -25,6 +26,9 @@ export function HeaderNav({ sections, utilities, currentSection }: { sections: r
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // 화면 전환(새로고침 없음)에서는 헤더가 그대로 남는다 — 메뉴 항목을 누르면 펼친 메뉴를 닫는다
+  const close = () => setOpen(false);
 
   function onKeyDown(e: KeyboardEvent) {
     if (e.key !== "Escape" || !open) return;
@@ -59,9 +63,14 @@ export function HeaderNav({ sections, utilities, currentSection }: { sections: r
           <ul className="flex flex-col lg:flex-row lg:items-center">
             {sections.map((s) => (
               <li key={s.key}>
-                <a href={s.href} aria-current={s.key === currentSection ? "page" : undefined} className={cx(LINK, s.key === currentSection && "underline decoration-hermes-500 decoration-2 underline-offset-8")}>
+                <UiLink
+                  href={s.href}
+                  onClick={close}
+                  aria-current={s.key === currentSection ? "page" : undefined}
+                  className={cx(LINK, s.key === currentSection && "underline decoration-hermes-500 decoration-2 underline-offset-8")}
+                >
                   {s.label}
-                </a>
+                </UiLink>
               </li>
             ))}
           </ul>
@@ -71,9 +80,9 @@ export function HeaderNav({ sections, utilities, currentSection }: { sections: r
             <ul className="flex flex-col lg:flex-row lg:items-center">
               {utilities.map((u) => (
                 <li key={u.key}>
-                  <a href={u.href} className={LINK}>
+                  <UiLink href={u.href} onClick={close} className={LINK}>
                     {u.label}
-                  </a>
+                  </UiLink>
                 </li>
               ))}
             </ul>

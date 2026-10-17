@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Chip } from "../base";
+import { UiLink } from "../link";
 import { FIELDS, type FieldSection } from "./fields";
 
 /** 기사 형식 (`articles.format`) — 분야가 아니라 형식이다 (PRD-00 5.3). 일반 기사에는 형식 배지가 없다 */
@@ -24,13 +25,15 @@ export type ArticleCardProps = {
   /** 편집 분야 배지 자리 (지역 기사 — 기사 유형 배지 옆) */
   editorialBadge?: ReactNode;
   format?: ArticleFormat;
+  /** 기자·필자 이름 (글자만 — 카드 전체가 기사 링크라 이름 링크를 따로 두지 않는다) */
+  byline?: string;
 };
 
 /**
- * 기사 카드 — 분야 칩 · 제목(19px 900) · 요약 2줄 · 발행일(고정폭) · 지역 칩 · 기사 유형 배지 · 형식 배지 (PRD-00 8.6 · RP-04)
+ * 기사 카드 — 분야 칩 · 제목(19px 900) · 요약 2줄 · 기자명 · 발행일(고정폭) · 지역 칩 · 기사 유형 배지 · 형식 배지 (PRD-00 8.6 · RP-04 · PRD-01A 3장 홈)
  * 제목 링크가 카드 전체를 덮는다 — 링크 이름은 제목만, 칩·배지는 글자로 읽힌다
  */
-export function ArticleCard({ href, title, summary, section, subsection, publishedAt, region, typeBadge, editorialBadge, format }: ArticleCardProps) {
+export function ArticleCard({ href, title, summary, section, subsection, publishedAt, region, typeBadge, editorialBadge, format, byline }: ArticleCardProps) {
   const field = FIELDS[section].name;
   const showFormat = format !== undefined && format !== "일반";
   return (
@@ -49,15 +52,20 @@ export function ArticleCard({ href, title, summary, section, subsection, publish
         )}
       </div>
       <h3 className="mt-3 text-[19px] leading-snug font-black text-navy-900">
-        <a
+        <UiLink
           href={href}
           className="after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-hermes-500"
         >
           {title}
-        </a>
+        </UiLink>
       </h3>
       <p className="mt-2 line-clamp-2 text-[15px] leading-relaxed text-navy-600">{summary}</p>
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
+        {byline?.trim() && (
+          <span data-part="byline" className="text-[14px] font-semibold text-navy-700">
+            {byline.trim()}
+          </span>
+        )}
         <span className="sr-only">발행일 </span>
         <time dateTime={publishedAt} className="font-mono text-[13px] tracking-wide text-navy-600">
           {publishedAt}

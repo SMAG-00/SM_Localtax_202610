@@ -3,6 +3,7 @@
 //  · 유틸 메뉴·정책 링크는 기능 키가 켜진 것만 (꺼지면 링크 요소 0 — 빈 링크 0)
 import { POLICY_LINKS, SECTION_INFO, SECTION_KEYS, UTILITY_LINKS, categoryHref, isBlockedPath, type Features, type SectionKey } from "./constants";
 import type { PublicCategoryRow } from "./rows";
+import { CLOSED_FEATURES } from "./settings";
 
 export interface NavLink {
   key: string;
@@ -43,4 +44,12 @@ export function buildChrome(categories: readonly PublicCategoryRow[], counts: Re
     utilities: UTILITY_LINKS.filter((u) => features[u.key]).map((u) => ({ key: u.key, label: u.label, href: u.href })),
     policyLinks: POLICY_LINKS.filter((p) => features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
   };
+}
+
+/**
+ * 닫힌 화면 틀 — 공개 데이터를 읽지 못할 때(DB 연결 실패) 공개 레이아웃이 쓴다. 상단 메뉴 4개와 공통 '뉴스 전체'만,
+ * 기능 키로 여는 유틸 메뉴·정책 링크는 0 (모양이 틀린 값은 닫힌 쪽으로 — 설계 2.4)
+ */
+export function closedChrome(): SiteChrome {
+  return buildChrome([], new Map(), CLOSED_FEATURES);
 }
