@@ -39,6 +39,7 @@
     "VERCEL_URL",
     "GITHUB_ACTIONS",
     "PATH",
-    "SystemRoot"
+    "SystemRoot",
+    "APPDATA"
   ]
 }
