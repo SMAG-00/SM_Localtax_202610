@@ -64,7 +64,7 @@ const GROUP_TITLE: Record<PictogramGroup, string> = {
 export function DiscoverySection() {
   return (
     <section>
-      <SectionTitle>찾기·읽기 (discovery)</SectionTitle>
+      <SectionTitle>찾기·읽기</SectionTitle>
       <div className="space-y-4">
         <Specimen name="픽토그램">
           <div className="space-y-6">

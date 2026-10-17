@@ -268,7 +268,7 @@ const approval = { by: "편집자 A", at: "2026-10-15T10:00:00+09:00", reason: "
 export function LocalSection() {
   return (
     <section>
-      <SectionTitle>local</SectionTitle>
+      <SectionTitle>지자체·부동산·개발금융</SectionTitle>
       <div className="space-y-6">
         <Specimen name="분야 허브 머리">
           <FieldHubHead

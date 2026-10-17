@@ -100,7 +100,7 @@ const note = "mb-2 text-[13px] font-semibold text-navy-600";
 export function ShellSection() {
   return (
     <section>
-      <SectionTitle>shell</SectionTitle>
+      <SectionTitle>화면 틀·배지</SectionTitle>
       <div className="space-y-4">
         <Specimen name="헤더">
           <p className={note}>1024px 미만에서는 [메뉴] 버튼으로 엽니다</p>

@@ -32,7 +32,7 @@ const EXPERTS = { findHref: "/experts?field=local-tax", requestHref: "/experts/r
 export function ServicesSection() {
   return (
     <section>
-      <SectionTitle>services</SectionTitle>
+      <SectionTitle>기사 신뢰·서비스·AI 도우미</SectionTitle>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <Specimen name="기자 소개 블록">
