@@ -3,6 +3,7 @@ import { resolveProgressStage, PROGRESS_STAGE_ORDER, type ProgressStageEvent, ty
 import { sponsorLabelText } from "@ltr/structured-data";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { sponsorshipOf } from "../articles/mapping";
+import { sponsorMark, type SponsorMark } from "./article-logic";
 import { CONTENT_TYPE_NAMES, SECTION_INFO, isSectionKey, newsHref, personHref, type SectionKey } from "./constants";
 import type { AmendmentEventRow, AmendmentRow, PublicArticleListRow, PublicCategoryRow, PublicPartnerRow, PublicPersonRow, RegionRow } from "./rows";
 
@@ -34,6 +35,8 @@ export interface ArticleListItem {
   format: string | null;
   /** 제휴 배지 글자 — 광고 · 공동 기획 ○○ (ART-10) */
   sponsorBadge: string | null;
+  /** 표기 — 목록 카드와 기사 상세가 같은 배지를 그린다 (광고는 유형 배지 "광고", 공동 기획은 제휴 배지) */
+  sponsor: SponsorMark;
   subtype: string;
   /** 최초 발행일 (한국 날짜) */
   publishedOn: string;
@@ -50,6 +53,9 @@ export interface ArticleListItem {
   amendmentId: number | null;
   /** 편집 승인된 보도기사 (HOME-04 · 뉴스 전체 — 계산 칸 reported_approved) */
   reportedApproved: boolean;
+  /** 칼럼 연재 이름·회차 (ART-04) — 연재가 아니면 null */
+  seriesTitle: string | null;
+  seriesEpisode: number | null;
 }
 
 /** 목록에 내는 기사 — 유형이 있고(이관 미분류 제외 — ART-01) 금주 핫뉴스(주간 페이지 경로 — ART-02)가 아님 */
@@ -87,6 +93,7 @@ export function toListItem(row: PublicArticleListRow, lk: Lookups): ArticleListI
     typeLabel: row.content_type ? (CONTENT_TYPE_NAMES[row.content_type] ?? null) : null,
     format: row.format && row.format !== "general" ? row.format : null,
     sponsorBadge: sponsorBadgeOf(row.label, partner?.name),
+    sponsor: sponsorMark(row.label, partner?.name),
     subtype: row.subtype,
     publishedOn: isoToKstDate(row.first_published_at),
     modifiedOn: row.substantive_updated_at ? isoToKstDate(row.substantive_updated_at) : null,
@@ -99,6 +106,8 @@ export function toListItem(row: PublicArticleListRow, lk: Lookups): ArticleListI
     categoryId: row.category_id === null ? null : Number(row.category_id),
     amendmentId: row.amendment_id === null ? null : Number(row.amendment_id),
     reportedApproved: row.reported_approved === true,
+    seriesTitle: row.series_title ?? null,
+    seriesEpisode: row.series_episode === null || row.series_episode === undefined ? null : Number(row.series_episode),
   };
 }
 

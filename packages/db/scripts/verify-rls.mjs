@@ -29,6 +29,8 @@ export const PUBLIC_READ_ALLOWLIST = new Map([
   ["public.article_corrections", "공개 기사의 게재된 정정의 공개 칸 — NAV-06·ART-02"],
   ["public.article_revisions", "공개 기사의 실질 수정 날짜·사유(본문·제목 제외) — ART-05"],
   ["public.settings", "공개 설정 키(화면 문구·기능 공개 목록·기준값)만 — HOME-01·HOME-02·ART-06·UX-05"],
+  // W2-b 4단계 (20261018000013_w2b_article_detail.sql — 시험 tests/w2b-article-detail.test.mjs)
+  ["public.article_tombstones", "공개됐다가 삭제된 기사의 주소·삭제 시각만 — 410 응답과 삭제 안내, NAV-06"],
 ]);
 
 export async function tablesWithoutRls(client) {

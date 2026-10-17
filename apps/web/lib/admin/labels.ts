@@ -79,7 +79,11 @@ export const BLOCK_TYPE_LABELS = {
   video: "동영상",
   faq: "자주 묻는 질문",
   key_summary: "핵심 요약",
+  slide: "카드뉴스 장",
 } as const;
+
+/** 해결 사례 결과의 결론 배지 (CAT-05) — 공개 화면 해결 사례 카드와 같은 글자 */
+export const SOLVED_CASE_CONCLUSION_LABELS = { accepted: "인용", partial: "일부 인용", rejected: "기각", dismissed: "각하", interpretation: "해석" } as const;
 
 export const CALLOUT_KIND_LABELS = { info: "정보", tip: "절세 체크포인트", caution: "주의", mistake: "자주 틀리는 점" } as const;
 

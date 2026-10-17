@@ -51,6 +51,20 @@ describe("「지방세로 읽기」 감수 표시 (CORE-01)", () => {
     expect(readStoredTaxLens(plan.columns.tax_lens)).toMatchObject({ reviewed: true, reviewed_for_version: 4 });
     expect(plan.changed).toEqual(["title"]);
   });
+  test("감수 서명 기록(서명한 감수위원·시각)은 감수 표시와 함께 이어지고, 입력으로는 넣을 수 없다 (01C BR-03)", () => {
+    const signed = { ...reviewedLens(3), reviewed_by: 77, reviewed_at: "2026-10-16T05:00:00.000Z" };
+    const kept = planEdit(articleRow({ version: 3, tax_lens: signed }), { title: "제목만 고침" }, { now: NOW, updateKind: null, reason: null });
+    expect(readStoredTaxLens(kept.columns.tax_lens)).toMatchObject({ reviewed_for_version: 4, reviewed_by: 77, reviewed_at: "2026-10-16T05:00:00.000Z" });
+    const edited = planEdit(articleRow({ version: 3, tax_lens: signed }), { taxLens: { ...LENS_INPUT, points: ["바꾼 포인트입니다."] } }, { now: NOW, updateKind: null, reason: null });
+    expect(readStoredTaxLens(edited.columns.tax_lens)).toMatchObject({ reviewed_for_version: 3, reviewed_by: 77 });
+    const forged = storeTaxLens({ ...LENS_INPUT, reviewed_by: 1, reviewed_at: NOW } as typeof LENS_INPUT, null, 0, 1);
+    expect(forged).toMatchObject({ reviewed_by: null, reviewed_at: null });
+  });
+  test("칼럼 연재 칸은 그대로 DB 칸으로 옮긴다 (ART-04)", () => {
+    const plan = planEdit(articleRow({ content_type: "opinion" }), { seriesTitle: "그때와 지금", seriesEpisode: 2 }, { now: NOW, updateKind: null, reason: null });
+    expect(plan.columns).toMatchObject({ series_title: "그때와 지금", series_episode: 2 });
+    expect(plan.changed).toEqual(["seriesTitle", "seriesEpisode"]);
+  });
   test("박스 문장을 고치면 감수 버전에 멈춘다 — 재감수 필요", () => {
     const before = articleRow({ version: 3, tax_lens: reviewedLens(3) });
     const plan = planEdit(before, { taxLens: { ...LENS_INPUT, points: ["바꾼 포인트입니다."] } }, { now: NOW, updateKind: null, reason: null });

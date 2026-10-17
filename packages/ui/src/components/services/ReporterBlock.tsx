@@ -1,3 +1,4 @@
+import { UiLink } from "../link";
 import { DateText, MONO, TEXT_LINK } from "./parts";
 import { hasEmail, isBlank } from "./format";
 
@@ -11,8 +12,10 @@ type Common = {
   publishedAt: string;
   /** 실질 수정 시각 (ISO) — 오탈자 수정은 넣지 않는다 (OPT-07) */
   modifiedAt?: string;
-  correctionHref?: string;
-  editorialPolicyHref?: string;
+  /** 정정·반론 창구 — 비우면 기본 경로, null이면 링크 0 (정책 페이지 공개 승인 전 — HELP-05) */
+  correctionHref?: string | null;
+  /** 편집 원칙 — 비우면 기본 경로, null이면 링크 0 */
+  editorialPolicyHref?: string | null;
 };
 
 export type ReporterBlockProps = Common &
@@ -39,12 +42,12 @@ export function ReporterBlock(props: ReporterBlockProps) {
     <section data-ui="reporter-block" aria-label={`${role} 소개`} className="rounded-2xl border border-navy-100 bg-white p-6">
       <p className="text-[13px] font-bold text-navy-600">{role}</p>
       <p className="mt-1">
-        <a
+        <UiLink
           href={`/people/${encodeURIComponent(author.slug)}`}
           className="inline-flex min-h-11 items-center text-[19px] font-black text-navy-900 hover:text-hermes-900 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500"
         >
           {author.name}
-        </a>
+        </UiLink>
       </p>
       <p className="mt-1 text-[15px] text-navy-600">담당 분야 · {author.beat}</p>
       {bio && <p className="mt-3 text-[15px] text-navy-800">{bio}</p>}
@@ -73,18 +76,24 @@ export function ReporterBlock(props: ReporterBlockProps) {
         )}
       </p>
 
-      <ul className="mt-2 flex flex-wrap gap-x-5 text-[15px]">
-        <li>
-          <a href={correctionHref} className={TEXT_LINK}>
-            정정·반론 요청
-          </a>
-        </li>
-        <li>
-          <a href={editorialPolicyHref} className={TEXT_LINK}>
-            편집 원칙
-          </a>
-        </li>
-      </ul>
+      {(correctionHref || editorialPolicyHref) && (
+        <ul className="mt-2 flex flex-wrap gap-x-5 text-[15px]">
+          {correctionHref && (
+            <li>
+              <UiLink href={correctionHref} className={TEXT_LINK}>
+                정정·반론 요청
+              </UiLink>
+            </li>
+          )}
+          {editorialPolicyHref && (
+            <li>
+              <UiLink href={editorialPolicyHref} className={TEXT_LINK}>
+                편집 원칙
+              </UiLink>
+            </li>
+          )}
+        </ul>
+      )}
     </section>
   );
 }

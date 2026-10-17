@@ -79,6 +79,16 @@ export type TaxLensLinkKind = (typeof TAX_LENS_LINK_KINDS)[number];
 export const CALLOUT_KINDS = ["info", "tip", "caution", "mistake"] as const;
 export type CalloutKind = (typeof CALLOUT_KINDS)[number];
 
+/**
+ * 해결 사례 결과의 결론 배지 (CAT-05 · PRD-00 8.6 '결과(결론 배지)') — 인용 · 일부 인용 · 기각 · 각하 · 해석.
+ * 인용·기각·각하는 결정례 카드와 같은 뜻(8.6), 일부 인용은 인용 쪽, 해석은 결정례가 아니라 유권해석·예규로 결론이 난 사례다
+ */
+export const SOLVED_CASE_CONCLUSIONS = ["accepted", "partial", "rejected", "dismissed", "interpretation"] as const;
+export type SolvedCaseConclusion = (typeof SOLVED_CASE_CONCLUSIONS)[number];
+
+/** 카드뉴스 장 수 (ART-03 — 5~7장, 4장·8장은 발행 불가) */
+export const CARDNEWS_SLIDES = { min: 5, max: 7 } as const;
+
 /** 본문 블록 종류 (ART-01) */
 export const BLOCK_TYPES = [
   "paragraph",
@@ -90,6 +100,7 @@ export const BLOCK_TYPES = [
   "video",
   "faq",
   "key_summary",
+  "slide",
 ] as const;
 export type BlockType = (typeof BLOCK_TYPES)[number];
 
@@ -178,6 +189,17 @@ export interface KeySummaryBlock extends BlockBase {
   lines: readonly string[];
 }
 
+/**
+ * 카드뉴스 한 장 (ART-03) — 글자는 이미지가 아니라 HTML 글자다(검색·화면 읽기). 형식이 카드뉴스인 기사에만 쓴다.
+ * alt = 장마다 대체 텍스트 — 장의 그림·배치를 글로 설명한다(화면 읽기 프로그램이 장 이름으로 읽는다). 없으면 발행 불가
+ */
+export interface SlideBlock extends BlockBase {
+  type: "slide";
+  title: string;
+  text: string;
+  alt: string;
+}
+
 export type ArticleBlock =
   | ParagraphBlock
   | TableBlock
@@ -187,7 +209,8 @@ export type ArticleBlock =
   | InfographicBlock
   | VideoBlock
   | FaqBlock
-  | KeySummaryBlock;
+  | KeySummaryBlock
+  | SlideBlock;
 
 /** 편집자가 '핵심 주장'으로 표시한 문장과 근거 ID (ART-01 · OPT-03) */
 export interface CoreClaim {
@@ -289,6 +312,8 @@ export interface SolvedCase {
   lesson: string;
   /** 결과의 근거 — 결정례 사건번호 또는 해석 번호 + 출처 링크 */
   resultEvidence: readonly { kind: "decision" | "interpretation"; number: string; url: string }[];
+  /** 결과의 결론 배지 — 없으면(null) 발행 불가 (결과 칸의 일부, PRD-00 8.6) */
+  conclusion: SolvedCaseConclusion | null;
 }
 
 /** 제휴사 `partners` — 계약 종료일 `contract_to`(YYYY-MM-DD, 그날까지 유효). null이면 종료일 없음 */

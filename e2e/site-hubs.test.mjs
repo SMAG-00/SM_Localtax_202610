@@ -25,7 +25,7 @@ const HUBS = [
   { key: "local", path: "/local", name: "지자체뉴스" },
 ];
 /** 기능 키로 여는 화면 (HOME-02 · HELP-05) — 꺼져 있으면 링크 0 */
-const GATED = ["/calc", "/experts", "/store", "/edu", "/search", "/about", "/help", "/glossary", "/people", "/tax/amendments/"];
+const GATED = ["/calc", "/experts", "/store", "/edu", "/search", "/about", "/help", "/glossary", "/tax/amendments/"];
 /** PRD-01A 3장·HOME-02 — 단계 전 경로와 v1.2 경로 (내부 링크 0) */
 const NEVER = ["/calc/", "/law", "/cases", "/workspace", "/qna", "/library", "/region", "/resources", "/authors", "/news/cards", "/editorial-policy", "/corrections", "/advertise", "/terms", "/privacy", "/no-email-collection"];
 const SEOUL = "1100000000";

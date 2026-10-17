@@ -1,8 +1,9 @@
-import { Callout, Chip, FieldHubHead, LocalHubBlocks, SituationCard, UiLink, type HubBlockContent } from "@ltr/ui";
+import { Chip, FieldHubHead, LocalHubBlocks, SituationCard, UiLink, type HubBlockContent } from "@ltr/ui";
 import type { ArticleListItem, HubData } from "@/lib/server/public";
 import { HUB_HEADINGS, hubParts } from "@/lib/site/hub-view";
 import { ArticleGrid, ArticleItem } from "./ArticleItem";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
+import { UnavailableNotice } from "./Unavailable";
 
 // 4대 분야 허브 공통 골격 (CAT-02 · UX-05 · PRD-01A 3장) — 네 허브가 이 컴포넌트 하나로 그린다.
 // 머리(분야 허브 머리: 아이브로·제목·소개 → 지방세 포인트 → 탭) → 분야 고유 블록 자리 → 최신 목록 → 상황 카드 0~상한 → 관련 용어.
@@ -29,11 +30,7 @@ export function HubView({ hub }: { hub: HubData }) {
                   intro={hub.intro}
                   tabs={{ items: hub.tabs, current: hub.currentTab, label: hub.section === "local" ? "분야" : "하위 분야" }}
                 />
-                {hub.unavailable && (
-                  <div role="status" className="mt-8">
-                    <Callout>새 소식을 잠시 불러오지 못했습니다. 잠시 뒤 다시 확인해 주세요.</Callout>
-                  </div>
-                )}
+                {hub.unavailable && <UnavailableNotice />}
               </SiteSection>
             );
           case "blocks":

@@ -35,6 +35,9 @@ export interface EditorArticle {
   regionCodes: string[];
   editorialField: string | null;
   publicQuestion: string | null;
+  /** 칼럼 연재 (ART-04) — 칼럼만 */
+  seriesTitle: string | null;
+  seriesEpisode: number | null;
   body: StoredBody;
   solvedCase: SolvedCase | null;
   taxLens: StoredTaxLens | null;
@@ -92,6 +95,9 @@ export interface EditorState {
   regionCodesText: string;
   editorialField: string;
   publicQuestion: string;
+  /** 칼럼 연재 이름·회차 (ART-04) — 둘 다 적거나 둘 다 비운다 */
+  seriesTitle: string;
+  seriesEpisodeText: string;
   blocks: BlockDraft[];
   claims: ClaimDraft[];
   checklists: Checklists;
@@ -168,6 +174,8 @@ export function blockFromStored(b: StoredBlock, key: string): BlockDraft {
       return { ...d, items: b.items.map((i) => ({ question: i.question, answer: i.answer })) };
     case "key_summary":
       return { ...d, linesText: b.lines.join("\n") };
+    case "slide":
+      return { ...d, title: b.title, text: b.text, alt: b.alt };
   }
 }
 
@@ -198,6 +206,8 @@ export function blockToStored(d: BlockDraft): StoredBlock {
       return { type: "faq", items: d.items.map((i) => ({ question: i.question, answer: i.answer })), ...checklist };
     case "key_summary":
       return { type: "key_summary", lines: splitLines(d.linesText), ...checklist };
+    case "slide":
+      return { type: "slide", title: d.title, text: d.text, alt: d.alt, ...checklist };
   }
 }
 
@@ -273,6 +283,8 @@ export function editorStateFromArticle(a: EditorArticle, makeKey: () => string):
     regionCodesText: a.regionCodes.join(", "),
     editorialField: textOf(a.editorialField),
     publicQuestion: textOf(a.publicQuestion),
+    seriesTitle: textOf(a.seriesTitle),
+    seriesEpisodeText: a.seriesEpisode === null ? "" : String(a.seriesEpisode),
     blocks,
     claims,
     checklists: withMethodChecklists(a.checklists, a.contentType, a.reportingMethod),
@@ -359,11 +371,22 @@ export function editorPayload(s: EditorState, ctx: { published: boolean; version
     expectedVersion: ctx.version,
   };
   if (s.subtype === "solved_case" && s.solvedCase) payload.solvedCase = s.solvedCase;
+  // 칼럼 연재 (ART-04) — 칼럼만 보낸다. 다른 유형으로 바꾸면 비운다(DB 규칙: 연재는 칼럼만)
+  const series = seriesOf(s);
+  payload.seriesTitle = series ? series.title : null;
+  payload.seriesEpisode = series ? series.episode : null;
   if (ctx.published) {
     payload.updateKind = blank(s.updateKind) ? null : s.updateKind;
     payload.reason = textOrNull(s.reason);
   }
   return payload;
+}
+
+/** 편집기의 연재 칸 → { 이름, 회차 } — 칼럼이 아니거나 둘 다 비면 null. 회차 글자가 정수가 아니면 NaN(저장 전 확인이 막는다) */
+export function seriesOf(s: Pick<EditorState, "contentType" | "seriesTitle" | "seriesEpisodeText">): { title: string; episode: number } | null {
+  if (s.contentType !== "opinion" || (blank(s.seriesTitle) && blank(s.seriesEpisodeText))) return null;
+  const text = s.seriesEpisodeText.trim();
+  return { title: s.seriesTitle.trim(), episode: /^\d+$/.test(text) ? Number(text) : Number.NaN };
 }
 
 // ── 저장 전 확인 ────────────────────────────────────────
@@ -394,6 +417,11 @@ export function validateEditor(s: EditorState, ctx: ValidateContext): FieldError
   if (!blank(s.legalBasisDate) && !isValidDate(s.legalBasisDate.trim())) e["meta-legal-basis-date"] = "법령 기준일은 YYYY-MM-DD 날짜로 적어 주세요";
   for (const b of s.blocks) {
     if ((b.type === "image" || b.type === "infographic") && idOrNull(b.mediaId) === null) e[`block-${b.key}-mediaId`] = "이미지를 골라 주세요";
+  }
+  const series = seriesOf(s);
+  if (series) {
+    if (series.title === "") e["meta-series-title"] = "연재 이름을 적어 주세요 — 단독 칼럼이면 회차도 비웁니다";
+    if (!Number.isInteger(series.episode) || series.episode < 1) e["meta-series-episode"] = "회차는 1 이상의 숫자로 적어 주세요";
   }
   if (s.taxLensMode === "skip") {
     const reason = s.omissionReason.trim();
@@ -427,6 +455,8 @@ const FIELD_OF: Record<string, string> = {
   regionCodes: "meta-region-codes",
   editorialField: "meta-editorial-field",
   publicQuestion: "meta-public-question",
+  seriesTitle: "meta-series-title",
+  seriesEpisode: "meta-series-episode",
   updateKind: "save-update-kind",
   reason: "save-reason",
 };

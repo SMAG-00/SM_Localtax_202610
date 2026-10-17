@@ -1,6 +1,7 @@
 // services 묶음 내부 조각 — 같은 토큰·문법을 여러 컴포넌트가 함께 쓴다 (견본 등록 대상이 아니다)
 import type { ReactNode } from "react";
 import { cx, DarkButton } from "../base";
+import { UiLink } from "../link";
 import { isExternalHref, kstDate, kstDateTime } from "./format";
 
 /** 밝은 바탕 글자 링크 — SM 링크 문법(hermes-800 밑줄, 호버 hermes-900). 주 버튼이 아니다. 터치 44px */
@@ -28,11 +29,11 @@ export function NewWindowIcon({ className }: { className?: string }) {
   );
 }
 
-/** 글자 링크 — 바깥 주소면 새 창(rel=noopener noreferrer) + 아이콘 + "(새 창)" */
+/** 글자 링크 — 바깥 주소면 새 창(rel=noopener noreferrer) + 아이콘 + "(새 창)", 사이트 안 주소는 화면 전환 링크(UiLink) */
 export function SiteLink({ href, children, className, newWindowLabel = "새 창" }: { href: string; children: ReactNode; className?: string; newWindowLabel?: string }) {
   const external = isExternalHref(href);
   return (
-    <a href={href} className={cx(TEXT_LINK, className)} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+    <UiLink href={href} className={cx(TEXT_LINK, className)} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
       {children}
       {external && (
         <>
@@ -40,7 +41,7 @@ export function SiteLink({ href, children, className, newWindowLabel = "새 창"
           <span className="sr-only"> ({newWindowLabel})</span>
         </>
       )}
-    </a>
+    </UiLink>
   );
 }
 

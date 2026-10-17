@@ -74,7 +74,9 @@ export function checkPlainLanguage(article: ArticleForPublish, ctx: PublishConte
   article.blocks.forEach((block, blockIndex) => {
     const body = boxBodySentences(block);
     if (body === null) return;
-    out.push(...guideLengthFindings({ field: "blocks", blockIndex, sentences: blockSentences(block) }, ctx));
+    // 카드뉴스 장의 대체 텍스트는 화면 글자가 아니다 — 안내 문장 길이는 제목·글만 본다 (대체 텍스트는 문장 목록의 끝이라 번호가 같다)
+    const shown = block.type === "slide" ? [...splitSentences(block.title), ...body] : blockSentences(block);
+    out.push(...guideLengthFindings({ field: "blocks", blockIndex, sentences: shown }, ctx));
     out.push(...boxCountFinding(body.length, { field: "blocks", blockIndex }, ctx));
   });
   return out;

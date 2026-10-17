@@ -74,6 +74,13 @@ export function ArticlePreview({ view }: { view: EditorView }) {
             )}
             {(b.type === "image" || b.type === "infographic") && <p className="text-[15px] text-navy-700">이미지 media {b.mediaId} · {b.alt || "대체 텍스트 없음"}</p>}
             {b.type === "video" && <p className="text-[15px] text-navy-700 [overflow-wrap:anywhere]">동영상 {b.embedUrl}</p>}
+            {b.type === "slide" && (
+              <div className="rounded-xl border border-navy-100 bg-ivory p-4">
+                <p className="font-bold text-navy-900 [overflow-wrap:anywhere]">{b.title || "(제목 없음)"}</p>
+                <p className={TEXT}>{b.text}</p>
+                <p className="text-[14px] text-navy-600 [overflow-wrap:anywhere]">대체 텍스트 · {b.alt || "없음"}</p>
+              </div>
+            )}
           </li>
         ))}
       </ol>

@@ -14,8 +14,8 @@ export type PersonHeaderProps = {
   name: string;
   roles: readonly PersonRole[];
   affiliation?: string;
-  /** 확인일 */
-  checkedAt: string;
+  /** 확인일 — 없으면 줄째 없다 */
+  checkedAt?: string | null;
   bio: readonly BioItem[];
   /** 사진 — 동의·권리 기록(rightsRecordId)이 있을 때만 보인다 (BR-07) */
   photo?: { src: string; alt: string; rightsRecordId?: string | null };
@@ -56,9 +56,11 @@ export function PersonHeader({ name, roles, affiliation, checkedAt, bio, photo, 
           </ul>
           <h1 className="mt-2 text-[28px] leading-tight font-black tracking-tight text-navy-900 sm:text-[32px]">{name}</h1>
           {!isBlank(affiliation) && <p className="mt-1 text-[16px] text-navy-600">{affiliation}</p>}
-          <p className={`mt-1 ${MONO}`}>
-            확인일 <DateText value={checkedAt} />
-          </p>
+          {!isBlank(checkedAt) && (
+            <p className={`mt-1 ${MONO}`}>
+              확인일 <DateText value={checkedAt!} />
+            </p>
+          )}
         </div>
       </div>
 

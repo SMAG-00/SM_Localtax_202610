@@ -82,6 +82,8 @@ function blockText(b: unknown): string {
       return [str(o.title), str(o.text)].filter(Boolean).join(": ");
     case "key_summary":
       return Array.isArray(o.lines) ? o.lines.map(str).join(" / ") : "";
+    case "slide":
+      return [str(o.title), str(o.text)].filter(Boolean).join(": ");
     case "table":
       return [str(o.caption), ...(Array.isArray(o.rows) ? o.rows.map((r) => (Array.isArray(r) ? r.map(str).join(" | ") : "")) : [])].join(" / ");
     case "faq":

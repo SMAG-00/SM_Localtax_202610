@@ -1,6 +1,7 @@
 import "server-only";
 import { isoToKstDate } from "@/lib/admin/form-utils";
-import { selectNextActions, type ActionTargets, type NextAction } from "./article-logic";
+import { readStoredSolvedCase } from "../articles/content";
+import { selectNextActions, solvedCaseView, type ActionTargets, type NextAction, type SolvedCaseView } from "./article-logic";
 import type { ArticleListItem } from "./cards";
 import { SECTION_INFO, isSectionKey, type SectionKey } from "./constants";
 import { publicDb, rowsOf } from "./db";
@@ -36,6 +37,8 @@ export interface SituationPage {
   /** 자주 틀리는 점 (상태 상자 — 있을 때만) */
   mistakes: string[];
   solvedCases: ArticleListItem[];
+  /** 해결 사례 카드 값 (CAT-05 — 4칸·결론 배지·근거) — 기사 번호 → 카드. 값이 모자란 사례는 없다(기사 카드로 대신) */
+  solvedCaseCards: Record<number, SolvedCaseView>;
   articles: ArticleListItem[];
   terms: { id: number; term: string; plain: string | null }[];
   /** 지역 선택 칩 — 이 상황만(region_select). 아니면 null */
@@ -61,7 +64,8 @@ export async function getSituationPage(slug: string, opts: { region?: string | n
   if (!card) return null;
   const section = row.section;
 
-  const [settings, linked, solved, terms, regions] = await Promise.all([
+  const solvedIds = (row.solved_case_ids ?? []).map(num);
+  const [settings, linked, solved, terms, regions, solvedBodies] = await Promise.all([
     readPublicSettings(),
     readArticleList(db, { ids: (row.article_ids ?? []).map(num), limit: 50 }),
     readArticleList(db, { ids: (row.solved_case_ids ?? []).map(num), subtype: "solved_case", limit: 50 }),
@@ -69,7 +73,15 @@ export async function getSituationPage(slug: string, opts: { region?: string | n
       ? rowsOf<GlossaryRow>(db.from("glossary_terms").select(GLOSSARY_COLUMNS).in("id", row.glossary_ids.map(num)), "상황 용어")
       : Promise.resolve([] as GlossaryRow[]),
     row.region_select ? readRegions() : Promise.resolve([]),
+    solvedIds.length
+      ? rowsOf<{ id: number; solved_case: unknown }>(db.from("public_articles").select("id, solved_case").in("id", solvedIds).eq("subtype", "solved_case"), "해결 사례 카드")
+      : Promise.resolve([]),
   ]);
+  const solvedCaseCards: Record<number, SolvedCaseView> = {};
+  for (const b of solvedBodies) {
+    const card = solvedCaseView(readStoredSolvedCase(b.solved_case));
+    if (card) solvedCaseCards[num(b.id)] = card;
+  }
 
   let regionSelect: SituationPage["regionSelect"] = null;
   let regionView: RegionArticles | null = null;
@@ -104,6 +116,7 @@ export async function getSituationPage(slug: string, opts: { region?: string | n
     checklist: readChecklist(row.checklist),
     mistakes: (row.mistakes ?? []).filter((m) => m.trim() !== ""),
     solvedCases: inIdOrder(row.solved_case_ids.map(num), solved.items),
+    solvedCaseCards,
     articles: inIdOrder(row.article_ids.map(num), linked.items),
     terms: inIdOrder(
       row.glossary_ids.map(num),

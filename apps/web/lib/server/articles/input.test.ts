@@ -23,6 +23,15 @@ describe("기사 입력", () => {
     const errors = errorsOf(parseArticleInput({ slug: "a b", legalBasisDate: "2026-02-30" }, "patch"));
     expect(errors).toEqual(["slug: 공백·'/' 없이 써야 합니다", "legalBasisDate: YYYY-MM-DD 날짜여야 합니다"]);
   });
+  test("칼럼 연재 — 이름·회차를 함께 받고, 회차는 1 이상 정수, 한쪽만 보내거나 한쪽만 비우면 거부 (ART-04)", () => {
+    expect(parseArticleInput({ seriesTitle: "그때와 지금", seriesEpisode: 3 }, "patch")).toEqual({ ok: true, value: { seriesTitle: "그때와 지금", seriesEpisode: 3 } });
+    expect(parseArticleInput({ seriesTitle: null, seriesEpisode: null }, "patch")).toEqual({ ok: true, value: { seriesTitle: null, seriesEpisode: null } });
+    expect(parseArticleInput({ seriesTitle: "  ", seriesEpisode: null }, "patch")).toEqual({ ok: true, value: { seriesTitle: null, seriesEpisode: null } });
+    expect(errorsOf(parseArticleInput({ seriesTitle: "연재" }, "patch"))).toEqual(["seriesTitle: 연재 이름과 회차는 함께 보냅니다"]);
+    expect(errorsOf(parseArticleInput({ seriesTitle: "연재", seriesEpisode: null }, "patch"))).toEqual(["seriesTitle: 연재 이름과 회차는 둘 다 적거나 둘 다 비웁니다"]);
+    for (const ep of [0, 1.5, "2", -3]) expect(errorsOf(parseArticleInput({ seriesTitle: "연재", seriesEpisode: ep }, "patch"))).toContain("seriesEpisode: 1 이상의 회차 번호여야 합니다");
+    expect(errorsOf(parseArticleInput({ seriesTitle: "가".repeat(101), seriesEpisode: 1 }, "patch"))).toEqual(["seriesTitle: 100자 이하여야 합니다"]);
+  });
   test("수정 입력은 보낸 칸만 담는다", () => {
     const r = parseArticleInput({ title: "새 제목", updateKind: "typo", reason: "오탈자", expectedVersion: 3 }, "patch");
     expect(r).toEqual({ ok: true, value: { title: "새 제목", updateKind: "typo", reason: "오탈자", expectedVersion: 3 } });
@@ -38,9 +47,26 @@ describe("본문 블록", () => {
     expect(errorsOf(r)).toEqual([
       "body.blocks[0].text: 글자가 필요합니다",
       "body.blocks[1].refId: 근거 참조(src:<번호> 또는 ev:<번호>)여야 합니다",
-      "body.blocks[2].type: paragraph·table·image·quote·callout·infographic·video·faq·key_summary 중 하나여야 합니다",
+      "body.blocks[2].type: paragraph·table·image·quote·callout·infographic·video·faq·key_summary·slide 중 하나여야 합니다",
       "body.claims[0].evidenceIds: 근거 참조 형식이 아닙니다 (x)",
       "body.claims[0].blockIndex: 본문 블록 번호여야 합니다",
+    ]);
+  });
+  test("카드뉴스 장(slide) — 제목·글·대체 텍스트만 저장하고, 빈 칸은 저장된다(발행 판정이 막는다)", () => {
+    const r = parseBodyInput({ blocks: [{ type: "slide", title: "1. 취득세", text: "60일 안에 신고합니다", alt: "달력 그림", extra: "버린다" }, { type: "slide" }] });
+    expect(r).toEqual({
+      ok: true,
+      value: {
+        blocks: [
+          { type: "slide", title: "1. 취득세", text: "60일 안에 신고합니다", alt: "달력 그림" },
+          { type: "slide", title: "", text: "", alt: "" },
+        ],
+        claims: [],
+      },
+    });
+    expect(errorsOf(parseBodyInput({ blocks: [{ type: "slide", title: 3, text: "가", alt: "x".repeat(501) }] }))).toEqual([
+      "body.blocks[0].title: 글자여야 합니다",
+      "body.blocks[0].alt: 500자 이하여야 합니다",
     ]);
   });
   test("이미지 블록의 권리 상태는 저장하지 않는다", () => {

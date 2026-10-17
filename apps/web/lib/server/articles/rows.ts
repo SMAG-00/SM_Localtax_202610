@@ -36,6 +36,8 @@ export interface ArticleRow {
   editorial_field: string | null;
   public_question: string | null;
   amendment_id: number | null;
+  series_title: string | null;
+  series_episode: number | null;
   nav_candidate: boolean;
   hot_pin_until: string | null;
   is_paid: boolean;

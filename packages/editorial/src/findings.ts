@@ -38,6 +38,11 @@ export const RULES = [
   { id: "art01.sponsored-label-required", ruleRef: "ART-01", level: "block", title: "광고·협찬 기사에 표기 없음" },
   { id: "art01.digest-link-required", ruleRef: "ART-01", level: "block", title: "금주 핫뉴스에 주간 회차 연결 없음" },
   { id: "art01.reserved-slug", ruleRef: "ART-01", level: "block", title: "예약된 slug(video·photo·popular)" },
+  // ART-03 카드뉴스
+  { id: "art03.slide-count", ruleRef: "ART-03", level: "block", title: "카드뉴스가 5~7장이 아님" },
+  { id: "art03.slide-alt", ruleRef: "ART-03", level: "block", title: "카드뉴스 장에 대체 텍스트 없음" },
+  { id: "art03.slide-text", ruleRef: "ART-03", level: "block", title: "카드뉴스 장에 글자 없음" },
+  { id: "art03.slide-outside-cardnews", ruleRef: "ART-03", level: "block", title: "카드뉴스가 아닌 기사에 카드뉴스 장" },
   // NAV-02 유형 구분
   { id: "nav02.press-release-only", ruleRef: "NAV-02", level: "block", title: "출처가 보도자료뿐인 보도기사" },
   // NAV-03 기록·승인 분리
@@ -88,6 +93,7 @@ export const RULES = [
   // CAT-05 해결 사례
   { id: "cat05.cell-empty", ruleRef: "CAT-05", level: "block", title: "해결 사례 4칸 중 빈 칸" },
   { id: "cat05.result-evidence", ruleRef: "CAT-05", level: "block", title: "결과 근거(사건번호·해석 번호 + 링크) 0개" },
+  { id: "cat05.conclusion-missing", ruleRef: "CAT-05", level: "block", title: "결과의 결론 배지(인용·일부 인용·기각·각하·해석) 없음" },
   { id: "cat05.pii", ruleRef: "CAT-05", level: "block", title: "개인정보 형식(주민등록번호·전화·이메일·상세 주소)" },
   { id: "cat05.real-name", ruleRef: "CAT-05", level: "warn", title: "실명으로 보이는 표현" },
   // UX-01 쉬운 말

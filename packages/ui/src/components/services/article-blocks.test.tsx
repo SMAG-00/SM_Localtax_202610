@@ -62,6 +62,17 @@ describe("기자 소개 블록 (NAV-03 · TX-15 · TX-16)", () => {
     expect(screen.getByRole("link", { name: "편집 원칙" }).getAttribute("href")).toBe("/about/editorial-policy");
   });
 
+  it("정책 페이지가 공개 승인되지 않았으면(null) 그 링크를 그리지 않는다 — 둘 다 null이면 목록째 0 (HELP-05)", () => {
+    const { unmount } = render(<ReporterBlock kind="report" {...base} correctionHref={null} editorialPolicyHref="/about/editorial-policy" />);
+    expect(screen.queryByRole("link", { name: "정정·반론 요청" })).toBeNull();
+    expect(screen.getByRole("link", { name: "편집 원칙" }).getAttribute("href")).toBe("/about/editorial-policy");
+    unmount();
+    render(<ReporterBlock kind="report" {...base} correctionHref={null} editorialPolicyHref={null} />);
+    const links = [...document.querySelectorAll('[data-ui="reporter-block"] a')].map((x) => x.getAttribute("href"));
+    expect(links).toEqual(["/people/hong-gildong"]);
+    expect(document.querySelector('[data-ui="reporter-block"] ul')).toBeNull();
+  });
+
   it("칼럼은 '필자'로 표시하고 이해관계 한 줄과 '의견이며 개별 자문이 아닙니다'를 붙인다", () => {
     render(<ReporterBlock kind="opinion" {...base} interest="SM(선명) 감수위원으로 원고료를 받습니다" />);
     const block = document.querySelector('[data-ui="reporter-block"]')!;

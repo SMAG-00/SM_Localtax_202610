@@ -162,6 +162,30 @@ export function MetaFields({
           error={errors["meta-legal-basis-date"]}
         />
       </div>
+      {state.contentType === "opinion" && (
+        <FieldGroup legend="칼럼 연재" hint="연재 칼럼이면 연재 이름과 회차를 적습니다 — 칼럼 목록이 회차 순서로 보입니다. 단독 칼럼은 둘 다 비웁니다 (ART-04)">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField
+              id="meta-series-title"
+              label="연재 이름"
+              disabled={readOnly}
+              value={state.seriesTitle}
+              onChange={(e) => update({ seriesTitle: e.target.value })}
+              error={errors["meta-series-title"]}
+            />
+            <TextField
+              id="meta-series-episode"
+              label="회차"
+              inputMode="numeric"
+              hint="1부터 — 같은 연재에서 겹치지 않습니다"
+              disabled={readOnly}
+              value={state.seriesEpisodeText}
+              onChange={(e) => update({ seriesEpisodeText: e.target.value })}
+              error={errors["meta-series-episode"]}
+            />
+          </div>
+        </FieldGroup>
+      )}
       <FieldGroup legend="지역" hint="지역 태그를 달면 편집 분야와 공익적 질문을 함께 적습니다">
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField

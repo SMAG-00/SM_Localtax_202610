@@ -29,6 +29,9 @@ export interface ArticleInput {
   regionCodes?: string[];
   editorialField?: string | null;
   publicQuestion?: string | null;
+  /** 칼럼 연재 이름·회차 (ART-04) — 칼럼(opinion)만, 둘 다 있거나 둘 다 null */
+  seriesTitle?: string | null;
+  seriesEpisode?: number | null;
   /** check_log.checklists에 덮어쓸 원본 (content.parseChecklistsInput이 검사한다) */
   checklists?: unknown;
   /** 발행 뒤 수정 (ART-05) */
@@ -61,6 +64,8 @@ const COMMON_KEYS = [
   "regionCodes",
   "editorialField",
   "publicQuestion",
+  "seriesTitle",
+  "seriesEpisode",
   "checklists",
 ] as const;
 const PATCH_ONLY = ["updateKind", "reason", "expectedVersion"] as const;
@@ -124,6 +129,16 @@ export function parseArticleInput(raw: Record<string, unknown>, mode: "create" |
   oneOf("editorialField", EDITORIAL_FIELDS, { nullable: true });
   text("publicQuestion", { nullable: true, max: 1000 });
   for (const k of ["categoryId", "partnerId", "storyAssignmentId", "leadMediaId", "digestId", "amendmentId"] as const) id(k);
+  // 칼럼 연재 (ART-04) — 이름·회차는 함께 보낸다. 칼럼이 아닌 기사·한쪽만 있는 값은 DB도 거부한다(articles_series_*)
+  text("seriesTitle", { nullable: true, max: 100 });
+  if (has("seriesEpisode")) {
+    const v = raw.seriesEpisode;
+    if (v === null) out.seriesEpisode = null;
+    else if (typeof v !== "number" || !Number.isSafeInteger(v) || v < 1 || v > 9999) errors.push("seriesEpisode: 1 이상의 회차 번호여야 합니다");
+    else out.seriesEpisode = v;
+  }
+  if (has("seriesTitle") !== has("seriesEpisode")) errors.push("seriesTitle: 연재 이름과 회차는 함께 보냅니다");
+  else if (out.seriesTitle !== undefined && (out.seriesTitle === null) !== (out.seriesEpisode === null)) errors.push("seriesTitle: 연재 이름과 회차는 둘 다 적거나 둘 다 비웁니다");
 
   if (has("legalBasisDate")) {
     const v = raw.legalBasisDate;

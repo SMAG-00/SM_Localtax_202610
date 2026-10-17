@@ -23,7 +23,7 @@ export class StaffFixture {
     this.articleIds = new Set();
     this.assignmentIds = new Set();
     /** 시험이 만든 운영 행 — 분야·제휴사·용어 (기사를 지운 뒤 지운다) · 홈 배치·개정 트래커 (W2-b — 기사보다 먼저 지운다) */
-    this.extraRows = { categories: new Set(), partners: new Set(), glossary_terms: new Set(), home_curations: new Set(), amendments: new Set(), situations: new Set() };
+    this.extraRows = { categories: new Set(), partners: new Set(), glossary_terms: new Set(), home_curations: new Set(), amendments: new Set(), situations: new Set(), media: new Set() };
     /** 시험 전 운영 설정·분야 행 — 끝나면 그대로 되돌린다 (씨앗 데이터 시험이 값을 대조한다) */
     this.settingsSnapshot = null;
     this.categoriesSnapshot = null;
@@ -114,7 +114,7 @@ export class StaffFixture {
     if (id) this.assignmentIds.add(Number(id));
   }
 
-  /** 시험이 만든 분야(categories)·제휴사(partners)·용어(glossary_terms)·홈 배치(home_curations)·개정 트래커(amendments) 행 */
+  /** 시험이 만든 분야(categories)·제휴사(partners)·용어(glossary_terms)·홈 배치(home_curations)·개정 트래커(amendments)·상황(situations)·이미지(media) 행 */
   trackRow(table, id) {
     if (!this.extraRows[table]) throw new Error(`지울 수 없는 표: ${table}`);
     if (id) this.extraRows[table].add(Number(id));
@@ -211,6 +211,8 @@ export class StaffFixture {
         const ids = [articleIds];
         const { rows: snaps } = await q("select snapshot_id from public.article_sources where article_id = any($1::bigint[]) and snapshot_id is not null", ids);
         await q("delete from public.article_corrections where article_id = any($1::bigint[])", ids);
+        // 삭제된 기사 주소(W2-b 4단계 — 추가만 되는 표, 트리거를 끈 세션이라 지울 수 있다)
+        await q("delete from public.article_tombstones where article_id = any($1::bigint[])", ids);
         await q("delete from public.seo_checks where target_type = 'article' and target_id = any($1::text[])", [articleIds.map(String)]);
         await q("delete from public.editorial_reviews where article_id = any($1::bigint[])", ids);
         await q("delete from public.article_interviews where evidence_id in (select id from public.article_evidence where article_id = any($1::bigint[]))", ids);
@@ -222,6 +224,8 @@ export class StaffFixture {
         await q("delete from public.inquiries where related_article_id = any($1::bigint[])", ids);
         await q("delete from public.articles where id = any($1::bigint[])", ids);
       }
+      // 시험이 넣은 이미지 (W2-b 4단계 — 기사가 대표·본문 이미지로 가리키므로 기사 뒤에)
+      if (this.extraRows.media.size) await q("delete from public.media where id = any($1::bigint[])", [[...this.extraRows.media]]);
       if (assignmentIds.length) {
         await q("delete from public.story_assignment_events where assignment_id = any($1::bigint[])", [assignmentIds]);
         await q("delete from public.story_assignments where id = any($1::bigint[])", [assignmentIds]);

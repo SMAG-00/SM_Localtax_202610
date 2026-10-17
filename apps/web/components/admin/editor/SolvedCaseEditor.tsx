@@ -1,18 +1,19 @@
 "use client";
 
 import { SelectField, TextField } from "@ltr/ui";
-import type { SolvedCase } from "@ltr/editorial";
+import { SOLVED_CASE_CONCLUSIONS, type SolvedCase, type SolvedCaseConclusion } from "@ltr/editorial";
+import { SOLVED_CASE_CONCLUSION_LABELS } from "@/lib/admin/labels";
 import { FieldErrorText, TextAreaField } from "../fields";
 import { OUTLINE_BUTTON } from "../ui";
 import type { SectionProps } from "./types";
 
-const EMPTY: SolvedCase = { situation: "", issue: "", result: "", lesson: "", resultEvidence: [] };
+const EMPTY: SolvedCase = { situation: "", issue: "", result: "", lesson: "", resultEvidence: [], conclusion: null };
 
-/** 해결 사례 4칸 (CAT-05) — 상황 → 쟁점 → 결과(근거: 결정례 사건번호·해석 번호 + 링크) → 교훈. 개인을 알아볼 수 있는 정보는 넣지 않는다 */
+/** 해결 사례 4칸 (CAT-05) — 상황 → 쟁점 → 결과(결론 배지 · 근거: 결정례 사건번호·해석 번호 + 링크) → 교훈. 개인을 알아볼 수 있는 정보는 넣지 않는다 */
 export function SolvedCaseEditor({ state, update, errors, readOnly }: SectionProps) {
   const sc = state.solvedCase ?? EMPTY;
   const set = (patch: Partial<SolvedCase>) => update({ solvedCase: { ...sc, ...patch } });
-  const cells: [keyof Omit<SolvedCase, "resultEvidence">, string][] = [
+  const cells: [keyof Omit<SolvedCase, "resultEvidence" | "conclusion">, string][] = [
     ["situation", "상황"],
     ["issue", "쟁점"],
     ["result", "결과"],
@@ -25,6 +26,17 @@ export function SolvedCaseEditor({ state, update, errors, readOnly }: SectionPro
       {cells.map(([key, label]) => (
         <TextAreaField key={key} id={`sc-${key}`} label={label} required disabled={readOnly} value={sc[key]} onChange={(e) => set({ [key]: e.target.value })} />
       ))}
+      <SelectField
+        id="sc-conclusion"
+        label="결과의 결론 (공개 화면의 결론 배지)"
+        required
+        disabled={readOnly}
+        hint="결정례는 인용·일부 인용·기각·각하, 유권해석·예규로 결론이 났으면 해석"
+        options={SOLVED_CASE_CONCLUSIONS.map((c) => ({ value: c, label: SOLVED_CASE_CONCLUSION_LABELS[c] }))}
+        placeholder="골라 주세요"
+        value={sc.conclusion ?? ""}
+        onChange={(e) => set({ conclusion: e.target.value === "" ? null : (e.target.value as SolvedCaseConclusion) })}
+      />
       <div className="space-y-3">
         <p className="text-[15px] font-bold text-navy-900">결과의 근거</p>
         {sc.resultEvidence.map((ev, i) => (

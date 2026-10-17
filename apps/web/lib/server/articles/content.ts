@@ -1,15 +1,17 @@
 // 기사 JSON 칸의 저장 모양과 입력 검사 — 순수 함수 (시험: content.test.ts)
 //  · articles.body (공개 칸)       = { blocks: 블록[], claims: 핵심 주장[] } — 블록 모양은 @ltr/editorial ArticleBlock.
 //    이미지·인포그래픽 블록의 권리 상태는 저장하지 않는다 — 읽을 때 media 표에서 다시 읽는다(작성자가 '확인됨'을 적어 넣을 수 없다).
-//  · articles.tax_lens (공개 칸)   = { topics, points, links, skip_reason, reviewed, reviewed_for_version } (01B CORE-01).
-//    reviewed·reviewed_for_version은 서버만 쓴다 — 세무 감수 승인 때 켜고, 박스를 고치면 그 버전에서 멈춘다(재감수 필요).
-//  · articles.solved_case          = @ltr/editorial SolvedCase (CAT-05)
+//  · articles.tax_lens (공개 칸)   = { topics, points, links, skip_reason, reviewed, reviewed_for_version, reviewed_by, reviewed_at } (01B CORE-01).
+//    감수 표시(reviewed·reviewed_for_version)와 서명 기록(reviewed_by = 서명한 감수위원 people.id · reviewed_at = 서명 시각)은 서버만 쓴다 —
+//    세무 감수 승인 때 켜고, 박스를 고치면 그 버전에서 멈춘다(재감수 필요). 공개 화면의 '감수 ○○'는 서명 기록에서만 그린다(01C BR-03 — 손으로 넣는 이름 칸 0).
+//  · articles.solved_case          = @ltr/editorial SolvedCase (CAT-05 — 4칸 · 결과 근거 · 결론 배지)
 //  · articles.check_log (비공개 칸) = { checklists: 취재 확인 목록, publish: 마지막 발행 기록 } — NAV-10·NAV-11 확인 목록은
 //    공개 칸(body)에 두지 않는다(관계자 확인 기록·동의 여부 등). '인과 단정 없음'은 편집 승인(desk_edit) checklist에서 읽는다.
 //  · 근거 참조 ID — 공개 출처는 "src:<article_sources.id>", 비공개 근거는 "ev:<article_evidence.id>" (두 표의 번호가 겹치지 않게)
 import {
   CALLOUT_KINDS,
   PERSPECTIVE_KEYS,
+  SOLVED_CASE_CONCLUSIONS,
   TAX_LENS_LINK_KINDS,
   type ArticleBlock,
   type ChartLabels,
@@ -56,6 +58,10 @@ export interface StoredTaxLens {
   skip_reason: string | null;
   reviewed: boolean;
   reviewed_for_version: number | null;
+  /** 서명한 세무 감수위원 (people.id) — 서명 기록이 없으면 null */
+  reviewed_by: number | null;
+  /** 서명 시각 */
+  reviewed_at: string | null;
 }
 
 /** 취재 확인 목록 (check_log.checklists) */
@@ -162,7 +168,7 @@ class Checker {
 
 // ── 본문 (body) ────────────────────────────────────────────
 
-const BLOCK_TYPES = ["paragraph", "table", "image", "quote", "callout", "infographic", "video", "faq", "key_summary"] as const;
+const BLOCK_TYPES = ["paragraph", "table", "image", "quote", "callout", "infographic", "video", "faq", "key_summary", "slide"] as const;
 const CLAIM_KINDS = ["fact", "tax_calculation", "legal"] as const;
 const MEDIA_ID = /^[1-9]\d*$/;
 const MAX_BLOCKS = 400;
@@ -252,6 +258,15 @@ function block(c: Checker, raw: unknown, path: string): StoredBlock | null {
     }
     case "key_summary":
       return { type, lines: c.texts(o, "lines", path), ...extra };
+    case "slide":
+      // 카드뉴스 한 장 (ART-03) — 빈 칸은 저장되고 발행 판정이 막는다(작성 중)
+      return {
+        type,
+        title: c.text(o, "title", path, { required: false, max: 200 }),
+        text: c.text(o, "text", path, { required: false, max: 2000 }),
+        alt: c.text(o, "alt", path, { required: false, max: 500 }),
+        ...extra,
+      };
   }
 }
 
@@ -344,6 +359,8 @@ export function readStoredTaxLens(json: unknown): StoredTaxLens | null {
   );
   const skip = typeof json.skip_reason === "string" && json.skip_reason.trim() !== "" ? json.skip_reason : null;
   const version = json.reviewed_for_version;
+  const by = json.reviewed_by;
+  const at = json.reviewed_at;
   return {
     topics: strings(json.topics),
     points: strings(json.points),
@@ -351,6 +368,8 @@ export function readStoredTaxLens(json: unknown): StoredTaxLens | null {
     skip_reason: skip,
     reviewed: json.reviewed === true,
     reviewed_for_version: typeof version === "number" && Number.isInteger(version) ? version : null,
+    reviewed_by: typeof by === "number" && Number.isSafeInteger(by) && by > 0 ? by : null,
+    reviewed_at: typeof at === "string" && !Number.isNaN(Date.parse(at)) ? at : null,
   };
 }
 
@@ -377,12 +396,15 @@ export function parseSolvedCaseInput(raw: unknown): Result<SolvedCase | null> {
       url: c.text(eo, "url", `solvedCase.resultEvidence[${i}]`, { max: 2000 }),
     };
   });
+  // 결론 배지 (CAT-05 · PRD-00 8.6) — 비우면 저장되고 발행 판정이 막는다
+  const conclusion = o.conclusion === undefined || o.conclusion === null || o.conclusion === "" ? null : c.oneOf(o, "conclusion", "solvedCase", SOLVED_CASE_CONCLUSIONS);
   return c.done({
     situation: c.text(o, "situation", "solvedCase", { required: false }),
     issue: c.text(o, "issue", "solvedCase", { required: false }),
     result: c.text(o, "result", "solvedCase", { required: false }),
     lesson: c.text(o, "lesson", "solvedCase", { required: false }),
     resultEvidence,
+    conclusion,
   });
 }
 

@@ -23,6 +23,8 @@ const row = (over: Partial<PublicArticleListRow> = {}): PublicArticleListRow => 
   editorial_field: null,
   amendment_id: null,
   reported_approved: false,
+  series_title: null,
+  series_episode: null,
   ...over,
 });
 

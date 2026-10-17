@@ -466,7 +466,8 @@ test("공개 데이터를 읽지 못하면(접속값 없음·DB 꺼짐) 닫힌 �
       assert.deepEqual(hits(await hrefs(page), GATED), []);
       assert.equal(await page.locator("h1").count(), 1, "페이지 제목 1개 (화면 읽기용)");
       await page.close();
-      assert.match(down.log(), /\[public\] (홈 데이터를|화면 틀을) 읽지 못해/, "원인은 서버 로그에 남는다");
+      // 닫힌 화면은 한 곳(lib/server/public/fallback.ts readPublic)이 로그를 남긴다 — "[public] <화면> — 공개 데이터를 읽지 못해 …"
+      assert.match(down.log(), /\[public\] (홈|화면 틀) — 공개 데이터를 읽지 못해/, "원인은 서버 로그에 남는다");
     } finally {
       down.stop();
       await setFeatures([]);

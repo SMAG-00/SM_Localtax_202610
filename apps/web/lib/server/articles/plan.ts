@@ -30,6 +30,8 @@ const DIRECT: [keyof ArticleInput, keyof ArticleRow][] = [
   ["regionCodes", "region_codes"],
   ["editorialField", "editorial_field"],
   ["publicQuestion", "public_question"],
+  ["seriesTitle", "series_title"],
+  ["seriesEpisode", "series_episode"],
 ];
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
@@ -44,18 +46,22 @@ export function storeTaxLens(input: TaxLensInput | null, before: StoredTaxLens |
     skip_reason: input.omissionReason,
     reviewed: false,
     reviewed_for_version: null,
+    reviewed_by: null,
+    reviewed_at: null,
   };
   return carryReview(next, before, beforeVersion, newVersion);
 }
 
+/** 감수 표시와 서명 기록(서명자·시각)은 함께 움직인다 — 박스가 그대로면 새 버전으로, 고쳤으면 감수한 버전에 멈춘다 */
 function carryReview(next: StoredTaxLens, before: StoredTaxLens | null, beforeVersion: number, newVersion: number): StoredTaxLens {
   if (!before) return next;
+  const signature = { reviewed_by: before.reviewed_by, reviewed_at: before.reviewed_at };
   if (sameTaxLensContent(before, next)) {
     const carried = before.reviewed && before.reviewed_for_version === beforeVersion ? newVersion : before.reviewed_for_version;
-    return { ...next, reviewed: before.reviewed, reviewed_for_version: carried };
+    return { ...next, reviewed: before.reviewed, reviewed_for_version: carried, ...signature };
   }
   // 박스를 고쳤다 — 감수 버전에 멈춘다 (재감수 필요). 감수 기록이 없던 박스는 감수 안 됨 그대로
-  return { ...next, reviewed: before.reviewed, reviewed_for_version: before.reviewed_for_version };
+  return { ...next, reviewed: before.reviewed, reviewed_for_version: before.reviewed_for_version, ...signature };
 }
 
 export interface CreatePlan {

@@ -1,18 +1,21 @@
 import type { ReactNode } from "react";
-import { ArticleCard, ArticleTypeBadge, EditorialFieldBadge, type EditorialFieldBadgeKind } from "@ltr/ui";
+import { ArticleCard, ArticleTypeBadge, EditorialFieldBadge, PartnerBadge, type EditorialFieldBadgeKind } from "@ltr/ui";
 import type { ArticleListItem } from "@/lib/server/public";
-import { formatBadge, typeBadgeKind } from "@/lib/site/home-view";
+import { partnerBadgeFor, typeBadgeFor } from "@/lib/site/article-view";
+import { formatBadge } from "@/lib/site/home-view";
 
-// 기사 카드 한 장 (PRD-00 8.6 기사 카드 — 분야 칩·기사 유형 배지·형식 배지·편집 분야 배지(지역 기사)·기자명·발행일·지역 칩).
-// 홈·허브·하위 분야 목록·뉴스 전체·상황 페이지가 같은 카드를 쓴다. 카드 전체가 기사 상세(/news/[slug]) 링크다.
+// 기사 카드 한 장 (PRD-00 8.6 기사 카드 — 분야 칩·기사 유형 배지·제휴 배지·형식 배지·편집 분야 배지(지역 기사)·기자명·발행일·지역 칩).
+// 홈·허브·하위 분야 목록·뉴스 전체·상황 페이지·칼럼 목록·인물 페이지가 같은 카드를 쓴다. 카드 전체가 기사 상세(/news/[slug]) 링크다.
+// 표기 배지는 기사 상세 머리와 같은 함수(typeBadgeFor·partnerBadgeFor) — 광고는 '광고', 공동 기획은 '공동 기획 ○○' (ART-10 · NAV-06 '목록·상세 같은 표시')
 
 export type CardItem = Pick<ArticleListItem, "href" | "title" | "summary" | "section" | "subsection" | "publishedOn" | "regionLabel" | "authorName" | "contentType" | "format"> &
-  Partial<Pick<ArticleListItem, "editorialField">>;
+  Partial<Pick<ArticleListItem, "editorialField" | "sponsor">>;
 
 const EDITORIAL_FIELDS = new Set<string>(["local_tax", "realestate", "local_finance", "urban_policy"]);
 
 export function ArticleItem({ item }: { item: CardItem }) {
-  const type = typeBadgeKind(item.contentType);
+  const type = typeBadgeFor(item.contentType, item.sponsor ?? null);
+  const partner = partnerBadgeFor(item.sponsor ?? null);
   const field = item.editorialField && EDITORIAL_FIELDS.has(item.editorialField) ? (item.editorialField as EditorialFieldBadgeKind) : undefined;
   return (
     <ArticleCard
@@ -24,7 +27,7 @@ export function ArticleItem({ item }: { item: CardItem }) {
       publishedAt={item.publishedOn}
       region={item.regionLabel ?? undefined}
       byline={item.authorName ?? undefined}
-      typeBadge={type ? <ArticleTypeBadge type={type} /> : undefined}
+      typeBadge={type ? <ArticleTypeBadge type={type} /> : partner ? <PartnerBadge partner={partner} /> : undefined}
       editorialBadge={field ? <EditorialFieldBadge field={field} /> : undefined}
       format={formatBadge(item.format)}
     />

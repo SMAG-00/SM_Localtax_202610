@@ -1,7 +1,7 @@
 // CAT-05 해결 사례 — 4칸(상황·쟁점·결과·교훈)·결과 근거(사건번호·해석 번호 + 링크)·개인정보 형식(차단)·실명 표현(경고)
 // 개인정보 형식 검사는 해결 사례 원고에만 적용한다(일반 기사의 기관 대표 전화 등은 대상 아님).
 import { finding, toSaveValidation, type Finding, type SaveValidation } from "../findings";
-import type { ArticleForPublish, SolvedCase } from "../model";
+import { SOLVED_CASE_CONCLUSIONS, type ArticleForPublish, type SolvedCase } from "../model";
 import { PII_KIND_LABELS, detectPii, detectRealNames } from "../pii";
 import { SOLVED_CASE_CELLS, articleUnits, isBlank, splitSentences, unitLocation, type TextUnit } from "../text";
 
@@ -45,6 +45,10 @@ export function checkSolvedCase(article: ArticleForPublish): Finding[] {
   const evidence = sc?.resultEvidence.filter((e) => !isBlank(e.number) && LINK.test(e.url.trim())) ?? [];
   if (evidence.length === 0) {
     out.push(finding("cat05.result-evidence", "결과 칸의 근거(결정례 사건번호 또는 해석 번호 + 출처 링크)가 1개 이상 있어야 합니다"));
+  }
+  // 결과 칸의 결론 배지 (PRD-00 8.6 해결 사례 카드 '결과(결론 배지)') — 값 목록 밖이나 빈 값은 배지를 그릴 수 없다
+  if (!sc || sc.conclusion === null || !(SOLVED_CASE_CONCLUSIONS as readonly string[]).includes(sc.conclusion)) {
+    out.push(finding("cat05.conclusion-missing", "결과의 결론(인용·일부 인용·기각·각하·해석)을 골라 주세요", { field: "solvedCase.conclusion" }));
   }
   out.push(...privacyFindings(articleUnits(article)));
   return out;

@@ -57,6 +57,8 @@ function article(over: Partial<EditorArticle> = {}): EditorArticle {
     regionCodes: ["11680"],
     editorialField: null,
     publicQuestion: null,
+    seriesTitle: null,
+    seriesEpisode: null,
     body: QUANT_BODY,
     solvedCase: null,
     taxLens: null,
@@ -175,7 +177,7 @@ describe("「지방세로 읽기」 (CORE-01)", () => {
   });
 
   test("저장된 생략 사유 → 생략 모드로 읽는다", () => {
-    const s = editorStateFromArticle(article({ taxLens: { topics: [], points: [], links: [], skip_reason: "후속 기사", reviewed: false, reviewed_for_version: null } }), key);
+    const s = editorStateFromArticle(article({ taxLens: { topics: [], points: [], links: [], skip_reason: "후속 기사", reviewed: false, reviewed_for_version: null, reviewed_by: null, reviewed_at: null } }), key);
     expect(s.taxLensMode).toBe("skip");
     expect(s.omissionReason).toBe("후속 기사");
   });
@@ -320,5 +322,54 @@ describe("정성형 필수 기록 (NAV-11) — 편집기 안내", () => {
     expect(ok.every((r) => r.filled)).toBe(true);
     const missing = qualitativeRecords(s, [ev(3, "interview"), ev(5, "document", false)], []);
     expect(missing.filter((r) => !r.filled).map((r) => r.id)).toEqual(["nav11.independent-sources", "nav11.document-evidence", "nav11.quote-record"]);
+  });
+});
+
+describe("카드뉴스 장 블록 (ART-03)", () => {
+  test("장 — 제목·글·대체 텍스트가 저장 모양으로 왕복하고 API 입력 검사를 지난다", () => {
+    const stored: StoredBody = { blocks: [{ type: "slide", title: "1. 취득세", text: "60일 안에 신고합니다\n잔금일부터 셉니다", alt: "달력 그림" }], claims: [] };
+    const s = editorStateFromArticle(article({ format: "cardnews", body: stored }), key);
+    const payload = editorPayload(s, { published: false, version: 3 });
+    expect((payload.body as StoredBody).blocks).toEqual(stored.blocks);
+    expect(parseArticleInput(payload, "patch").ok).toBe(true);
+  });
+  test("새 장 블록은 빈 칸 — 저장되고 발행 판정이 막는다", () => {
+    const s = editorStateFromArticle(article(), key);
+    const blocks = addBlock(s.blocks, "slide", key);
+    const payload = editorPayload({ ...s, blocks }, { published: false, version: 3 });
+    expect((payload.body as StoredBody).blocks.at(-1)).toEqual({ type: "slide", title: "", text: "", alt: "" });
+  });
+});
+
+describe("칼럼 연재 (ART-04)", () => {
+  const opinion = () => editorStateFromArticle(article({ contentType: "opinion", reportingMethod: null, seriesTitle: "그때와 지금", seriesEpisode: 3 }), key);
+  test("칼럼은 연재 이름·회차를 보낸다 — 저장된 값이 편집기에 돌아온다", () => {
+    const s = opinion();
+    expect([s.seriesTitle, s.seriesEpisodeText]).toEqual(["그때와 지금", "3"]);
+    const payload = editorPayload(s, { published: false, version: 3 });
+    expect([payload.seriesTitle, payload.seriesEpisode]).toEqual(["그때와 지금", 3]);
+    expect(parseArticleInput(payload, "patch").ok).toBe(true);
+  });
+  test("칼럼이 아니면 연재 칸을 비워 보낸다 (DB 규칙 — 연재는 칼럼만)", () => {
+    const s = { ...opinion(), contentType: "explainer" };
+    const payload = editorPayload(s, { published: false, version: 3 });
+    expect([payload.seriesTitle, payload.seriesEpisode]).toEqual([null, null]);
+  });
+  test("단독 칼럼 — 둘 다 비면 null, 오류 0", () => {
+    const s = { ...opinion(), seriesTitle: " ", seriesEpisodeText: "" };
+    expect(editorPayload(s, { published: false, version: 3 }).seriesTitle).toBeNull();
+    expect(validateEditor(s, { published: false, canSkipTaxLens: true, storedOmissionReason: null })).toEqual({});
+  });
+  test.each([
+    ["이름만", { seriesEpisodeText: "" }, "meta-series-episode"],
+    ["회차만", { seriesTitle: "" }, "meta-series-title"],
+    ["회차 0", { seriesEpisodeText: "0" }, "meta-series-episode"],
+    ["회차 글자", { seriesEpisodeText: "3회" }, "meta-series-episode"],
+  ])("%s → 그 칸 오류", (_n, patch, field) => {
+    const errors = validateEditor({ ...opinion(), ...patch }, { published: false, canSkipTaxLens: true, storedOmissionReason: null });
+    expect(Object.keys(errors)).toEqual([field]);
+  });
+  test("서버 422 칸 이름(seriesTitle·seriesEpisode) → 화면 칸", () => {
+    expect(fieldErrorsFromServer(["seriesEpisode: 1 이상의 회차 번호여야 합니다"], [], [])).toEqual({ "meta-series-episode": "1 이상의 회차 번호여야 합니다" });
   });
 });

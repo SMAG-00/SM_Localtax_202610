@@ -101,6 +101,8 @@ export async function loadEditorView(db: SupabaseClient, row: ArticleRow) {
       regionCodes: row.region_codes,
       editorialField: row.editorial_field,
       publicQuestion: row.public_question,
+      seriesTitle: row.series_title ?? null,
+      seriesEpisode: row.series_episode ?? null,
       navCandidate: row.nav_candidate,
       hotPinUntil: row.hot_pin_until,
       checklists: readChecklists(row.check_log),

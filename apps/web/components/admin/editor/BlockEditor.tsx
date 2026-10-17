@@ -171,6 +171,32 @@ export function BlockEditor({ state, update, errors, readOnly, refs, media, make
                   </>
                 )}
 
+                {b.type === "slide" && (
+                  <>
+                    <TextField id={f("title")} label="장 제목" disabled={readOnly} value={b.title} onChange={(e) => patch(b.key, { title: e.target.value })} error={errors[f("title")]} />
+                    <TextAreaField
+                      id={f("text")}
+                      label="장 글"
+                      hint="글자는 이미지가 아니라 글자로 보입니다 — 한 장에 세 문장 이하"
+                      rows={3}
+                      disabled={readOnly}
+                      value={b.text}
+                      onChange={(e) => patch(b.key, { text: e.target.value })}
+                      error={errors[f("text")]}
+                    />
+                    <TextField
+                      id={f("alt")}
+                      label="대체 텍스트"
+                      required
+                      hint="장의 그림·배치를 글로 적습니다 (화면 읽기 프로그램이 읽는다) — 없으면 발행되지 않습니다"
+                      disabled={readOnly}
+                      value={b.alt}
+                      onChange={(e) => patch(b.key, { alt: e.target.value })}
+                      error={errors[f("alt")]}
+                    />
+                  </>
+                )}
+
                 {b.type === "video" && (
                   <TextField id={f("embedUrl")} label="동영상 주소" disabled={readOnly} value={b.embedUrl} onChange={(e) => patch(b.key, { embedUrl: e.target.value })} error={errors[f("embedUrl")]} />
                 )}

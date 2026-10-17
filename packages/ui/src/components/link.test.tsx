@@ -17,6 +17,9 @@ import { NextActionBand } from "./discovery/NextActionBand";
 import { SolvedCaseCard } from "./discovery/SolvedCaseCard";
 import { FieldTaxPoint } from "./local/FieldTaxPoint";
 import { LocalHubBlocks } from "./local/LocalHubBlocks";
+import { ReporterBlock } from "./services/ReporterBlock";
+import { TaxLensBox } from "./services/TaxLensBox";
+import { UpdateBanner } from "./services/UpdateBanner";
 
 function AppLink(props: UiLinkProps) {
   return <a data-app-link="" {...props} />;
@@ -147,5 +150,25 @@ describe("허브·상황 화면 컴포넌트의 사이트 안 링크도 앱 링�
     );
     expect(appLinks()).toEqual(["/news/case-1", "/tax", "/news/solved-1", "/news/basis", "/news/explainer", "/local?topic=local_tax"]);
     expect(plainLinks()).toEqual(["https://www.tt.go.kr/a"]);
+  });
+});
+
+describe("기사 신뢰 블록의 사이트 안 링크 (W2-b 4단계)", () => {
+  it("기자 소개 블록 — 인물 페이지·정책 링크는 화면 전환, 「지방세로 읽기」 사이트 안 링크도 화면 전환·SM 계산기는 새 창 a 요소, 갱신 배너 트래커 링크도 화면 전환", () => {
+    withApp(
+      <>
+        <ReporterBlock kind="report" author={{ name: "김가온", slug: "kim-gaon", beat: "지방세" }} publishedAt="2026-10-18T00:00:00Z" correctionHref="/about/corrections" editorialPolicyHref={null} />
+        <TaxLensBox
+          taxes={["취득세"]}
+          points={["잔금일과 등기일 중 빠른 날이 취득일입니다."]}
+          links={{ explainer: { href: "/news/acquisition-date", enabled: true }, smCalculator: { href: "https://sm.example.com/calc", enabled: true } }}
+          reviewer="이감수"
+          basisDate="2026-10-01"
+        />
+        <UpdateBanner stage="공포" changedAt="2026-10-15" trackerHref="/tax/amendments/2026-reform" />
+      </>,
+    );
+    expect(appLinks()).toEqual(["/people/kim-gaon", "/about/corrections", "/news/acquisition-date", "/tax/amendments/2026-reform"]);
+    expect(plainLinks()).toEqual(["https://sm.example.com/calc"]);
   });
 });

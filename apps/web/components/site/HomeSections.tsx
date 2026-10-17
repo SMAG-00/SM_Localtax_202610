@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { Callout, Chip, Eyebrow, FieldCards, Hero, HomeSearch, ProgressStageBadge, UiLink, brand, cx } from "@ltr/ui";
+import { Chip, Eyebrow, FieldCards, Hero, HomeSearch, ProgressStageBadge, UiLink, brand, cx } from "@ltr/ui";
 import type { AmendmentsSection, HomeData, HomeSection, StoryCard, TrackerCard } from "@/lib/server/public";
 import { HERO_EYEBROW, HERO_HIGHLIGHT, SEARCH_LABEL, SEARCH_PLACEHOLDER, SECTION_HEADINGS, sectionTones, type SectionTone } from "@/lib/site/home-view";
 import { ArticleItem } from "./ArticleItem";
+import { UnavailableNotice } from "./Unavailable";
 
 // 홈 섹션 (HOME-01 · HOME-03 · HOME-04 · PRD-01A 3장 홈 골격) — 홈 데이터(getHomeData)가 정한 순서·섹션만 그린다 (내용 0건 섹션은 데이터에 없다).
 // 섹션마다 data-home-section=<키> — E2E가 DOM 순서·화면 위치를 PRD_최종 §4.1 순서와 대조한다.
@@ -131,11 +132,7 @@ export function HomeSections({ home }: { home: HomeData }) {
       {/* 페이지 제목 — 핵심 메시지(히어로 제목)가 없을 때만 화면 읽기용으로 둔다 */}
       {!hero?.coreMessage && <h1 className="sr-only">{brand.productName}</h1>}
       {/* 공개 데이터를 읽지 못한 닫힌 홈 — 무엇이 빠졌는지 쉬운 말로 한 줄 (원인은 서버 로그에만) */}
-      {home.unavailable && (
-        <div role="status" className="mx-auto max-w-5xl px-4 pt-10">
-          <Callout>새 소식을 잠시 불러오지 못했습니다. 잠시 뒤 다시 확인해 주세요.</Callout>
-        </div>
-      )}
+      {home.unavailable && <UnavailableNotice className="mx-auto max-w-5xl px-4 pt-10" />}
       {hero && (
         <div data-home-section="hero">
           <Hero eyebrow={HERO_EYEBROW} title={hero.coreMessage ?? undefined} highlight={HERO_HIGHLIGHT}>

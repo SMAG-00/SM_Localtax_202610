@@ -1,14 +1,14 @@
-import { Callout, Chip, Eyebrow, NextActionBand, Pictogram, StatusBox, StepTimeline, UiLink, cx } from "@ltr/ui";
+import { Callout, Chip, Eyebrow, NextActionBand, Pictogram, SolvedCaseCard, StatusBox, StepTimeline, UiLink, cx } from "@ltr/ui";
 import type { RegionChoice, SituationPage } from "@/lib/server/public";
 import { SECTION_INFO } from "@/lib/server/public/constants";
 import { sectionTones } from "@/lib/site/home-view";
 import { regionHref, reviewedLine, situationSteps } from "@/lib/site/hub-view";
-import { ArticleGrid } from "./ArticleItem";
+import { ArticleGrid, ArticleItem } from "./ArticleItem";
 import { SiteSection } from "./SiteSection";
 
 // 상황 페이지 (UX-05 · FAM-02 · CAT-03 · PRD-01A 3장) — 아이브로 · 픽토그램 + 상황 제목 · 먼저 확인할 것 3가지(단계 타임라인) ·
 // (상속·증여 상황) 일반적 체크리스트와 고지 · 지역 선택 칩(이 상황만) · 자주 틀리는 점(상태 상자, 있을 때만) · 해결 사례 · 기사 · 용어 칩 · 다음 행동 띠.
-// 내용 0건인 부분은 빠진다. 부분마다 data-situation-part. 해결 사례는 결론 배지 값이 CMS에 아직 없어 기사 카드로 보인다 (설계 9장).
+// 내용 0건인 부분은 빠진다. 부분마다 data-situation-part. 해결 사례는 해결 사례 카드(4칸·결론 배지·근거 — CAT-05)로, 카드 값이 모자란 사례만 기사 카드로 보인다.
 
 type Part = "head" | "checks" | "checklist" | "region" | "mistakes" | "solved" | "articles" | "terms" | "next";
 
@@ -112,7 +112,16 @@ export function SituationView({ page }: { page: SituationPage }) {
 
       {page.solvedCases.length > 0 && (
         <SiteSection id="situation-solved" tone={tone("solved")} heading={{ eyebrow: "SOLVED CASES", title: "해결 사례" }} data={{ "data-situation-part": "solved" }}>
-          <ArticleGrid part="solved-cases" items={page.solvedCases} />
+          <ul data-part="solved-cases" className="mt-8 grid gap-4 lg:grid-cols-2">
+            {page.solvedCases.map((a) => {
+              const card = page.solvedCaseCards[a.id];
+              return (
+                <li key={a.id} data-article-id={a.id} data-solved-card={card ? "true" : "false"} className="flex flex-col">
+                  {card ? <SolvedCaseCard title={a.title} href={a.href} situation={card.situation} issue={card.issue} result={card.result} lesson={card.lesson} /> : <ArticleItem item={a} />}
+                </li>
+              );
+            })}
+          </ul>
         </SiteSection>
       )}
 

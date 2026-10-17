@@ -1,12 +1,16 @@
 import { Chip, cx } from "../base";
 import { UiLink } from "../link";
 
-/** 결론 배지 — 결정례 카드와 같은 의미 색 (인용 emerald / 기각 rose / 각하 navy, PRD-00 8.6). 색에 더해 글자로 뜻을 전한다 (8.9) */
+/**
+ * 결론 배지 — 결정례 카드와 같은 의미 색 (인용 emerald / 기각 rose / 각하 navy, PRD-00 8.6). 색에 더해 글자로 뜻을 전한다 (8.9).
+ * 해석 — 결정례가 아니라 유권해석·예규로 결론이 난 사례 (CAT-05 결과 근거 '해석 번호'), 중립 navy
+ */
 const CONCLUSION = {
   accepted: { label: "인용", className: "border-emerald-200 bg-emerald-50 text-emerald-800" },
   partial: { label: "일부 인용", className: "border-emerald-200 bg-emerald-50 text-emerald-800" },
   rejected: { label: "기각", className: "border-rose-200 bg-rose-50 text-rose-800" },
   dismissed: { label: "각하", className: "border-navy-100 bg-navy-50 text-navy-700" },
+  interpretation: { label: "해석", className: "border-navy-100 bg-navy-50 text-navy-700" },
 } as const;
 
 export type SolvedCaseConclusion = keyof typeof CONCLUSION;
@@ -41,7 +45,7 @@ const STEP_LABEL = "text-[13px] font-bold tracking-wide text-hermes-800";
  */
 export function SolvedCaseCard({ title, href, situation, issue, result, lesson }: SolvedCaseCardProps) {
   const texts = [title ?? "", situation, issue, result.text, lesson, ...result.basis.map((b) => b.label)];
-  if (![situation, issue, result.text, lesson].every(isFilled) || result.basis.length === 0) return null;
+  if (![situation, issue, result.text, lesson].every(isFilled) || result.basis.length === 0 || !Object.hasOwn(CONCLUSION, result.conclusion)) return null;
   if (texts.some((t) => IDENTIFYING.some((re) => re.test(t)))) return null;
 
   const conclusion = CONCLUSION[result.conclusion];

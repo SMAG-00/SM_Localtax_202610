@@ -27,7 +27,28 @@ describe("CAT-05 4칸 — 하나라도 비면 발행 불가", () => {
       ["cat05.cell-empty", "solvedCase.result"],
       ["cat05.cell-empty", "solvedCase.situation"],
       ["cat05.result-evidence", undefined],
+      ["cat05.conclusion-missing", "solvedCase.conclusion"],
     ]);
+  });
+});
+
+describe("CAT-05 결과의 결론 배지 — 인용·일부 인용·기각·각하·해석 중 하나", () => {
+  it("결론이 없으면 결론 칸 위치로 발행 불가", () => {
+    const result = run(withCase({ conclusion: null }));
+    expect(result.blockers).toEqual([expect.objectContaining({ id: "cat05.conclusion-missing", location: { field: "solvedCase.conclusion" } })]);
+  });
+
+  it("값 목록 밖의 결론(저장 모양을 우회한 값)도 막는다", () => {
+    const odd = withCase({ conclusion: "won" as unknown as SolvedCase["conclusion"] });
+    expect(uniqueIds(run(odd).blockers)).toEqual(["cat05.conclusion-missing"]);
+  });
+
+  it.each(["accepted", "partial", "rejected", "dismissed", "interpretation"] as const)("결론 %s → 통과", (conclusion) => {
+    expect(run(withCase({ conclusion })).canPublish).toBe(true);
+  });
+
+  it("일반 기사(해결 사례 아님)에는 결론을 묻지 않는다", () => {
+    expect(run(TAX_EXPLAINER).blockers.filter((f) => f.id === "cat05.conclusion-missing")).toEqual([]);
   });
 });
 

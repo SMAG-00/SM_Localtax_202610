@@ -25,6 +25,8 @@ step "운영 화면 E2E (겸직 금지 화면 차단·사전→점검 패널·�
 step "공개 홈·공통 틀 E2E (섹션 순서·첫 화면 R1·R2·화면 전환·숨긴 메뉴 링크 0·1분 안 반영)"; node --test --test-concurrency=1 e2e/site-home.test.mjs
 step "허브·하위 분야·뉴스 전체·상황 페이지 E2E (네 허브 같은 골격·빈 하위 분야 noindex·취재 기사만·먼저 확인할 것 3·화면 전환·R1~R3)"; node --test --test-concurrency=1 e2e/site-hubs.test.mjs
 step "상황 카드 백오피스 E2E (2·4개 거부·감수 서명은 감수위원만·허브 5번째 409·저장 즉시 공개 반영)"; node --test --test-concurrency=1 e2e/admin-situations.test.mjs
+step "기사 상세·카드뉴스·칼럼·인물 E2E (배지 글자·박스 자리·정정 블록 0/1·JSON-LD 불일치 0·삭제 410·카드뉴스 5~7장·자기 자신 0·버튼 2개 이하)"; node --test --test-concurrency=1 e2e/site-article.test.mjs
+step "공개 화면 — DB를 읽지 못할 때 (목록 200 + 안내 · 상세 503 · 500 0)"; node --test --test-concurrency=1 e2e/site-degraded.test.mjs
 step "견본 페이지 브라우저 E2E (70종·가로 스크롤 0)"; node --test --test-concurrency=1 e2e/design-page.test.mjs
 step "화면 규칙 측정 시험 (R1~R3 경계 견본)"; node --test --test-concurrency=1 e2e/screen-rules.test.mjs
 step "화면 규칙 측정 (주요 화면 × 뷰포트 표)"; node e2e/run-screen-rules.mjs

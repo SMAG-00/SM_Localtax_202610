@@ -90,7 +90,7 @@ export interface TextUnit {
 
 /**
  * 블록의 화면 글을 문서 순서대로 문장 목록으로 — 콜아웃은 제목이 0번, 인용은 발언 뒤에 발언자,
- * 표는 캡션 뒤에 칸, 이미지는 캡션 뒤에 대체 텍스트, FAQ는 질문·답 차례.
+ * 표는 캡션 뒤에 칸, 이미지는 캡션 뒤에 대체 텍스트, FAQ는 질문·답 차례, 카드뉴스 한 장은 제목·글·대체 텍스트 차례.
  */
 export function blockSentences(block: ArticleBlock): string[] {
   switch (block.type) {
@@ -111,12 +111,14 @@ export function blockSentences(block: ArticleBlock): string[] {
       return block.items.flatMap((item) => [...splitSentences(item.question), ...splitSentences(item.answer)]);
     case "key_summary":
       return block.lines.flatMap(splitSentences);
+    case "slide":
+      return [...splitSentences(block.title), ...splitSentences(block.text), ...splitSentences(block.alt)];
   }
 }
 
-/** 상자 블록(콜아웃·핵심 요약 상자)의 본문 문장 — 상자 제목은 세지 않는다. 상자가 아니면 null */
+/** 상자 블록(콜아웃·핵심 요약 상자·카드뉴스 한 장)의 본문 문장 — 상자 제목·대체 텍스트는 세지 않는다. 상자가 아니면 null */
 export function boxBodySentences(block: ArticleBlock): string[] | null {
-  if (block.type === "callout") return splitSentences(block.text);
+  if (block.type === "callout" || block.type === "slide") return splitSentences(block.text);
   if (block.type === "key_summary") return block.lines.flatMap(splitSentences);
   return null;
 }

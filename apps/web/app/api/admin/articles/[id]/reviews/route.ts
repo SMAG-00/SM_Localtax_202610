@@ -11,7 +11,7 @@ import { dbError, errorJson, handle, json, parseId, readJson } from "@/lib/serve
 
 // 편집 승인(desk_edit)·세무 감수(tax_review)·광고 표기 확인(sponsor_check) 기록 (NAV-03 · NAV-12 · CORE-01)
 //  · desk_edit — 편집 책임자, 작성 기자 본인 거부(서버가 먼저 막고 DB 트리거도 막는다). checklist.noCausalClaim = '인과 단정 없음'(NAV-10)
-//  · tax_review — 세무 감수위원만. 승인하면 「지방세로 읽기」 박스의 감수 표시를 이 버전으로 켠다
+//  · tax_review — 세무 감수위원만. 승인하면 「지방세로 읽기」 박스의 감수 표시를 이 버전으로 켜고 서명 기록(감수위원·시각)을 남긴다
 //  · 승인은 기사의 현재 버전에 대한 것이다 — 원고를 고치면 다시 받는다
 //  · 편집국 외 역할의 승인 시도는 403 + 감사 로그 (NAV-06)
 export const dynamic = "force-dynamic";
@@ -78,7 +78,9 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   if (kind === "tax_review" && decision === "approve") {
     const lens = readStoredTaxLens(synced.tax_lens);
     const asLens = toTaxLens(synced.tax_lens);
-    if (lens && asLens && hasTaxLensContent(asLens)) columns.tax_lens = { ...lens, reviewed: true, reviewed_for_version: synced.version };
+    // 서명 기록(서명한 감수위원·시각)을 박스에 남긴다 — 공개 화면의 '감수 ○○'는 이 기록에서만 그린다 (01C BR-03)
+    const signedAt = (data as { at?: string }).at ?? new Date().toISOString();
+    if (lens && asLens && hasTaxLensContent(asLens)) columns.tax_lens = { ...lens, reviewed: true, reviewed_for_version: synced.version, reviewed_by: Number(reviewer.id), reviewed_at: signedAt };
   }
   const after = Object.keys(columns).length ? await updateArticle(db, synced, columns, "articles 검토 반영") : synced;
 

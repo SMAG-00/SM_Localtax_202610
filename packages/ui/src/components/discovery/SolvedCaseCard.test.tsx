@@ -37,6 +37,7 @@ describe("해결 사례 카드", () => {
     ["partial", "일부 인용", "bg-emerald-50", "text-emerald-800"],
     ["rejected", "기각", "bg-rose-50", "text-rose-800"],
     ["dismissed", "각하", "bg-navy-50", "text-navy-700"],
+    ["interpretation", "해석", "bg-navy-50", "text-navy-700"],
   ] as const)("결론 %s는 '%s' 글자 배지로 색과 글자를 함께 쓴다", (conclusion, label, bg, fg) => {
     const { container } = render(<SolvedCaseCard {...CASE} result={{ ...CASE.result, conclusion }} />);
     const badge = container.querySelector("[data-conclusion]")!;
@@ -44,6 +45,11 @@ describe("해결 사례 카드", () => {
     expect(badge.getAttribute("data-conclusion")).toBe(conclusion);
     expect(badge.className).toContain(bg);
     expect(badge.className).toContain(fg);
+  });
+
+  it("모르는 결론 값이면 카드를 그리지 않는다 (배지 없는 결과 0)", () => {
+    const odd = { ...CASE.result, conclusion: "won" } as unknown as typeof CASE.result;
+    expect(render(<SolvedCaseCard {...CASE} result={odd} />).container.innerHTML).toBe("");
   });
 
   it("결과 칸에 근거 칩이 고정폭으로 있고, 새 창 근거는 rel·'새 창' 안내를 갖는다", () => {

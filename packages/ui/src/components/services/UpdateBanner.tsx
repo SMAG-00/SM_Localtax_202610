@@ -1,4 +1,5 @@
 import { Callout } from "../base";
+import { UiLink } from "../link";
 import { DateText, MONO, TEXT_LINK } from "./parts";
 import { toTime } from "./format";
 
@@ -25,9 +26,9 @@ export function UpdateBanner({ stage, changedAt, trackerHref, articleModifiedAt 
       <Callout>
         이 기사가 다룬 개정안이 <strong className="font-bold text-navy-900">{stage}</strong> 단계로 바뀌었습니다 (
         <DateText value={changedAt} className={MONO} />)<span aria-hidden="true"> · </span>
-        <a href={trackerHref} className={TEXT_LINK}>
+        <UiLink href={trackerHref} className={TEXT_LINK}>
           트래커 보기
-        </a>
+        </UiLink>
       </Callout>
     </aside>
   );

@@ -1,6 +1,7 @@
 // 발행 판정 — 검사 모듈을 모두 돌려 차단·경고를 결정론 순서로 모은다. 발행 API가 부르고, 결과는 422 응답·발행 기록(check_log)에 쓴다.
 import { checkAmendment } from "./checks/amendment";
 import { checkArticleBasics } from "./checks/article-basics";
+import { checkCardNews } from "./checks/card-news";
 import { checkExternal } from "./checks/external";
 import { checkPartnership } from "./checks/partnership";
 import { checkPlainLanguage } from "./checks/plain-language";
@@ -21,6 +22,7 @@ export type PublishCheck = (article: ArticleForPublish, ctx: PublishContext) => 
 /** 내장 검사 — 순서는 결과 순서와 상관없다(결과는 sortFindings로 정렬) */
 export const BUILT_IN_CHECKS: readonly PublishCheck[] = [
   checkArticleBasics,
+  checkCardNews,
   checkSourcing,
   checkReviews,
   checkQuantitative,

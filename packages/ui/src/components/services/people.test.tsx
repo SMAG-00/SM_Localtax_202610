@@ -113,6 +113,16 @@ describe("인물 페이지 머리 (BR-02 · BR-07 · EXPL-02)", () => {
     expect(cls(root.querySelector("time")?.parentElement)).toContain("font-mono");
   });
 
+  it("확인일이 없으면 확인일 줄째 없다 (빈 날짜 0)", () => {
+    for (const checkedAt of [null, undefined, " "]) {
+      const { unmount } = render(<PersonHeader {...person} checkedAt={checkedAt} />);
+      const root = document.querySelector('[data-ui="person-header"]')!;
+      expect(root.querySelector("time")).toBeNull();
+      expect(root.textContent).not.toContain("확인일");
+      unmount();
+    }
+  });
+
   it("증빙 기록이 없는 약력 항목은 렌더하지 않는다 — '50년' 같은 숫자·직함 포함", () => {
     render(<PersonHeader {...person} />);
     const list = screen.getByRole("list", { name: "검증된 약력" });

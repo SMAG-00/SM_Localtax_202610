@@ -52,6 +52,7 @@ beforeAll(async () => {
   const cat = async (section, slug) => Number((await one("select id from public.categories where section = $1 and slug = $2", [section, slug])).id);
   w.interpretations = await cat("tax", "interpretations");
   w.projects = await cat("realestate", "projects");
+  w.financeColumns = await cat("finance", "columns");
   w.emptyCategory = await insert("categories", { section: "finance", slug: `it-empty-${RUN}`, name: `통합 빈 분야 ${RUN}`, visible: true, sort: 999 }, "categories");
 
   w.reporter = await insert(
@@ -68,7 +69,7 @@ beforeAll(async () => {
   );
   w.hiddenPerson = await insert("people", { slug: `it-hidden-${RUN}`, name: "비공개 인물", roles: ["writer"] }, "people");
   w.editor = await insert("people", { slug: `it-editor-${RUN}`, name: "통합 시험 편집자", roles: ["editor"] }, "people");
-  w.reviewer = await insert("people", { slug: `it-reviewer-${RUN}`, name: "통합 시험 감수위원", roles: ["reviewer"] }, "people");
+  w.reviewer = await insert("people", { slug: `it-reviewer-${RUN}`, name: "통합 시험 감수위원", roles: ["reviewer"], visibility: "public" }, "people");
 
   const snap = await insert("raw_snapshots", { source: "itest", url: "https://www.mois.go.kr/it", content_hash: "h", payload: "원문" }, "snapshots");
   w.amendment = await insert("amendments", { slug: `it-amendment-${RUN}`, title: "통합 시험 개정안", status: "public" }, "amendments");
@@ -136,8 +137,15 @@ beforeAll(async () => {
       skip_reason: null,
       reviewed: true,
       reviewed_for_version: 1,
+      reviewed_by: Number(w.reviewer.id),
+      reviewed_at: daysAgo(1),
     }),
   });
+  // 칼럼 — 개발금융 칼럼 연재 2회·1회(늦게 발행) · 단독 칼럼 · 해설(칼럼 목록 0) (ART-04)
+  w.col2 = await art("col2", { section: "finance", content_type: "opinion", category_id: w.financeColumns, series_title: "통합 연재", series_episode: 2, first_published_at: daysAgo(6) });
+  w.col1 = await art("col1", { section: "finance", content_type: "opinion", category_id: w.financeColumns, series_title: "통합 연재", series_episode: 1, first_published_at: daysAgo(2) });
+  w.colSingle = await art("col-single", { section: "finance", content_type: "opinion", category_id: w.financeColumns, first_published_at: daysAgo(3) });
+  w.colExplainer = await art("col-explainer", { section: "finance", category_id: w.financeColumns, first_published_at: daysAgo(4) });
 
   // 태그 — 보도 기사와 해설이 '취득세' 태그를 함께 쓴다 (비슷한 사례)
   w.tag = await insert("tags", { name: `통합 취득세 ${RUN}`, slug: `it-acq-${RUN}` }, "tags");
@@ -340,11 +348,13 @@ describe("기사 상세 (ART-02~06 · CAT-04 · TX-08 · CORE-01)", () => {
 
   test("「지방세로 읽기」·본문 이미지 — 감수된 박스(열린 링크만), 권리 미확인 이미지 블록은 빠진다", async () => {
     const d = await api.getArticleDetail(w.lens.slug);
-    expect(d.taxLens).toMatchObject({ topics: ["취득세"], basisDate: "2026-10-01" });
+    expect(d.taxLens).toMatchObject({ topics: ["취득세"], basisDate: "2026-10-01", reviewer: "통합 시험 감수위원" });
     expect(d.taxLens.links.map((l) => l.kind)).toEqual(["explainer"]);
     expect(d.blocks.map((b) => b.type)).toEqual(["paragraph", "image"]);
     expect(Number(d.leadImage.id)).toBe(Number(w.mediaOk.id));
-    expect(d.media.map((m) => Number(m.id))).toEqual([Number(w.mediaOk.id)]);
+    expect(Object.keys(d.media).map(Number)).toEqual([Number(w.mediaOk.id)]);
+    expect(d.leadImage.src).toMatch(new RegExp(`/it-ok-${RUN}.jpg$`));
+    expect(d.slides).toEqual([]);
   });
 
   test("초안·금주 핫뉴스·없는 주소는 null (404)", async () => {
@@ -378,10 +388,36 @@ describe("상황 페이지·인물 (UX-05 · CAT-03 · ART-04)", () => {
 
   test("인물 — 공개 인물의 공개 칸과 공개 기사만, 비공개 인물은 null", async () => {
     const person = await api.getPersonPage(w.reporter.slug);
-    expect(person.bio).toEqual(["세무사"]);
+    expect(person.bio.map((b) => b.text)).toEqual(["세무사"]);
+    expect(person.view).toMatchObject({ name: "통합 시험 기자" });
     expect(idsOf(person.articles)).toContain(Number(w.report.id));
     expect(idsOf(person.articles)).not.toContain(Number(w.draft.id));
     expect(JSON.stringify(person)).not.toMatch(/@example\.com/);
     expect(await api.getPersonPage(w.hiddenPerson.slug)).toBeNull();
+  });
+});
+
+describe("칼럼 목록 (ART-04)", () => {
+  test("개발금융 칼럼 — 연재 회차 순서(1회부터), 단독 칼럼은 끝, 칼럼이 아닌 기사 0 · 칼럼 하위 분야가 없는 분야는 null(404)", async () => {
+    const list = await api.getColumnList("finance");
+    const series = list.groups.find((g) => g.series === "통합 연재");
+    expect(idsOf(series.items)).toEqual([Number(w.col1.id), Number(w.col2.id)]);
+    expect(list.groups.at(-1).series).toBeNull();
+    expect(idsOf(list.groups.at(-1).items)).toContain(Number(w.colSingle.id));
+    expect(list.groups.flatMap((g) => idsOf(g.items))).not.toContain(Number(w.colExplainer.id));
+    expect(list.category.slug).toBe("columns");
+    expect(await api.getColumnList("realestate")).toBeNull();
+    expect(await api.getColumnList("local")).toBeNull();
+  });
+
+  test("칼럼은 뉴스 전체(취재 기사만)에 없다", async () => {
+    const news = await api.getNewsList({ section: "finance" });
+    expect(idsOf(news.items)).not.toContain(Number(w.col1.id));
+  });
+
+  test("칼럼 상세 — 연재 줄 값, 필자 블록은 칼럼 종류", async () => {
+    const d = await api.getArticleDetail(w.col2.slug);
+    expect(d.series).toEqual({ title: "통합 연재", episode: 2 });
+    expect(d.author.kind).toBe("opinion");
   });
 });

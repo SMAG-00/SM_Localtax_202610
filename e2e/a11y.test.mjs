@@ -1,6 +1,7 @@
 // W1-c 완료 증거 — 견본 페이지 접근성 95점 이상 (Lighthouse 접근성 점수, PRD-01A 9장·10.1)
 // W2-b 2단계 — 공개 홈(/)을 내용이 찬 모습(최신 자체 취재·개정 트래커 하이라이트·해설 스토리·검색 폼과 추천 검색어)으로 잰다 (PRD-01A 8.1 주요 화면 · PRD_최종 §9.5 접근성 95)
 // W2-b 3단계 — 지방세 허브(/tax — 탭·최신 목록·상황 카드·용어)와 상황 페이지(먼저 확인할 것 3·자주 틀리는 점·기사·다음 행동)도 같은 기준으로 잰다
+// W2-b 4단계 — 기사 상세(본문 블록·기자 소개·면책·관련 기사·다음 행동)와 카드뉴스(5장 슬라이드·키보드 넘김)도 같은 기준으로 잰다
 // Playwright Chromium을 원격 디버깅으로 띄우고 Lighthouse를 붙인다. 측정이 문제를 잡는지 역검사 견본(일부러 망가뜨린 페이지)도 잰다.
 // 로컬에서는 standalone 빌드를 로컬 Supabase에 붙이고 시험 자료를 DB에 넣는다(끝나면 지우고 설정은 되돌린다 — 남는 행 0).
 // E2E_BASE_URL(배포된 시험 주소)이면 자료를 넣지 않고 그 주소의 지금 모습을 잰다.
@@ -23,6 +24,8 @@ let browser;
 let port;
 let staff;
 let situationPath = null;
+let articlePath = null;
+let cardNewsPath = null;
 
 /** 홈의 모든 섹션이 보이게 — 편집 승인된 보도 2 · 해설 스토리 3(형식 배지 포함) · 확정 전 트래커 1(지정) · 검색 폼과 추천 검색어 */
 async function seedHome() {
@@ -72,6 +75,34 @@ async function seedHome() {
   ).rows[0];
   staff.trackRow("situations", situation.id);
   situationPath = `/situations/${situation.slug}`;
+  // 기사 상세 — 블록이 고루 든 세법 해설(면책 대상 하위 분야 '해석') · 카드뉴스 5장
+  const detailBody = {
+    blocks: [
+      { type: "key_summary", lines: ["차를 판 뒤에는 남은 기간의 자동차세를 돌려받습니다.", "등록 말소일까지 계산합니다."] },
+      { type: "paragraph", text: "연세액을 미리 냈다면 차를 판 날 이후 몫을 돌려받는다. 자세한 흐름은 [지방세 허브](/tax)에서 볼 수 있다." },
+      { type: "table", caption: "돌려받는 몫", rows: [["낸 때", "돌려받는 몫"], ["1월", "판 날 이후 남은 날 몫"]], chart: { axis: "낸 때", unit: "원", source: "편집국" } },
+      { type: "quote", text: "말소일 기준으로 계산합니다.", speaker: "구청 세무과", origin: "document", refId: null },
+      { type: "callout", kind: "tip", title: "절세 체크포인트", text: "연세액을 미리 내면 깎아 줍니다." },
+      { type: "callout", kind: "mistake", title: "자주 틀리는 점", text: "판 날이 아니라 등록 말소일 기준입니다." },
+      { type: "faq", items: [{ question: "언제 돌려받나요?", answer: "말소 뒤 한두 달 안에 돌려받습니다." }, { question: "신청해야 하나요?", answer: "구청이 알아서 돌려줍니다." }] },
+    ],
+    claims: [],
+  };
+  const { rows: detail } = await db.query(
+    `insert into public.articles (slug, title, summary, section, content_type, status, author_id, category_id, body, legal_basis_date, first_published_at)
+     values ($1, '접근성 시험 자동차세 돌려받기', '차를 판 뒤 돌려받는 자동차세를 정리했습니다.', 'tax', 'explainer', 'published', $2, $3, $4, '2026-10-01', now() - interval '30 hours') returning id, slug`,
+    [`e2e-a11y-detail-${staff.run}`, reporter.personId, interpretations, JSON.stringify(detailBody)],
+  );
+  staff.trackArticle(detail[0].id);
+  articlePath = `/news/${detail[0].slug}`;
+  const slides = Array.from({ length: 5 }, (_, i) => ({ type: "slide", title: `${i + 1}. 자동차세 환급`, text: "말소일까지 계산합니다.", alt: `${i + 1}번째 장 — 자동차 그림` }));
+  const { rows: cards } = await db.query(
+    `insert into public.articles (slug, title, summary, section, content_type, status, author_id, format, body, first_published_at)
+     values ($1, '접근성 시험 카드뉴스', '자동차세 환급을 다섯 장으로 정리했습니다.', 'tax', 'guide', 'published', $2, 'cardnews', $3, now() - interval '31 hours') returning id, slug`,
+    [`e2e-a11y-cards-${staff.run}`, reporter.personId, JSON.stringify({ blocks: slides, claims: [] })],
+  );
+  staff.trackArticle(cards[0].id);
+  cardNewsPath = `/news/${cards[0].slug}`;
   await db.query("update public.settings set value = jsonb_set(value, '{search}', 'true') where key = 'feature_flags'");
   await db.query(`update public.settings set value = '["취득세", "개편안", "책임준공"]'::jsonb where key = 'home_search_chips'`);
 }
@@ -168,5 +199,27 @@ test("상황 페이지 접근성 95점 이상 — 먼저 확인할 것 3·자주
   assert.equal(await page.locator('[data-ui="next-action-band"]').count(), 1);
   await page.close();
   const r = await accessibility(`${base}${situationPath}`);
+  assert.ok(r.score >= MIN, `점수 ${r.score} — 실패 항목: ${r.failing.join(", ")}`);
+});
+
+test("기사 상세 접근성 95점 이상 — 본문 블록(핵심 요약·표·인용·상태 상자·FAQ)·기자 소개·면책·다음 행동", async (t) => {
+  if (process.env.E2E_BASE_URL) return t.skip("배포 주소에는 시험용 기사가 없다 — 로컬 시험 자료로만 잰다");
+  const page = await browser.newPage();
+  await page.goto(`${base}${articlePath}`, { waitUntil: "load" });
+  assert.deepEqual(await page.$$eval('[data-part="blocks"] > [data-block-type]', (els) => els.map((e) => e.getAttribute("data-block-type"))), ["key_summary", "paragraph", "table", "quote", "callout", "callout", "faq"]);
+  assert.equal(await page.locator('[data-ui="reporter-block"]').count(), 1);
+  assert.equal(await page.locator('[data-part="disclaimer"]').count(), 1);
+  await page.close();
+  const r = await accessibility(`${base}${articlePath}`);
+  assert.ok(r.score >= MIN, `점수 ${r.score} — 실패 항목: ${r.failing.join(", ")}`);
+});
+
+test("카드뉴스 접근성 95점 이상 — 5장 슬라이드(장마다 이름)·이전/다음 버튼", async (t) => {
+  if (process.env.E2E_BASE_URL) return t.skip("배포 주소에는 시험용 카드뉴스가 없다 — 로컬 시험 자료로만 잰다");
+  const page = await browser.newPage();
+  await page.goto(`${base}${cardNewsPath}`, { waitUntil: "load" });
+  assert.equal(await page.locator('[data-ui="card-news"] [data-slide]').count(), 5);
+  await page.close();
+  const r = await accessibility(`${base}${cardNewsPath}`);
   assert.ok(r.score >= MIN, `점수 ${r.score} — 실패 항목: ${r.failing.join(", ")}`);
 });

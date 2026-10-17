@@ -5,10 +5,16 @@ import {
   blockMediaIds,
   correctionEntries,
   publicBio,
+  publicBioItems,
   publicBlocks,
+  reporterKind,
   selectNextActions,
   selectRelated,
   selectSimilarCases,
+  shareDescription,
+  solvedCaseView,
+  splitCardNews,
+  sponsorMark,
   stageBanner,
   taxLensSlot,
   updateEntries,
@@ -122,7 +128,7 @@ describe("다음 행동 띠 버튼 (ART-06 — 열린 것 중 우선순위 앞 2
   });
 });
 
-describe("「지방세로 읽기」 자리 (CORE-01)", () => {
+describe("「지방세로 읽기」 자리 (CORE-01 · 01C BR-03)", () => {
   const lens = (over: Partial<StoredTaxLens> = {}): StoredTaxLens => ({
     topics: ["취득세"],
     points: ["관리처분인가 뒤 입주권 취득은 취득세 대상입니다."],
@@ -135,18 +141,21 @@ describe("「지방세로 읽기」 자리 (CORE-01)", () => {
     skip_reason: null,
     reviewed: true,
     reviewed_for_version: 3,
+    reviewed_by: 41,
+    reviewed_at: "2026-10-16T05:00:00Z",
     ...over,
   });
+  const REVIEWERS = new Map([[41, "이감수 세무사"]]);
 
-  test("감수된 현재 버전 박스 — 세목·포인트·기준일, 링크는 열린 기능만", () => {
-    expect(taxLensSlot(lens(), 3, "2026-10-01", CLOSED_FEATURES)).toEqual({
+  test("감수된 현재 버전 박스 — 세목·포인트·기준일·서명한 감수위원, 링크는 열린 기능만", () => {
+    expect(taxLensSlot(lens(), 3, "2026-10-01", CLOSED_FEATURES, REVIEWERS)).toEqual({
       topics: ["취득세"],
       points: ["관리처분인가 뒤 입주권 취득은 취득세 대상입니다."],
       links: [{ kind: "explainer", label: "해설 읽기", href: "/news/membership-acquisition", external: false }],
       basisDate: "2026-10-01",
-      reviewer: null,
+      reviewer: "이감수 세무사",
     });
-    expect(taxLensSlot(lens(), 3, null, OPEN)!.links.map((l) => [l.kind, l.external])).toEqual([
+    expect(taxLensSlot(lens(), 3, "2026-10-01", OPEN, REVIEWERS)!.links.map((l) => [l.kind, l.external])).toEqual([
       ["explainer", false],
       ["calculator", true],
       ["book", false],
@@ -154,25 +163,35 @@ describe("「지방세로 읽기」 자리 (CORE-01)", () => {
     ]);
   });
 
+  test("감수자 이름은 서명 기록에서만 — 서명자가 없거나 비공개 인물이면 박스 0 (손으로 넣은 이름 0)", () => {
+    expect(taxLensSlot(lens({ reviewed_by: null }), 3, "2026-10-01", OPEN, REVIEWERS)).toBeNull();
+    expect(taxLensSlot(lens({ reviewed_by: 99 }), 3, "2026-10-01", OPEN, REVIEWERS)).toBeNull();
+    expect(taxLensSlot(lens(), 3, "2026-10-01", OPEN, new Map([[41, "  "]]))).toBeNull();
+  });
+
+  test("법령 기준일이 없으면 박스 0 (박스가 '기준일'을 함께 보인다)", () => {
+    expect(taxLensSlot(lens(), 3, null, OPEN, REVIEWERS)).toBeNull();
+  });
+
   test("생략 사유가 있거나 감수 전·이전 버전 감수면 박스 요소 0 (null)", () => {
-    expect(taxLensSlot(lens({ skip_reason: "세금 쟁점 없음" }), 3, null, OPEN)).toBeNull();
-    expect(taxLensSlot(lens({ reviewed: false }), 3, null, OPEN)).toBeNull();
-    expect(taxLensSlot(lens({ reviewed_for_version: 2 }), 3, null, OPEN)).toBeNull();
-    expect(taxLensSlot(null, 3, null, OPEN)).toBeNull();
+    expect(taxLensSlot(lens({ skip_reason: "세금 쟁점 없음" }), 3, "2026-10-01", OPEN, REVIEWERS)).toBeNull();
+    expect(taxLensSlot(lens({ reviewed: false }), 3, "2026-10-01", OPEN, REVIEWERS)).toBeNull();
+    expect(taxLensSlot(lens({ reviewed_for_version: 2 }), 3, "2026-10-01", OPEN, REVIEWERS)).toBeNull();
+    expect(taxLensSlot(null, 3, "2026-10-01", OPEN, REVIEWERS)).toBeNull();
   });
 
   test("포인트 0줄·4줄·세목 0개면 박스 없음, 1줄·3줄은 박스", () => {
-    expect(taxLensSlot(lens({ points: [] }), 3, null, OPEN)).toBeNull();
-    expect(taxLensSlot(lens({ points: ["1", "2", "3", "4"] }), 3, null, OPEN)).toBeNull();
-    expect(taxLensSlot(lens({ topics: [] }), 3, null, OPEN)).toBeNull();
-    expect(taxLensSlot(lens({ points: ["1", "2", "3"] }), 3, null, OPEN)!.points).toHaveLength(3);
+    expect(taxLensSlot(lens({ points: [] }), 3, "2026-10-01", OPEN, REVIEWERS)).toBeNull();
+    expect(taxLensSlot(lens({ points: ["1", "2", "3", "4"] }), 3, "2026-10-01", OPEN, REVIEWERS)).toBeNull();
+    expect(taxLensSlot(lens({ topics: [] }), 3, "2026-10-01", OPEN, REVIEWERS)).toBeNull();
+    expect(taxLensSlot(lens({ points: ["1", "2", "3"] }), 3, "2026-10-01", OPEN, REVIEWERS)!.points).toHaveLength(3);
   });
 
   test("열린 링크가 하나도 없으면 박스 없음 — 숨긴 경로·사이트 밖 주소 형식이 아닌 링크도 뺀다", () => {
     const onlyClosed = lens({ links: [{ kind: "calculator", label: "SM 계산기", url: "https://sm.example.com/calc" }] });
-    expect(taxLensSlot(onlyClosed, 3, null, CLOSED_FEATURES)).toBeNull();
+    expect(taxLensSlot(onlyClosed, 3, "2026-10-01", CLOSED_FEATURES, REVIEWERS)).toBeNull();
     const blocked = lens({ links: [{ kind: "explainer", label: "옛 주소", url: "/region/seoul" }, { kind: "explainer", label: "이상한 주소", url: "news/x" }] });
-    expect(taxLensSlot(blocked, 3, null, OPEN)).toBeNull();
+    expect(taxLensSlot(blocked, 3, "2026-10-01", OPEN, REVIEWERS)).toBeNull();
   });
 });
 
@@ -233,8 +252,110 @@ describe("개정 브리핑 갱신 배너 (TX-08)", () => {
 });
 
 describe("공개 약력 — 평문 이메일 0 (HELP-03)", () => {
-  test("글자 항목만, 이메일이 섞인 줄은 뺀다", () => {
-    expect(publicBio([{ item: "세무사" }, { item: "연락 kim@example.com" }, { item: " " }, { evidence_id: "x" }, "글자"])).toEqual(["세무사"]);
+  test("증빙 번호가 있는 글자 항목만, 이메일이 섞인 줄은 뺀다", () => {
+    expect(publicBio([{ item: "세무사", evidence_id: "doc-1" }, { item: "연락 kim@example.com", evidence_id: "doc-2" }, { item: " ", evidence_id: "doc-3" }, { evidence_id: "x" }, "글자"])).toEqual(["세무사"]);
     expect(publicBio(null)).toEqual([]);
+  });
+  test("증빙 번호가 비면 공개 뷰를 지나왔어도 빼고(이중 방어), 인물 페이지 항목은 증빙 번호를 함께 준다", () => {
+    expect(publicBio([{ item: "증빙 없는 경력", evidence_id: "  " }, { item: "경력 50년" }])).toEqual([]);
+    expect(publicBioItems([{ item: "지방세 실무 30년", evidence_id: 17 }])).toEqual([{ id: "bio-0", text: "지방세 실무 30년", evidenceId: "17" }]);
+  });
+});
+
+describe("카드뉴스 장 나누기 (ART-03)", () => {
+  const slide = (n: number, over: Partial<Extract<StoredBlock, { type: "slide" }>> = {}): StoredBlock => ({ type: "slide", title: `${n}장 제목`, text: `${n}장 첫 줄\n${n}장 둘째 줄`, alt: `${n}장 그림 설명`, ...over });
+  const faq: StoredBlock = { type: "faq", items: [{ question: "질문", answer: "답" }] };
+
+  test("카드뉴스면 장은 슬라이드(번호·제목·줄·대체 텍스트), 나머지 블록은 본문으로 — 순서 그대로", () => {
+    const r = splitCardNews("cardnews", [slide(1), faq, slide(2)]);
+    expect(r.slides).toEqual([
+      { number: 1, title: "1장 제목", lines: ["1장 첫 줄", "1장 둘째 줄"], alt: "1장 그림 설명" },
+      { number: 2, title: "2장 제목", lines: ["2장 첫 줄", "2장 둘째 줄"], alt: "2장 그림 설명" },
+    ]);
+    expect(r.rest).toEqual([faq]);
+  });
+
+  test("카드뉴스가 아닌 기사의 장 블록은 그리지 않는다 (슬라이드 0 · 본문에서도 빠진다)", () => {
+    expect(splitCardNews("general", [slide(1), faq])).toEqual({ slides: [], rest: [faq] });
+  });
+
+  test("글자가 없는 장은 빼고 번호를 다시 매긴다, 대체 텍스트가 빈 장은 'n번째 장'으로 읽힌다", () => {
+    const r = splitCardNews("cardnews", [slide(1, { title: " ", text: "" }), slide(2, { alt: "  " }), slide(3)]);
+    expect(r.slides.map((s) => [s.number, s.title, s.alt])).toEqual([
+      [1, "2장 제목", "1번째 장"],
+      [2, "3장 제목", "3장 그림 설명"],
+    ]);
+  });
+});
+
+describe("해결 사례 카드 값 (CAT-05)", () => {
+  const sc = {
+    situation: "계약일부터 60일을 세어 신고했다.",
+    issue: "신고 기간의 시작일이 쟁점이었다.",
+    result: "잔금일을 취득일로 보았다.",
+    lesson: "잔금일과 등기일 중 빠른 날부터 셉니다.",
+    resultEvidence: [
+      { kind: "decision" as const, number: "조심2025지0001", url: "https://decisions.example.kr/1" },
+      { kind: "decision" as const, number: "", url: "https://decisions.example.kr/2" },
+      { kind: "interpretation" as const, number: "부동산세제과-12", url: "원문 누리집" },
+    ],
+    conclusion: "rejected" as const,
+  };
+
+  test("4칸 · 결론 배지 · 번호와 링크가 다 있는 근거만 (새 창)", () => {
+    expect(solvedCaseView(sc)).toEqual({
+      situation: sc.situation,
+      issue: sc.issue,
+      result: { conclusion: "rejected", text: sc.result, basis: [{ label: "조심2025지0001", href: "https://decisions.example.kr/1", external: true }] },
+      lesson: sc.lesson,
+    });
+  });
+
+  test.each([
+    ["빈 칸", { lesson: "  " }],
+    ["결론 없음", { conclusion: null }],
+    ["모르는 결론", { conclusion: "won" }],
+    ["근거 0", { resultEvidence: [] }],
+  ])("%s → 카드 값 없음(null — 기사 카드로 대신)", (_name, over) => {
+    expect(solvedCaseView({ ...sc, ...over } as typeof sc)).toBeNull();
+  });
+
+  test.each(["accepted", "partial", "dismissed", "interpretation"] as const)("결론 %s도 카드가 된다", (conclusion) => {
+    expect(solvedCaseView({ ...sc, conclusion })!.result.conclusion).toBe(conclusion);
+  });
+});
+
+describe("표기 배지 (ART-10 · PRD-00 8.8)", () => {
+  test("광고는 '광고' 하나, 공동 기획은 제휴사 이름과 함께 — 둘을 섞지 않는다", () => {
+    expect(sponsorMark("ad", "가온세무법인")).toEqual({ kind: "ad" });
+    expect(sponsorMark("co_planned", " 가온세무법인 ")).toEqual({ kind: "co_planned", partner: "가온세무법인" });
+    expect(sponsorMark("none", "가온세무법인")).toBeNull();
+  });
+  test("제휴사 이름이 없는 공동 기획은 표기를 만들지 않는다 (발행 판정이 막는 값)", () => {
+    expect(sponsorMark("co_planned", null)).toBeNull();
+    expect(sponsorMark("co_planned", "  ")).toBeNull();
+  });
+});
+
+describe("기자 소개 블록 종류", () => {
+  test.each([
+    ["opinion", "opinion"],
+    ["explainer", "explainer"],
+    ["guide", "guide"],
+    ["reported_news", "report"],
+    ["sponsored", "report"],
+    [null, "report"],
+  ] as const)("%s → %s (칼럼만 필자·의견 고지)", (type, kind) => expect(reporterKind(type)).toBe(kind));
+});
+
+describe("공유 미리보기 설명 (ART-03)", () => {
+  const slide = { number: 1, title: "취득세 60일", lines: ["잔금일부터 셉니다", "위택스로 신고합니다"], alt: "달력" };
+  test("카드뉴스는 첫 장의 제목과 글, 아니면 요약", () => {
+    expect(shareDescription("요약입니다", [slide, { ...slide, number: 2, title: "둘째" }], null)).toBe("취득세 60일 잔금일부터 셉니다 위택스로 신고합니다");
+    expect(shareDescription(" 요약입니다 ", [], null)).toBe("요약입니다");
+  });
+  test("표기가 있으면 화면·JSON-LD 제목과 같은 표기를 앞에 붙인다", () => {
+    expect(shareDescription("요약", [], "공동 기획 가온세무법인")).toBe("[공동 기획 가온세무법인] 요약");
+    expect(shareDescription("", [], "광고")).toBe("");
   });
 });

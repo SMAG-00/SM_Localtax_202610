@@ -219,7 +219,8 @@ export function canonicalUrl(siteUrl: string | undefined, slug: string): string 
   return siteUrl ? `${siteUrl}/news/${encodeURIComponent(slug)}` : null;
 }
 
-function absolute(siteUrl: string | undefined, path: string): string {
+/** 사이트 주소를 붙인 절대 주소 — 이미 http(s) 주소면 그대로 (화면 이미지 주소와 JSON-LD 이미지 주소가 같은 함수에서 나온다) */
+export function absolute(siteUrl: string | undefined, path: string): string {
   if (/^https?:\/\//.test(path)) return path;
   return `${siteUrl ?? ""}/${path.replace(/^\/+/, "")}`;
 }
@@ -370,6 +371,9 @@ export function similarityDraft(article: ArticleForPublish): string {
         break;
       case "callout":
         lines.push(b.text);
+        break;
+      case "slide":
+        lines.push(...[b.title, b.text].filter((t) => t.trim() !== ""));
         break;
       case "faq":
         for (const item of b.items) lines.push(item.answer);

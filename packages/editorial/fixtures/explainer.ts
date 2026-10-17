@@ -161,5 +161,6 @@ export const SOLVED_CASE: ArticleForPublish = {
     resultEvidence: [
       { kind: "decision", number: "조심2025지0001", url: "https://decisions.example.kr/tt/2025-ji-0001" },
     ],
+    conclusion: "rejected",
   },
 };

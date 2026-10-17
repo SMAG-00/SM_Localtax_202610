@@ -20,6 +20,7 @@ export function listItem(over: Partial<ArticleListItem> = {}): ArticleListItem {
     typeLabel: "해설",
     format: null,
     sponsorBadge: null,
+    sponsor: null,
     subtype: "general",
     publishedOn: "2026-10-01",
     modifiedOn: null,
@@ -32,6 +33,8 @@ export function listItem(over: Partial<ArticleListItem> = {}): ArticleListItem {
     categoryId: null,
     amendmentId: null,
     reportedApproved: false,
+    seriesTitle: null,
+    seriesEpisode: null,
     ...over,
   };
 }

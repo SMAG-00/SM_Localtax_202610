@@ -56,6 +56,10 @@ result.warnings;    // 발행 기록(check_log)에 남긴다
 | `art01.sponsored-label-required` | ART-01 | 차단 | 광고·협찬 기사에 표기 없음 |
 | `art01.digest-link-required` | ART-01 | 차단 | 금주 핫뉴스에 주간 회차 연결 없음 |
 | `art01.reserved-slug` | ART-01 | 차단 | 예약된 slug(video·photo·popular) |
+| `art03.slide-count` | ART-03 | 차단 | 카드뉴스가 5~7장이 아님 |
+| `art03.slide-alt` | ART-03 | 차단 | 카드뉴스 장에 대체 텍스트 없음 |
+| `art03.slide-text` | ART-03 | 차단 | 카드뉴스 장에 글자 없음 |
+| `art03.slide-outside-cardnews` | ART-03 | 차단 | 카드뉴스가 아닌 기사에 카드뉴스 장 |
 | `nav02.press-release-only` | NAV-02 | 차단 | 출처가 보도자료뿐인 보도기사 |
 | `nav03.author-required` | NAV-03 | 차단 | 작성 기자 없음 |
 | `nav03.desk-edit-required` | NAV-03 | 차단 | 편집 승인 없음 |
@@ -97,6 +101,7 @@ result.warnings;    // 발행 기록(check_log)에 남긴다
 | `cat04.tracker-required` | CAT-04 | 차단 | 개정 브리핑에 연결 트래커 없음 |
 | `cat05.cell-empty` | CAT-05 | 차단 | 해결 사례 4칸 중 빈 칸 |
 | `cat05.result-evidence` | CAT-05 | 차단 | 결과 근거(사건번호·해석 번호 + 링크) 0개 |
+| `cat05.conclusion-missing` | CAT-05 | 차단 | 결과의 결론 배지(인용·일부 인용·기각·각하·해석) 없음 |
 | `cat05.pii` | CAT-05 | 차단 | 개인정보 형식(주민등록번호·전화·이메일·상세 주소) |
 | `cat05.real-name` | CAT-05 | 경고 | 실명으로 보이는 표현 |
 | `ux01.forbidden-phrase` | UX-01 | 차단 | 금지 표현 |
@@ -132,7 +137,8 @@ PO 확인이 필요하면 고치고 이 절과 시험을 함께 바꾼다.
 - **CORE-01**: 박스 감수는 박스의 `reviewed`·`reviewedForVersion`으로 본다(기사 버전이 올라가면 '재감수 필요'). 대상이 아닌 기사(지방세 분야·sponsored)도 박스를 달았으면 감수가 필요하다. `digest`는 결정 안건이라 대상에서 뺐다. 세액 표현은 아라비아 숫자 + (만·억 등) + '원'만 잡는다(한글 숫자 금액 '백만 원'은 못 잡음).
 - **UX-01**: 글자 수는 공백을 빼고 센다(e2e R1 글자 수 검사와 같은 셈법). 기사에서 안내 문장 기준은 요약과 상자 블록(콜아웃·핵심 요약 상자)에 쓰고 본문 문단에는 쓰지 않는다. 전문 용어 첫 등장은 본문 블록에서 찾고, 그 블록 안 어디든 풀이 글자가 있으면 풀었다고 본다. 사전 표현은 연속 공백을 하나로 맞춰 비교한다(붙여 쓴 '절세보장'은 다른 표현 — 필요하면 사전에 따로 넣는다).
 - **UX-03**: '기한'은 '납부기한'처럼 붙여 써도 잡고, '~기하다' 동사 활용(등기한·제기한·포기한·연기한 등)은 뺀다.
-- **CAT-05**: 개인정보 형식 검사는 해결 사례 원고에만 적용한다(일반 기사의 기관 대표 전화 등). 주소는 지번(동·리·가 + 지번)과 시·군·구가 붙은 도로명 + 건물번호를 잡는다. 기업 대표번호(1588 등)는 잡지 않는다. 결과 근거는 번호와 `http(s)://` 링크가 둘 다 있어야 한다.
+- **CAT-05**: 개인정보 형식 검사는 해결 사례 원고에만 적용한다(일반 기사의 기관 대표 전화 등). 주소는 지번(동·리·가 + 지번)과 시·군·구가 붙은 도로명 + 건물번호를 잡는다. 기업 대표번호(1588 등)는 잡지 않는다. 결과 근거는 번호와 `http(s)://` 링크가 둘 다 있어야 한다. 결과 칸에는 결론 배지(`SOLVED_CASE_CONCLUSIONS` — 인용 `accepted` · 일부 인용 `partial` · 기각 `rejected` · 각하 `dismissed` · 해석 `interpretation`)가 있어야 한다 — PRD-00 8.6 해결 사례 카드 '결과(결론 배지)' (W2-b 4단계, 설계 9장 #36).
+- **ART-03**: 카드뉴스 장은 블록 종류 `slide`(제목·글·대체 텍스트)다. 형식이 카드뉴스(`cardnews`)인 기사는 장이 5~7개(`CARDNEWS_SLIDES`)여야 하고, 장마다 대체 텍스트와 글자(제목 또는 글)가 있어야 한다. 카드뉴스가 아닌 기사에 장 블록이 있으면 막는다(공개 화면이 장을 슬라이드로만 그린다). 한 장의 글은 상자처럼 문장 수를 센다(UX-01 경고).
 - **ART-10**: 공동 기획에는 제휴사(이름 포함)가, 제휴사를 지정했으면 표기가 있어야 한다. 계약 종료일 당일까지 유효, 첫 발행 전 기사에만 적용. '공동 기획과 광고 함께 지정'은 표기 칸이 하나라 입력에서 생길 수 없다. 배지 글자는 `sponsorBadge(label, partnerName)` — 광고 `광고`, 공동 기획 `공동 기획 ○○`(PRD 글자 그대로, packages/structured-data `sponsorLabelText`·packages/seo-lint `badgeFormats`와 같다). 제휴사 이름이 비면 배지가 없어(null) `art10.co-planned-partner-required`로 막는다.
 - **ART-05**: 이미 발행된 기사(`firstPublishedAt` 있음)를 다시 발행할 때 수정 종류·사유를 요구한다.
 - **OPT-06**: 유사도 `no_sources`·`no_body`는 경고(seo-lint rules.v1과 같은 등급). seo-lint·유사도 결과가 없으면(null) 차단.

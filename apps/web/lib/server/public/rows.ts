@@ -32,6 +32,9 @@ export interface PublicArticleRow {
   public_question: string | null;
   amendment_id: number | null;
   reported_approved: boolean;
+  /** 칼럼 연재 이름·회차 (ART-04) */
+  series_title: string | null;
+  series_episode: number | null;
 }
 
 /** 목록 카드에 쓰는 칸 (본문·「지방세로 읽기」 제외) */
@@ -55,13 +58,15 @@ export type PublicArticleListRow = Pick<
   | "editorial_field"
   | "amendment_id"
   | "reported_approved"
+  | "series_title"
+  | "series_episode"
 >;
 
 export const ARTICLE_LIST_COLUMNS =
-  "id, slug, title, summary, format, section, content_type, category_id, subtype, label, partner_id, author_id, first_published_at, substantive_updated_at, region_codes, editorial_field, amendment_id, reported_approved";
+  "id, slug, title, summary, format, section, content_type, category_id, subtype, label, partner_id, author_id, first_published_at, substantive_updated_at, region_codes, editorial_field, amendment_id, reported_approved, series_title, series_episode";
 
 export const ARTICLE_DETAIL_COLUMNS =
-  "id, slug, title, summary, body, format, section, content_type, reporting_method, origin, category_id, subtype, solved_case, label, partner_id, author_id, lead_media_id, version, first_published_at, substantive_updated_at, updated_reason, update_kind, legal_basis_date, tax_lens, digest_id, region_codes, editorial_field, public_question, amendment_id, reported_approved";
+  "id, slug, title, summary, body, format, section, content_type, reporting_method, origin, category_id, subtype, solved_case, label, partner_id, author_id, lead_media_id, version, first_published_at, substantive_updated_at, updated_reason, update_kind, legal_basis_date, tax_lens, digest_id, region_codes, editorial_field, public_question, amendment_id, reported_approved, series_title, series_episode";
 
 export interface PublicCategoryRow {
   id: number;
@@ -227,3 +232,9 @@ export const GLOSSARY_COLUMNS = "id, term, reading, definition, plain, related, 
 
 /** 바깥(DB)에서 온 bigint는 글자로 올 수 있다 — 번호로 맞춘다 */
 export const num = (v: unknown): number => (typeof v === "number" ? v : Number(v));
+
+/** 삭제된 기사 주소 (NAV-06 — 공개 칸은 주소·삭제 시각뿐) */
+export interface TombstoneRow {
+  slug: string;
+  removed_at: string;
+}
