@@ -3,7 +3,9 @@
 // 포트가 이미 쓰이고 있으면 쓰는 프로세스 이름·PID를 알려 주고 종료 코드 1로 멈춘다.
 // 다른 포트로 옮겨 가지 않고, 포트를 쓰는 프로세스에 어떤 신호도 보내지 않는다 (3000번 다른 프로젝트 보호).
 // 사용: node scripts/check-port.mjs [포트]   (기본 3001)
+import fs from "node:fs";
 import net from "node:net";
+import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
@@ -76,7 +78,7 @@ export function findListeners(port) {
       }
     }
   } else {
-    // users:(("node",pid=123,fd=20))
+    // users:(("node",pid=123,fd=20)) — 이름 칸은 스레드 이름(예: Node의 MainThread)일 수 있어 아래에서 실행 파일 이름으로 바꾼다
     for (const m of run("ss", ["-ltnpH", `sport = :${port}`]).matchAll(/\("([^"]+)",pid=(\d+)/g)) {
       found.set(Number(m[2]), m[1]);
     }
@@ -87,8 +89,19 @@ export function findListeners(port) {
         else if (line.startsWith("c") && pid) found.set(pid, line.slice(1));
       }
     }
+    for (const [pid, name] of found) found.set(pid, programName(pid) ?? name);
   }
   return [...found].map(([pid, name]) => ({ pid, name }));
+}
+
+/** 프로세스의 실행 파일 이름 (리눅스 /proc, 그 밖은 ps) — 스레드 이름이 아니라 프로그램 이름 */
+function programName(pid) {
+  try {
+    const argv0 = fs.readFileSync(`/proc/${pid}/cmdline`, "utf8").split("\0")[0];
+    if (argv0) return path.basename(argv0);
+  } catch {}
+  const comm = run("ps", ["-p", String(pid), "-o", "comm="]).trim();
+  return comm ? path.basename(comm) : null;
 }
 
 async function main() {
