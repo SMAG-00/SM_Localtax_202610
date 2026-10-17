@@ -44,16 +44,36 @@ function holdPort(port) {
   });
 }
 
-/** 우리가 띄운 프로세스 트리만 끈다 */
+// 리눅스에서 프로세스 그룹으로 띄운 것(개발 서버 — npm 아래 next까지 함께 꺼야 한다)
+const groups = new WeakSet();
+
+/** 우리가 띄운 프로세스 트리만 끈다 — 그룹으로 띄운 것만 그룹 종료, 나머지는 그 프로세스만 (리눅스에서 kill(-pid)는 그룹이 아니면 실패한다) */
 function killTree(child) {
-  if (child.exitCode !== null) return;
+  if (child.exitCode !== null || child.signalCode !== null) return;
   if (process.platform === "win32") {
     try {
       execFileSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" });
     } catch {}
-  } else {
+  } else if (groups.has(child)) {
     try {
       process.kill(-child.pid, "SIGTERM");
+    } catch {}
+  } else {
+    child.kill("SIGTERM");
+  }
+}
+
+/** 띄운 프로세스가 모두 끝났는지 확인 — 남으면 강제 종료하고 실패로 센다 (CI가 끝나지 않고 기다리는 일을 막는다) */
+async function ensureAllExited() {
+  const alive = () => spawned.filter((c) => c.exitCode === null && c.signalCode === null);
+  const end = Date.now() + 10_000;
+  while (alive().length && Date.now() < end) await new Promise((r) => setTimeout(r, 200));
+  for (const c of alive()) {
+    console.log(`실패 — 남은 프로세스 PID ${c.pid}를 강제 종료`);
+    failures++;
+    try {
+      if (process.platform !== "win32" && groups.has(c)) process.kill(-c.pid, "SIGKILL");
+      else c.kill("SIGKILL");
     } catch {}
   }
 }
@@ -68,6 +88,7 @@ function runDev(cmd) {
     stdio: ["ignore", "pipe", "pipe"],
   });
   spawned.push(child);
+  if (process.platform !== "win32") groups.add(child);
   let out = "";
   child.stdout.on("data", (d) => (out += d));
   child.stderr.on("data", (d) => (out += d));
@@ -144,9 +165,13 @@ async function main() {
   return failures ? 1 : 0;
 }
 
+let code = 1;
 try {
-  process.exitCode = await main();
+  code = await main();
 } finally {
   for (const c of spawned) killTree(c);
+  await ensureAllExited();
 }
 console.log(failures ? `실패 ${failures}건` : "모두 통과");
+// 남은 핸들이 있어도 판정대로 끝낸다 (CI가 기다리지 않게)
+process.exit(failures ? 1 : code);

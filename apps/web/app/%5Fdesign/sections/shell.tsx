@@ -149,7 +149,7 @@ export function ShellSection() {
         <Specimen name="진행 단계 배지">
           <div className="space-y-8">
             <div>
-              <p className={note}>공포 전 — '확정 아님' 칩이 붙습니다</p>
+              <p className={note}>공포 전 — 「확정 아님」 칩이 붙습니다</p>
               <ProgressStageBadge events={beforePromulgation} />
             </div>
             <div>

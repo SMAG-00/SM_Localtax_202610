@@ -9,7 +9,7 @@ export function BaseSection() {
         <Specimen name="주 버튼">
           <PrimaryButton>검색하기</PrimaryButton>
         </Specimen>
-        <Specimen name="보조 버튼" dark>
+        <Specimen name="보조 버튼 (어두운 바탕)" dark>
           <SecondaryButton>전체 기사 보기</SecondaryButton>
         </Specimen>
         <Specimen name="어두운 버튼">

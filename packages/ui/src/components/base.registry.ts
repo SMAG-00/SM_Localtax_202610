@@ -2,7 +2,7 @@ import type { RegistryEntry } from "./registry-type";
 
 export const registry: RegistryEntry[] = [
   { name: "주 버튼", ui: "primary-button" },
-  { name: "보조 버튼", ui: "secondary-button" },
+  { name: "보조 버튼 (어두운 바탕)", ui: "secondary-button" },
   { name: "어두운 버튼", ui: "dark-button" },
   { name: "링크 카드", ui: "link-card" },
   { name: "도구 카드", ui: "tool-card" },

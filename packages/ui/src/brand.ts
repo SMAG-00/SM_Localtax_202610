@@ -7,6 +7,8 @@ export const brand = {
   productName: "SM(선명) 지방세·부동산·지자체뉴스 종합 플랫폼",
   /** 텍스트 워드마크 "SM(선명) · 지방세" — 가운뎃점은 hermes-500 (PRD-00 8.1) */
   wordmark: { lead: "SM(선명)", tail: "지방세" },
-  /** 연결만 하는 기존 계산기 사이트 (TX-01) */
+  /** 연결만 하는 기존 계산기 사이트 (TX-01) — 양도세도 이 사이트 안의 메뉴다 */
   smCalculatorSiteName: "SM 부동산 세금 플랫폼",
+  /** 상속세·증여세 계산을 연결하는 별도 사이트 (FAM-08) — PO가 만든 사이트, 운영 주체 관계 문구는 결정 안건 */
+  externalCalculatorSiteName: "안심 상속증여계산기",
 } as const;
