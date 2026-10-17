@@ -18,3 +18,4 @@ step "웹 E2E (standalone 빌드)";            node --test --test-concurrency=1 
 step "브라우저 설치 (Playwright Chromium)";  pnpm exec playwright install --with-deps chromium
 step "견본 페이지 브라우저 E2E (70종·가로 스크롤 0)"; node --test --test-concurrency=1 e2e/design-page.test.mjs
 step "Docker 이미지 E2E";                   node e2e/run-docker.mjs
+step "사내 서버 구성 E2E (web·scheduler·proxy)"; node --test --test-concurrency=1 e2e/compose.test.mjs

@@ -1,0 +1,53 @@
+# 사내 서버용 Docker Compose (FND-07, PRD-00 7장 이식성 — 원칙 ⑩)
+#   web       — Next.js standalone 이미지 (deploy/Dockerfile)
+#   scheduler — Vercel Cron과 같은 일정(apps/web/vercel.json)으로 같은 /api/jobs/*를 부른다 (CRON_SECRET)
+#   proxy     — Caddy 중계, SSE 버퍼링 끔 (deploy/Caddyfile)
+# 값은 저장소 밖 환경 파일(deploy/.env.server — 커밋 금지)에 둔다. 이름은 .env.example과 같다.
+# 실행: docker compose -f deploy/compose.yaml up -d --build
+name: sm-localtax
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: ltr-web:local
+    env_file:
+      - path: .env.server
+        required: false
+    environment:
+      PORT: "3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.status<500?0:1),()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  scheduler:
+    image: node:24.7.0-alpine
+    working_dir: /scheduler
+    command: ["node", "run.mjs"]
+    volumes:
+      - ./scheduler:/scheduler:ro
+      - ../apps/web/vercel.json:/schedule/vercel.json:ro
+    env_file:
+      - path: .env.server
+        required: false
+    environment:
+      JOBS_BASE_URL: http://web:3000
+      SCHEDULE_FILE: /schedule/vercel.json
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+  proxy:
+    image: caddy:2.11.6-alpine
+    ports:
+      - "${PROXY_PORT:-8080}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - web
+    restart: unless-stopped

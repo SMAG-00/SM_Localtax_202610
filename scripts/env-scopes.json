@@ -21,7 +21,9 @@
     "SUPABASE_DB_URL": "ci",
     "SUPABASE_ACCESS_TOKEN": "ci",
     "VERCEL_TOKEN": "ci",
-    "FORBIDDEN_IDENTIFIERS": "ci"
+    "FORBIDDEN_IDENTIFIERS": "ci",
+    "JOBS_BASE_URL": "server",
+    "SCHEDULE_FILE": "server"
   },
   "tooling": [
     "E2E_TARGET",
