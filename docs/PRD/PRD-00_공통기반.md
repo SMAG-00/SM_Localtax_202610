@@ -1659,7 +1659,7 @@ sm-localtax-platform/        (가칭, 새 GitHub 조직의 비공개 저장소)
 
 **환경 공통 규칙**
 
-- **운영 도메인 전환 전**에는 Production 배포가 테스트 주소(Vercel 기본 주소 또는 `beta.localtaxresearch.com`)에서 돌고, 검색 노출을 막는다(`SITE_INDEXING=off` — 모든 페이지 `noindex`, `robots.txt` 차단). 전환 때 localtaxresearch.com을 연결하고 차단을 푼다 (PRD-01A 이관·전환 장).
+- **운영 도메인 전환 전**에는 Production 배포가 테스트 주소(Vercel 기본 주소 또는 `beta.localtaxresearch.com`)에서 돌고, 검색 노출을 막는다(`SITE_INDEXING=off` — 모든 페이지 `noindex`, `robots.txt` 차단). 테스트 주소의 접근은 막지 않는다 — 누구나 볼 수 있고 검색 노출만 막는다(PO 결정 2026-10-17, PRD-01A SEO-04). 미리보기 배포는 Vercel 기본 보호(로그인)를 유지한다. 전환 때 localtaxresearch.com을 연결하고 차단을 푼다 (PRD-01A 이관·전환 장).
 - 미리보기 배포는 staging DB만 본다. 운영 DB 키는 Production 환경에만 둔다.
 - DB 접속 문자열 `SUPABASE_DB_URL`은 CI 전용이다(GitHub Actions Secrets) — Vercel·`.env.example` 값·저장소에 넣지 않는다. 로컬 Supabase의 접속 문자열만 `.env.local`에 둘 수 있다 (ENV-05).
 - 비밀값은 서버 전용 환경변수, 브라우저에 나가는 값은 `NEXT_PUBLIC_` 접두어만.
