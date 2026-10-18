@@ -12,6 +12,7 @@ import {
   SECTION_INFO,
   amendmentHref,
   categoryHref,
+  glossaryTermHref,
   isOpenPath,
   isSectionKey,
   newsHref,
@@ -232,8 +233,6 @@ const open = (href: string, features: Features) => (isOpenPath(href, features) ?
 /** 지자체 허브 주소 (01B W4 — 기능 키 region_hubs) */
 export const regionHref = (slug: string, parentSlug: string | null) =>
   parentSlug ? `${SECTION_INFO.local.href}/${encodeURIComponent(parentSlug)}/${encodeURIComponent(slug)}` : `${SECTION_INFO.local.href}/${encodeURIComponent(slug)}`;
-/** 용어사전의 용어 자리 (3단계 화면) */
-export const glossaryHref = (id: string) => `/glossary#term-${encodeURIComponent(id)}`;
 
 /** 한 행 → 보기 값. 모르는 종류·필수 칸이 빈 행은 null (화면에 그리지 않는다) */
 export function searchHitView(row: SearchRow, features: Features): SearchHit | null {
@@ -293,7 +292,7 @@ export function searchHitView(row: SearchRow, features: Features): SearchHit | n
       return {
         ...base,
         kind,
-        href: open(glossaryHref(slug), features),
+        href: open(glossaryTermHref(slug), features),
         typeLabel: KIND_LABELS.glossary,
         reading: str(meta.reading),
         sections: strs(meta.sections).filter(isSectionKey),

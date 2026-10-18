@@ -3,7 +3,9 @@ import type { StoredBlock } from "@/lib/server/articles/content";
 import type { ArticleMedia } from "@/lib/server/public";
 import type { SectionKey } from "@/lib/server/public/constants";
 import { paragraphSegments, tableView } from "@/lib/site/article-view";
+import type { PlannedRun } from "@/lib/site/glossary-tips";
 import { infographicNotes, infographicView, photoCreditLine, videoTitle } from "@/lib/site/media-view";
+import { TipPieces, TipRuns } from "./GlossaryTip";
 import { VideoPlayer } from "./VideoPlayer";
 
 // 기사 본문 블록 (ART-01 블록 9종 — 카드뉴스 장은 CardNewsSlider) — 문단·표·이미지·인용·상자·인포그래픽·동영상·FAQ·핵심 요약 상자.
@@ -14,24 +16,37 @@ import { VideoPlayer } from "./VideoPlayer";
 //  · 동영상(ART-08)은 누르면 재생되는 카드 — 누르기 전 유튜브·구글 요청 0, 누르면 video_played 1건 (VideoPlayer)
 //  · rose 상자는 '자주 틀리는 점'에만(UX-03), 절세 체크포인트는 emerald 상태 상자, 정보·주의는 강조 문단
 //  · 표는 좁은 화면에서 표 안에서만 가로로 밀린다 — 화면 전체 가로 스크롤 0 (UX-06)
+//  · 본문 첫 등장 용어 풀이(GLO-02) — 문단·인용·상자 글에 기사 상세가 계획한 툴팁 자리(lib/site/glossary-tips.ts)를 단추로 그린다(GlossaryTip.tsx).
+//    문단 링크·상자 제목·인용 발언자·표·FAQ·핵심 요약에는 붙지 않는다. 계획이 없는 블록은 글 그대로
 
 const PARAGRAPH = "text-[17px] leading-[1.8] text-navy-900 [overflow-wrap:anywhere]";
+const PARAGRAPH_LINK = "font-bold text-hermes-800 underline underline-offset-4 hover:text-hermes-900";
 
-function Paragraph({ text }: { text: string }) {
+function Paragraph({ text, tips }: { text: string; tips?: readonly PlannedRun[] }) {
   return (
     <p className={`${PARAGRAPH} whitespace-pre-line`}>
-      {paragraphSegments(text).map((s, i) =>
-        s.kind === "text" ? (
-          <span key={i}>{s.text}</span>
-        ) : (
-          <UiLink key={i} href={s.href} className="font-bold text-hermes-800 underline underline-offset-4 hover:text-hermes-900" {...(s.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-            {s.text}
-            {s.external && <span className="sr-only"> (새 창)</span>}
-          </UiLink>
-        ),
+      {tips ? (
+        <TipRuns runs={tips} linkClass={PARAGRAPH_LINK} />
+      ) : (
+        paragraphSegments(text).map((s, i) =>
+          s.kind === "text" ? (
+            <span key={i}>{s.text}</span>
+          ) : (
+            <UiLink key={i} href={s.href} className={PARAGRAPH_LINK} {...(s.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+              {s.text}
+              {s.external && <span className="sr-only"> (새 창)</span>}
+            </UiLink>
+          ),
+        )
       )}
     </p>
   );
+}
+
+/** 인용·상자 글 — 툴팁 계획이 있으면 용어 자리를 단추로 */
+function BlockText({ text, tips }: { text: string; tips?: readonly PlannedRun[] }) {
+  const run = tips?.[0];
+  return run && run.kind === "text" ? <TipPieces pieces={run.pieces} /> : <>{text}</>;
 }
 
 /** 그림의 원본 크기 — 알면 img width·height(자리 확보). CSS는 h-auto w-full이라 원본 비율 그대로 줄어든다(자르지 않음) */
@@ -61,10 +76,10 @@ function Figure({ media, caption, photo }: { media: ArticleMedia; caption: strin
   );
 }
 
-function Block({ block, media, index, article }: { block: StoredBlock; media: Record<number, ArticleMedia>; index: number; article: BlockArticle }) {
+function Block({ block, media, index, article, tips }: { block: StoredBlock; media: Record<number, ArticleMedia>; index: number; article: BlockArticle; tips?: readonly PlannedRun[] }) {
   switch (block.type) {
     case "paragraph":
-      return <Paragraph text={block.text} />;
+      return <Paragraph text={block.text} tips={tips} />;
     case "key_summary":
       return <KeySummary lines={block.lines} />;
     case "table": {
@@ -129,7 +144,9 @@ function Block({ block, media, index, article }: { block: StoredBlock; media: Re
     case "quote":
       return (
         <figure data-block="quote" className="border-l-2 border-navy-300 pl-5">
-          <blockquote className={PARAGRAPH}>{block.text}</blockquote>
+          <blockquote className={PARAGRAPH}>
+            <BlockText text={block.text} tips={tips} />
+          </blockquote>
           {block.speaker && <figcaption className="mt-2 text-[15px] text-navy-600">{`— ${block.speaker}`}</figcaption>}
         </figure>
       );
@@ -137,19 +154,25 @@ function Block({ block, media, index, article }: { block: StoredBlock; media: Re
       if (block.kind === "mistake")
         return (
           <StatusBox kind="mistake" title="자주 틀리는 점">
-            <p className="whitespace-pre-line">{block.text}</p>
+            <p className="whitespace-pre-line">
+              <BlockText text={block.text} tips={tips} />
+            </p>
           </StatusBox>
         );
       if (block.kind === "tip")
         return (
           <StatusBox kind="tip" title={block.title || "절세 체크포인트"}>
-            <p className="whitespace-pre-line">{block.text}</p>
+            <p className="whitespace-pre-line">
+              <BlockText text={block.text} tips={tips} />
+            </p>
           </StatusBox>
         );
       return (
         <div data-block="callout" data-kind={block.kind}>
           {block.title && <p className="mb-1 text-[15px] font-black text-navy-900">{block.title}</p>}
-          <Callout className="whitespace-pre-line text-[16px] text-navy-800">{block.text}</Callout>
+          <Callout className="whitespace-pre-line text-[16px] text-navy-800">
+            <BlockText text={block.text} tips={tips} />
+          </Callout>
         </div>
       );
     case "video": {
@@ -179,13 +202,24 @@ function Block({ block, media, index, article }: { block: StoredBlock; media: Re
   }
 }
 
-export function ArticleBlocks({ blocks, media, article }: { blocks: readonly StoredBlock[]; media: Record<number, ArticleMedia>; article: BlockArticle }) {
+export function ArticleBlocks({
+  blocks,
+  media,
+  article,
+  tips,
+}: {
+  blocks: readonly StoredBlock[];
+  media: Record<number, ArticleMedia>;
+  article: BlockArticle;
+  /** 본문 첫 등장 용어 풀이 계획 (블록 번호 → 조각) — 없으면 글 그대로 */
+  tips?: ReadonlyMap<number, readonly PlannedRun[]>;
+}) {
   if (blocks.length === 0) return null;
   return (
     <div data-part="blocks" className="mt-10 space-y-8">
       {blocks.map((b, i) => (
         <div key={i} data-block-index={i} data-block-type={b.type}>
-          <Block block={b} media={media} index={i} article={article} />
+          <Block block={b} media={media} index={i} article={article} tips={tips?.get(i)} />
         </div>
       ))}
     </div>

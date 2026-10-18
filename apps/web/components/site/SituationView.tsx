@@ -1,9 +1,10 @@
-import { Callout, Chip, Eyebrow, NextActionBand, Pictogram, SolvedCaseCard, StatusBox, StepTimeline, UiLink, cx } from "@ltr/ui";
+import { Callout, Eyebrow, NextActionBand, Pictogram, SolvedCaseCard, StatusBox, StepTimeline, UiLink, cx } from "@ltr/ui";
 import type { RegionChoice, SituationPage } from "@/lib/server/public";
 import { SECTION_INFO } from "@/lib/server/public/constants";
 import { sectionTones } from "@/lib/site/home-view";
 import { regionHref, reviewedLine, situationSteps } from "@/lib/site/hub-view";
 import { ArticleGrid, ArticleItem } from "./ArticleItem";
+import { TermChipList } from "./GlossaryView";
 import { MeasureNextActions } from "./Measure";
 import { SiteSection } from "./SiteSection";
 
@@ -136,14 +137,8 @@ export function SituationView({ page }: { page: SituationPage }) {
 
       {page.terms.length > 0 && (
         <SiteSection id="situation-terms" tone={tone("terms")} heading={{ eyebrow: "GLOSSARY", title: "알아 둘 용어" }} data={{ "data-situation-part": "terms" }}>
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-            {page.terms.map((t) => (
-              <li key={t.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <Chip>{t.term}</Chip>
-                {t.plain && <span className="text-[15px] text-navy-600">{t.plain}</span>}
-              </li>
-            ))}
-          </ul>
+          {/* 용어 칩 — 용어사전(기능 키 glossary — W2-d 3단계)이 열렸으면 칩이 그 용어 쪽 링크 */}
+          <TermChipList terms={page.terms} className="mt-6 grid gap-3 sm:grid-cols-2" />
         </SiteSection>
       )}
 

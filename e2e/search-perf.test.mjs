@@ -211,10 +211,10 @@ async function seed() {
     );
     // 용어 200
     await db.query(
-      `insert into public.glossary_terms (term, definition, plain, section, source)
+      `insert into public.glossary_terms (term, definition, plain, section, source, visible)
        select case when i <= ${GLOSSARY.length} then (${lit(GLOSSARY)})[i] else (${lit(GLOSSARY)})[1 + i % ${GLOSSARY.length}] || ' (' || i || ')' end,
               (${lit(SENTENCES)})[1 + i % ${SENTENCES.length}], left((${lit(SENTENCES)})[1 + (i * 3) % ${SENTENCES.length}], 60),
-              array[(array['tax', 'realestate', 'finance', 'local'])[1 + i % 4]], '${TAG}'
+              array[(array['tax', 'realestate', 'finance', 'local'])[1 + i % 4]], '${TAG}', true
        from generate_series(1, 200) i`,
     );
     // 동의어 30

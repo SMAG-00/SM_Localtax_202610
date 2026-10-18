@@ -35,12 +35,12 @@ PRD-01A 9장 W2-b(홈 골격·히어로·메뉴·4대 분야 허브 공통 골�
 | 이름 | 값 |
 |---|---|
 | settings.public_keys (anon이 읽는 설정 키 — 마지막 키는 W2-c 2단계가 더했다: 많이 본 기사 사이드바·목록 건수) | `home_core_message` · `home_search_chips` · `hub_intros` · `amendment_confirmed_stage` · `hub_situation_limit` · `feature_flags` · `next_action_priority` · `popular_rules` |
-| feature_flags (기능 공개 목록 — 없거나 false면 닫힘, 마지막 키는 W2-c 4단계가 더했다: 동영상 목록) | `calc` · `experts` · `store` · `edu` · `search` · `sm_calculator` · `expert_finder` · `self_calculator` · `taxbot` · `region_hubs` · `amendments` · `page_about` · `page_editorial_policy` · `page_ethics` · `page_corrections` · `page_ad_policy` · `page_privacy` · `page_help` · `video_list` |
+| feature_flags (기능 공개 목록 — 없거나 false면 닫힘, 끝의 두 키는 W2-c 4단계(동영상 목록)·W2-d 3단계(용어사전)가 더했다) | `calc` · `experts` · `store` · `edu` · `search` · `sm_calculator` · `expert_finder` · `self_calculator` · `taxbot` · `region_hubs` · `amendments` · `page_about` · `page_editorial_policy` · `page_ethics` · `page_corrections` · `page_ad_policy` · `page_privacy` · `page_help` · `video_list` · `glossary` |
 | next_action (다음 행동 버튼 키, ART-06) | `situation` · `same_section` · `local_news` · `sm_calculator` · `expert_finder` · `self_calculator` · `taxbot` |
 | home_sections (홈 섹션 순서 고정, HOME-01) | `hero` · `fields` · `latest_reports` · `weekly_hot` · `amendments` · `column` · `product` · `experts` |
 | policy_links (기사 하단 정책 링크 7종 순서, ART-02) | `about` · `editorial_policy` · `ethics` · `corrections` · `ad_policy` · `privacy` · `help` |
 
-- 기능 키의 화면 이름·주소: 유틸 메뉴 `calc` 계산기 `/calc` · `experts` 전문가 소개 `/experts` · `store` 구독·도서 `/store` · `edu` 교육 `/edu` · `search` 검색 `/search` (HOME-02 순서). `sm_calculator` SM 계산기 카드(01B TX-01) · `expert_finder` [전문가 찾기](01C EXPL-06) · `self_calculator` 자체 계산기(2단계) · `taxbot` 지방세봇 모드(4단계) · `region_hubs` 시·도·시·군·구 지자체 허브 `/local/[sido](/[sigungu])`(01B W4) · `amendments` 개정 트래커 페이지 `/tax/amendments/[slug]`(01B W3 — 홈 트래커 카드·개정 브리핑 배지의 트래커 링크. `/tax/amendments` 자체는 3단계부터 하위 분야 목록 — 9장 #28) · `page_*` 정책 페이지(HELP-05 — 법률 검토 승인 기록 뒤 켠다, W2-e) · `video_list` 동영상 목록 `/news/video`(W2-c 4단계 — 동영상 채널 결정 전에는 꺼 둔다, PRD-01A 1.3. 꺼져 있으면 404·링크 0).
+- 기능 키의 화면 이름·주소: 유틸 메뉴 `calc` 계산기 `/calc` · `experts` 전문가 소개 `/experts` · `store` 구독·도서 `/store` · `edu` 교육 `/edu` · `search` 검색 `/search` (HOME-02 순서). `sm_calculator` SM 계산기 카드(01B TX-01) · `expert_finder` [전문가 찾기](01C EXPL-06) · `self_calculator` 자체 계산기(2단계) · `taxbot` 지방세봇 모드(4단계) · `region_hubs` 시·도·시·군·구 지자체 허브 `/local/[sido](/[sigungu])`(01B W4) · `amendments` 개정 트래커 페이지 `/tax/amendments/[slug]`(01B W3 — 홈 트래커 카드·개정 브리핑 배지의 트래커 링크. `/tax/amendments` 자체는 3단계부터 하위 분야 목록 — 9장 #28) · `page_*` 정책 페이지(HELP-05 — 법률 검토 승인 기록 뒤 켠다, W2-e) · `video_list` 동영상 목록 `/news/video`(W2-c 4단계 — 동영상 채널 결정 전에는 꺼 둔다, PRD-01A 1.3. 꺼져 있으면 404·링크 0) · `glossary` 용어사전 `/glossary`·`/glossary/[번호]`(W2-d 3단계 — 꺼져 있으면 404, 검색 결과·용어 칩·본문 툴팁의 용어사전 링크 0. W2-d 설계 2.5).
 - 정책 링크 주소: 회사 소개 `/about` · 편집 원칙 `/about/editorial-policy` · 윤리강령 `/about/ethics` · 정정·반론 창구 `/about/corrections` · 광고 정책 `/about/ad-policy` · 개인정보처리방침 `/about/privacy` · 고객센터 `/help/report` [확인 필요 — 3장 화면 표에 고객센터 첫 화면 경로가 없어 첫 폼(기사 제보)으로 둔다].
 - 다음 행동 버튼 글자: `situation` 이 상황 모아 보기 · `same_section` 같은 분야 더 보기 · `local_news` 이 지역 뉴스 더 보기 · `sm_calculator` SM 계산기로 계산하기(새 창) · `expert_finder` 전문가 찾기 · `self_calculator` 계산해 보기 · `taxbot` 지방세봇에게 묻기. 우선순위는 `settings.next_action_priority`(씨앗 = 위 순서 — ART-06 본문에 적힌 순서).
 
@@ -183,7 +183,7 @@ PRD-01A 9장 W2-b(홈 골격·히어로·메뉴·4대 분야 허브 공통 골�
 | `/tax/columns` · `/finance/columns` | 칼럼 목록 (`opinion`, 연재 회차 순서, 의견 고지, 필자 링크) — `/[section]/[category]`의 `columns` 하위 분야가 칼럼 목록이 된다(부동산은 01B W4가 하위 분야를 더하면 같은 규칙) | ART-04 | 4 |
 | `/people/[slug]` | 인물(기자·필자) — 비공개·없는 인물 404 | ART-04 · NAV-03 | 4 |
 
-만들지 않는 경로(다른 작업): `/search`·`/glossary`(W2-d) · `/about/*`·`/help/*`·`/my`·`/brief`(W2-e) · `/tax/amendments/[slug]`·`/calc`(01B W3) · `/local/[sido](/[sigungu])`·`/local/events`(01B W4~W6) · `/experts`·`/store`·`/edu`(01C). 이 경로로 가는 링크는 기능 키가 켜질 때까지 0이다.
+만들지 않는 경로(다른 작업): `/search`·`/glossary`(W2-d — 둘 다 W2-d가 만들고 기능 키 search·glossary로 연다) · `/about/*`·`/help/*`·`/my`·`/brief`(W2-e) · `/tax/amendments/[slug]`·`/calc`(01B W3) · `/local/[sido](/[sigungu])`·`/local/events`(01B W4~W6) · `/experts`·`/store`·`/edu`(01C). 이 경로로 가는 링크는 기능 키가 켜질 때까지 0이다.
 
 W2-c가 만든 목록 — 많이 본 기사(2단계)·포토 목록(4단계)은 열린 화면이고, 동영상 목록(4단계)은 기능 키 video_list가 켜졌을 때만 열린다(꺼져 있으면 404). 메뉴 링크는 셋 다 아직 없다 (W2-c 설계 7장·9장).
 
@@ -307,7 +307,7 @@ W2-c가 만든 목록 — 많이 본 기사(2단계)·포토 목록(4단계)은 
 | 9 | 스토리 카드 대상 유형 | 광고·금주 핫뉴스만 거부(나머지 유형 허용) | [확인 필요] |
 | 10 | 트래커 대체의 '최근 단계가 바뀐' 기준 | 현재 단계 기록의 날짜(`occurred_on`), 같으면 늦게 기록된 것 | [확인 필요] |
 | 11 | 편집 승인 취소(발행 뒤 desk_edit 반려) 기사 | 공개는 유지, 홈·`/news` 취재 목록에서는 빠진다(`reported_approved` false) | [확인 필요] |
-| 12 | 용어사전 공개 범위 — 모든 용어 공개(PRD-00 6장). 공개 상태 칸이 생기면(W2-d) 정책을 좁힌다 | 전부 공개 | [확인 필요 — W2-d] |
+| 12 | 용어사전 공개 범위 — 모든 용어 공개(PRD-00 6장). 공개 상태 칸이 생기면(W2-d) 정책을 좁힌다 | W2-d 3단계에서 좁혔다 — 공개 상태 칸 `visible`(새 용어는 숨김, 칸이 생기기 전 용어는 공개 그대로)인 용어만 공개 (W2-d 설계 2.5 · 12장) | [확인 필요 — W2-d 12장] |
 | 13 | 「지방세로 읽기」 박스의 감수자 이름·감수일 공개 칸 (TaxLensBox가 요구) | 4단계 — 세무 감수 승인 때 서버가 박스에 서명 기록(`reviewed_by` 감수위원 people.id · `reviewed_at`)을 남기고(PRD-01B 6장 tax_lens 칸), 공개 화면은 그 감수위원이 공개 인물일 때만 '감수 ○○'와 박스를 보인다(BR-03 — 손으로 넣는 이름 0). 비공개 감수위원·서명 기록 없는 박스는 박스 0. 기사 단위 '세무 감수 ○○'(기자 소개 블록)는 서명 기록 공개 칸이 없어 0 — BR-03 재감수(실질 수정 판정)와 함께 01C | [결정 — 기사 단위는 01C 확인 필요] |
 | 14 | 칼럼 연재 회차 칸 (ART-04) | 4단계 — `articles.series_title`·`series_episode` 칸(마이그레이션 13, 3장). 연재 표(`column_series`)는 두지 않았다(PRD 6장에 없음). 필자 체계(이해관계·자격·계약 — 01B TX-14~17)는 W3 | [결정 — 연재 표가 필요하면 W3] |
 | 15 | 관련 기사 — CMS 칸 없음 | 같은 개정안 → 같은 하위 분야 → 같은 분야 최신으로 계산 | [확인 필요] |
@@ -347,7 +347,7 @@ W2-c가 만든 목록 — 많이 본 기사(2단계)·포토 목록(4단계)은 
 | 38 | R1(첫 화면 150자)을 재는 폭 | PRD-00 8.2대로 360×740에서만 — 허브는 1024px에서 기사 카드 3장이 한 줄에 보여 150자를 넘는다(시험 자료 180자). 640·1024는 R2·R3만 판정 | [확인 필요] |
 | 39 | 하위 분야 목록의 기간·지역 필터 칩 (3장 화면 표) | 필터 값(기간 구간·지역 단위)이 PRD에 없어 3단계에 두지 않는다 — 01B W4 지역 목록과 함께 | [확인 필요] |
 | 40 | 지방세·부동산·개발금융 허브의 분야 고유 블록(트래커 하이라이트·프로젝트·구조 해설) | 01B W3·W4가 그 표·화면과 함께 같은 자리(탭과 최신 목록 사이)에 더한다 | [01B] |
-| 41 | 허브·상황 페이지의 용어 칩 | 링크 없이 용어와 쉬운 풀이 — 용어사전 화면(`/glossary`)은 W2-d | [W2-d] |
+| 41 | 허브·상황 페이지의 용어 칩 | 용어와 쉬운 풀이 — 기능 키 `glossary`가 켜지면 칩이 그 용어의 용어사전 쪽(`/glossary/[번호]`) 링크가 된다(W2-d 3단계), 꺼져 있으면 링크 0 | [W2-d] |
 | 53 | 기사 문단에 편집자가 쓴 사이트 안 링크가 닫힌 화면으로 갈 때 | 꺼진 기능의 화면·아직 없는 화면(`isOpenPath`)이면 공개 화면이 글자만 보인다 — 원고는 그대로, 기능을 켜면 배포 없이 링크. 숨긴·v1.2 옛 주소는 표기 `[글](주소)`를 그대로 보여 편집자가 고친다(4단계 결정 유지). 발행 판정에서 옛 주소를 막을지는 W2-c 이후 | [확인 필요] |
 | 54 | 어느 화면에도 맞지 않는 주소의 404 화면 | `app/not-found.tsx` — 공개 화면 404와 같은 쉬운 말 안내와 홈 링크(공개 틀 밖 — 분야 메뉴를 읽지 않는다). 백오피스의 없는 주소도 같은 화면이다 | [확인 필요 — 공개 틀 안으로 넣을지] |
 | 55 | 기사 제목·요약 글자 상한 (R1 — 52의 머리 글자를 묶는다) | 제목 40자 · 요약 60자(R8 화면 문장 60자와 같은 값), 공백 포함·앞뒤 공백 뺌. 기사 저장 API(`lib/server/articles/input.ts` — 422 "제목은 40자 이하여야 합니다 (지금 n자 …)")와 편집 화면·새 기사 화면이 같은 문장으로 막는다(`@ltr/editorial` `ARTICLE_HEAD_LIMITS`·`headLengthProblem`). 화면 칸에 "40자 이하 — 지금 n자" 안내. 이미 저장된 긴 제목은 그 칸을 고칠 때 막힌다(DB 제약 아님). 목록 카드·해결 사례 카드·비슷한 사례 제목도 공백 없는 긴 글자를 줄바꿈한다(360px 가로 스크롤 0) | [결정 — PO 확인: 상한 값] |

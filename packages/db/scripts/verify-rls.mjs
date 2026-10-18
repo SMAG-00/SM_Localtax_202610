@@ -23,7 +23,7 @@ export const PUBLIC_READ_ALLOWLIST = new Map([
   ["public.regions", "행정구역 표준코드 — 공개 참조 자료, REG1-01·CAT-03"],
   ["public.situations", "공개 상황(visible)의 공개 칸 — UX-05"],
   ["public.home_curations", "오늘 노출 기간 안이고 대상이 공개인 홈 배치 — HOME-03"],
-  ["public.glossary_terms", "용어사전 — 비회원 공개(PRD-00 6장), 내부 칸 제외 — GLO-01·CAT-02"],
+  ["public.glossary_terms", "용어사전 — 공개 상태(visible) 용어만 비회원 공개(PRD-00 6장 · W2-d 3단계 20261019000021, 시험 tests/w2d-glossary.test.mjs), 내부 칸 제외 — GLO-01·CAT-02"],
   ["public.tags", "공개 기사에 붙은 태그 — ART-06"],
   ["public.article_tags", "공개 기사의 태그 연결 — ART-06"],
   ["public.article_corrections", "공개 기사의 게재된 정정의 공개 칸 — NAV-06·ART-02"],

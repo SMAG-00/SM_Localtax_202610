@@ -15,6 +15,8 @@ export { getPartnerPage, getPhotoList, getVideoList, type ListPage, type Partner
 export type { MediaView, VideoBlockView, VideoListEntry } from "./media-logic";
 export { PublicDataError } from "./db";
 export { searchSite, getSearchPage, type SearchPageData } from "./search";
+export { getGlossaryIndex, getGlossaryTerm } from "./glossary";
+export { parseGlossaryId, parseGlossarySection, type GlossaryEntry, type GlossaryGroup, type GlossaryIndexView, type GlossaryTab, type GlossaryTermView, type RelatedLink, type TermChip } from "./glossary-logic";
 export { parseSearchParams, SEARCH_TABS, TAB_KINDS, KIND_LABELS, EVENT_LABEL, type SearchHit, type SearchKind, type SearchOptions, type SearchResult, type SearchTab } from "./search-logic";
 export type { HomeSection, TrackerCard, StoryCard, AmendmentsSection } from "./home-logic";
 export type { ArticleListItem, TrackerState } from "./cards";

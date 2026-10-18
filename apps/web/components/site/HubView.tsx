@@ -1,7 +1,8 @@
-import { Chip, FieldHubHead, LocalHubBlocks, SituationCard, UiLink, type HubBlockContent } from "@ltr/ui";
+import { FieldHubHead, LocalHubBlocks, SituationCard, UiLink, type HubBlockContent } from "@ltr/ui";
 import type { ArticleListItem, HubData } from "@/lib/server/public";
 import { HUB_HEADINGS, hubParts } from "@/lib/site/hub-view";
 import { ArticleGrid, ArticleItem } from "./ArticleItem";
+import { TermChipList } from "./GlossaryView";
 import { HotBlock } from "./HotBlock";
 import { MeasureSituationCards, MeasureView } from "./Measure";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
@@ -86,17 +87,10 @@ export function HubView({ hub }: { hub: HubData }) {
               </SiteSection>
             );
           case "terms":
-            // 용어 칩 — 용어사전 화면(/glossary, W2-d) 전이라 링크가 아니라 글자와 쉬운 풀이
+            // 용어 칩 — 글자와 쉬운 풀이. 용어사전(기능 키 glossary — W2-d 3단계)이 열렸으면 칩이 그 용어 쪽 링크
             return (
               <SiteSection key={key} id="hub-terms" tone={tone} heading={HUB_HEADINGS.terms} data={{ "data-hub-part": "terms" }}>
-                <ul data-part="hub-terms" className="mt-8 grid gap-3 sm:grid-cols-2">
-                  {hub.terms.map((t) => (
-                    <li key={t.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <Chip>{t.term}</Chip>
-                      {t.plain && <span className="text-[15px] text-navy-600">{t.plain}</span>}
-                    </li>
-                  ))}
-                </ul>
+                <TermChipList terms={hub.terms} part="hub-terms" className="mt-8 grid gap-3 sm:grid-cols-2" />
               </SiteSection>
             );
         }

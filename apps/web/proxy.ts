@@ -12,7 +12,7 @@ import { gateDecision, noticeFor, noticeHeaders, noticeHtml, probePath, publicDe
 //  · 모든 백오피스 응답에 검색 노출 차단 머리글을 붙인다.
 // 서버 전용 표식(server-only)이 있는 모듈은 여기서 불러오지 않는다 — 환경변수는 직접 읽는다.
 //
-// 공개 상세 경로(/news/[slug] · /situations/[slug] · /people/[slug])의 응답 상태 (lib/site/public-gate.ts):
+// 공개 상세 경로(/news/[slug] · /situations/[slug] · /people/[slug] · /partners/[id] · /glossary/[id])의 응답 상태 (lib/site/public-gate.ts):
 //  · 삭제된 기사 주소는 410 + 삭제 안내 (NAV-06), 공개 데이터를 읽지 못하면 503 "잠시 뒤 다시 확인해 주세요"(있는지 모르므로 404·410 0)
 //  · 그 밖은 화면이 그린다 (200 · 404). 확인은 anon 키로 공개 표 한 번 — RLS가 경계다
 
@@ -105,5 +105,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*", "/news/:slug", "/situations/:slug", "/people/:slug"],
+  // 공개 상세 경로 — public-gate.ts publicDetailRoute와 같은 목록 (제휴사 /partners/[id]는 W2-c 4단계가 판정만 더하고 여기에 빠져 있던 것을 W2-d 3단계가 더했다)
+  matcher: ["/admin", "/admin/:path*", "/news/:slug", "/situations/:slug", "/people/:slug", "/partners/:id", "/glossary/:id"],
 };

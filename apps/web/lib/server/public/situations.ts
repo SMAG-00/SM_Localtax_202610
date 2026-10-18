@@ -5,6 +5,7 @@ import { selectNextActions, solvedCaseView, type ActionTargets, type NextAction,
 import type { ArticleListItem } from "./cards";
 import { SECTION_INFO, isSectionKey, type SectionKey } from "./constants";
 import { publicDb, rowsOf } from "./db";
+import { termChip, type TermChip } from "./glossary-logic";
 import { readArticleList, readPublicSettings, readRegions } from "./reads";
 import { GLOSSARY_COLUMNS, SITUATION_COLUMNS, num, type GlossaryRow, type SituationRow } from "./rows";
 import {
@@ -40,7 +41,8 @@ export interface SituationPage {
   /** 해결 사례 카드 값 (CAT-05 — 4칸·결론 배지·근거) — 기사 번호 → 카드. 값이 모자란 사례는 없다(기사 카드로 대신) */
   solvedCaseCards: Record<number, SolvedCaseView>;
   articles: ArticleListItem[];
-  terms: { id: number; term: string; plain: string | null }[];
+  /** 용어 칩 — 공개 용어만(RLS), 용어사전이 열렸으면 용어 쪽 링크 (W2-d 3단계) */
+  terms: TermChip[];
   /** 지역 선택 칩 — 이 상황만(region_select). 아니면 null */
   regionSelect: { sido: RegionChoice[]; sigungu: RegionChoice[]; selected: string | null } | null;
   /** 고른 지역의 기사 (0건이면 상위 시·도 기사와 그 사실) */
@@ -120,7 +122,7 @@ export async function getSituationPage(slug: string, opts: { region?: string | n
     articles: inIdOrder(row.article_ids.map(num), linked.items),
     terms: inIdOrder(
       row.glossary_ids.map(num),
-      terms.map((t) => ({ id: num(t.id), term: t.term, plain: t.plain })),
+      terms.map((t) => termChip(t, settings.features)),
     ),
     regionSelect,
     regionArticles: regionView,

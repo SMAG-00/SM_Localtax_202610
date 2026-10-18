@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { TabNav } from "@ltr/ui";
-import { GlossaryDelete, GlossaryForm, PhraseEditor } from "@/components/admin/DictionaryControls";
+import { GlossaryDelete, GlossaryForm, GlossaryVisibility, PhraseEditor } from "@/components/admin/DictionaryControls";
 import { SynonymDelete, SynonymForm, TermKey } from "@/components/admin/SynonymControls";
 import { EmptyNote, PageTitle, Panel, ToneChip } from "@/components/admin/ui";
 import { PHRASE_DICTIONARIES, isPhraseKind, readPhraseDictionary } from "@/lib/admin/dictionary-rules";
+import { glossaryWarnings } from "@/lib/admin/glossary-rules";
 import { SECTION_LABELS, labelOf } from "@/lib/admin/labels";
 import { listGlossary, readSetting } from "@/lib/server/admin/backoffice";
 import { listSynonyms } from "@/lib/server/admin/synonyms";
@@ -52,15 +53,16 @@ async function PhraseTab({ kind, db }: { kind: keyof typeof PHRASE_DICTIONARIES;
 
 async function GlossaryTab({ db }: { db: ReturnType<typeof serviceDb> }) {
   const terms = await listGlossary(db);
+  const shown = terms.filter((t) => t.visible).length;
   return (
     <div className="space-y-6">
-      <Panel id="glossary-add" title="용어 더하기" description="전문 용어와 쉬운 풀이 한 줄. 기사에 처음 나오는 문단에 풀이가 없으면 점검 패널이 경고합니다 (저장·발행은 됩니다).">
+      <Panel id="glossary-add" title="용어 더하기" description="전문 용어와 쉬운 풀이 한 줄. 기사에 처음 나오는 문단에 풀이가 없으면 점검 패널이 경고합니다 (저장·발행은 됩니다). 새 용어는 숨김으로 저장됩니다 — 감수를 마친 뒤 [공개하기]를 누르면 용어사전·용어 칩·기사 본문 풀이·검색에 보입니다.">
         <details>
           <summary className="min-h-11 cursor-pointer text-[15px] font-bold text-navy-800">새 용어 적기</summary>
           <GlossaryForm mode="create" />
         </details>
       </Panel>
-      <Panel id="glossary-list" title={`용어 ${terms.length}개`}>
+      <Panel id="glossary-list" title={`용어 ${terms.length}개 · 공개 ${shown}개`}>
         {terms.length === 0 && <EmptyNote>사전에 용어가 없습니다.</EmptyNote>}
         <ul className="space-y-3">
           {terms.map((t) => (
@@ -68,6 +70,7 @@ async function GlossaryTab({ db }: { db: ReturnType<typeof serviceDb> }) {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[17px] font-black text-navy-900 [overflow-wrap:anywhere]">{t.term}</span>
                 {t.reading && <span className="text-[14px] text-navy-600">({t.reading})</span>}
+                {t.visible ? <ToneChip tone="emerald">공개</ToneChip> : <ToneChip tone="plain">숨김</ToneChip>}
                 {t.jargon ? <ToneChip tone="amber">전문 용어</ToneChip> : <ToneChip tone="plain">일반 용어</ToneChip>}
                 {t.section.map((s) => (
                   <ToneChip key={s} tone="plain">
@@ -77,11 +80,21 @@ async function GlossaryTab({ db }: { db: ReturnType<typeof serviceDb> }) {
               </div>
               <p className="mt-1 text-[15px] text-navy-800 [overflow-wrap:anywhere]">{t.plain ? `쉬운 풀이: ${t.plain}` : "쉬운 풀이 없음"}</p>
               {t.related.length > 0 && <p className="text-[14px] text-navy-600 [overflow-wrap:anywhere]">관련 용어: {t.related.join(", ")}</p>}
+              {glossaryWarnings(t).length > 0 && (
+                <ul data-part="glossary-item-warnings" aria-label="확인할 문장" className="mt-2 list-disc space-y-0.5 pl-5 text-[14px] text-amber-800">
+                  {glossaryWarnings(t).map((w) => (
+                    <li key={`${w.id}-${w.field}`} className="[overflow-wrap:anywhere]">
+                      {w.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="mt-2 flex flex-wrap items-start gap-4">
                 <details className="min-w-0 flex-1">
                   <summary className="min-h-11 cursor-pointer text-[15px] font-bold text-navy-800">고치기</summary>
                   <GlossaryForm mode="patch" item={t} />
                 </details>
+                <GlossaryVisibility id={t.id} term={t.term} visible={t.visible} />
                 <GlossaryDelete id={t.id} term={t.term} />
               </div>
             </li>

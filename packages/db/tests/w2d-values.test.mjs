@@ -74,7 +74,9 @@ function search(query, args = {}) {
 }
 let seq = 0;
 const uniq = (p) => `${p}-${process.pid}-${++seq}`;
-async function glossary(cols) {
+/** 공개 용어 한 줄 (3단계 — 숨긴 용어는 검색 0, w2d-glossary 시험) */
+async function glossary(input) {
+  const cols = { visible: true, ...input };
   const keys = Object.keys(cols);
   const sql = `insert into public.glossary_terms (term, ${keys.join(", ")}) values ($1, ${keys.map((_, i) => `$${i + 2}`).join(", ")}) returning id`;
   return (await client.query(sql, [uniq("zzgold"), ...keys.map((k) => cols[k])])).rows[0].id;

@@ -174,7 +174,7 @@ test("시험 자료 — 공개 기사·트래커는 DB, 상황 카드(검색 별
 
   fx.car = await situation("car", { title: "차를 팔았어요·폐차했어요", subtitle: "돌려받을 자동차세가 있는지 확인합니다", aliases: ["차 팔았어요", "폐차", M] }, true);
   fx.hiddenSituation = await situation("hidden", { title: `${M} 감수 전 상황`, aliases: ["감수전별칭"] }, false);
-  const term = await api("POST", "/glossary", u.editor, { term: `${M} 취득세`, plain: "부동산을 살 때 내는 지방세", jargon: true, section: ["tax"] });
+  const term = await api("POST", "/glossary", u.editor, { term: `${M} 취득세`, plain: "부동산을 살 때 내는 지방세", jargon: true, section: ["tax"], visible: true });
   assert.equal(term.status, 201, show(term));
   fx.term = term.body.term.id;
   staff.trackRow("glossary_terms", fx.term);
@@ -231,7 +231,7 @@ test("b) 띄어쓰기 변형 같은 결과(화면) — '취득세'·'취득 세'
   assert.deepEqual(await page.$$eval('[data-part="hit-group"][data-kind="glossary"] [data-part="type-label"]', (els) => els.map((e) => e.textContent)), ["용어"]);
   const badges = await page.$$eval('[data-part="hit-group"][data-kind="article"] [data-search-hit]', (els) => els.map((e) => [e.getAttribute("data-content-type"), e.querySelector('[data-ui="article-type-badge"]')?.textContent]));
   assert.deepEqual(new Map(badges), new Map([["reported_news", "보도"], ["explainer", "해설"], ["guide", "가이드"]]));
-  assert.equal(await page.locator('[data-search-hit][data-kind="glossary"] a').count(), 0, "용어사전 화면(3단계) 전 — 용어 결과에 링크 0");
+  assert.equal(await page.locator('[data-search-hit][data-kind="glossary"] a').count(), 0, "기능 키 glossary가 꺼져 있으면 — 용어 결과에 링크 0 (켜진 모습은 site-glossary)");
   const articleLink = await page.locator(`[data-search-hit][data-ref="${fx.explainer.id}"] h3 a`).getAttribute("href");
   assert.equal(articleLink, `/news/${fx.explainer.slug}`);
   await context.close();

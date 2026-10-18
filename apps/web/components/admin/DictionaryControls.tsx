@@ -6,7 +6,7 @@ import { CheckboxField, DarkButton, TextField } from "@ltr/ui";
 import { adminApi, apiErrorDetails, apiErrorMessage } from "@/lib/admin/api-client";
 import { PHRASE_DICTIONARIES, phraseError, type PhraseKind } from "@/lib/admin/dictionary-rules";
 import type { FieldErrors } from "@/lib/admin/form-utils";
-import { glossaryFormToBody, type GlossaryForm as Form } from "@/lib/admin/glossary-rules";
+import { GLOSSARY_GUIDE, GLOSSARY_LIMITS, glossaryFormToBody, glossaryWarnings, type GlossaryForm as Form } from "@/lib/admin/glossary-rules";
 import { SECTION_LABELS } from "@/lib/admin/labels";
 import { ErrorSummary, FieldGroup, StatusNote, TextAreaField } from "./fields";
 import { MONO, OUTLINE_BUTTON } from "./ui";
@@ -95,11 +95,39 @@ export interface GlossaryItem {
   related: string[];
   section: string[];
   source: string | null;
+  visible: boolean;
 }
 
-const emptyForm: Form = { term: "", reading: "", definition: "", plain: "", jargon: true, relatedText: "", sections: [], source: "" };
+const emptyForm: Form = { term: "", reading: "", definition: "", plain: "", jargon: true, relatedText: "", sections: [], source: "", visible: false };
 
-/** 쉬운 말 사전 용어 더하기·고치기 (UX-01 ①) — 전문 용어로 표시하면 쉬운 풀이(60자 이하)가 필요하다 */
+/** 저장 경고 목록 (서버 응답 warnings) — 저장은 됐다 */
+function warningsOf(body: Record<string, unknown>): string[] {
+  const list = Array.isArray(body.warnings) ? body.warnings : [];
+  return list.flatMap((w) => (typeof w === "object" && w !== null && typeof (w as { message?: unknown }).message === "string" ? [(w as { message: string }).message] : []));
+}
+
+/** 입력 중 경고 — 저장 전에 미리 보인다 (서버와 같은 규칙 glossaryWarnings). 저장은 막지 않는다 */
+function LiveWarnings({ id, messages }: { id: string; messages: readonly string[] }) {
+  if (messages.length === 0) return null;
+  return (
+    <div id={id} data-part="glossary-live-warnings" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[15px] text-amber-800">
+      <p className="font-bold">저장 전에 확인해 주세요 (저장은 됩니다)</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-5">
+        {messages.map((m) => (
+          <li key={m} className="[overflow-wrap:anywhere]">
+            {m}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * 쉬운 말 사전 용어 더하기·고치기 (UX-01 ① · GLO-01) — 전문 용어로 표시하면 쉬운 풀이가 필요하다.
+ * 쉬운 풀이 60자 초과·풀이와 뜻의 숫자 + 단위는 경고만(입력 중에 미리, 저장 뒤에 서버 문장) — 저장은 된다. 120자를 넘으면 저장하지 않는다.
+ * 더하기 폼에서만 공개를 고른다(기본 숨김) — 고치기는 목록의 [공개하기]·[숨기기] 단추로
+ */
 export function GlossaryForm({ mode, item }: { mode: "create" | "patch"; item?: GlossaryItem }) {
   const hydrated = useHydrated();
   const router = useRouter();
@@ -121,15 +149,18 @@ export function GlossaryForm({ mode, item }: { mode: "create" | "patch"; item?: 
   const [errors, setErrors] = useState<FieldErrors>({});
   const [failure, setFailure] = useState<{ title: string; details: string[] } | null>(null);
   const [done, setDone] = useState("");
+  const [saved, setSaved] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const text = (key: "term" | "reading" | "definition" | "plain" | "relatedText" | "source") => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
   const plainLength = [...form.plain.trim()].length;
+  const live = glossaryWarnings({ plain: form.plain, definition: form.definition }).map((w) => w.message);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setFailure(null);
     setDone("");
+    setSaved([]);
     const v = glossaryFormToBody(form, base);
     if (!v.ok) {
       setErrors(v.errors);
@@ -141,7 +172,8 @@ export function GlossaryForm({ mode, item }: { mode: "create" | "patch"; item?: 
     const r = mode === "create" ? await adminApi("POST", "/api/admin/glossary", v.body) : await adminApi("PATCH", `/api/admin/glossary/${item!.id}`, v.body);
     setPending(false);
     if (r.status === 200 || r.status === 201) {
-      setDone(mode === "create" ? `용어를 더했습니다 — ${form.term.trim()}` : "저장했습니다");
+      setDone(mode === "create" ? `용어를 더했습니다 — ${form.term.trim()}${form.visible ? " (공개)" : " (숨김 — 목록에서 공개할 수 있습니다)"}` : "저장했습니다");
+      setSaved(warningsOf(r.body));
       if (mode === "create") setForm(emptyForm);
       router.refresh();
       return;
@@ -158,15 +190,16 @@ export function GlossaryForm({ mode, item }: { mode: "create" | "patch"; item?: 
       <TextField
         id={`${base}-plain`}
         label="쉬운 풀이 (한 줄)"
-        hint={`60자 이하 — 지금 ${plainLength}자. 기사에 이 용어가 처음 나오는 문단에 이 풀이가 없으면 점검 패널이 경고합니다`}
+        hint={`${GLOSSARY_GUIDE.plainChars}자 이하로 씁니다 — 지금 ${plainLength}자. 넘어도 저장은 되고 경고만 합니다(${GLOSSARY_LIMITS.plain}자까지). 세율·공제액·요건 숫자는 넣지 않습니다. 기사에 이 용어가 처음 나오는 문단에 이 풀이가 없으면 점검 패널이 경고합니다`}
         value={form.plain}
         onChange={text("plain")}
         error={errors[`${base}-plain`]}
       />
       <TextAreaField id={`${base}-definition`} label="뜻 (자세히)" value={form.definition} onChange={text("definition")} />
+      <LiveWarnings id={`${base}-warnings`} messages={live} />
       <div className="grid gap-3 sm:grid-cols-2">
         <TextField id={`${base}-related`} label="관련 용어" hint="쉼표로 나눕니다" value={form.relatedText} onChange={text("relatedText")} error={errors[`${base}-related`]} />
-        <TextField id={`${base}-source`} label="근거" hint="법령 조문 등" value={form.source} onChange={text("source")} />
+        <TextField id={`${base}-source`} label="출처" hint="법령 조문·자료 이름 등" value={form.source} onChange={text("source")} />
       </div>
       <FieldGroup legend="분야">
         <div className="grid gap-1 sm:grid-cols-4">
@@ -187,12 +220,45 @@ export function GlossaryForm({ mode, item }: { mode: "create" | "patch"; item?: 
         checked={form.jargon}
         onChange={(e) => setForm((f) => ({ ...f, jargon: e.target.checked }))}
       />
+      {mode === "create" && (
+        <CheckboxField
+          id={`${base}-visible`}
+          label="바로 공개 — 용어사전·용어 칩·본문 풀이·검색에 보입니다 (감수 전이면 비워 두세요)"
+          checked={form.visible === true}
+          onChange={(e) => setForm((f) => ({ ...f, visible: e.target.checked }))}
+        />
+      )}
       {failure && <ErrorSummary title={failure.title} messages={failure.details} />}
       {done && <StatusNote>{done}</StatusNote>}
+      {saved.length > 0 && <ErrorSummary id={`${base}-saved-warnings`} title="저장했지만 확인할 문장이 있습니다" messages={saved} />}
       <DarkButton type="submit" disabled={pending || !hydrated}>
         {pending ? "저장하는 중" : mode === "create" ? "용어 더하기" : "저장"}
       </DarkButton>
     </form>
+  );
+}
+
+/** 공개·숨김 단추 — 감사 로그에 glossary.publish·glossary.unpublish가 남는다. 공개 화면에 바로 반영된다 */
+export function GlossaryVisibility({ id, term, visible }: { id: number; term: string; visible: boolean }) {
+  const hydrated = useHydrated();
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+  async function toggle() {
+    setPending(true);
+    setError("");
+    const r = await adminApi("PATCH", `/api/admin/glossary/${id}`, { visible: !visible });
+    setPending(false);
+    if (r.status === 200) return router.refresh();
+    setError(apiErrorMessage(r));
+  }
+  return (
+    <div className="space-y-2">
+      <button type="button" className={OUTLINE_BUTTON} disabled={pending || !hydrated} onClick={() => void toggle()} aria-label={`용어 ‘${term}’ ${visible ? "숨기기" : "공개하기"}`}>
+        {pending ? "바꾸는 중" : visible ? "숨기기" : "공개하기"}
+      </button>
+      {error && <ErrorSummary title={error} messages={[]} />}
+    </div>
   );
 }
 

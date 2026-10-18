@@ -6,6 +6,7 @@ import type { LocalTopic } from "@ltr/ui";
 import type { ArticleListItem } from "./cards";
 import { subsectionLinks } from "./chrome-logic";
 import { LIMITS, LOCAL_BLOCK_TOPICS, NEWS_TAB_LABELS, SECTION_INFO, SECTION_KEYS, type SectionKey } from "./constants";
+import type { TermChip } from "./glossary-logic";
 import type { PublicCategoryRow } from "./rows";
 import type { HotBlock } from "./rankings";
 import type { SituationCard } from "./situation-logic";
@@ -75,8 +76,8 @@ export interface HubData {
   hot: HotBlock | null;
   /** 상황 카드 줄 — 0장이면 빈 목록(줄 숨김, UX-05) */
   situations: SituationCard[];
-  /** 관련 용어 칩 */
-  terms: { id: number; term: string; plain: string | null }[];
+  /** 관련 용어 칩 — 공개 용어만(RLS), 용어사전이 열렸으면 용어 쪽 링크 (W2-d 3단계) */
+  terms: TermChip[];
   /** 분야 지방세 포인트 (01B CORE-02) — W3 전에는 null */
   taxPoint: null;
   /** 고른 편집 분야에 기사가 0건 — 허브 안내 + noindex (CAT-02 '빈 목록 색인 0') */

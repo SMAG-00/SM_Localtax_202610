@@ -90,7 +90,8 @@ async function world(fn) {
     const trackerPublic = await card({ kind: "tracker", amendment_id: amPublic.id, starts_on: kstDay(-3), ends_on: null });
     const trackerDraft = await card({ kind: "tracker", amendment_id: amDraft.id, starts_on: kstDay(-3), ends_on: null });
 
-    const term = await insert("glossary_terms", { term: uniq("과세표준"), plain: "세금을 매기는 기준 금액", jargon: true });
+    // 공개 용어 (W2-d 3단계 — 숨긴 용어 0행은 w2d-glossary 시험이 본다)
+    const term = await insert("glossary_terms", { term: uniq("과세표준"), plain: "세금을 매기는 기준 금액", jargon: true, visible: true });
     const tagPub = await insert("tags", { name: uniq("취득세"), slug: uniq("acq") });
     const tagDraft = await insert("tags", { name: uniq("초안 태그"), slug: uniq("draft") });
     await insert("article_tags", { article_id: pub.id, tag_id: tagPub.id });

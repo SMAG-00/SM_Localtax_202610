@@ -205,9 +205,11 @@ describe("행 → 보기 값", () => {
     expect(searchHitView(row({ ...r, meta: { source_url: "javascript:alert(1)" } }), CLOSED_FEATURES)).toMatchObject({ sourceUrl: null });
   });
 
-  test("용어 — 용어사전 화면(3단계) 전에는 모든 기능을 켜도 링크 0", () => {
-    const v = searchHitView(row({ kind: "glossary", ref: "7", slug: "7", title: "취득세", section: null, content_type: null, meta: { reading: null, sections: ["tax", "nope"] } }), ALL_OPEN);
-    expect(v).toMatchObject({ kind: "glossary", href: null, typeLabel: "용어", sections: ["tax"] });
+  test("용어 — 기능 키 glossary가 꺼지면 링크 0(용어와 쉬운 풀이만), 켜지면 그 용어의 용어사전 쪽 /glossary/[번호] (3단계)", () => {
+    const r = row({ kind: "glossary", ref: "7", slug: "7", title: "취득세", section: null, content_type: null, meta: { reading: null, sections: ["tax", "nope"] } });
+    expect(searchHitView(r, { ...ALL_OPEN, glossary: false })).toMatchObject({ kind: "glossary", href: null, typeLabel: "용어", sections: ["tax"] });
+    expect(searchHitView(r, CLOSED_FEATURES)?.href).toBeNull();
+    expect(searchHitView(r, { ...CLOSED_FEATURES, glossary: true })?.href).toBe("/glossary/7");
   });
 
   test("지역 — region_hubs가 켜졌을 때만 /local/[sido](/[sigungu]), 시·군·구는 상위 시·도 주소가 없으면 그리지 않는다", () => {

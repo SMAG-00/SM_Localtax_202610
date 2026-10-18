@@ -3,6 +3,7 @@ import type { LocalTopic } from "@ltr/ui";
 import type { ArticleListItem } from "./cards";
 import { HOT_CATEGORY, LIMITS, LOCAL_BLOCK_TOPICS, POLICY_LINKS, SECTION_INFO, isLocalTopic, type SectionKey } from "./constants";
 import { publicDb, rowsOf } from "./db";
+import { termChip } from "./glossary-logic";
 import { ALL_TAB, hubTabs, localBlocks, newsTabs, pageNumber, type HubData, type HubTab } from "./hub-logic";
 import { getHotBlock, type HotBlock } from "./rankings";
 import { readArticleList, readCategories, readCategoryCounts, readPublicSettings, readTopicCounts } from "./reads";
@@ -45,7 +46,7 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     latest: latest.items,
     hot,
     situations: hubSituationCards(situations, section, settings.hubSituationLimit),
-    terms: terms.map((t) => ({ id: num(t.id), term: t.term, plain: t.plain })),
+    terms: terms.map((t) => termChip(t, settings.features)),
     taxPoint: null,
     noindex: topic !== null && latest.items.length === 0,
   };

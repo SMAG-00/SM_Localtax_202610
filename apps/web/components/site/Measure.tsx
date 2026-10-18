@@ -184,3 +184,17 @@ export function MeasureClicks({
     </div>
   );
 }
+
+/**
+ * 용어 쪽(/glossary/[번호])을 열면 glossary_opened(용어 번호) 1건 (PRD-01A 12장 '용어 수요' — W2-d 3단계).
+ * 분야는 그 용어의 첫 분야(없으면 비운다 — 이 이벤트의 분야 칸은 선택). 같은 용어를 다시 그려도 한 번
+ */
+export function MeasureGlossaryTerm({ termId, section }: { termId: number; section: SectionKey | null }) {
+  const sent = useRef<number | null>(null);
+  useEffect(() => {
+    if (sent.current === termId) return;
+    sent.current = termId;
+    void track("glossary_opened", { ...(section ? { section } : {}), props: { term_id: termId } });
+  }, [termId, section]);
+  return null;
+}

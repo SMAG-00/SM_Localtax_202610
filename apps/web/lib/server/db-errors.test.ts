@@ -38,6 +38,15 @@ describe("DB 오류 변환", () => {
     });
   });
 
+  test("쉬운 풀이 한도 (W2-d 3단계) — 한도를 넘으면 422와 한국어 문장, 옛 60자 제약 이름은 더 없다", () => {
+    expect(mapDbError({ code: "23514", message: 'new row for relation "glossary_terms" violates check constraint "glossary_terms_plain_max"' })).toMatchObject({
+      status: 422,
+      message: expect.stringContaining("쉬운 풀이는 120자까지"),
+      constraint: "glossary_terms_plain_max",
+    });
+    expect(mapDbError({ code: "23514", message: 'new row for relation "glossary_terms" violates check constraint "glossary_terms_plain_check"' }).message).not.toContain("60자 이하여야");
+  });
+
   test("트리거가 낸 한국어 규칙 문장은 409로 그대로", () => {
     const message = "편집 승인 역할(editor)과 편집국 외 역할은 한 사람에게 함께 줄 수 없습니다 (ACC-04 — 이미 ad_ops, 새로 editor)";
     expect(mapDbError({ code: "23514", message })).toEqual({ status: 409, message });

@@ -2,7 +2,23 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, test } from "vitest";
-import { FEATURE_KEYS, HOME_SECTION_KEYS, NEXT_ACTION_KEYS, POLICY_LINKS, PUBLIC_SETTING_KEYS, SECTION_INFO, UTILITY_LINKS, categoryHref, isBlockedPath, isOpenPath, type FeatureKey, type Features } from "./constants";
+import {
+  FEATURE_KEYS,
+  HOME_SECTION_KEYS,
+  NEXT_ACTION_KEYS,
+  POLICY_LINKS,
+  PUBLIC_SETTING_KEYS,
+  SECTION_INFO,
+  UTILITY_LINKS,
+  categoryHref,
+  glossaryAnchor,
+  glossaryIndexHref,
+  glossaryTermHref,
+  isBlockedPath,
+  isOpenPath,
+  type FeatureKey,
+  type Features,
+} from "./constants";
 
 const DOCS = path.resolve(__dirname, "../../../../../docs");
 const DESIGN = fs.readFileSync(path.join(DOCS, "dev", "W2-b_설계.md"), "utf8");
@@ -121,7 +137,7 @@ describe("열린 화면 판정 isOpenPath (HOME-02 빈 링크 0 · HELP-05 · �
     for (const href of paths) expect(isOpenPath(href, off), href).toBe(false);
   });
 
-  test.each(["/glossary", "/glossary/abc", "/my", "/brief", "/local/events", "/about/terms", "/about/advertise", "/help/faq"])(
+  test.each(["/my", "/brief", "/local/events", "/about/terms", "/about/advertise", "/help/faq"])(
     "%s — 아직 없는 화면은 기능을 모두 켜도 닫힘",
     (href) => expect(isOpenPath(href, features([...FEATURE_KEYS]))).toBe(false),
   );
@@ -133,6 +149,23 @@ describe("열린 화면 판정 isOpenPath (HOME-02 빈 링크 0 · HELP-05 · �
     }
     // 다른 기능을 모두 켜도 video_list가 꺼져 있으면 닫힘
     expect(isOpenPath("/news/video", features(FEATURE_KEYS.filter((k) => k !== "video_list")))).toBe(false);
+  });
+
+  test("용어사전(/glossary · /glossary/[번호])은 기능 키 glossary가 켜졌을 때만 열린다 — 공개 승인 전에는 링크 0 (W2-d 3단계)", () => {
+    for (const href of ["/glossary", "/glossary?section=tax", "/glossary/12", "/glossary#term-12"]) {
+      expect(isOpenPath(href, off), href).toBe(false);
+      expect(isOpenPath(href, features(["glossary"])), href).toBe(true);
+    }
+    expect(isOpenPath("/glossary/12", features(FEATURE_KEYS.filter((k) => k !== "glossary")))).toBe(false);
+    // 비슷한 이름의 다른 주소는 이 기능과 상관없다
+    expect(isOpenPath("/glossary-old", off)).toBe(true);
+  });
+
+  test("용어사전 주소 — 색인(분야 거르개)·용어 쪽·색인의 용어 자리", () => {
+    expect(glossaryIndexHref(null)).toBe("/glossary");
+    expect(glossaryIndexHref("finance")).toBe("/glossary?section=finance");
+    expect(glossaryTermHref(12)).toBe("/glossary/12");
+    expect(glossaryAnchor(12)).toBe("term-12");
   });
 
   test("기능을 켜면 그 화면만 열린다 — 계산기·편집 원칙·트래커 상세·지자체 허브", () => {

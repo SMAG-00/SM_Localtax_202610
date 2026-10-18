@@ -96,10 +96,12 @@ export interface GlossaryRow {
   related: string[];
   section: string[];
   source: string | null;
+  /** 공개 상태 (W2-d 3단계) — 새 용어는 false */
+  visible: boolean;
   updated_at: string;
 }
 
-const GLOSSARY_COLUMNS = "id, term, reading, definition, plain, jargon, related, section, source, updated_at";
+const GLOSSARY_COLUMNS = "id, term, reading, definition, plain, jargon, related, section, source, visible, updated_at";
 
 export async function listGlossary(db: Db): Promise<GlossaryRow[]> {
   return rows<GlossaryRow>(db.from("glossary_terms").select(GLOSSARY_COLUMNS).order("term").limit(1000), "glossary_terms 목록");

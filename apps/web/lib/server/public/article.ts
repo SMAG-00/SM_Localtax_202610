@@ -35,6 +35,8 @@ import {
 import { regionLabel, sponsorBadgeOf, trackerState, type ArticleListItem, type TrackerState } from "./cards";
 import { CONTENT_TYPE_NAMES, LIMITS, POLICY_LINKS, SECTION_INFO, amendmentHref, categoryHref, isSectionKey, partnerHref, personHref, situationHref, type SectionKey } from "./constants";
 import { publicDb, rowsOf } from "./db";
+import { readTipTerms } from "./glossary";
+import type { TipTerm } from "@/lib/site/glossary-tips";
 import { firstPlayableVideo, type MediaView } from "./media-logic";
 import { readPopularSidebar } from "./rankings";
 import { readArticleList, readCategories, readPublicSettings, readRegions } from "./reads";
@@ -118,6 +120,8 @@ export interface ArticleDetail {
   /** 많이 본 기사 사이드바 (ART-11) — 지금 보는 기사를 뺀 popular_rules.sidebar_size건, 집계 전이면 빈 목록 */
   popular: ArticleListItem[];
   policyLinks: { key: string; label: string; href: string }[];
+  /** 본문 툴팁 용어 (GLO-02 — W2-d 3단계) — 쉬운 풀이가 있는 공개 용어. 화면이 본문 첫 등장에만 붙인다(lib/site/glossary-tips.ts) */
+  glossary: TipTerm[];
   /** 공유 미리보기 — 카드뉴스는 첫 장 글을 설명으로 (ART-03 '공유 미리보기에 첫 장') */
   share: { title: string; description: string; image: string | null; url: string };
   view: ArticleView;
@@ -156,7 +160,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   // 기자와 「지방세로 읽기」 서명 감수위원 — 공개 인물만 읽힌다(RLS). 비공개 감수위원이면 박스 0 (BR-03)
   const personIds = [...new Set([a.author_id, lens?.reviewed_by ?? null].filter((x): x is number => x !== null).map(num))];
 
-  const [settings, categories, regions, people, partner, media, sources, corrections, revisions, tagRows, situation, popular] = await Promise.all([
+  const [settings, categories, regions, people, partner, media, sources, corrections, revisions, tagRows, situation, popular, glossary] = await Promise.all([
     readPublicSettings(),
     readCategories(),
     readRegions(),
@@ -169,6 +173,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     rowsOf<{ tag_id: number }>(db.from("article_tags").select("tag_id").eq("article_id", id), "태그"),
     rowsOf<{ slug: string }>(db.from("situations").select("slug").contains("article_ids", [id]).order("sort").limit(1), "연결 상황"),
     readPopularSidebar(id),
+    readTipTerms(),
   ]);
 
   const category = a.category_id === null ? undefined : categories.find((c) => num(c.id) === num(a.category_id));
@@ -290,6 +295,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     product: null,
     popular,
     policyLinks: POLICY_LINKS.filter((p) => settings.features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
+    glossary,
     share: { title, description: shareDescription(a.summary ?? "", slides, badge), image: shareImage, url: view.url },
     view,
     facts,

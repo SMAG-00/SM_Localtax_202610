@@ -309,7 +309,7 @@ before(async () => {
     ["termTax", "과세표준", "세금을 매기는 기준 금액", "tax"],
     ["termRe", "관리처분인가", "재건축·재개발에서 새 집 배분 계획을 구청이 승인하는 것", "realestate"],
   ]) {
-    const r = await expectStatus(api("POST", "/glossary", u.editor, { term: `${term} ${staff.run}`, plain, section: [section] }), 201, `용어 ${term}`);
+    const r = await expectStatus(api("POST", "/glossary", u.editor, { term: `${term} ${staff.run}`, plain, section: [section], visible: true }), 201, `용어 ${term}`);
     fx[key] = Number(r.body.term.id);
     staff.trackRow("glossary_terms", fx[key]);
   }

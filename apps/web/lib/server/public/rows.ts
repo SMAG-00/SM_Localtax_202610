@@ -225,6 +225,7 @@ export interface PublicSourceRow {
 export const SOURCE_COLUMNS =
   "id, article_id, kind, title, source_url, source_name, provider, last_verified_at, license_status, published_on, reference_date, supersedes_id";
 
+/** 용어사전 공개 칸 — 공개 읽기(RLS)는 공개 상태(visible) 용어만 준다 (W2-d 3단계) */
 export interface GlossaryRow {
   id: number;
   term: string;
@@ -233,8 +234,9 @@ export interface GlossaryRow {
   plain: string | null;
   related: string[];
   section: string[];
+  source: string | null;
 }
-export const GLOSSARY_COLUMNS = "id, term, reading, definition, plain, related, section";
+export const GLOSSARY_COLUMNS = "id, term, reading, definition, plain, related, section, source";
 
 /** 바깥(DB)에서 온 bigint는 글자로 올 수 있다 — 번호로 맞춘다 */
 export const num = (v: unknown): number => (typeof v === "number" ? v : Number(v));

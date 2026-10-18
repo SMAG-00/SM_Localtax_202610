@@ -93,7 +93,8 @@ beforeAll(async () => {
     w.tracker.id,
     snap.id,
   ]);
-  w.term = await insert("glossary_terms", { term: `${M} 취득세`, plain: "부동산을 살 때 내는 지방세" }, "glossary");
+  // 공개 용어 (W2-d 3단계 — 숨긴 용어 0은 glossary.itest·DB 시험 w2d-glossary)
+  w.term = await insert("glossary_terms", { term: `${M} 취득세`, plain: "부동산을 살 때 내는 지방세", visible: true }, "glossary");
   w.region = await insert("regions", { code: "1179700000", parent_code: "1100000000", level: "sigungu", slug: `it-search-gu-${RUN}`, name: `${M}구` }, "regions");
 
   globalThis.fetch = (input, init) => {

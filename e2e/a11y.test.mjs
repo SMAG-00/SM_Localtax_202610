@@ -62,7 +62,7 @@ async function seedHome() {
     [`e2e-a11y-guide-${staff.run}`, reporter.personId, interpretations],
   );
   staff.trackArticle(guide[0].id);
-  const termRow = (await db.query("insert into public.glossary_terms (term, plain, section) values ($1, '세금을 매기는 기준 금액', '{tax}') returning id", [`접근성 과세표준 ${staff.run}`])).rows[0];
+  const termRow = (await db.query("insert into public.glossary_terms (term, plain, section, visible) values ($1, '세금을 매기는 기준 금액', '{tax}', true) returning id", [`접근성 과세표준 ${staff.run}`])).rows[0];
   staff.trackRow("glossary_terms", termRow.id);
   const checks = JSON.stringify([{ title: "자동차세를 1년치 미리 냈는지", when: "판 날", note: "납부 내역을 찾아 둡니다" }, { title: "등록 말소일" }, { title: "환급 받을 계좌" }]);
   const situation = (

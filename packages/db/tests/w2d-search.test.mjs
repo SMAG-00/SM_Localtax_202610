@@ -67,7 +67,8 @@ async function fixture() {
   const situation = (over) =>
     insert("situations", { slug: uniq("s"), section: "tax", title: "검색 시험 상황", pictogram: "car-sold", checks: CHECKS, visible: true, reviewer_id: reviewer.id, reviewed_at: new Date(), ...over });
   const amendment = (over) => insert("amendments", { slug: uniq("am"), title: "검색 시험 개정안", status: "public", ...over });
-  const term = (over) => insert("glossary_terms", { term: uniq("용어"), ...over });
+  // 용어는 공개(visible) — 숨긴 용어는 w2d-glossary 시험이 본다 (3단계)
+  const term = (over) => insert("glossary_terms", { term: uniq("용어"), visible: true, ...over });
   let code = 0;
   const sigungu = (over) => insert("regions", { code: `11${String(800 + ++code).padStart(3, "0")}00000`, parent_code: "1100000000", level: "sigungu", slug: uniq("gu"), name: "검색시험구", ...over });
   return { reporter, reviewer, article, situation, amendment, term, sigungu };

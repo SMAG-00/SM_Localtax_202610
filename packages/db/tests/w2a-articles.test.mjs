@@ -185,10 +185,12 @@ test("사진 권리 확인(confirmed)은 출처·촬영자·이용 조건·확�
     assert.ok((await tryInsert("media", { path: "x.jpg", kind: "photo" })).ok, "미확인 상태로는 저장된다");
   }));
 
-test("용어사전의 쉬운 풀이는 60자까지 — 61자는 거부 (PRD-01A 6.1)", () =>
+// W2-d 3단계에서 바꿨다 — GLO-01 '61자는 저장 경고'(편집 화면·API가 경고)라 DB는 61자를 받고, 한도(W2-d 설계 2.5 glossary.plain_max 120자)만 막는다.
+// 경계 시험은 w2d-glossary.test.mjs
+test("용어사전의 쉬운 풀이 61자는 저장된다 — 한도(120자)를 넘으면 거부 · 분야는 4종 (PRD-01A 6.1 · GLO-01)", () =>
   tx(async () => {
-    assert.ok((await tryInsert("glossary_terms", { term: uniq("과세표준"), plain: "가".repeat(60) })).ok);
-    assert.equal((await tryInsert("glossary_terms", { term: uniq("과세표준"), plain: "가".repeat(61) })).ok, false);
+    assert.ok((await tryInsert("glossary_terms", { term: uniq("과세표준"), plain: "가".repeat(61) })).ok);
+    assert.equal((await tryInsert("glossary_terms", { term: uniq("과세표준"), plain: "가".repeat(121) })).ok, false);
     assert.equal((await tryInsert("glossary_terms", { term: uniq("x"), section: ["tax", "tourism"] })).ok, false, "분야 4종 밖");
   }));
 

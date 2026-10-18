@@ -205,7 +205,7 @@ test("금지 표현·공포 표현 — 사전에 더하면 점검 API가 바로 
   assert.ok(Array.isArray(all.body.glossary));
 });
 
-test("쉬운 말 사전 — 용어를 더하면 '풀이 없는 첫 등장' 경고가 생기고 지우면 사라진다 · 풀이 61자·풀이 없는 전문 용어 422", async () => {
+test("쉬운 말 사전 — 용어를 더하면 '풀이 없는 첫 등장' 경고가 생기고 지우면 사라진다 · 풀이 121자·풀이 없는 전문 용어 422 · 61자·숫자 + 단위는 저장 경고(201·200) · 공개·숨김 감사 로그", async () => {
   const term = `시험용어${staff.run}`;
   const created = await api("POST", "/articles", u.reporter, {
     slug: `e2e-glossary-${staff.run}`,
@@ -222,20 +222,42 @@ test("쉬운 말 사전 — 용어를 더하면 '풀이 없는 첫 등장' 경�
   };
   assert.equal(await jargon(), 0);
 
-  assert.equal((await api("POST", "/glossary", u.editor, { term, plain: "가".repeat(61) })).status, 422, "쉬운 풀이 61자");
+  // W2-d 3단계 — GLO-01 '61자는 저장 경고': 121자(저장 한도 120자 밖)만 거부, 61자는 저장되고 경고 (W2-d 설계 2.5)
+  assert.equal((await api("POST", "/glossary", u.editor, { term, plain: "가".repeat(121) })).status, 422, "쉬운 풀이 121자");
   assert.equal((await api("POST", "/glossary", u.editor, { term, jargon: true })).status, 422, "전문 용어인데 풀이 없음");
-  const add = await api("POST", "/glossary", u.editor, { term, plain: "가".repeat(60), section: ["tax"] });
+  const add = await api("POST", "/glossary", u.editor, { term, plain: "가".repeat(61), section: ["tax"] });
   assert.equal(add.status, 201, show(add));
   const termId = add.body.term.id;
   staff.trackRow("glossary_terms", termId);
+  assert.equal(add.body.term.visible, false, "새 용어는 숨김");
+  assert.deepEqual(add.body.warnings.map((w) => [w.id, w.field]), [["glo01.plain-long", "plain"]]);
+  assert.match(add.body.warnings[0].message, /61자/);
+  assert.equal((await one("select char_length(plain) n from public.glossary_terms where id = $1", [termId])).n, 61, "61자 그대로 저장");
   assert.equal(await auditCount(u.editor.id, "glossary.create", `glossary_terms:${termId}`), 1);
   assert.equal(await jargon(), 1, "다음 점검부터 풀이 없는 첫 등장 경고");
   assert.equal((await api("POST", "/glossary", u.editor, { term, plain: "다른 풀이" })).status, 409, "같은 용어");
 
   const edit = await api("PATCH", `/glossary/${termId}`, u.editor, { plain: "쉬운 풀이" });
   assert.equal(edit.status, 200, show(edit));
+  assert.deepEqual(edit.body.warnings, [], "60자 이하·숫자 없음 — 경고 0");
   assert.deepEqual((await lastAudit(u.editor.id, "glossary.update", `glossary_terms:${termId}`)).after, { plain: "쉬운 풀이" });
   assert.equal((await api("PATCH", `/glossary/${termId}`, u.reporter, { plain: "x" })).status, 403);
+  // 숫자 + 단위 — 풀이·뜻 칸마다 경고, 저장은 된다
+  const numbers = await api("PATCH", `/glossary/${termId}`, u.editor, { plain: "가짜 풀이 3%", definition: "가짜 뜻 85㎡" });
+  assert.equal(numbers.status, 200, show(numbers));
+  assert.deepEqual(numbers.body.warnings.map((w) => [w.id, w.field]), [["glo01.number-unit", "plain"], ["glo01.number-unit", "definition"]]);
+  // 공개·숨김 — 따로 감사 로그(glossary.publish·glossary.unpublish), 내용 고치기 로그는 늘지 않는다
+  const updates = await auditCount(u.editor.id, "glossary.update", `glossary_terms:${termId}`);
+  const shown = await api("PATCH", `/glossary/${termId}`, u.editor, { visible: true });
+  assert.equal(shown.status, 200, show(shown));
+  assert.equal(shown.body.term.visible, true);
+  assert.deepEqual((await lastAudit(u.editor.id, "glossary.publish", `glossary_terms:${termId}`)).after, { visible: true });
+  assert.equal((await api("PATCH", `/glossary/${termId}`, u.editor, { visible: false })).status, 200);
+  const hid = await lastAudit(u.editor.id, "glossary.unpublish", `glossary_terms:${termId}`);
+  assert.deepEqual([hid.before, hid.after], [{ visible: true }, { visible: false }]);
+  assert.equal(await auditCount(u.editor.id, "glossary.update", `glossary_terms:${termId}`), updates, "공개 상태만 바꾸면 내용 고치기 로그 0");
+  assert.equal((await api("PATCH", `/glossary/${termId}`, u.reporter, { visible: true })).status, 403, "기자는 공개 상태를 바꾸지 못한다");
+  assert.equal((await api("PATCH", `/glossary/${termId}`, u.editor, { visible: "yes" })).status, 422);
 
   const del = await api("DELETE", `/glossary/${termId}`, u.editor);
   assert.equal(del.status, 200, show(del));

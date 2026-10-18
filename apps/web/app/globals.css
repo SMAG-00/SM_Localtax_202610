@@ -3,3 +3,16 @@
 
 /* packages/ui의 컴포넌트에서 쓰는 클래스도 Tailwind가 찾도록 */
 @source "../../../packages/ui/src";
+
+/*
+ * 본문 용어 풀이 (GLO-02 — components/site/GlossaryTip.tsx) — 풀이 상자는 평소 숨김(첫 화면 글자·가로 스크롤에 들지 않는다).
+ * JS가 없어도 마우스를 올리거나 키보드로 포커스하면 열린다. 보조 스크립트가 붙으면(data-enhanced) 열림 표시(data-open)만 따른다 — 누르기·Esc 닫기
+ */
+[data-tip-pop] {
+  display: none;
+}
+[data-glossary-tip]:not([data-enhanced]):hover [data-tip-pop],
+[data-glossary-tip]:not([data-enhanced]):focus-within [data-tip-pop],
+[data-glossary-tip][data-open] [data-tip-pop] {
+  display: block;
+}

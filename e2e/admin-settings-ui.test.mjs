@@ -2,6 +2,7 @@
 //  a) 역할별 메뉴 — 편집 책임자: 분야·사전(제휴사 편집 메뉴 0, 제휴사 목록은 읽기만), 관리자: + 설정·회원·역할, 광고 담당: 제휴사
 //  b) 회원·역할 화면 — 편집 책임자 + 광고 담당 겸직은 화면이 막고 사유를 보인다(역할 API 호출 0·DB 바뀜 0). 화면이 본 역할이 낡았으면 서버 409를 보인다
 //  c) 사전 화면에서 금지 표현을 더하면 기사 편집 화면의 점검 패널이 그 표현을 차단 항목으로 보이고, 빼면 사라진다 (배포 없음)
+//  c2) 쉬운 말 사전(W2-d 3단계 — GLO-01) — 쉬운 풀이 61자·풀이와 뜻의 숫자 + 단위는 입력 중·저장 뒤 경고, 저장은 된다(새 용어는 숨김) · [공개하기]·[숨기기] 감사 로그
 //  d) 분야 화면 — 아래로 버튼이 순서를 바꾼다
 //  e) 360·640px — 새 화면 전부 가로 스크롤 0
 // standalone 빌드를 띄우고 로컬 Supabase에 붙인다. 모두가 같이 쓰는 사전·분야 순서는 끝나면 되돌리고, 만든 행은 지운다 (e2e/lib/staff.mjs).
@@ -230,6 +231,48 @@ test("c) 사전 화면에서 금지 표현을 더하면 기사 편집 화면 점
 
   await open(page, `/admin/articles/${articleId}`);
   assert.ok(!(await blockerRules(page)).includes("ux01.forbidden-phrase"), "사전에서 빼면 다음 점검부터 막히지 않는다");
+});
+
+// ── c2) 쉬운 말 사전 — 저장 경고·공개 상태 (W2-d 3단계 — GLO-01) ─────────────
+
+test("c2) 쉬운 말 사전 — 쉬운 풀이 61자·숫자 + 단위는 입력 중·저장 뒤 경고, 저장은 된다(숨김) · [공개하기]·[숨기기]는 감사 로그에 남는다", async () => {
+  const term = `가짜용어화면${staff.run}`;
+  const page = await login(u.editor);
+  await open(page, "/admin/dictionaries?tab=glossary");
+  await page.locator("#glossary-add summary").click();
+  await page.fill("#glossary-new-term", term);
+  await page.fill("#glossary-new-plain", "가".repeat(60));
+  assert.equal(await page.locator("#glossary-new-warnings").count(), 0, "60자는 경고 0");
+  await page.fill("#glossary-new-plain", "가".repeat(61));
+  await page.locator("#glossary-new-warnings").filter({ hasText: "쉬운 풀이가 61자입니다" }).waitFor();
+  await page.fill("#glossary-new-definition", "가짜 뜻 3%와 2단계");
+  await page.locator("#glossary-new-warnings").filter({ hasText: "뜻에 숫자와 단위가 있습니다 (‘3%’)" }).waitFor();
+  assert.equal(await page.locator("#glossary-new-plain").getAttribute("aria-invalid"), null, "경고는 칸 오류가 아니다");
+  await page.getByRole("button", { name: "용어 더하기" }).click();
+  await page.getByRole("status").filter({ hasText: `용어를 더했습니다 — ${term} (숨김` }).waitFor();
+  const saved = page.locator("#glossary-new-saved-warnings");
+  await saved.filter({ hasText: "저장했지만 확인할 문장이 있습니다" }).waitFor();
+  assert.deepEqual((await saved.locator("li").allInnerTexts()).length, 2, "61자 경고 + 숫자 + 단위 경고");
+
+  const row = await one("select id, char_length(plain) as n, visible from public.glossary_terms where term = $1", [term]);
+  assert.ok(row, "저장되었다");
+  staff.trackRow("glossary_terms", row.id);
+  assert.deepEqual([row.n, row.visible], [61, false], "61자 그대로, 숨김");
+
+  const item = page.getByTestId(`glossary-${row.id}`);
+  await item.getByText("숨김", { exact: true }).waitFor();
+  await item.locator('[data-part="glossary-item-warnings"]').filter({ hasText: "61자" }).waitFor();
+  await page.getByRole("button", { name: `용어 ‘${term}’ 공개하기` }).click();
+  await page.getByRole("button", { name: `용어 ‘${term}’ 숨기기` }).waitFor();
+  await item.getByText("공개", { exact: true }).waitFor();
+  assert.equal((await one("select visible from public.glossary_terms where id = $1", [row.id])).visible, true);
+  const audit = (action) => one("select count(*)::int n from public.audit_logs where actor = $1 and action = $2 and target = $3", [`user:${u.editor.id}`, action, `glossary_terms:${row.id}`]);
+  assert.equal((await audit("glossary.publish")).n, 1);
+  await page.getByRole("button", { name: `용어 ‘${term}’ 숨기기` }).click();
+  await page.getByRole("button", { name: `용어 ‘${term}’ 공개하기` }).waitFor();
+  assert.equal((await one("select visible from public.glossary_terms where id = $1", [row.id])).visible, false);
+  assert.equal((await audit("glossary.unpublish")).n, 1);
+  assert.equal((await audit("glossary.update")).n, 0, "공개 상태만 바꿨다 — 내용 고치기 로그 0");
 });
 
 // ── d) 분야 순서 ────────────────────────────────────────

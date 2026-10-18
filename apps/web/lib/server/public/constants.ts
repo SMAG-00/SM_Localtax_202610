@@ -61,6 +61,8 @@ export const FEATURE_KEYS = [
   "page_help",
   // W2-c 4단계 — 동영상 목록 /news/video (동영상 채널 결정 전에는 꺼 둔다, PRD-01A 1.3)
   "video_list",
+  // W2-d 3단계 — 용어사전 /glossary · /glossary/[번호] (GLO-01 — 공개 승인 전에는 꺼 둔다, W2-d 설계 2.5)
+  "glossary",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;
@@ -169,11 +171,13 @@ export function isBlockedPath(href: string): boolean {
 }
 
 /**
- * 아직 없는 화면 — 설계 7장 '만들지 않는 경로' 중 기능 키가 없는 것: 용어사전(W2-d) · 내 화면·브리핑(W2-e) · 행사안내(01B W6).
+ * 아직 없는 화면 — 설계 7장 '만들지 않는 경로' 중 기능 키가 없는 것: 내 화면·브리핑(W2-e) · 행사안내(01B W6).
  * 그 작업이 화면을 만들 때 이 목록에서 뺀다 (많이 본 기사 /news/popular는 W2-c 2단계, 포토 목록 /news/photo는 W2-c 4단계가 만들어 뺐다 —
- * 동영상 목록 /news/video는 기능 키 video_list로 연다)
+ * 동영상 목록 /news/video는 기능 키 video_list로, 용어사전 /glossary는 W2-d 3단계가 만들어 기능 키 glossary로 연다)
  */
-const UNBUILT_PREFIXES = ["/glossary", "/my", "/brief", "/local/events"] as const;
+const UNBUILT_PREFIXES = ["/my", "/brief", "/local/events"] as const;
+/** 용어사전 (W2-d 3단계 — GLO-01). 색인 /glossary · 용어 쪽 /glossary/[번호] */
+export const GLOSSARY_HREF = "/glossary";
 /** 형식별 목록 (W2-c 4단계 — ART-08 · ART-09). 기사 slug로 쓸 수 없는 예약 이름(ART-01) */
 export const VIDEO_LIST_HREF = "/news/video";
 export const PHOTO_LIST_HREF = "/news/photo";
@@ -188,6 +192,8 @@ const FEATURE_PREFIXES: ReadonlyArray<{ prefix: string; feature: FeatureKey; sel
   { prefix: "/local", feature: "region_hubs", self: false },
   // 동영상 목록 (W2-c 4단계 — 동영상 채널 결정 전에는 닫힘)
   { prefix: VIDEO_LIST_HREF, feature: "video_list", self: true },
+  // 용어사전 색인·용어 쪽 (W2-d 3단계 — 공개 승인 전에는 닫힘)
+  { prefix: GLOSSARY_HREF, feature: "glossary", self: true },
 ];
 
 /**
@@ -215,4 +221,8 @@ export const situationHref = (slug: string) => `/situations/${encodeURIComponent
 export const amendmentHref = (slug: string) => `/tax/amendments/${encodeURIComponent(slug)}`;
 /** 제휴사 프로필 (ART-10) — 공개 제휴사 번호 */
 export const partnerHref = (id: number) => `/partners/${id}`;
+/** 용어사전 — 색인(분야 거르개 ?section=) · 용어 쪽 · 색인 화면의 용어 자리(id) */
+export const glossaryIndexHref = (section: SectionKey | null) => (section ? `${GLOSSARY_HREF}?section=${section}` : GLOSSARY_HREF);
+export const glossaryTermHref = (id: number | string) => `${GLOSSARY_HREF}/${encodeURIComponent(String(id))}`;
+export const glossaryAnchor = (id: number | string) => `term-${id}`;
 export const categoryHref = (section: SectionKey, slug: string) => (section === "local" ? SECTION_INFO.local.href : `${SECTION_INFO[section].href}/${encodeURIComponent(slug)}`);

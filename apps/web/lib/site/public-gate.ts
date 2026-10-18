@@ -1,13 +1,13 @@
 // 공개 상세 화면의 응답 상태 정하기 (NAV-06 삭제 기사 410 · 공개 데이터를 읽지 못할 때 503) — 순수 모듈 (시험 public-gate.test.ts).
-// proxy.ts가 상세 경로(/news/[slug] · /situations/[slug] · /people/[slug] · /partners/[id] — W2-c 4단계)마다 공개 표 한 번을 anon 키로 읽어 정한다:
+// proxy.ts가 상세 경로(/news/[slug] · /situations/[slug] · /people/[slug] · /partners/[id] — W2-c 4단계 · /glossary/[id] — W2-d 3단계)마다 공개 표 한 번을 anon 키로 읽어 정한다:
 //  · 기사 — 삭제된 기사 주소 표(article_tombstones)에 있으면 410 + 삭제 안내. 없으면 화면으로 넘긴다(화면이 200·404를 정한다)
-//  · 상황·인물·제휴사 — 그 표를 읽을 수 있는지만 본다 (있는지·없는지는 화면이 정한다)
+//  · 상황·인물·제휴사·용어 — 그 표를 읽을 수 있는지만 본다 (있는지·없는지·기능 키는 화면이 정한다)
 //  · 읽지 못하면(접속값 없음·네트워크 오류·표 없음·시간 초과) 503 "잠시 뒤 다시 확인해 주세요" — 있는지 모르므로 404·410을 보이지 않는다.
 //    오류 원문은 응답에 넣지 않는다(서버 로그에 상태 번호만). 캐시하지 않는다(no-store) — 다음 요청이 다시 확인한다.
 // 목록 화면(홈·허브·하위 분야·칼럼·뉴스 전체)은 이 확인 없이 화면이 닫힌 모습(200 + 안내 한 줄)으로 그린다 — lib/server/public/fallback.ts.
 // proxy는 서버 전용 모듈을 부르지 않는다 — 이 파일은 의존 없이 글자만 다룬다.
 
-export type PublicDetailKind = "article" | "situation" | "person" | "partner";
+export type PublicDetailKind = "article" | "situation" | "person" | "partner" | "glossary";
 
 export interface PublicDetailRoute {
   kind: PublicDetailKind;
@@ -33,12 +33,14 @@ function decode(segment: string): string | null {
 
 /** 공개 상세 경로인가 — 아니면 null (목록·백오피스·그 밖의 경로) */
 export function publicDetailRoute(pathname: string): PublicDetailRoute | null {
-  const m = pathname.match(/^\/(news|situations|people|partners)\/([^/]+)\/?$/);
+  const m = pathname.match(/^\/(news|situations|people|partners|glossary)\/([^/]+)\/?$/);
   if (!m) return null;
   const slug = decode(m[2]!);
   if (slug === null) return null;
   if (m[1] === "news") return ARTICLE_SLUG.test(slug) && !RESERVED_NEWS.has(slug.toLowerCase()) ? { kind: "article", slug } : null;
   if (m[1] === "partners") return PARTNER_ID.test(slug) ? { kind: "partner", slug } : null;
+  // 용어 쪽 (W2-d 3단계 /glossary/[번호]) — 번호 형식은 제휴사와 같다
+  if (m[1] === "glossary") return PARTNER_ID.test(slug) ? { kind: "glossary", slug } : null;
   if (!KEBAB.test(slug)) return null;
   return { kind: m[1] === "situations" ? "situation" : "person", slug };
 }
@@ -58,6 +60,8 @@ export function probePath(route: PublicDetailRoute): string {
       return `/rest/v1/public_people?select=slug&slug=eq.${v}&limit=1`;
     case "partner":
       return `/rest/v1/partners?select=id&id=eq.${v}&limit=1`;
+    case "glossary":
+      return `/rest/v1/glossary_terms?select=id&id=eq.${v}&limit=1`;
   }
 }
 

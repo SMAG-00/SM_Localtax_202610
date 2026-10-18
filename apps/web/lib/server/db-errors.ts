@@ -42,7 +42,8 @@ const CHECK_CONSTRAINTS: Record<string, [number, string]> = {
   ],
   media_confirmed_complete: [422, "권리 확인 이미지는 출처·이용 조건·확인일(사진은 촬영자도)이 필요합니다"],
   partners_check: [422, "계약 종료일이 시작일보다 앞입니다 (ART-10)"],
-  glossary_terms_plain_check: [422, "쉬운 풀이는 60자 이하여야 합니다 (UX-01)"],
+  // 쉬운 풀이 한도 (W2-d 3단계 — 20261019000021. 60자 초과는 저장 경고, 이 한도는 저장 거부)
+  glossary_terms_plain_max: [422, "쉬운 풀이는 120자까지 저장됩니다 — 60자 이하로 줄이기를 권합니다 (GLO-01)"],
   categories_slug_check: [422, "하위 분야 주소는 영문 소문자·숫자·'-'만 씁니다 (CAT-01)"],
   // 상황 카드 (UX-05 · FAM-02 — 20261018000010_situations.sql)
   situations_slug_check: [422, "상황 주소는 영문 소문자·숫자·'-'만 씁니다 (UX-05)"],

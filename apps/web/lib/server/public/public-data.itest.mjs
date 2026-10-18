@@ -162,7 +162,8 @@ beforeAll(async () => {
     [w.amendment.id, KST_TODAY, snap.id],
   );
 
-  w.term = await insert("glossary_terms", { term: `통합 과세표준 ${RUN}`, plain: "세금을 매기는 기준 금액", section: ["tax"] }, "glossary");
+  // 공개 용어 (W2-d 3단계 — 숨긴 용어는 칩·툴팁 0, glossary.itest)
+  w.term = await insert("glossary_terms", { term: `통합 과세표준 ${RUN}`, plain: "세금을 매기는 기준 금액", section: ["tax"], visible: true }, "glossary");
   const checks = JSON.stringify([{ title: "자동차세 연세액 납부 여부" }, { title: "등록 말소일", when: "판 날" }, { title: "환급 계좌", note: "통장 사본을 준비합니다" }]);
   w.situation = await insert(
     "situations",

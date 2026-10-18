@@ -110,7 +110,8 @@ async function situation(label, over = {}) {
 }
 
 async function term(label, section, plain) {
-  const r = await one("insert into public.glossary_terms (term, plain, section) values ($1, $2, $3) returning id", [`${label} ${staff.run}`, plain, [section]]);
+  // 공개 용어 (W2-d 3단계 — 새 용어는 숨김이 기본값)
+  const r = await one("insert into public.glossary_terms (term, plain, section, visible) values ($1, $2, $3, true) returning id", [`${label} ${staff.run}`, plain, [section]]);
   staff.trackRow("glossary_terms", r.id);
   return Number(r.id);
 }

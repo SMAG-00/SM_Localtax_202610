@@ -21,7 +21,9 @@ import {
 import type { ArticleDetail } from "@/lib/server/public";
 import { ARTICLE_DISCLAIMER, UPDATE_LABEL, articleParts, dateLines, partnerBadgeFor, reporterPolicyLinks, seriesLine, taxLensBoxLinks, typeBadgeFor, type ArticlePart } from "@/lib/site/article-view";
 import { formatBadge, sectionTones, type SectionTone } from "@/lib/site/home-view";
+import { articleTipPlan, hasTips, type PlannedRun } from "@/lib/site/glossary-tips";
 import { ArticleBlocks } from "./ArticleBlocks";
+import { GlossaryTips } from "./GlossaryTips";
 import { ArticleGrid } from "./ArticleItem";
 import { CardNewsSlider } from "./CardNewsSlider";
 import { popularClickItems } from "@/lib/site/popular-view";
@@ -36,6 +38,7 @@ import { TEXT_LINK } from "./SiteSection";
 //  → 본문(대표 이미지 · 카드뉴스 장 · 해결 사례 카드 · 블록 · 개정 트래커 · 출처) → 「지방세로 읽기」(본문 뒤·기자 소개 앞) → 기자 소개
 //  → 자사 상품(01C 전 0) → 면책(면책 대상 하위 분야만) → 관련 기사 → 다음 행동 띠 → 기사 하단 정책 링크(공개 승인된 것만)
 // JSON-LD는 화면과 같은 데이터 객체(detail.view)를 structured-data 생성기에 넘긴다 (OPT-02 — 손으로 쓴 JSON-LD 0)
+// 본문 용어 풀이(GLO-02 — W2-d 3단계)는 본문 블록 안에서만 그린다 — 제목·저자·날짜·대표 이미지(구조화 데이터와 대조하는 화면 값)는 그대로
 // 많이 본 기사 목록(ART-11 — 지금 보는 기사 제외, 설정 sidebar_size건): 1024px 이상은 본문 오른쪽 열, 그 아래는 본문 뒤. 목록이 있으면
 // 모든 부분이 같은 두 칸 틀(본문 칸 + 오른쪽 열)을 써서 왼쪽 선이 맞는다. 누르면 popular_article_clicked(순위·위치 sidebar) 1건
 
@@ -192,7 +195,7 @@ function Notices({ a }: { a: ArticleDetail }) {
   );
 }
 
-function Body({ a, today }: { a: ArticleDetail; today: string }) {
+function Body({ a, today, tips }: { a: ArticleDetail; today: string; tips: ReadonlyMap<number, readonly PlannedRun[]> }) {
   return (
     <div data-part="article-body">
       {/* 본문 구역 제목 — 상태 상자·FAQ 제목(h3·h2)이 h1 다음 단계 순서를 지키게 (화면 읽기용) */}
@@ -216,7 +219,7 @@ function Body({ a, today }: { a: ArticleDetail; today: string }) {
           <SolvedCaseCard situation={a.solvedCase.situation} issue={a.solvedCase.issue} result={a.solvedCase.result} lesson={a.solvedCase.lesson} />
         </div>
       )}
-      <ArticleBlocks blocks={a.blocks} media={a.media} article={{ id: a.id, section: a.section, title: a.title, format: a.format }} />
+      <ArticleBlocks blocks={a.blocks} media={a.media} article={{ id: a.id, section: a.section, title: a.title, format: a.format }} tips={tips} />
       {a.amendment && (
         <aside data-part="amendment" aria-label="이 기사가 다룬 개정안" className="mt-10 rounded-2xl border border-navy-100 bg-white p-6">
           <p className="text-[13px] font-bold text-hermes-800">개정 트래커</p>
@@ -270,6 +273,8 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
   const links = reporterPolicyLinks(a.policyLinks);
   const jsonLd = toJsonLdScriptContent(pageJsonLd({ kind: "article", article: a.view }));
   const rail = a.popular.length > 0;
+  // 본문 첫 등장 용어 풀이 (GLO-02) — 공개 용어 가운데 이 기사에 처음 나오는 자리만. 저장된 본문은 그대로
+  const tips = articleTipPlan(a.blocks, a.glossary);
 
   return (
     <article data-ui="article-page" data-article-id={a.id} data-format={a.format ?? "general"} data-content-type={a.contentType ?? "none"}>
@@ -280,6 +285,8 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
       <MeasureNextActions section={a.section} screen="article" />
       {/* 제휴 기사 열람 → partner_content_viewed(제휴사·기사) 1건 (ART-10). 그리는 것 0 */}
       {a.partner && <MeasurePartnerContent partnerId={a.partner.id} articleId={a.id} section={a.section} />}
+      {/* 본문 용어 풀이 보조 스크립트 — 누르기·Esc·자리 맞추기·glossary_opened. 그리는 것 0 */}
+      {hasTips(tips) && <GlossaryTips articleId={a.id} section={a.section} />}
       {parts.map((part) => {
         switch (part) {
           case "head":
@@ -297,7 +304,7 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
           case "body":
             return (
               <Part key={part} part={part} tone={tone(part)} rail={rail} aside={rail ? <PopularRail a={a} /> : undefined}>
-                <Body a={a} today={today} />
+                <Body a={a} today={today} tips={tips} />
               </Part>
             );
           case "tax-lens":
