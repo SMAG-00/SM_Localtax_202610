@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { emptyLookups, isListable, latestChangedTracker, regionLabel, toListItem, toListItems, trackerState, validEvents, type Lookups } from "./cards";
 import type { PublicArticleListRow, RegionRow } from "./rows";
 import { region, stageEvent } from "./test-items";
+import { partnerBadgeFor, typeBadgeFor } from "@/lib/site/article-view";
 
 const row = (over: Partial<PublicArticleListRow> = {}): PublicArticleListRow => ({
   id: 1,
@@ -25,6 +26,7 @@ const row = (over: Partial<PublicArticleListRow> = {}): PublicArticleListRow => 
   reported_approved: false,
   series_title: null,
   series_episode: null,
+  partner_badge_name: null,
   ...over,
 });
 
@@ -37,7 +39,6 @@ function lookups(): Lookups {
     ...lk,
     categories: new Map([[7, { id: 7, section: "realestate", slug: "projects", name: "프로젝트 트래커", intro: null, sort: 20, needs_disclaimer: false, needs_tax_lens: true }]]),
     people: new Map([[3, { id: 3, slug: "kim-reporter", name: "김기자", roles: ["reporter"], affiliation: null, bio_items: [], beat: "부동산", last_verified_at: null }]]),
-    partners: new Map([[9, { id: 9, name: "가온세무법인", kind: "tax_firm", intro: null, url: null }]]),
     regions: new Map<string, RegionRow>([
       [SEOUL.code, SEOUL],
       [SEONGDONG.code, SEONGDONG],
@@ -68,10 +69,23 @@ describe("toListItem", () => {
     expect(toListItem(row({ format: "infographic" }), lookups())!.format).toBe("infographic");
   });
 
-  test("제휴 배지 — 광고는 '광고', 공동 기획은 '공동 기획 ○○', 제휴사가 비공개면 '공동 기획' (ART-10)", () => {
-    expect(toListItem(row({ label: "ad", content_type: "sponsored" }), lookups())!.sponsorBadge).toBe("광고");
-    expect(toListItem(row({ label: "co_planned", content_type: "sponsored", partner_id: 9 }), lookups())!.sponsorBadge).toBe("공동 기획 가온세무법인");
-    expect(toListItem(row({ label: "co_planned", content_type: "sponsored", partner_id: 99 }), lookups())!.sponsorBadge).toBe("공동 기획");
+  test("제휴 배지 — 광고는 '광고', 공동 기획은 기사의 배지 이름으로 '공동 기획 ○○' (ART-10)", () => {
+    const ad = toListItem(row({ label: "ad", content_type: "sponsored", partner_id: 9 }), lookups())!;
+    expect([ad.sponsorBadge, ad.sponsor]).toEqual(["광고", { kind: "ad" }]);
+    const co = toListItem(row({ label: "co_planned", content_type: "sponsored", partner_id: 9, partner_badge_name: "가온세무법인" }), lookups())!;
+    expect([co.sponsorBadge, co.sponsor]).toEqual(["공동 기획 가온세무법인", { kind: "co_planned", partner: "가온세무법인" }]);
+  });
+
+  test("제휴사가 비공개·계약 종료로 바뀌어도 공동 기획 배지는 그대로 '공동 기획 ○○' — 유형 배지 '광고'로 바뀌지 않는다 (W2-a 4-2 '이미 붙은 배지는 남는다')", () => {
+    // 비공개 제휴사는 공개 화면이 제휴사 행을 읽지 못한다(RLS) — 기사가 들고 있는 배지 이름(partner_badge_name)으로 그린다
+    const hidden = toListItem(row({ label: "co_planned", content_type: "sponsored", partner_id: 99, partner_badge_name: "숨은세무법인" }), lookups())!;
+    expect(hidden.sponsorBadge).toBe("공동 기획 숨은세무법인");
+    expect(hidden.sponsor).toEqual({ kind: "co_planned", partner: "숨은세무법인" });
+    expect(typeBadgeFor(hidden.contentType, hidden.sponsor)).toBeUndefined();
+    expect(partnerBadgeFor(hidden.sponsor)).toBe("숨은세무법인");
+    // 광고 기사는 제휴사가 어떻든 '광고'
+    const ad = toListItem(row({ label: "ad", content_type: "sponsored", partner_id: 99 }), lookups())!;
+    expect(typeBadgeFor(ad.contentType, ad.sponsor)).toBe("sponsored");
   });
 
   test("지역 표시 — 시·군·구는 '시·도 시·군·구', 시·도는 이름만, 모르는 코드는 null (CAT-03)", () => {

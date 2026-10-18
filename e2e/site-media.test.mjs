@@ -9,6 +9,7 @@
 //  e) 포토 — 사진 출처·이용 조건·대체 텍스트 중 하나라도 없으면 발행 422(그 항목), 다 갖추면 발행 · 사진마다 표기 줄 · 원본 비율(가로·세로 사진)
 //  f) 목록 — /news/video는 기능 키가 꺼지면 404·켜면 형식 동영상만, /news/photo는 형식 포토만 · 예약 이름 video는 기사 주소가 될 수 없다
 //  g) 제휴사 — 그 제휴사 기사만·카드와 상세의 같은 배지 글자 · 상세의 제휴 배지 → 프로필 · partner_content_viewed 1건 · 비공개·없는 제휴사 404 · 계약 끝난 제휴사는 기존 기사 배지 그대로
+//  g-2) 제휴사를 비공개로 내려도 공동 기획 배지는 '공동 기획 ○○' 그대로(유형 배지 '광고' 0) · 프로필 링크 0 · partner_content_viewed 0 (W2-c 5단계)
 //  h) 편집 화면 — 템플릿 3종 · 사진마다 표기 상태 · 동영상 확인 줄 · 대체 텍스트를 지우거나 youtube.com 주소면 저장 요청 0
 //  i) R1~R3 — 동영상·포토 기사 360·640·1024 (R1은 360×740), 360px 가로 스크롤 0
 //  j) 접근성 95점 이상 — 동영상·포토·인포그래픽 기사
@@ -536,6 +537,33 @@ test("g) 제휴사 — 그 제휴사 기사만·카드와 상세가 같은 배�
   assert.deepEqual(await cardIds(ended.page, "partner-articles"), [fx.coD.id]);
   assert.equal((await ended.page.locator(`[data-article-id="${fx.coD.id}"] [data-ui="partner-badge"]`).textContent()).trim(), `공동 기획 ${fx.partnerD.name}`, "기존 기사 배지는 남는다");
   await ended.context.close();
+});
+
+test("g-2) 공동 기획 뒤 제휴사를 비공개로 내려도(운영 API) 배지는 '공동 기획 ○○' 그대로 — '광고' 0, 프로필 링크 0, partner_content_viewed 0 (W2-a 4-2 · W2-c 5단계)", async () => {
+  const B = fx.partnerB;
+  const hide = await api("PATCH", `/partners/${B.id}`, u.adOps, { visible: false, contractTo: kstDay(-1), contractFrom: kstDay(-200) });
+  assert.equal(hide.status, 200, show(hide));
+  const expectBadge = async (page, where) => {
+    const head = page.locator('[data-article-part="head"]');
+    assert.deepEqual(
+      { type: await head.locator('[data-ui="article-type-badge"]').allTextContents(), partner: await head.locator('[data-ui="partner-badge"]').allTextContents(), link: await head.locator('[data-part="partner-link"]').count() },
+      { type: [], partner: [`공동 기획 ${B.name}`], link: 0 },
+      where,
+    );
+  };
+  const detail = await openPage(fx.coB.href);
+  assert.equal(detail.status, 200);
+  await expectBadge(detail.page, "비공개로 내린 뒤 상세");
+  await detail.page.waitForTimeout(1000);
+  assert.equal(await eventCount("partner_content_viewed", fx.coB.id), 0, "비공개 제휴사 기사 — 제휴 콘텐츠 측정 0");
+  await detail.context.close();
+  // 처음부터 비공개였던 제휴사의 공동 기획 기사도 같은 배지
+  const hidden = await openPage(fx.coC.href);
+  const head = hidden.page.locator('[data-article-part="head"]');
+  assert.deepEqual(await head.locator('[data-ui="partner-badge"]').allTextContents(), [`공동 기획 ${fx.partnerC.name}`]);
+  assert.equal(await head.locator('[data-ui="article-type-badge"]').count(), 0, "유형 배지 '광고' 0");
+  await hidden.context.close();
+  assert.equal((await fetch(`${base}/partners/${B.id}`)).status, 404, "프로필은 비공개");
 });
 
 test("h) 편집 화면 — 템플릿 3종 · 사진마다 표기 상태 · 동영상 확인 줄, 대체 텍스트를 지우거나 youtube.com 주소면 저장 요청 0", async () => {

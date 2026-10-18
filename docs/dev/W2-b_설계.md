@@ -142,7 +142,7 @@ PRD-01A 9장 W2-b(홈 골격·히어로·메뉴·4대 분야 허브 공통 골�
 - 「지방세로 읽기」 자리: 내용이 있고 생략 사유가 없고 현재 버전 감수가 끝났고 **서명 기록의 감수위원이 공개 인물이고 법령 기준일이 있는** 박스만 → 아니면 `null`(박스 요소 0). 링크는 열린 기능만(계산기 = `sm_calculator`, 전문가 = `expert_finder`, 도서 = `store`). '감수 ○○'는 세무 감수 승인 때 서버가 박스에 남기는 서명 기록(`tax_lens.reviewed_by` = 감수위원 people.id · `reviewed_at`)에서만 그린다 — 손으로 넣는 이름 칸 0 (01C BR-03, 9장 #13).
 - 본문: 카드뉴스면 장(`slide` 블록)은 `slides`(번호·제목·줄·대체 텍스트)로, 나머지 블록은 `blocks`로 — 카드뉴스가 아닌 기사의 장 블록은 그리지 않는다. 이미지 주소는 화면과 JSON-LD가 같은 함수(`absolute` — 사이트 주소 + media.path)로 만든다.
 - 해결 사례: 4칸 · 결론 배지(`conclusion`) · 결과 근거(번호 + http 링크)가 다 있을 때만 카드 값(`solvedCase`), 아니면 null (상황 페이지는 `solvedCaseCards`로 같은 카드).
-- 표기(`sponsor`): 광고 `{ kind: "ad" }` · 공동 기획 `{ kind: "co_planned", partner }` — 목록 카드(`ArticleListItem.sponsor`)와 같은 값. 공유 미리보기(`share`) — 제목·설명(카드뉴스는 첫 장 글, 표기가 있으면 `[배지] …`)·대표 이미지·주소.
+- 표기(`sponsor`): 광고 `{ kind: "ad" }` · 공동 기획 `{ kind: "co_planned", partner }` — 목록 카드(`ArticleListItem.sponsor`)와 같은 값. `partner`는 기사의 배지 이름 칸(`articles.partner_badge_name`, W2-c 5단계 — 트리거가 제휴사 이름으로 채운다)에서 읽는다: 제휴사를 비공개로 내려도 '공동 기획 ○○' 그대로이고, 제휴사 프로필 링크만 공개 제휴사일 때 붙는다. 공유 미리보기(`share`) — 제목·설명(카드뉴스는 첫 장 글, 표기가 있으면 `[배지] …`)·대표 이미지·주소.
 - 칼럼(`series`)·필자(`author.kind` — 칼럼은 필자 블록)
 - 면책: 하위 분야의 `needs_disclaimer`일 때만.
 - 기자 소개(공개 인물 — 평문 이메일 칸 없음), 자사 상품 카드(01C 전 `null`), 관련 기사(같은 개정안 → 같은 하위 분야 → 같은 분야 최신, 자기 자신·비슷한 사례와 겹침 0, 4건) [확인 필요 — CMS에 관련 기사 칸이 없어 계산한다].

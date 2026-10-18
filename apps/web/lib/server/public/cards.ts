@@ -5,17 +5,16 @@ import { isoToKstDate } from "@/lib/admin/form-utils";
 import { sponsorshipOf } from "../articles/mapping";
 import { sponsorMark, type SponsorMark } from "./article-logic";
 import { CONTENT_TYPE_NAMES, SECTION_INFO, isSectionKey, newsHref, personHref, type SectionKey } from "./constants";
-import type { AmendmentEventRow, AmendmentRow, PublicArticleListRow, PublicCategoryRow, PublicPartnerRow, PublicPersonRow, RegionRow } from "./rows";
+import type { AmendmentEventRow, AmendmentRow, PublicArticleListRow, PublicCategoryRow, PublicPersonRow, RegionRow } from "./rows";
 
-/** 목록 카드가 참조하는 표 — 읽을 수 있는 행만 들어 있다(RLS) */
+/** 목록 카드가 참조하는 표 — 읽을 수 있는 행만 들어 있다(RLS). 공동 기획 배지의 제휴사 이름은 기사 행(partner_badge_name)이 들고 있다 */
 export interface Lookups {
   categories: ReadonlyMap<number, PublicCategoryRow>;
   people: ReadonlyMap<number, PublicPersonRow>;
-  partners: ReadonlyMap<number, PublicPartnerRow>;
   regions: ReadonlyMap<string, RegionRow>;
 }
 
-export const emptyLookups = (): Lookups => ({ categories: new Map(), people: new Map(), partners: new Map(), regions: new Map() });
+export const emptyLookups = (): Lookups => ({ categories: new Map(), people: new Map(), regions: new Map() });
 
 export interface ArticleListItem {
   id: number;
@@ -79,7 +78,6 @@ export function toListItem(row: PublicArticleListRow, lk: Lookups): ArticleListI
   if (!isSectionKey(row.section)) return null;
   const category = row.category_id === null ? undefined : lk.categories.get(row.category_id);
   const author = row.author_id === null ? undefined : lk.people.get(row.author_id);
-  const partner = row.partner_id === null ? undefined : lk.partners.get(row.partner_id);
   return {
     id: Number(row.id),
     slug: row.slug,
@@ -92,8 +90,9 @@ export function toListItem(row: PublicArticleListRow, lk: Lookups): ArticleListI
     contentType: row.content_type,
     typeLabel: row.content_type ? (CONTENT_TYPE_NAMES[row.content_type] ?? null) : null,
     format: row.format && row.format !== "general" ? row.format : null,
-    sponsorBadge: sponsorBadgeOf(row.label, partner?.name),
-    sponsor: sponsorMark(row.label, partner?.name),
+    // 공동 기획 배지 = 기사가 들고 있는 제휴사 이름 — 제휴사가 비공개·계약 종료로 바뀌어도 '공동 기획 ○○' 그대로 (ART-10 '이미 붙은 배지는 남는다')
+    sponsorBadge: sponsorBadgeOf(row.label, row.partner_badge_name),
+    sponsor: sponsorMark(row.label, row.partner_badge_name),
     subtype: row.subtype,
     publishedOn: isoToKstDate(row.first_published_at),
     modifiedOn: row.substantive_updated_at ? isoToKstDate(row.substantive_updated_at) : null,

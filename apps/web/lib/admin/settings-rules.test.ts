@@ -195,3 +195,16 @@ describe("W2-c 지표 대시보드 — 운영 도메인 전환일 (설계 2.6)",
     expect(errorsOf(validateSettingValue("domain_cutover", { version: "2026-11-01.1", date: "11월 2일" }, seed))).toEqual(["date: 한국 날짜 YYYY-MM-DD 또는 null(전환 전)이어야 합니다"]);
   });
 });
+
+describe("W2-c 기사 생산 대시보드 — 내부 집계 기간 (설계 2.8)", () => {
+  const seed = designSeeds("2.8").get("news_readiness_windows");
+  test("관리자 화면에서 고칠 수 있고, 대시보드와 같은 검사 — 기준 숫자 칸은 거부, 값을 바꾸면 버전도", () => {
+    expect(isEditableSetting("news_readiness_windows")).toBe(true);
+    expect(validateSettingValue("news_readiness_windows", seed, seed)).toEqual({ ok: true, value: seed });
+    expect(errorsOf(validateSettingValue("news_readiness_windows", { ...(seed as object), months: [3, 12] }, seed))).toEqual(["version: 값을 바꾸면 버전도 바꿔야 합니다 (지금 2026-10-18.1)"]);
+    expect(errorsOf(validateSettingValue("news_readiness_windows", { ...(seed as object), version: "v2", minArticles: 40 }, seed))).toEqual([
+      "minArticles: 모르는 칸입니다 — 기준 숫자는 규정 버전에만 적습니다",
+    ]);
+    expect(validateSettingValue("news_readiness_windows", { version: "2026-11-01.1", months: [1, 3, 12], basis: "including_current" }, seed).ok).toBe(true);
+  });
+});

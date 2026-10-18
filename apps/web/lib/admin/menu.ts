@@ -53,6 +53,8 @@ const RULES: readonly MenuRule[] = [
   { id: "experts", label: "전문가 등재", href: "/admin/experts", when: (a) => a.has("expert.manage"), paths: ["/admin/experts"] },
   // 측정 지표 대시보드 (GROW-01) — 관리자만 (W2-c 설계 9장)
   { id: "metrics", label: "측정 지표", href: "/admin/metrics", when: (a) => a.has("metrics.read"), paths: ["/admin/metrics"] },
+  // 기사 생산·제휴 준비 대시보드·규정 버전 (NAV-13·14) — 편집 책임자·관리자 (PRD-01A 3장)
+  { id: "readiness", label: "제휴 준비", href: "/admin/news-readiness", when: (a) => a.has("readiness.read"), paths: ["/admin/news-readiness"] },
   { id: "settings", label: "설정", href: "/admin/settings", when: (a) => a.has("settings.edit"), paths: ["/admin/settings"] },
   { id: "members", label: "회원·역할", href: "/admin/members", when: (a) => a.has("member.read") && a.has("role.grant"), paths: ["/admin/members"] },
 ];

@@ -8,10 +8,14 @@ import { can } from "@/lib/access";
 import { assignmentFormFrom, groupByDueMonth } from "@/lib/admin/assignment-form";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { ARTICLE_STATUS_LABELS, ASSIGNMENT_STATUS_LABELS, EDITORIAL_FIELD_LABELS, REPORTING_METHOD_LABELS, SECTION_LABELS, labelOf, optionsOf } from "@/lib/admin/labels";
+import { QUOTA_NOTE, REQUIREMENTS_PATH, quotaLines } from "@/lib/admin/readiness-view";
 import { templatesFor } from "@/lib/admin/templates";
+import { PLATFORM_LABELS, PLATFORMS, platformState } from "@/lib/readiness/requirements";
 import { pageViewer, queryValue, requirePage } from "@/lib/server/admin/pages";
 import { articlesForAssignments, listAssignments, listStaffPeople } from "@/lib/server/admin/queries";
-import { serviceDb } from "@/lib/server/articles/service";
+import { kstDate } from "@/lib/server/articles/gate";
+import { nowIso, serviceDb } from "@/lib/server/articles/service";
+import { listRequirementRows } from "@/lib/server/readiness/requirements";
 
 // 기사 기획 캘린더 (/admin/stories, NAV-09) — 분야·상태로 거르고 마감 달별로 본다. 등록·고치기·상태 바꾸기·이 기획으로 기사 쓰기
 export const metadata: Metadata = { title: "기사 기획" };
@@ -28,7 +32,10 @@ export default async function AssignmentsPage({ searchParams }: Props) {
   const section = Object.hasOwn(SECTION_LABELS, queryValue(sp.section)) ? queryValue(sp.section) : "";
 
   const db = serviceDb();
-  const [rows, people] = await Promise.all([listAssignments(db, { status, section }), listStaffPeople(db)]);
+  const [rows, people, requirements] = await Promise.all([listAssignments(db, { status, section }), listStaffPeople(db), listRequirementRows(db)]);
+  // 기사 할당량 (NAV-09 · NAV-13) — 확정된 공식 규정 버전의 기사 수 기준만, 없으면 '요건 미확정'. 임의 할당량 입력 칸은 없다
+  const today = kstDate(nowIso());
+  const quotas = quotaLines(PLATFORMS.map((p) => ({ platform: p, state: platformState(requirements, p, today) })));
   const linked = await articlesForAssignments(
     db,
     rows.map((r) => r.id),
@@ -42,6 +49,25 @@ export default async function AssignmentsPage({ searchParams }: Props) {
   return (
     <>
       <PageTitle title="기사 기획" description="분야별 기획을 마감 순서로 봅니다. 상태 순서는 아이디어 → 배정 → 취재 중 → 사실 확인 → 검토 → 발행입니다." />
+
+      <section data-part="quota" aria-labelledby="quota-title" className="mb-6 rounded-2xl border border-navy-100 bg-white p-4">
+        <h2 id="quota-title" className="text-[17px] font-black text-navy-900">
+          기사 할당량
+        </h2>
+        <ul className="mt-2 space-y-1 text-[15px] text-navy-800">
+          {quotas.map((q) => (
+            <li key={q.platform} data-platform={q.platform} data-confirmed={q.confirmed ? "true" : "false"} className="[overflow-wrap:anywhere]">
+              <span className="font-bold">{PLATFORM_LABELS[q.platform]}</span> {q.text}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-[14px] text-navy-600">{QUOTA_NOTE}</p>
+        {can(viewer, "readiness.read") && (
+          <Link href={REQUIREMENTS_PATH} className={TEXT_LINK}>
+            제휴 규정 버전
+          </Link>
+        )}
+      </section>
 
       <form method="get" className="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-navy-100 bg-white p-4" aria-label="기획 거르기">
         <div className="w-full sm:w-48">

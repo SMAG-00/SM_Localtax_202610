@@ -5,8 +5,9 @@ import assert from "node:assert/strict";
 import { connect, dbUrl, isLocal } from "../scripts/db.mjs";
 
 // 추가만 되는 표 — 감사 기록 2종(ADM-04) + W2-a 설계 3장의 수정 이력·정정 이력·점검 결과 + 개정 단계 기록(01B TX-07) + 기획 상태 기록(NAV-09, 트리거만 쓴다)
-//   + 삭제된 기사 주소(W2-b 4단계 NAV-06 — 트리거만 쓴다, 410 응답의 원본)
+//   + 삭제된 기사 주소(W2-b 4단계 NAV-06 — 트리거만 쓴다, 410 응답의 원본) + 제휴 실사·점검 기록(W2-c 5단계 NAV-01·07·20 — 새 판은 새 행)
 const APPEND_ONLY = new Set([
+  "public.news_partner_checks",
   "public.audit_logs",
   "public.audit_log_changes",
   "public.article_revisions",

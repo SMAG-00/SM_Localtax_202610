@@ -237,6 +237,8 @@ export class StaffFixture {
         await q("delete from public.story_assignment_events where assignment_id = any($1::bigint[])", [assignmentIds]);
         await q("delete from public.story_assignments where id = any($1::bigint[])", [assignmentIds]);
       }
+      // 제휴 규정 버전(W2-c 5단계) — 시험 계정이 화면·API로 만든 버전. 확정 버전은 트리거가 지우기를 막아 트리거를 끈 이 세션에서 지운다
+      await q("delete from public.news_partner_requirements where created_by = any($1::text[])", [actors]);
       // 측정 이벤트(W2-c) — 시험 동안 공개 화면·수집 API가 만든 행. 로컬 DB에서 시험은 하나씩 도므로 시작 시각 뒤의 행은 이 시험의 것이다
       await q("delete from public.analytics_events where occurred_at >= $1", [this.startedAt]);
       await this.#restoreOperations(q);

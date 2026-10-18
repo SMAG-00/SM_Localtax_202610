@@ -291,6 +291,12 @@ before(async () => {
   staff.trackRow("partners", partner.id);
   fx.partnerName = partner.name;
   await insertArticle("co", { contentType: "sponsored", label: "co_planned", partnerId: Number(partner.id), title: "공동 기획 기사 시험", publishedAt: hoursAgo(1.5) });
+  // 공동 기획 뒤 제휴사가 비공개·계약 종료로 바뀐 기사 (W2-a 4-2 '이미 붙은 배지는 남는다' — W2-c 5단계 회귀)
+  const hiddenLater = await one("insert into public.partners (name, kind, visible, contract_from, contract_to) values ($1, 'tax_firm', true, now() - interval '200 days', now() + interval '30 days') returning id, name", [`누리회계법인${staff.run}`]);
+  staff.trackRow("partners", hiddenLater.id);
+  fx.hiddenPartner = { id: Number(hiddenLater.id), name: hiddenLater.name };
+  await insertArticle("coHidden", { section: "finance", contentType: "sponsored", label: "co_planned", partnerId: fx.hiddenPartner.id, title: "제휴사가 내려간 공동 기획", publishedAt: hoursAgo(1) });
+  await db.query("update public.partners set visible = false, contract_to = (now() - interval '1 day')::date where id = $1", [fx.hiddenPartner.id]);
   await insertArticle("solved", {
     subtype: "solved_case",
     title: "계약일부터 세다 신고가 늦은 사례",
@@ -418,7 +424,7 @@ test("b) 오탈자 수정은 날짜·JSON-LD 그대로, 실질 수정은 바꾸�
 });
 
 test("c) JSON-LD — 화면 값과 불일치 0 (해설·공동 기획·광고·카드뉴스), 대표 이미지 주소가 같다, 생성기가 만든 스크립트 하나", async () => {
-  for (const href of [fx.main.href, fx.co.href, fx.ad.href, fx.cards5.href, fx.lens.href]) {
+  for (const href of [fx.main.href, fx.co.href, fx.ad.href, fx.cards5.href, fx.lens.href, fx.coHidden.href]) {
     const { page } = await open(href);
     const facts = await renderedFacts(page);
     const { raw, main: ld } = await jsonLd(page);
@@ -426,6 +432,8 @@ test("c) JSON-LD — 화면 값과 불일치 0 (해설·공동 기획·광고·�
     assert.equal(ld["@type"], "NewsArticle");
     if (href === fx.main.href) assert.equal(facts.mainImageUrl, fx.media.url, "대표 이미지 — 화면과 JSON-LD가 같은 절대 주소");
     if (href === fx.co.href) assert.equal(ld.headline, `[공동 기획 ${fx.partnerName}] 공동 기획 기사 시험`);
+    // 제휴사가 비공개·계약 종료로 바뀌어도 JSON-LD 표기 제목은 '공동 기획 ○○' 그대로 ('광고'·이름 없는 '공동 기획' 0)
+    if (href === fx.coHidden.href) assert.equal(ld.headline, `[공동 기획 ${fx.hiddenPartner.name}] 제휴사가 내려간 공동 기획`);
     await page.close();
   }
 });
@@ -455,6 +463,26 @@ test("d) 표기 배지 — 목록 카드와 상세가 같은 글자 (광고 · �
     );
     await d.page.close();
   }
+});
+
+test("d-2) 공동 기획 뒤 제휴사가 비공개·계약 종료로 바뀌어도 카드·상세 배지는 '공동 기획 ○○' 그대로 — '광고' 0, 숨은 제휴사 프로필 링크 0 (ART-10 · W2-a 4-2)", async () => {
+  const expected = { type: [], partner: [`공동 기획 ${fx.hiddenPartner.name}`] };
+  const { page } = await open("/finance");
+  const card = await page.$eval(`[data-hub-part="latest"] [data-article-id="${fx.coHidden.id}"]`, (li) => ({
+    type: [...li.querySelectorAll('[data-ui="article-type-badge"]')].map((e) => e.textContent),
+    partner: [...li.querySelectorAll('[data-ui="partner-badge"]')].map((e) => e.textContent),
+  }));
+  await page.close();
+  assert.deepEqual(card, expected, "목록 카드");
+  const d = await open(fx.coHidden.href);
+  const head = d.page.locator('[data-article-part="head"]');
+  assert.deepEqual({ type: await head.locator('[data-ui="article-type-badge"]').allTextContents(), partner: await head.locator('[data-ui="partner-badge"]').allTextContents() }, expected, "기사 상세 머리");
+  assert.equal(await head.locator('[data-part="partner-link"]').count(), 0, "비공개 제휴사 프로필로 가는 링크 0");
+  assert.equal(await d.page.locator(`a[href="/partners/${fx.hiddenPartner.id}"]`).count(), 0);
+  const ogTitle = await d.page.locator('meta[property="og:title"]').getAttribute("content");
+  assert.ok(ogTitle.includes(`[공동 기획 ${fx.hiddenPartner.name}]`), `공유 제목: ${ogTitle}`);
+  await d.page.close();
+  assert.equal((await fetch(`${base}/partners/${fx.hiddenPartner.id}`)).status, 404, "프로필은 그대로 비공개");
 });
 
 test("e) 「지방세로 읽기」 — 서명 기록이 있는 박스만, 본문 뒤·기자 소개 앞, '감수 ○○'는 서명한 감수위원 / 생략 사유·비공개 서명자 박스 0", async () => {

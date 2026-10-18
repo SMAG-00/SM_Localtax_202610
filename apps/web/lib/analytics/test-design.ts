@@ -11,8 +11,8 @@ function section(prefix: string): string {
   return sec.split(/^## /m)[0]!;
 }
 
-/** 2.1·2.3 같은 칸 2개짜리 표의 한 줄 → 값 배열 */
-export function designList(sub: "2.1" | "2.3", name: string): string[] {
+/** 2.1·2.3·2.8 같은 칸 2개짜리 표의 한 줄 → 값 배열 */
+export function designList(sub: "2.1" | "2.3" | "2.8", name: string): string[] {
   const line = section(sub)
     .split("\n")
     .find((l) => l.startsWith(`| ${name} `));
@@ -40,9 +40,9 @@ export function designEvents(): DesignEventRow[] {
   return rows;
 }
 
-/** 2.5 씨앗 블록 — `#### \`키\`` 다음 json */
-export function designSeeds(): Map<string, unknown> {
+/** 2.5(수집·집계)·2.8(기사 생산 기간) 씨앗 블록 — `#### \`키\`` 다음 json */
+export function designSeeds(sub: "2.5" | "2.8" = "2.5"): Map<string, unknown> {
   const out = new Map<string, unknown>();
-  for (const m of section("2.5").matchAll(/^#### `([a-z_]+)`\s*\n+```json\n([\s\S]*?)\n```/gm)) out.set(m[1]!, JSON.parse(m[2]!));
+  for (const m of section(sub).matchAll(/^#### `([a-z_]+)`\s*\n+```json\n([\s\S]*?)\n```/gm)) out.set(m[1]!, JSON.parse(m[2]!));
   return out;
 }

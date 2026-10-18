@@ -80,6 +80,8 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "brand.manage":           [X, X, X, X, X, O, X, O, X],
   "expert.manage":          [X, X, X, X, X, X, O, O, X],
   "metrics.read":           [X, X, X, X, X, X, X, O, X], // GROW-01 지표 대시보드 — PRD-00 6장에 행이 없어 관리자 전권만 (수익 대시보드와 같다, W2-c 설계 9장)
+  "readiness.read":         [X, O, X, X, X, X, X, O, X], // NAV-13·14 기사 생산·제휴 준비 대시보드 — PRD-01A 3장 '편집 책임자·관리자만'
+  "readiness.requirements": [X, O, X, X, X, X, X, O, X], // NAV-13 규정 버전 등록·확정 — 같은 화면의 담당자(편집 책임자·관리자)
 };
 
 describe("역할 × 작업 표 (대상 없음) — PRD-00 6장", () => {
@@ -264,5 +266,22 @@ describe("측정 지표 대시보드 (/admin/metrics — GROW-01, W2-c 설계 9�
       expect(check(viewer(roles), "metrics.read")).toEqual({ allowed: false, reason: "관리자만 할 수 있습니다" });
     }
     expect(AUDITED_DENIALS.has("metrics.read")).toBe(false);
+  });
+});
+
+describe("기사 생산·제휴 준비 (/admin/news-readiness — NAV-13·14, W2-c 설계 8.5)", () => {
+  test("편집 책임자·관리자만 열람·규정 버전 등록 — 기자·세무 감수위원·편집국 외 역할은 사유와 함께 거부", () => {
+    for (const v of [viewer(["editor"]), viewer([], true), viewer(["editor", "reporter"])]) {
+      expect(check(v, "readiness.read")).toEqual({ allowed: true });
+      expect(check(v, "readiness.requirements")).toEqual({ allowed: true });
+    }
+    for (const roles of [["reporter"], ["reviewer"], ["ad_ops"], ["store_ops"], ["brand_ops"], ["expert_ops"], []] as StaffRole[][]) {
+      expect(check(viewer(roles), "readiness.read")).toEqual({ allowed: false, reason: "기사 생산·제휴 준비 화면은 편집 책임자와 관리자만 봅니다 (PRD-01A 3장)" });
+      expect(check(viewer(roles), "readiness.requirements")).toEqual({ allowed: false, reason: "제휴 규정 버전은 편집 책임자와 관리자만 적고 확정합니다 (NAV-13)" });
+    }
+  });
+  test("규정 버전 등록·확정 거부는 감사 대상, 열람 거부는 아니다", () => {
+    expect(AUDITED_DENIALS.has("readiness.requirements")).toBe(true);
+    expect(AUDITED_DENIALS.has("readiness.read")).toBe(false);
   });
 });

@@ -5,6 +5,7 @@
 import { normalizeText } from "@ltr/editorial";
 import { checkDomainCutover } from "@/lib/analytics/metrics";
 import { ANALYTICS_SETTING_CHECKS } from "@/lib/analytics/settings";
+import { checkWindowsSetting } from "@/lib/readiness/windows";
 // 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
 import { SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings";
@@ -256,6 +257,13 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     guide:
       '{ "version": "새 버전", "date": "2026-11-02" } — 한국 날짜, 전환 전이면 null. 이 날 0시부터 운영, 앞날까지 시험 기간으로 지표 대시보드가 나눠 보입니다. 날짜를 바꾸면 version도 바꿉니다',
     check: (value, current) => checkDomainCutover(value, current),
+  },
+  // ── W2-c 기사 생산 대시보드 (docs/dev/W2-c_설계.md 2.8) — 대시보드(lib/readiness/windows.ts readWindowsSetting)와 같은 검사 ──
+  news_readiness_windows: {
+    label: "기사 생산 대시보드 기간 (NAV-14 — 내부 집계 기간 정의)",
+    guide:
+      '{ "version": "새 버전", "months": [3, 6, 12], "basis": "closed_months" } — months 기간 길이(개월, 작은 것부터 1~4개), basis closed_months(지난달까지 완결된 달)·including_current(이번 달 오늘까지). 기준 숫자는 여기 적지 않고 규정 버전에만 적습니다. 값을 바꾸면 version도 바꿉니다',
+    check: (value, current) => checkWindowsSetting(value, current),
   },
 };
 

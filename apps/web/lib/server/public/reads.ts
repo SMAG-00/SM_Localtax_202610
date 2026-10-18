@@ -8,13 +8,11 @@ import { pageOf, publicDb, rowsOf } from "./db";
 import {
   ARTICLE_LIST_COLUMNS,
   CATEGORY_COLUMNS,
-  PARTNER_COLUMNS,
   PERSON_COLUMNS,
   REGION_COLUMNS,
   num,
   type PublicArticleListRow,
   type PublicCategoryRow,
-  type PublicPartnerRow,
   type PublicPersonRow,
   type RegionRow,
 } from "./rows";
@@ -63,21 +61,18 @@ export const readTopicCounts = cache(async (): Promise<Map<LocalTopic, number>> 
 
 export const readRegions = cache(async (): Promise<RegionRow[]> => rowsOf<RegionRow>(publicDb().from("regions").select(REGION_COLUMNS).order("code"), "행정구역"));
 
-/** 목록 카드가 참조하는 인물·제휴사·분야·지역 — 읽을 수 있는 행만 */
-export async function lookupsFor(db: Db, rows: readonly { author_id: number | null; partner_id: number | null }[]): Promise<Lookups> {
+/** 목록 카드가 참조하는 인물·분야·지역 — 읽을 수 있는 행만. 공동 기획 배지의 제휴사 이름은 기사 행이 들고 있다(partner_badge_name — 제휴사 표를 읽지 않는다) */
+export async function lookupsFor(db: Db, rows: readonly { author_id: number | null }[]): Promise<Lookups> {
   const authorIds = [...new Set(rows.flatMap((r) => (r.author_id === null ? [] : [num(r.author_id)])))];
-  const partnerIds = [...new Set(rows.flatMap((r) => (r.partner_id === null ? [] : [num(r.partner_id)])))];
-  const [categories, regions, people, partners] = await Promise.all([
+  const [categories, regions, people] = await Promise.all([
     readCategories(),
     readRegions(),
     authorIds.length ? rowsOf<PublicPersonRow>(db.from("public_people").select(PERSON_COLUMNS).in("id", authorIds), "기자") : Promise.resolve([]),
-    partnerIds.length ? rowsOf<PublicPartnerRow>(db.from("partners").select(PARTNER_COLUMNS).in("id", partnerIds), "제휴사") : Promise.resolve([]),
   ]);
   return {
     categories: new Map(categories.map((c) => [num(c.id), c])),
     regions: new Map(regions.map((r) => [r.code, r])),
     people: new Map(people.map((p) => [num(p.id), p])),
-    partners: new Map(partners.map((p) => [num(p.id), p])),
   };
 }
 

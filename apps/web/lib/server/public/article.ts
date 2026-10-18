@@ -219,10 +219,13 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   const amendment = amendmentRows[0];
   const stage = amendment ? trackerState(eventRows, settings.confirmStage, today) : null;
 
+  // 공동 기획 배지·JSON-LD 표기 제목의 제휴사 이름 = 기사가 들고 있는 배지 이름 — 제휴사가 비공개·계약 종료로 바뀌어도 그대로 (ART-10).
+  // 제휴사 프로필 링크·제휴 콘텐츠 측정은 공개 제휴사(partnerRow)만
+  const badgeName = a.partner_badge_name;
   const viewSource = {
     article: a,
     author: person ? { name: person.name, slug: person.slug } : null,
-    partner: partnerRow ? { name: partnerRow.name } : null,
+    partner: badgeName ? { name: badgeName } : null,
     media: media.map((m) => ({ id: num(m.id), path: m.path, rights_status: "confirmed" })),
   };
   const view = toArticleView(viewSource, { siteUrl: site, publisherName: brand.productName, now: now.toISOString() });
@@ -231,7 +234,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   const { slides, rest } = splitCardNews(a.format, openBlockLinks(publicBlocks(body.blocks, readable), settings.features));
   const mediaViews = Object.fromEntries(media.map((m) => [num(m.id), mediaOf(m, site)]));
   const lead = a.lead_media_id === null ? null : (mediaViews[num(a.lead_media_id)] ?? null);
-  const badge = sponsorBadgeOf(a.label, partnerRow?.name);
+  const badge = sponsorBadgeOf(a.label, badgeName);
   // 동영상 기사의 공유 이미지는 저장한 썸네일 (SEO-03 '동영상 기사는 저장한 썸네일이 공유 이미지') — 없으면 대표 이미지
   const video = a.format === "video" ? firstPlayableVideo(rest, readable) : null;
   const shareImage = (video?.thumbnailMediaId ? mediaViews[num(video.thumbnailMediaId)]?.src : undefined) ?? view.mainImage?.url ?? null;
@@ -249,7 +252,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     typeLabel: a.content_type ? (CONTENT_TYPE_NAMES[a.content_type] ?? null) : null,
     format: a.format !== "general" ? a.format : null,
     sponsorBadge: badge,
-    sponsor: sponsorMark(a.label, partnerRow?.name),
+    sponsor: sponsorMark(a.label, badgeName),
     partner: partnerRow ? { id: num(partnerRow.id), name: partnerRow.name, href: partnerHref(num(partnerRow.id)) } : null,
     editorialField: a.editorial_field,
     title,

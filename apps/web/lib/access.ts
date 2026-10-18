@@ -63,11 +63,13 @@ export const ACTIONS = {
   "brand.manage": "인물 페이지·표준 약력·증빙·동의 기록",
   "expert.manage": "전문가 등재·연락 요청 처리",
   "metrics.read": "측정 지표 대시보드 열람 (GROW-01)",
+  "readiness.read": "기사 생산·제휴 준비 대시보드 열람 (NAV-13·14)",
+  "readiness.requirements": "제휴 규정 버전 등록·고치기·확정 (NAV-13)",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
 
-/** 거부되면 감사 로그에 남기는 작업 — 기사 승인·정렬·발행 (NAV-06 · ACC-04)과 역할 부여·계정 정지·운영 설정 (ADM-02) */
+/** 거부되면 감사 로그에 남기는 작업 — 기사 승인·정렬·발행 (NAV-06 · ACC-04)과 역할 부여·계정 정지·운영 설정 (ADM-02)·제휴 규정 버전 (NAV-13) */
 export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "review.desk_edit",
   "review.tax_review",
@@ -82,6 +84,7 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "member.suspend",
   "settings.edit",
   "situation.publish",
+  "readiness.requirements",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -191,6 +194,13 @@ export function check(viewer: Viewer, action: Action, resource?: Resource): Deci
     // 집계 숫자를 읽는 일이라 거부는 감사 대상(AUDITED_DENIALS)이 아니다 (W2-c 설계 9장)
     case "metrics.read":
       return viewer.isAdmin ? ALLOW : deny(ADMIN_ONLY);
+
+    // 기사 생산·제휴 준비 대시보드와 규정 버전 (NAV-13·14) — PRD-01A 3장 화면 '편집 책임자·관리자만'.
+    // 규정 버전의 '담당자 승인'도 같은 사람들이 한다 — 작성자와 다른 사람일 필요는 PRD에 없다 (W2-c 설계 9장)
+    case "readiness.read":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("기사 생산·제휴 준비 화면은 편집 책임자와 관리자만 봅니다 (PRD-01A 3장)");
+    case "readiness.requirements":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("제휴 규정 버전은 편집 책임자와 관리자만 적고 확정합니다 (NAV-13)");
 
     case "partner.read":
       // 편집 책임자는 공동 기획 표기 확인을 위해 읽기만 한다 — 등록·수정은 sponsored.manage
