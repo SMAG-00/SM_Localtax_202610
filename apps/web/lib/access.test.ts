@@ -79,6 +79,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "product.manage":         [X, X, X, X, O, X, X, O, X],
   "brand.manage":           [X, X, X, X, X, O, X, O, X],
   "expert.manage":          [X, X, X, X, X, X, O, O, X],
+  "metrics.read":           [X, X, X, X, X, X, X, O, X], // GROW-01 지표 대시보드 — PRD-00 6장에 행이 없어 관리자 전권만 (수익 대시보드와 같다, W2-c 설계 9장)
 };
 
 describe("역할 × 작업 표 (대상 없음) — PRD-00 6장", () => {
@@ -253,5 +254,15 @@ describe("상황 카드 (UX-05 · PRD-00 6장) — 쓰기는 편집국·관리�
     expect(can(viewer(["reviewer"]), "review.tax_review")).toBe(true);
     expect(can(viewer(["editor"]), "review.tax_review")).toBe(false);
     expect(can(viewer([], true), "review.tax_review")).toBe(false);
+  });
+});
+
+describe("측정 지표 대시보드 (/admin/metrics — GROW-01, W2-c 설계 9장)", () => {
+  test("관리자만 — 편집 책임자·기자·편집국 외 역할은 사유와 함께 거부, 읽기라 거부를 감사 로그에 남기지 않는다", () => {
+    expect(check(viewer([], true), "metrics.read")).toEqual({ allowed: true });
+    for (const roles of [["editor"], ["reporter"], ["reviewer"], ["ad_ops"], ["store_ops"], ["brand_ops"], ["expert_ops"], ["editor", "reporter"]] as StaffRole[][]) {
+      expect(check(viewer(roles), "metrics.read")).toEqual({ allowed: false, reason: "관리자만 할 수 있습니다" });
+    }
+    expect(AUDITED_DENIALS.has("metrics.read")).toBe(false);
   });
 });

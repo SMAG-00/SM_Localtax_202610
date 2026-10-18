@@ -4,6 +4,7 @@ import { SECTION_INFO } from "@/lib/server/public/constants";
 import { sectionTones } from "@/lib/site/home-view";
 import { regionHref, reviewedLine, situationSteps } from "@/lib/site/hub-view";
 import { ArticleGrid, ArticleItem } from "./ArticleItem";
+import { MeasureNextActions } from "./Measure";
 import { SiteSection } from "./SiteSection";
 
 // 상황 페이지 (UX-05 · FAM-02 · CAT-03 · PRD-01A 3장) — 아이브로 · 픽토그램 + 상황 제목 · 먼저 확인할 것 3가지(단계 타임라인) ·
@@ -53,6 +54,8 @@ export function SituationView({ page }: { page: SituationPage }) {
 
   return (
     <div data-ui="situation-page" data-situation={page.card.slug} data-section={page.section}>
+      {/* 다음 행동 띠 누름 → next_action_clicked (W2-c 3단계). 그리는 것 0 */}
+      <MeasureNextActions section={page.section} screen="situation" />
       <SiteSection id="situation-head" tone={tone("head")} first data={{ "data-situation-part": "head" }}>
         <Eyebrow>{`SITUATION · ${SECTION_INFO[page.section].eyebrow}`}</Eyebrow>
         <h1 className="mt-4">

@@ -450,6 +450,23 @@ export interface Thresholds {
 /** R8 기준값 — PRD-00 8.2 표의 값(디자인 문서 값, 바꾸면 그 표를 고친다) */
 export const R8_THRESHOLDS: Thresholds = { guideSentenceMax: 60, boxSentenceMax: 3 };
 
+/**
+ * 기사 머리 글자 상한 — 휴대폰 첫 화면(360×740)에 머리(분야 칩·제목·요약·기자)만 들어가고 그 글자가 150자(R1, PRD-00 8.2)를 넘지 않게 (W2-b 설계 9장).
+ * 제목 40자 · 요약 60자(R8 화면 문장 60자와 같은 값). 공백 포함 — 편집자가 세는 그대로. 기사 저장(API·편집 화면)이 막는다
+ */
+export const ARTICLE_HEAD_LIMITS = { titleMax: 40, summaryMax: 60 } as const;
+
+/** 머리 글자 수 — 앞뒤 공백을 뺀 글자(코드 포인트) 수, 사이 공백은 센다 */
+export const headCharCount = (text: string): number => [...text.trim()].length;
+
+/** 머리 글자 상한을 넘으면 그 문장 (API 오류·편집 화면 칸 오류가 같은 글자), 아니면 null */
+export function headLengthProblem(field: "title" | "summary", text: string | null | undefined): string | null {
+  if (typeof text !== "string") return null;
+  const max = field === "title" ? ARTICLE_HEAD_LIMITS.titleMax : ARTICLE_HEAD_LIMITS.summaryMax;
+  const n = headCharCount(text);
+  return n > max ? `${field === "title" ? "제목" : "요약"}은 ${max}자 이하여야 합니다 (지금 ${n}자 — 휴대폰 첫 화면 글자 기준 R1)` : null;
+}
+
 /** packages/similarity 결과 상태 (OPT-06) */
 export type SimilarityStatus = "blocked" | "pass" | "no_sources" | "no_body";
 

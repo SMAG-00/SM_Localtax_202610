@@ -66,7 +66,7 @@ export function NextActionBand({ similarCases, actions }: NextActionBandProps) {
                   className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 py-2 text-[16px] font-semibold text-navy-900 transition hover:text-hermes-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500"
                 >
                   {c.kind && <span className="text-[13px] font-bold text-hermes-800">{c.kind}</span>}
-                  <span>{c.title}</span>
+                  <span className="min-w-0 [overflow-wrap:anywhere]">{c.title}</span>
                 </UiLink>
               </li>
             ))}

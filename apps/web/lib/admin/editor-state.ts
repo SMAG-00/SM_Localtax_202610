@@ -4,6 +4,7 @@ import {
   ACTION_TRIGGER_WORDS,
   RESERVED_SLUGS,
   ROSE_BOX_TITLE,
+  headLengthProblem,
   type BlockType,
   type CalloutKind,
   type CoreClaim,
@@ -404,6 +405,10 @@ export interface ValidateContext {
 export function validateEditor(s: EditorState, ctx: ValidateContext): FieldErrors {
   const e: FieldErrors = {};
   if (blank(s.title)) e["meta-title"] = "제목을 적어 주세요";
+  const titleLong = headLengthProblem("title", s.title);
+  if (titleLong) e["meta-title"] = titleLong;
+  const summaryLong = headLengthProblem("summary", s.summary);
+  if (summaryLong) e["meta-summary"] = summaryLong;
   const slug = s.slug.trim();
   if (slug === "") e["meta-slug"] = "주소(slug)를 적어 주세요";
   else if (!SLUG.test(slug)) e["meta-slug"] = "주소에는 공백과 '/'를 쓸 수 없습니다";

@@ -1,6 +1,6 @@
 // 기사 작성·수정 요청 본문 검사 — 순수 함수 (시험: input.test.ts). 칸 이름은 camelCase, DB 칸은 snake_case.
 // 모르는 칸은 거부한다(오타가 조용히 무시되지 않게). 값 목록은 W2-a 설계 §2 = DB check 제약과 같다.
-import { CONTENT_TYPES, FORMATS, LABELS, REPORTING_METHODS, SECTIONS, SUBTYPES, UPDATE_KINDS, type SolvedCase } from "@ltr/editorial";
+import { CONTENT_TYPES, FORMATS, LABELS, REPORTING_METHODS, SECTIONS, SUBTYPES, UPDATE_KINDS, headLengthProblem, type SolvedCase } from "@ltr/editorial";
 import { parseBodyInput, parseSolvedCaseInput, parseTaxLensInput, type Result, type StoredBody, type TaxLensInput } from "./content";
 
 export const EDITORIAL_FIELDS = ["local_tax", "realestate", "local_finance", "urban_policy"] as const;
@@ -120,6 +120,11 @@ export function parseArticleInput(raw: Record<string, unknown>, mode: "create" |
   text("title", { required: mode === "create", max: 300 });
   if (out.title !== undefined && out.title.trim() === "") errors.push("title: 비울 수 없습니다");
   text("summary", { nullable: true, max: 1000 });
+  // 휴대폰 첫 화면 글자(R1) — 머리 글자 상한 (W2-b 설계 9장)
+  for (const k of ["title", "summary"] as const) {
+    const problem = headLengthProblem(k, out[k]);
+    if (problem) errors.push(`${k}: ${problem}`);
+  }
   oneOf("format", FORMATS);
   oneOf("section", SECTIONS, { required: mode === "create" });
   oneOf("contentType", CONTENT_TYPES, { required: mode === "create" });

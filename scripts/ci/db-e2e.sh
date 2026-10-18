@@ -22,6 +22,7 @@ step "홈 배치 API E2E (편집 책임자 201·편집국 외 403·7장째 409·
 step "브라우저 설치 (Playwright Chromium)";  pnpm exec playwright install --with-deps chromium
 step "측정 기반 E2E (W2-c — 수집 API 202·UA·IP 저장 0·세션 29/31분·봇 표시·측정 거부·GPC 204와 전송 0·4xx 저장 0·429·편집국 표시·칸 검사)"; node --test --test-concurrency=1 e2e/analytics-api.test.mjs
 step "1시간 집계·많이 본 기사·상담 사례 HOT E2E (W2-c — 봇 100+사람 3 < 사람 5·30분 안 반복 1회·168/169시간 경계·편집국 제외·비공개 바로 제외·멱등·카드 3+HOT 5·고정 2건·가중치 변경 → 다음 집계·누름 이벤트·보존 기한 정리)"; node --test --test-concurrency=1 e2e/analytics-popular.test.mjs
+step "측정 지표 대시보드 E2E (W2-c — 숫자 = 넣은 자료 손 계산: 유효 방문 29초 0·30초 1·재방문 30일째 포함·31일째 제외·측정 거부 분모 0·봇·편집국 0·깔때기 / 전환일 → 시험 기간·운영 / 새 브라우저 시나리오 깔때기 세 칸 +1 / 수집 전 / 관리자만·403 / 360px)"; node --test --test-concurrency=1 e2e/admin-metrics.test.mjs
 step "편집국 화면 E2E (정량형·정성형 기획→공개·정정·역할별 메뉴·403)"; node --test --test-concurrency=1 e2e/admin-ui.test.mjs
 step "운영 화면 E2E (겸직 금지 화면 차단·사전→점검 패널·분야 순서·360px)"; node --test --test-concurrency=1 e2e/admin-settings-ui.test.mjs
 step "공개 홈·공통 틀 E2E (섹션 순서·첫 화면 R1·R2·화면 전환·숨긴 메뉴 링크 0·1분 안 반영)"; node --test --test-concurrency=1 e2e/site-home.test.mjs

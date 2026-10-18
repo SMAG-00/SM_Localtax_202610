@@ -1,6 +1,6 @@
 // 새 기사 템플릿 (ART-01 · NAV-10 · NAV-11 · CAT-05 · ART-10) — 템플릿은 기사 유형·취재 방식·하위 유형과 처음 블록·확인 목록을 정한다.
 // 만든 요청 본문은 POST /api/admin/articles 입력 검사를 그대로 통과해야 한다 (templates.test.ts가 실제 검사 함수로 확인).
-import { RESERVED_SLUGS, SECTIONS, type ContentType, type ReportingMethod, type Section } from "@ltr/editorial";
+import { RESERVED_SLUGS, SECTIONS, headLengthProblem, type ContentType, type ReportingMethod, type Section } from "@ltr/editorial";
 import { can, type Viewer } from "@/lib/access";
 import { blank, idOrNull, isValidDate, textOrNull, type FieldErrors } from "./form-utils";
 
@@ -164,6 +164,10 @@ export function validateNewArticle(form: NewArticleForm): FieldErrors {
   const t = templateById(form.templateId);
   const errors: FieldErrors = {};
   if (blank(form.title)) errors["new-title"] = "제목을 적어 주세요";
+  const titleLong = headLengthProblem("title", form.title);
+  if (titleLong) errors["new-title"] = titleLong;
+  const summaryLong = headLengthProblem("summary", form.summary);
+  if (summaryLong) errors["new-summary"] = summaryLong;
   const slug = form.slug.trim();
   if (slug === "") errors["new-slug"] = "주소(slug)를 적어 주세요";
   else if (!SLUG.test(slug)) errors["new-slug"] = "주소에는 공백과 '/'를 쓸 수 없습니다";

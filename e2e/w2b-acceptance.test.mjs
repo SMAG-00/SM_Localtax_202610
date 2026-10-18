@@ -319,7 +319,7 @@ before(async () => {
     categoryKey: "realestate/projects",
     regionCodes: [SEOUL],
     needsTaxLens: true,
-    title: "재건축 조합원, 입주권 취득세 안내를 찾기 어렵다",
+    title: "재건축 조합원, 취득세 안내 찾기 어렵다",
     summary: "조합원들은 입주권을 산 뒤 취득세 안내를 찾기 어렵다고 말했습니다.",
     paragraphs: [
       "서울의 한 재건축 단지 조합원 두 명을 만나 보니 입주권을 산 뒤 언제 무엇을 신고하는지 안내를 찾기 어려웠다고 했다.",

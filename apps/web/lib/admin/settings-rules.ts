@@ -3,6 +3,7 @@
 //  · 검사를 지난 값은 발행 판정 설정 읽기(lib/server/articles/gate.ts parseGateSettings)를 그대로 통과한다 — 같은 키·같은 모양.
 //  · 버전이 있는 값(사전·유사도 기준)은 내용을 바꾸면 버전도 바꿔야 한다 — 점검 기록에 남는 버전이 값과 어긋나지 않게.
 import { normalizeText } from "@ltr/editorial";
+import { checkDomainCutover } from "@/lib/analytics/metrics";
 import { ANALYTICS_SETTING_CHECKS } from "@/lib/analytics/settings";
 // 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
@@ -248,6 +249,13 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "많이 본 기사 규칙 (ART-11)",
     guide: '{ "version": "새 버전", "window_hours": 168, "dedupe_minutes": 30, "exclude_content_types": ["digest", "sponsored"], "sidebar_size": 5, "list_size": 20 }',
     check: (value, current) => ANALYTICS_SETTING_CHECKS.popular_rules(value, current),
+  },
+  // ── W2-c 지표 대시보드 (docs/dev/W2-c_설계.md 2.6) — 대시보드(lib/analytics/metrics.ts readCutover)와 같은 검사 ──
+  domain_cutover: {
+    label: "운영 도메인 전환일 (GROW-01 — 측정의 시험 기간 끝)",
+    guide:
+      '{ "version": "새 버전", "date": "2026-11-02" } — 한국 날짜, 전환 전이면 null. 이 날 0시부터 운영, 앞날까지 시험 기간으로 지표 대시보드가 나눠 보입니다. 날짜를 바꾸면 version도 바꿉니다',
+    check: (value, current) => checkDomainCutover(value, current),
   },
 };
 

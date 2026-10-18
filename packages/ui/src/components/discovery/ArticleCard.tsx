@@ -51,7 +51,7 @@ export function ArticleCard({ href, title, summary, section, subsection, publish
           </span>
         )}
       </div>
-      <h3 className="mt-3 text-[19px] leading-snug font-black text-navy-900">
+      <h3 className="mt-3 text-[19px] leading-snug font-black text-navy-900 [overflow-wrap:anywhere]">
         <UiLink
           href={href}
           className="after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-hermes-500"

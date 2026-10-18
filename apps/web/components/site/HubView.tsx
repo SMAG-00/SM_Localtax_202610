@@ -3,7 +3,7 @@ import type { ArticleListItem, HubData } from "@/lib/server/public";
 import { HUB_HEADINGS, hubParts } from "@/lib/site/hub-view";
 import { ArticleGrid, ArticleItem } from "./ArticleItem";
 import { HotBlock } from "./HotBlock";
-import { MeasureView } from "./Measure";
+import { MeasureSituationCards, MeasureView } from "./Measure";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
 import { UnavailableNotice } from "./Unavailable";
 
@@ -22,6 +22,8 @@ export function HubView({ hub }: { hub: HubData }) {
     <div data-ui="hub" data-hub={hub.section}>
       {/* 측정 (W2-c — hub_viewed, 지자체뉴스는 분야 탭). 닫힌 허브(공개 데이터를 읽지 못함)는 보내지 않는다. 그리는 것 0 */}
       {!hub.unavailable && <MeasureView name="hub_viewed" section={hub.section} props={hub.topic ? { topic: hub.topic } : undefined} />}
+      {/* 상황 카드 누름 → situation_card_clicked (W2-c 3단계 — 첫 방문 깔때기). 그리는 것 0 */}
+      {!hub.unavailable && <MeasureSituationCards section={hub.section} />}
       {parts.map(({ key, tone }) => {
         switch (key) {
           case "head":

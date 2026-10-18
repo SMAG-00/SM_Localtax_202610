@@ -121,6 +121,17 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 - `hot_weights` — 상담 사례 HOT 점수 = 조회 × `view` + 공유 × `share` + 30초 이상 열람 × `engaged`, 최근 `window_days`일, 편집자 고정 최대 `max_pins`건 (HOME-05 초안 — [결정 안건: HOT 선정 기준]).
 - `popular_rules` — 많이 본 기사 = 최근 `window_hours`시간 사람 조회, 같은 방문자의 `dedupe_minutes`분 안 반복은 1회, `exclude_content_types` 유형 제외([결정 안건 — ART-11]), 사이드바 `sidebar_size`건·목록 `list_size`건 (ART-11).
 
+### 2.6 지표 대시보드 설정 (3단계 — 마이그레이션 16이 씨앗을 넣는다, 시험이 이 블록을 읽어 DB 씨앗과 대조한다)
+
+#### `domain_cutover`
+
+```json
+{"version":"2026-10-18.1","date":null}
+```
+
+- `date` — 운영 도메인 전환일(한국 날짜 `YYYY-MM-DD`). `null`이면 아직 전환 전이라 모든 수치가 '시험 기간'이다. 그날 0시(한국 시각)부터 '운영', 그 앞날까지 '시험 기간'(GROW-01 '전환일(`settings`) 이전 수치는 시험 기간으로 따로'). 전환 당일 관리자가 설정 화면에서 적는다(PRD-01A 11장 '당일 … `settings`에 전환일 기록'). 바꾸면 버전도 바꾼다(2.5와 같은 규칙). 공개 키가 아니다(anon 0).
+- 대시보드 기간 '전환 후 첫 4주(기준선)'는 이 날부터 28일이다(GROW-01 '첫 4주 기준선' — 정의 값이라 코드에 둔다).
+
 ## 3. DB가 직접 막는 것 (직접 SQL로도 깨지지 않아야 하는 규칙)
 
 마이그레이션 `20261018000014_w2c_analytics.sql`, 시험 `packages/db/tests/w2c-analytics.test.mjs`.
@@ -135,6 +146,7 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 - `article_rankings` (2단계 — 마이그레이션 `20261018000015_w2c_popular.sql`, 시험 `packages/db/tests/w2c-popular.test.mjs`) — 배치가 매 실행 통째로 바꾸는 순위 목록 두 개(`popular` 많이 본 기사 · `hot` 상담 사례 HOT). `(list, rank)` 기본 키 · `(list, article_id)` 하나 · 순위 1~100 · 고정(`pinned`)은 `hot`만 · 집계 창 `[window_start, window_end)`는 UTC 정시 · 점수(`score`)·창·설정 버전 칸 · 기사를 지우면 함께 지워진다.
   - **최소 권한**: anon·authenticated는 `list`·`rank`·`article_id`·`pinned`·`computed_at` 칸만(칸 권한), 행은 RLS 정책 — 정책 안의 기사 하위 질의가 읽는 역할의 RLS로 돌아 **지금 공개된 기사의 행만** 보인다(보류·삭제로 바뀌면 다음 집계 전에도 0행). 점수·창 칸·쓰기는 권한 거부. 원본 `analytics_events`·`article_stats`는 1단계 그대로 0 — 공개 화면은 순위 목록만 읽는다(service_role을 공개 경로에 쓰지 않는다 — W2-b 공개 데이터 함수 원칙). `verify-rls.mjs` 허용 목록에 이 표만 더했다.
   - 집계 함수 6개(`analytics_article_changes`·`article_stats_replace`·`article_stats_totals`·`article_rankings_replace`·`analytics_events_purge`·`article_stats_purge`) — security invoker·search_path 빈칸, service_role만 실행(anon·authenticated 실행 0 — anon 실행 허용은 `health_ping`뿐, DB 시험이 public 함수 전체를 본다). 바꾸기 함수는 한 트랜잭션에 지우고 넣고(advisory lock으로 겹친 실행을 한 줄로 세움), 지금 없는 기사의 행은 넣지 않는다. 합계·변경 함수는 JSON 한 값을 돌려 API 행 상한(1,000)과 상관없다.
+- 지표 읽기 함수 `analytics_metric_sessions(p_from, p_to, p_until, p_names, p_limit)` (3단계 — 마이그레이션 `20261018000016_w2c_metrics.sql`, 시험 `packages/db/tests/w2c-metrics.test.mjs`) — 세는 규칙 없이 이벤트를 세션별로 묶어 JSON 한 값으로 돌려준다(규칙은 8.3 순수 함수 한 곳). 고르는 세션 = 첫 이벤트가 `[p_from, p_to)`에 든 세션(`p_from` 앞 하루 안에 이벤트가 있으면 앞 기간에서 시작한 세션이라 뺀다) + 그 세션들의 방문자가 `[p_to, p_until)`에 새로 시작한 세션(재방문 30일). 세션 줄 = `[방문자 번호, 첫 방문, 봇, 편집국, 시작, [[이름 번호, 분야, 시각]…]]` — 방문자 번호는 이 응답 안에서만 쓰는 1부터 번호(**방문자 UUID는 응답에 0**), 시각은 `p_from`에서 지난 밀리초, 봇·편집국은 세션 안에 하나라도 있으면 참. 세션이 `p_limit`개를 넘으면 목록 없이 `{over: true, count}`. 범위·상한·이름 목록이 틀리면 오류. security invoker·search_path 빈칸, service_role만 실행(anon·authenticated 42501). 표는 더하지 않았다 — 방문자 ID 칸이 있는 표는 여전히 `analytics_events` 하나.
 - 표 이름 `events` 0 — 마이그레이션 검사(`lint-migrations.mjs`, FND-06 이름 충돌)와 DB 시험(public 스키마에 `events` 관계 0) 둘 다.
 - RLS 기본 거부 — 두 표 모두 anon·authenticated 읽기 0·쓰기 0(정책 없음·권한 없음, PRD-01A 8.2 RLS). 수집은 서버 API가 service_role로만 쓴다. service_role은 읽기·추가·고치기·지우기 전권(관리자 전권 시험 `admin-rights.test.mjs` — 보존 기한 정리·잘못 들어온 행 지우기). `scripts/verify-rls.mjs` 허용 목록에 넣지 않는다.
 
@@ -211,6 +223,8 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 | 기사 상세 `/news/[slug]` | `article_viewed`(열 때 1건) · `article_engaged`(30초) · `article_shared`(공유 성공) | 분야 · `article_id` · `format` · `content_type` · `channel` |
 | 분야 허브 `/tax`·`/realestate`·`/finance`·`/local` | `hub_viewed`(열 때·지자체뉴스 분야 탭을 바꿀 때 1건) | 분야 · `topic`(지자체뉴스 분야 탭) |
 | 홈 `/` | `home_entry_clicked`(4대 분야 카드를 누를 때) | 분야 |
+| 기사 상세 · 상황 페이지 `/situations/[slug]` (3단계) | `next_action_clicked`(다음 행동 띠 버튼을 누를 때 — 첫 방문 깔때기 3단계) | 분야 · `action`(띠의 `data-next-action` = ART-06 버튼 키) · `screen`(`article`·`situation`) |
+| 분야 허브 상황 카드 (3단계) | `situation_card_clicked`(허브 상황 카드를 누를 때 — 깔때기 2단계) | 분야 · `situation`(slug) · `position`(`hub`) |
 
 - 공개 데이터를 읽지 못한 닫힌 허브·`UNAVAILABLE` 기사는 보내지 않는다.
 
@@ -294,6 +308,41 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 - 시험 — 단위 `aggregate.test.ts`·`ranking.test.ts`·`popular-view.test.ts`·`settings.test.ts`(집계 설정)·`hub-view.test.ts`·공개 `settings.test.ts`·`constants.test.ts` · DB `w2c-popular.test.mjs` · 통합 `lib/server/public/rankings.itest.mjs` · E2E `e2e/analytics-popular.test.mjs`(CI 2단계) · 스크립트 `scheduler-cron.test.mjs`.
 - 고친 기존 시험 — `site-hubs`·`a11y`(지방세 허브 골격에 `hot`), `site-article`·`w2b-acceptance`(`/news/popular`가 이제 열린 화면), `compose`(떠 있는 스케줄러가 매시 5분 집계를 부를 수 있어 자기 작업 기록만 세고 시험 동안의 스케줄러 기록을 지운다), `e2e/lib/staff.mjs` 정리(순위 행·지난 시각으로 넣은 시험 기사 이벤트). W2-b 설계 2.3 `settings.public_keys`에 `popular_rules`, '만들지 않는 경로'에서 `/news/popular`를 뺐다.
 
+### 8.3 3단계 — 지표 대시보드 `/admin/metrics` (2026-10-18)
+
+**세는 규칙** (순수 함수 `apps/web/lib/analytics/metrics.ts` — 시험 `metrics.test.ts`. 기대값은 PRD 수용 기준을 옮긴 견본)
+
+- 기간은 한국 날짜다. 최근 7·30·90일(**오늘 포함** — 기본 30일) · 직접 고른 기간(시작일 ≤ 끝날 ≤ 오늘, 400일까지) · 전환 후 첫 4주(전환일부터 28일, 아직 28일이 안 지났으면 오늘까지). 범위는 `[첫날 0시, 끝날 다음 날 0시)`(한국 시각 — UTC 15시가 하루 경계). 틀린 주소는 이유를 보이고 최근 30일.
+- **세션 단위로 센다.** 세션은 첫 이벤트 시각이 든 구간에 속하고, 그 세션의 이벤트는 기간 끝을 넘어도 그 세션 것이다(끝날 23:59에 시작한 세션의 0:01 이벤트도 센다). 기간 앞 하루 안에 이벤트가 있는 세션은 앞 기간의 세션이라 뺀다.
+- **제외**: 세션 안에 봇 표시(`is_bot`)나 편집국 표시(`is_staff`)가 붙은 이벤트가 하나라도 있으면 그 세션은 어느 지표에도 넣지 않는다(GROW-01 '편집자·관리자 세션과 봇은 대시보드에서 빠진다'). 구간마다 '시작한 세션 n · 봇 a · 편집국 b'를 보인다.
+- **분야별 유효 방문** — 분모: 그 분야 허브를 본 세션(`hub_viewed`) · 분자: 그 세션 가운데 **같은 분야** 기사의 30초 열람(`article_engaged`)이 있는 세션. 30초는 브라우저가 정한다(6장 — 29초는 이벤트 0, 30초는 1). 허브와 기사의 순서는 보지 않는다(같은 세션이면 된다). 전체 줄 = 허브를 하나라도 본 세션 · 그중 본 허브와 같은 분야 기사를 30초 이상 읽은 세션(분야 합보다 작을 수 있다). 방문자 ID가 없는 세션도 세션이라 넣는다.
+- **재방문율** — 분모: 기간 안에 그 분야를 본(`hub_viewed`·`article_viewed`) **측정 동의 방문자**(방문자 ID 있음). 기준은 그 방문자가 기간 안에서 그 분야를 처음 본 이벤트이고, 그 한국 날짜를 D0으로 둔다. 분자: 같은 방문자가 **다른 세션**에서 같은 분야를 기준 뒤에 다시 본 한국 날짜가 **D0 + 30일 이하**인 방문자 — 30일째 날짜는 포함, 31일째는 제외(시각이 아니라 날짜로 센다 — 23:59에 처음 본 방문자도 30일째 날짜 끝까지). 같은 날 다른 세션도 재방문이다. 기간 끝 뒤 30일까지 읽는다. '30일 안 지남' = 아직 다시 오지 않았고 D0 + 30일이 오늘 이후인 방문자(분모에 들어 있고 숫자가 늘 수 있다). 방문자 ID가 없는 세션은 분모에서 빼고 따로 센다(지금은 측정 거부를 저장하지 않으므로 0 — 9장 #1). 전체 줄 = 분야를 하나라도 본 방문자 · 그중 어느 분야든 같은 분야를 다시 본 방문자.
+- **첫 방문 깔때기** (보조) — ① 첫 방문 세션(`first_visit` — 이벤트가 하나라도 남은 세션, 9장 #9) → ② 그중 4대 분야 카드(`home_entry_clicked`)·상황 카드(`situation_card_clicked`)·검색(`search_submitted`)이 있는 세션 → ③ 그중 ②의 첫 이벤트 뒤에 기사 30초 열람이 있고, 그 열람 뒤에 다음 행동 클릭(`next_action_clicked`)이 있는 세션. 칸마다 앞 칸 대비·첫 방문 대비 비율.
+- **첫 방문 문제해결률** (보조, BM-L2 1단계 대리 정의) — 첫 방문 세션 가운데 기사 30초 열람 뒤 다음 행동을 누른 세션(②를 거치지 않아도 된다 — 검색에서 기사로 바로 온 첫 방문).
+- **시험 기간 · 운영** — 전환일(`settings.domain_cutover`, 2.6) 그날 0시부터 '운영', 앞날까지 '시험 기간'. 기간이 전환일을 걸치면 두 구간을 따로 센다(세션은 시작 구간에). 전환일이 없거나 설정이 틀리면 모두 시험 기간이고 화면이 알린다.
+- 비율은 분모 0이면 '—'(0%로 보이지 않는다), 소수 한 자리.
+
+**읽기** (`apps/web/lib/server/analytics/metrics.ts` `loadMetricsDashboard`) — 전환일 설정 → 기간 → DB 함수 한 번(3장, 기간 + 끝날 뒤 31일, service_role) → 세션 묶음을 규칙으로 센다. 세션이 100,000개(서버 보호 값 — 응답 약 10MB)를 넘으면 숫자를 만들지 않고 '기간을 줄이세요'. **화면을 열 때마다 원본 이벤트에서 다시 센다** — 일 단위 미리 계산(롤업) 표는 두지 않았다(9장 #34): 지금은 시험 주소라 이벤트가 적고, 재방문율은 방문자 단위라 날마다 더할 수 없어 롤업에 방문자 ID를 다시 두게 된다(방문자 ID 칸이 있는 표는 하나 — 4장).
+
+**화면** (`app/admin/(desk)/metrics/page.tsx` · `components/admin/MetricsView.tsx` · 화면 값 `lib/admin/metrics-view.ts`)
+
+- 기간 고르기(최근 7·30·90일 링크 · 전환일이 있으면 '전환 후 첫 4주 (기준선)' · 시작일·끝날 날짜 칸 — 스크립트 없이 도는 GET 폼) · 기간·계산 시각(한국 시간) · 전환일 줄(설정 화면 링크).
+- 구간(시험 기간·운영)마다: 빼는 세션 줄 → 분야별 유효 방문 표(분야 4 + 전체: 허브 방문 세션·유효 방문 세션·비율) → 재방문율 표(방문자·재방문자·비율·30일 안 지남, 방문자 ID 없는 세션 수) → 첫 방문 깔때기 표(세 칸·앞 칸 대비·첫 방문 대비) + 첫 방문 문제해결률. 숫자마다 아래에 분모·분자·제외·소유 요구사항 ID·참고를 쉬운 말로(GROW-01 '지표마다 정의·분모·분자·소유 요구사항 ID').
+- 다른 문서가 정하는 지표 — 지방세 연결률(01B CORE-03) · AI 도우미 해결률·사람 연결률·대화당 비용(01C CHAT-13) · 전문가 연결(01C EXPL-09) · 구독·도서·교육·상담 전환과 유입 경로(01C BIZ-09) · 상품별 공헌이익(01C BIZ-09, '2단계부터') · AI 검색 노출(OPT-09) · 제휴 준비도(NAV-17)를 정의·소유 ID와 '수집 전'으로만(숫자 칸 0 — 추정값 0). 소유 작업이 데이터를 만들면 그 작업이 이 목록에서 빼고 계산을 붙인다.
+- 차트 컴포넌트가 `packages/ui`에 없어 표로 보인다(표 머리·줄 머리 `scope`, 화면 읽기용 caption). 360px — 칸이 적은 좁은 표, 넘치면 표만 가로로(페이지 가로 스크롤 0). AI 도우미 런처 0. CSV 내려받기는 두지 않았다(9장 #39).
+- 데이터 표시(E2E가 읽는다): 구간 `[data-segment="trial|live"]` · 표 `[data-metric="valid-visits|revisits|funnel|solved|other"]` · 줄 `[data-row]` · 칸 `[data-cell]`.
+
+**권한** — 작업 `metrics.read`(`lib/access.ts`) — **관리자만**. PRD-00 6장 표에 이 화면의 행이 없어 관리자 전권만 열었다(같은 표의 수익 대시보드 `/admin/business`도 관리자만, 9장 #29). 편집 책임자·기자·세무 감수위원·편집국 외 역할은 403 화면, 거부는 감사 대상이 아니다(읽기 — `AUDITED_DENIALS`에 넣지 않았다). 메뉴 '측정 지표'(`lib/admin/menu.ts` — 관리자 전용 메뉴 `ADMIN_MENU_IDS`). 전환일은 운영 설정 화면이 고친다(`lib/admin/settings-rules.ts` `domain_cutover` — 대시보드와 같은 검사 `checkDomainCutover`, 날짜를 바꾸면 버전도).
+
+**측정 연결 더함** (6장 표) — 깔때기 ②·③의 원본이 화면에서 오지 않으면 칸이 늘 0이라(가짜 0), 기사 상세·상황 페이지의 다음 행동 띠 누름(`MeasureNextActions`)과 분야 허브의 상황 카드 누름(`MeasureSituationCards`)을 붙였다(`components/site/Measure.tsx` — 그리는 것 0, 띠·카드 컴포넌트를 바꾸지 않고 문서에서 누름을 듣는다). 검색(`search_submitted`)은 검색 화면(W2-d)이 붙인다.
+
+**산출물**
+
+- 마이그레이션 `20261018000016_w2c_metrics.sql` — 지표 읽기 함수 · 설정 씨앗 `domain_cutover`(2.6).
+- 규칙 `lib/analytics/metrics.ts`(한국 날짜·기간·전환일 나누기·전환일 설정 검사·응답 읽기·유효 방문·재방문·깔때기·빼는 세션) · 서버 `lib/server/analytics/metrics.ts` · 화면 `app/admin/(desk)/metrics/page.tsx`·`components/admin/MetricsView.tsx` · 화면 값 `lib/admin/metrics-view.ts` · 권한 `lib/access.ts`(`metrics.read`)·`lib/admin/menu.ts` · 설정 `lib/admin/settings-rules.ts` · 측정 연결 `components/site/Measure.tsx`·`ArticleView.tsx`·`SituationView.tsx`·`HubView.tsx`.
+- 시험 — 단위 `metrics.test.ts`(29초 0·30초 1을 30초 열람 시계와 이어서 · 허브만 0 · 다른 분야 0 · 30일째 포함·31일째 제외 · 한국 날짜 경계 · 같은 세션 0 · 방문자 ID 없는 세션 분모 0 · 봇·편집국 0 · 깔때기 순서 · 기간·전환일) · `metrics-view.test.ts` · `access.test.ts`·`menu.test.ts`·`settings-rules.test.ts` · DB `w2c-metrics.test.mjs` · 통합 `lib/server/analytics/metrics.itest.mjs`(로컬 DB 자료 → 대시보드 읽기 손 계산) · E2E `e2e/admin-metrics.test.mjs`(CI 2단계 — 화면 숫자 = 손 계산 · 전환일 → 두 구간 · 새 브라우저 시나리오 깔때기 세 칸 +1 · 수집 전 · 관리자만·403 · 360px).
+- 함께 고친 것 — W2-b 기사 상세 머리 첫 화면(R1)·제목 40자·요약 60자 상한(W2-b 설계 9장 #52·#55). 그 상한에 걸린 E2E 원고 제목 2개를 줄였다(`admin-ui`·`w2b-acceptance`).
+
 ## 9. 결정·확인 필요
 
 | # | 내용 | 지금 기본값 | 표시 |
@@ -326,3 +375,14 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 | 26 | 많이 본 기사 목록 상자의 "최근 7일 기준" 글자 | 디자인 컴포넌트 글자(고정). 창 설정(`window_hours`)을 바꾸면 `/news/popular` 머리·집계 줄은 설정을 따르지만 상자 글자는 그대로 — 바꾸면 컴포넌트에 글자 칸을 더한다 | [확인 필요] |
 | 27 | HOT 후보의 광고(`sponsored`) | 상담 사례 분야에 있으면 HOT 후보다(제외 설정은 많이 본 기사 `exclude_content_types`만) | [확인 필요] |
 | 28 | '비공개로 바뀐 기사는 다음 집계에서 빠진다'(ART-11) | 더 빠르게 — 순위 표 공개 범위(RLS)가 바로 뺀다. 다음 집계가 표에서도 지운다 | [결정] |
+| 29 | `/admin/metrics`를 누가 보나 — PRD-00 6장 표에 행이 없다 | 관리자만(`metrics.read`) — 같은 표의 수익 대시보드도 관리자만이고, 이 대시보드에 01C 전환·도우미 비용 지표가 모인다. 거부는 감사 대상 아님(읽기) | [확인 필요 — 편집 책임자에게 분야별 유효 방문만 열지] |
+| 30 | 분야별 유효 방문의 '같은 분야'·순서 | 허브와 같은 분야 기사의 30초 열람만 분자. 같은 세션이면 순서는 보지 않는다(기사 → 허브도 유효) | [확인 필요] |
+| 31 | 재방문 '30일 안'의 셈 | 한국 날짜로 — 처음 본 날 D0부터 D0+30일 날짜까지 포함(31일째 제외). 같은 날 다른 세션도 재방문. 분모는 기간 안의 분야 방문자(방문자 단위 — 여러 날 와도 한 명), 기준은 기간 안 첫 열람 | [확인 필요] |
+| 32 | 깔때기의 순서·겹침과 문제해결률 | 깔때기는 칸이 차례로 좁아진다(② 안의 ③, ② 뒤 30초 열람, 그 뒤 다음 행동). 첫 방문 문제해결률은 ②를 거치지 않아도 센다(PRD-01A 12장 '첫 방문 세션 중 30초 + 다음 행동') | [확인 필요] |
+| 33 | 깔때기 ③의 '상황 30초 이상' | 상황 페이지 열람 시간 이벤트가 PRD-01A 12장에 없어 기사 30초만 센다 | [확인 필요 — 이벤트 더할지] |
+| 34 | 요청 때 계산과 일 단위 미리 계산(롤업) | 화면을 열 때마다 원본에서 센다(세션 100,000개 넘으면 '기간을 줄이세요'). 롤업 표는 두지 않았다 — 재방문율이 방문자 단위라 롤업이 방문자 ID를 다시 담게 된다. 운영 트래픽(하루 수천 세션)이 쌓이면 세션 단위 집계 함수로 바꾼다 | [결정 — 운영 전환 뒤 다시 본다] |
+| 35 | '최근 N일'에 오늘이 드나 | 든다(오늘 포함 N일 — 오늘은 지금까지). 기준선 보고는 '전환 후 첫 4주'(전환일부터 28일)를 쓴다 | [확인 필요] |
+| 36 | 전환일 설정 (`domain_cutover`) | 한국 날짜 하나, 그날 0시부터 운영. 값이 없거나 틀리면 모두 시험 기간 + 화면 알림. 관리자 설정 화면이 고친다(날짜를 바꾸면 버전도) | [결정 — PRD-01A 11장 '당일 settings에 전환일 기록'] |
+| 37 | 깔때기 원본 이벤트 연결 | 3단계에 `next_action_clicked`(기사·상황 페이지 다음 행동 띠)·`situation_card_clicked`(허브 상황 카드)를 붙였다 — 없으면 ②·③이 늘 0. 검색은 검색 화면(W2-d) | [결정] |
+| 38 | 세션이 기간 경계를 넘을 때 | 세션은 첫 이벤트가 든 구간에 속하고 그 세션의 이벤트는 모두 그 세션 것. 기간 앞 하루 안에 이벤트가 있는 세션은 앞 기간 세션이라 뺀다 | [결정] |
+| 39 | 대시보드에 아직 두지 않은 것 | CSV 내려받기, 상황 카드 진입률(UX-05 보조 지표), 월간 문제해결 세션(북극성, PRD-00 1.4), 진입 경로별 나누기 — GROW-01이 이 화면에 모으라고 한 목록 밖이라 다음 작업에서 | [확인 필요] |

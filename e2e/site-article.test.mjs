@@ -12,7 +12,7 @@
 //  i) 다음 행동 띠 — 비슷한 사례에 자기 자신 0, 버튼 2개 이하(후보 3개 → 앞의 2개), 닫힌 기능 버튼 0 · 해결 사례 카드(4칸·결론 배지·근거 새 창)
 //  j) 정책 링크 — 공개 승인된 것만 (꺼진 것 링크 0), 기자 소개의 정정·편집 원칙 링크도 같다
 //  k) 화면 전환 — 허브 → 기사 상세 → 뒤로, 문서 새로고침 0
-//  l) R1~R3 (360·640·1024) · 360px 가로 스크롤 0 · 다음 행동 버튼 328px
+//  l) R1~R3 (360·640·1024) · 360px 가로 스크롤 0 · 다음 행동 버튼 328px · R1 최악 견본(제목 40자·요약 60자 + 알림 — 휴대폰 첫 화면은 머리뿐, W2-b 설계 9장)
 // 만든 계정·기사·이미지·상황·제휴사·감사 로그는 끝나면 지우고, 운영 설정은 시험 전 값으로 되돌린다 (남는 행 0).
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -225,6 +225,44 @@ before(async () => {
     legalBasisDate: "2026-10-01",
     taxLens: { topics: ["취득세"], points: ["한 줄입니다."], links: [{ kind: "explainer", label: "해설", url: fx.main.href }], skip_reason: null, reviewed: true, reviewed_for_version: 1, reviewed_by: u.hidden.personId, reviewed_at: hoursAgo(2) },
   });
+
+  // ── W. 머리 글자 최악 견본 (R1 — W2-b 설계 9장): 제목 40자·요약 60자 꽉 채운 기사(고정 글자 — 무작위 꼬리 0) + 실질 수정·정정 알림.
+  //    자연 문장 하나, 공백 없는 글자 하나(줄바꿈이 가장 촘촘한 경우). 편집국 API로 쓰고 발행한 뒤 고친다 — 저장 검사(40·60자)를 지난다 ──
+  const HEAD_WORST = {
+    worst: { title: "착한 임대인 재산세 감면 신청 기간, 올해부터 한 달 늘리고 창구도 넓혀", summary: "착한 임대인 재산세 감면은 다음 달 말까지 신청하면 됩니다. 올해부터는 위택스와 구청 창구에서 함께 받습니다" },
+    dense: { title: "취득세신고기한".repeat(6).slice(0, 40), summary: "주택을사면취득일부터육십일안에신고합니다".repeat(3).slice(0, 60) },
+  };
+  for (const [label, head] of Object.entries(HEAD_WORST)) {
+    assert.equal([...head.title].length, 40, `${label} 제목 40자`);
+    assert.equal([...head.summary].length, 60, `${label} 요약 60자`);
+    const made = await api("POST", "/articles", u.reporter, {
+      slug: slugOf(label),
+      ...head,
+      section: "tax",
+      categoryId: interpretations,
+      contentType: "explainer",
+      legalBasisDate: "2026-10-01",
+      leadMediaId: fx.media.id,
+    });
+    assert.equal(made.status, 201, show(made));
+    const id = made.body.article.id;
+    fx[label] = { id, href: `/news/${slugOf(label)}` };
+    staff.trackArticle(id);
+    const src = await api("POST", `/articles/${id}/sources`, u.reporter, { kind: "official_doc", title: "지방세법 제20조(신고 및 납부)", url: "https://www.law.go.kr/법령/지방세법/제20조", sourceName: "법제처 국가법령정보센터", lastVerifiedAt: "2026-10-10T09:00:00+09:00", licenseStatus: "공공저작물 자유이용" });
+    assert.equal(src.status, 201, show(src));
+    const headBlocks = (text) => [fx.mainBlocks[0], { type: "paragraph", text }];
+    const written = await api("PATCH", `/articles/${id}`, u.reporter, {
+      body: { blocks: headBlocks("취득일은 잔금일과 등기일 중 빠른 날이다. 자세한 흐름은 [지방세 허브](/tax)에서 볼 수 있다."), claims: [{ id: "claim-1", text: "취득일부터 60일 안에 신고하고 납부해야 한다.", kind: "legal", evidenceIds: [src.body.source.ref], blockIndex: 1 }] },
+    });
+    assert.equal(written.status, 200, show(written));
+    assert.equal((await api("POST", `/articles/${id}/reviews`, u.editor, { kind: "desk_edit", decision: "approve" })).status, 201);
+    assert.equal((await api("POST", `/articles/${id}/reviews`, u.reviewer, { kind: "tax_review", decision: "approve" })).status, 201);
+    await publish(id);
+    const update = await api("PATCH", `/articles/${id}`, u.editor, { body: { blocks: headBlocks("취득일은 잔금일과 등기일 중 빠른 날이다. 2026년 개편안도 같은 기준을 쓴다."), claims: [] }, updateKind: "substantive", reason: "2026년 개편안 기준 보강" });
+    assert.equal(update.status, 200, show(update));
+    const fix = await api("POST", `/articles/${id}/corrections`, u.editor, { kind: "correction", reason: "신고 기한 표기 오기", readerNotice: "신고 기한을 60일로 바로잡았습니다", changes: { body: { blocks: headBlocks("취득일은 잔금일과 등기일 중 빠른 날이다. 이날부터 60일 안에 신고한다."), claims: [] } } });
+    assert.equal(fix.status, 201, show(fix));
+  }
 
   // ── C. 카드뉴스 — 4장으로 만들어 발행 시도 (판정은 시험 g에서) ──
   const card = await api("POST", "/articles", u.reporter, {
@@ -659,6 +697,31 @@ test("l) 화면 규칙 R1·R2·R3 — 기사 상세 폭 360·640·1024 (R1은 36
     }
     await page.close();
   }
+});
+
+test("l) R1 최악 견본 — 제목 40자·요약 60자(자연 문장·공백 없는 글자) + 실질 수정·정정 알림: 360×740 첫 화면 150자 이하, 첫 화면은 머리(칩·제목·요약·기자)뿐 — 날짜·공유·알림은 첫 화면 바로 아래", async () => {
+  for (const label of ["worst", "dense", "main"]) {
+    const href = fx[label].href;
+    const r = await measurePage(browser, `${base}${href}`, { width: 360, height: 740 });
+    assert.ok(r.r1.pass, `${label}: 360px R1 ${r.r1.chars}자 > 150`);
+    const { page } = await open(href, { width: 360, height: 740 });
+    const tops = await page.evaluate(() => {
+      const top = (sel) => {
+        const el = document.querySelector(sel);
+        return el ? Math.round(el.getBoundingClientRect().top + window.scrollY) : null;
+      };
+      return { byline: top('[data-part="byline"]'), dates: top('[data-part="dates"]'), share: top('[data-part="share"]'), notices: top('[data-article-part="notices"]'), scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+    });
+    assert.ok(tops.byline !== null && tops.byline < 740, `${label}: 기자 줄은 첫 화면 안 (${tops.byline})`);
+    for (const k of ["dates", "notices"]) assert.ok(tops[k] !== null && tops[k] >= 740, `${label}: ${k}는 첫 화면 아래 (${tops[k]})`);
+    assert.ok(tops.scroll <= 0, `${label}: 가로 스크롤 ${tops.scroll}px (공백 없는 긴 요약도 줄을 바꾼다)`);
+    await page.close();
+  }
+  // 넓은 화면은 그대로 흐른다 — 기자 · 날짜 · 공유가 이어지고 알림이 머리 바로 뒤
+  const { page } = await open(fx.worst.href, { width: 1024, height: 740 });
+  const wide = await page.evaluate(() => ["byline", "dates", "share"].map((p) => Math.round(document.querySelector(`[data-part="${p}"]`).getBoundingClientRect().top)));
+  assert.ok(wide[0] < wide[1] && wide[1] < wide[2] && wide[2] < 740, `1024px 머리 순서·첫 화면: ${wide}`);
+  await page.close();
 });
 
 test("시험 동안 예상 못 한 서버 오류가 없었다", () => {

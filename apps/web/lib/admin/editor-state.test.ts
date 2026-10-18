@@ -219,6 +219,14 @@ describe("저장 전 확인 — 칸마다 오류", () => {
     expect(Object.keys(validateEditor(s, ok)).sort()).toEqual(["meta-reporting-method", "meta-slug", "meta-title"]);
   });
 
+  test("제목 41자·요약 61자는 칸 오류 — API와 같은 문장, 40·60자는 통과 (휴대폰 첫 화면 R1)", () => {
+    const base = editorStateFromArticle(article(), key);
+    expect(validateEditor({ ...base, title: "가".repeat(40), summary: "나".repeat(60) }, ok)).toEqual({});
+    const errors = validateEditor({ ...base, title: "가".repeat(41), summary: "나".repeat(61) }, ok);
+    expect(errors["meta-title"]).toBe("제목은 40자 이하여야 합니다 (지금 41자 — 휴대폰 첫 화면 글자 기준 R1)");
+    expect(errors["meta-summary"]).toBe("요약은 60자 이하여야 합니다 (지금 61자 — 휴대폰 첫 화면 글자 기준 R1)");
+  });
+
   test("표기는 광고·협찬에만, 광고·협찬은 표기 필수 (ART-10)", () => {
     const labeled = { ...editorStateFromArticle(article(), key), label: "ad" };
     expect(validateEditor(labeled, ok)["meta-label"]).toBeTruthy();

@@ -142,6 +142,15 @@ describe("새 기사 입력 확인 — 칸마다 오류 문장", () => {
   });
 });
 
+describe("새 기사 — 머리 글자 상한 (휴대폰 첫 화면 R1)", () => {
+  test("제목 40자·요약 60자까지, 넘으면 칸 오류", () => {
+    expect(validateNewArticle(form("explainer", { title: "가".repeat(40), summary: "나".repeat(60) }))).toEqual({});
+    const errors = validateNewArticle(form("explainer", { title: "가".repeat(41), summary: "나".repeat(61) }));
+    expect(errors["new-title"]).toBe("제목은 40자 이하여야 합니다 (지금 41자 — 휴대폰 첫 화면 글자 기준 R1)");
+    expect(errors["new-summary"]).toBe("요약은 60자 이하여야 합니다 (지금 61자 — 휴대폰 첫 화면 글자 기준 R1)");
+  });
+});
+
 describe("주소 제안", () => {
   test("한국 날짜(UTC+9) + 짧은 글자", () => {
     expect(suggestSlug(new Date("2026-10-17T16:30:00Z"), "a1b2")).toBe("20261018-a1b2");

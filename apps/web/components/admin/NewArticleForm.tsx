@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { ARTICLE_HEAD_LIMITS, headCharCount } from "@ltr/editorial";
 import { PrimaryButton, RadioField, SelectField, TextField } from "@ltr/ui";
 import { adminApi, apiErrorDetails, apiErrorMessage } from "@/lib/admin/api-client";
 import type { FieldErrors } from "@/lib/admin/form-utils";
@@ -103,7 +104,7 @@ export function NewArticleForm({
           ),
         }))}
       />
-      <TextField id="new-title" label="제목" required value={form.title} onChange={set("title")} error={errors["new-title"]} />
+      <TextField id="new-title" label="제목" required hint={`${ARTICLE_HEAD_LIMITS.titleMax}자 이하 — 지금 ${headCharCount(form.title)}자`} value={form.title} onChange={set("title")} error={errors["new-title"]} />
       <TextField
         id="new-slug"
         label="주소(slug)"
@@ -113,7 +114,7 @@ export function NewArticleForm({
         onChange={set("slug")}
         error={errors["new-slug"]}
       />
-      <TextAreaField id="new-summary" label="요약" hint="2줄 안팎" value={form.summary} onChange={set("summary")} />
+      <TextAreaField id="new-summary" label="요약" hint={`한 문장, ${ARTICLE_HEAD_LIMITS.summaryMax}자 이하 — 지금 ${headCharCount(form.summary)}자`} value={form.summary} onChange={set("summary")} error={errors["new-summary"]} />
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
           id="new-section"

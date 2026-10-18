@@ -51,6 +51,8 @@ const RULES: readonly MenuRule[] = [
   { id: "store", label: "스토어·구독", href: "/admin/store", when: (a) => a.has("product.manage"), paths: ["/admin/store"] },
   { id: "brand", label: "브랜드 관리", href: "/admin/brand", when: (a) => a.has("brand.manage"), paths: ["/admin/brand"] },
   { id: "experts", label: "전문가 등재", href: "/admin/experts", when: (a) => a.has("expert.manage"), paths: ["/admin/experts"] },
+  // 측정 지표 대시보드 (GROW-01) — 관리자만 (W2-c 설계 9장)
+  { id: "metrics", label: "측정 지표", href: "/admin/metrics", when: (a) => a.has("metrics.read"), paths: ["/admin/metrics"] },
   { id: "settings", label: "설정", href: "/admin/settings", when: (a) => a.has("settings.edit"), paths: ["/admin/settings"] },
   { id: "members", label: "회원·역할", href: "/admin/members", when: (a) => a.has("member.read") && a.has("role.grant"), paths: ["/admin/members"] },
 ];
@@ -59,8 +61,8 @@ const RULES: readonly MenuRule[] = [
 export const APPROVE_SORT_PUBLISH_MENU_IDS = ["reviews", "placement", "home"] as const;
 /** 상품·광고(제휴사 관리 포함)·전문가 등재·브랜드 관리 메뉴 — 편집자에게 0 (ADM-01 수용 기준) */
 export const OPERATIONS_MENU_IDS = ["sponsored", "partners", "store", "brand", "experts"] as const;
-/** 관리자 전용 메뉴 — 운영 설정 · 회원·역할 (ADM-02) */
-export const ADMIN_MENU_IDS = ["settings", "members"] as const;
+/** 관리자 전용 메뉴 — 측정 지표(GROW-01) · 운영 설정 · 회원·역할 (ADM-02) */
+export const ADMIN_MENU_IDS = ["metrics", "settings", "members"] as const;
 
 /** 로그인한 사람의 메뉴 — 순서는 위 목록 순서 */
 export function adminMenu(viewer: Viewer): MenuItem[] {

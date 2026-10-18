@@ -32,6 +32,17 @@ describe("기사 입력", () => {
     for (const ep of [0, 1.5, "2", -3]) expect(errorsOf(parseArticleInput({ seriesTitle: "연재", seriesEpisode: ep }, "patch"))).toContain("seriesEpisode: 1 이상의 회차 번호여야 합니다");
     expect(errorsOf(parseArticleInput({ seriesTitle: "가".repeat(101), seriesEpisode: 1 }, "patch"))).toEqual(["seriesTitle: 100자 이하여야 합니다"]);
   });
+  test("제목 40자·요약 60자까지 (공백 포함, 앞뒤 공백 뺌 — 휴대폰 첫 화면 R1, W2-b 설계 9장): 40·60자는 되고 41·61자는 거부", () => {
+    const title40 = "재산세 감면 신청 기간, 올해부터 한 달 늘리고 창구도 넓힌다 ".padEnd(40, "다").slice(0, 40);
+    expect([...title40].length).toBe(40);
+    expect(parseArticleInput({ title: title40, summary: "가".repeat(60) }, "patch")).toEqual({ ok: true, value: { title: title40, summary: "가".repeat(60) } });
+    expect(parseArticleInput({ title: `  ${title40}  ` }, "patch").ok).toBe(true);
+    expect(errorsOf(parseArticleInput({ title: `${title40}다`, summary: "가".repeat(61) }, "patch"))).toEqual([
+      "title: 제목은 40자 이하여야 합니다 (지금 41자 — 휴대폰 첫 화면 글자 기준 R1)",
+      "summary: 요약은 60자 이하여야 합니다 (지금 61자 — 휴대폰 첫 화면 글자 기준 R1)",
+    ]);
+    expect(parseArticleInput({ summary: null }, "patch")).toEqual({ ok: true, value: { summary: null } });
+  });
   test("수정 입력은 보낸 칸만 담는다", () => {
     const r = parseArticleInput({ title: "새 제목", updateKind: "typo", reason: "오탈자", expectedVersion: 3 }, "patch");
     expect(r).toEqual({ ok: true, value: { title: "새 제목", updateKind: "typo", reason: "오탈자", expectedVersion: 3 } });

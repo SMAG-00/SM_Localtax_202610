@@ -18,9 +18,9 @@ const EXPECTED: [string, Viewer, string[]][] = [
   ["브랜드 관리 담당", viewer(["brand_ops"]), ["dashboard", "brand"]],
   ["전문가 담당", viewer(["expert_ops"]), ["dashboard", "experts"]],
   [
-    "관리자(역할 없음) — 편집 행위 메뉴 없음, 설정·회원·역할",
+    "관리자(역할 없음) — 편집 행위 메뉴 없음, 측정 지표·설정·회원·역할",
     viewer([], true),
-    ["dashboard", "assignments", "articles", "situations", "categories", "dictionaries", "sponsored", "partners", "store", "brand", "experts", "settings", "members"],
+    ["dashboard", "assignments", "articles", "situations", "categories", "dictionaries", "sponsored", "partners", "store", "brand", "experts", "metrics", "settings", "members"],
   ],
   ["역할 없음", viewer([]), ["dashboard"]],
 ];
@@ -37,7 +37,7 @@ describe("역할별 메뉴 (ADM-01)", () => {
     }
   });
 
-  test("관리자만 — 설정·회원·역할 메뉴 (편집 책임자·편집국 외 역할 0)", () => {
+  test("관리자만 — 측정 지표·설정·회원·역할 메뉴 (편집 책임자·편집국 외 역할 0)", () => {
     for (const roles of [["editor"], ["reporter"], ["reviewer"], ["ad_ops"], ["store_ops"], ["brand_ops"], ["expert_ops"]] as StaffRole[][]) {
       const menu = ids(viewer(roles));
       for (const id of ADMIN_MENU_IDS) expect(menu).not.toContain(id);
@@ -85,6 +85,8 @@ describe("지금 보는 메뉴 (aria-current)", () => {
     const admin = adminMenu(viewer([], true));
     expect(activeMenuId(admin, "/admin/settings")).toBe("settings");
     expect(activeMenuId(admin, "/admin/members")).toBe("members");
+    expect(activeMenuId(admin, "/admin/metrics")).toBe("metrics");
+    expect(activeMenuId(adminMenu(viewer(["editor"])), "/admin/metrics")).toBe("");
     expect(activeMenuId(adminMenu(viewer(["ad_ops"])), "/admin/partners")).toBe("partners");
   });
 

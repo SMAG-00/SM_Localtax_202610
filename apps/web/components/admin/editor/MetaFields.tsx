@@ -1,5 +1,6 @@
 "use client";
 
+import { ARTICLE_HEAD_LIMITS, headCharCount } from "@ltr/editorial";
 import { SelectField, TextField } from "@ltr/ui";
 import { withMethodChecklists } from "@/lib/admin/editor-state";
 import { idOrNull } from "@/lib/admin/form-utils";
@@ -51,7 +52,7 @@ export function MetaFields({
 
   return (
     <div className="space-y-4">
-      <TextField id="meta-title" label="제목" required disabled={readOnly} value={state.title} onChange={(e) => update({ title: e.target.value })} error={errors["meta-title"]} />
+      <TextField id="meta-title" label="제목" required hint={`${ARTICLE_HEAD_LIMITS.titleMax}자 이하 — 지금 ${headCharCount(state.title)}자`} disabled={readOnly} value={state.title} onChange={(e) => update({ title: e.target.value })} error={errors["meta-title"]} />
       <TextField
         id="meta-slug"
         label="주소(slug)"
@@ -62,7 +63,7 @@ export function MetaFields({
         onChange={(e) => update({ slug: e.target.value })}
         error={errors["meta-slug"]}
       />
-      <TextAreaField id="meta-summary" label="요약" disabled={readOnly} value={state.summary} onChange={(e) => update({ summary: e.target.value })} error={errors["meta-summary"]} />
+      <TextAreaField id="meta-summary" label="요약" hint={`한 문장, ${ARTICLE_HEAD_LIMITS.summaryMax}자 이하 — 지금 ${headCharCount(state.summary)}자`} disabled={readOnly} value={state.summary} onChange={(e) => update({ summary: e.target.value })} error={errors["meta-summary"]} />
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
           id="meta-section"

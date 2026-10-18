@@ -89,7 +89,7 @@ export function SolvedCaseCard({ title, href, situation, issue, result, lesson }
   return (
     <article data-ui="solved-case-card" className="relative rounded-2xl border border-navy-100 bg-white p-6">
       {title && (
-        <h3 className="text-[19px] leading-snug font-black text-navy-900">
+        <h3 className="text-[19px] leading-snug font-black text-navy-900 [overflow-wrap:anywhere]">
           {href ? (
             <UiLink href={href} className="hover:text-hermes-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
               {title}

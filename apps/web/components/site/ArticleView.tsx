@@ -25,7 +25,7 @@ import { ArticleBlocks } from "./ArticleBlocks";
 import { ArticleGrid } from "./ArticleItem";
 import { CardNewsSlider } from "./CardNewsSlider";
 import { popularClickItems } from "@/lib/site/popular-view";
-import { MeasureArticle, MeasureClicks } from "./Measure";
+import { MeasureArticle, MeasureClicks, MeasureNextActions } from "./Measure";
 import { ShareButton } from "./ShareButton";
 import { TEXT_LINK } from "./SiteSection";
 
@@ -45,6 +45,12 @@ const EDITORIAL_FIELDS = new Set<string>(["local_tax", "realestate", "local_fina
 const H2 = "text-[22px] leading-tight font-black tracking-tight text-navy-900";
 
 const RAIL = "lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-x-12";
+/**
+ * 좁은 화면(sm 미만)의 기사 머리 첫 화면 — 분야 칩·제목·요약·기자가 첫 화면(머리글 64px · 위 여백 80px 아래 화면 높이)을 맡고, 기자 줄은 그 아래 끝에 붙는다.
+ * 날짜 줄·공유 버튼·알림(업데이트·정정)·본문은 첫 화면 바로 아래에서 시작한다 — 머리 길이·줄바꿈에 따라 날짜·알림·본문이 첫 화면 끝에 걸쳐 들어와
+ * 첫 화면 글자(R1 150자)가 기사마다 흔들리지 않게 (W2-b 설계 9장 #R1). 넓은 화면은 그대로 흐른다(칩 → 제목 → 요약 → 기자 → 날짜 → 공유)
+ */
+const HEAD_COVER = "max-sm:flex max-sm:min-h-[calc(100svh-144px)] max-sm:flex-col";
 
 function Part({ part, tone, first = false, rail = false, aside, children }: { part: ArticlePart; tone: SectionTone; first?: boolean; rail?: boolean; aside?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -84,65 +90,65 @@ function Head({ a }: { a: ArticleDetail }) {
   const series = seriesLine(a.series);
   return (
     <header data-part="article-head">
-      <div className="flex flex-wrap items-center gap-2">
-        <UiLink href={a.subsection?.href ?? a.sectionHref} className="inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
-          <Chip>{a.subsection ? `${a.sectionName} › ${a.subsection.name}` : a.sectionName}</Chip>
-        </UiLink>
-        {type && <ArticleTypeBadge type={type} />}
-        {partner && <PartnerBadge partner={partner} />}
-        {format && (
-          <span data-format-badge className="inline-flex items-center rounded-md bg-navy-50 px-2 py-0.5 text-[12px] font-bold text-navy-700">
-            {format}
-          </span>
+      <div data-part="head-cover" className={HEAD_COVER}>
+        <div className="flex flex-wrap items-center gap-2">
+          <UiLink href={a.subsection?.href ?? a.sectionHref} className="inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
+            <Chip>{a.subsection ? `${a.sectionName} › ${a.subsection.name}` : a.sectionName}</Chip>
+          </UiLink>
+          {type && <ArticleTypeBadge type={type} />}
+          {partner && <PartnerBadge partner={partner} />}
+          {format && (
+            <span data-format-badge className="inline-flex items-center rounded-md bg-navy-50 px-2 py-0.5 text-[12px] font-bold text-navy-700">
+              {format}
+            </span>
+          )}
+          {field && <EditorialFieldBadge field={field} />}
+          {a.regionLabel && <Chip>{a.regionLabel}</Chip>}
+        </div>
+        <h1 data-part="title" className="mt-5 text-[28px] leading-[1.3] font-black tracking-tight text-navy-900 [overflow-wrap:anywhere] sm:text-[36px]">
+          {a.title}
+        </h1>
+        {series && (
+          <p data-part="series" className="mt-3 text-[15px] font-bold text-hermes-800">
+            {series}
+          </p>
         )}
-        {field && <EditorialFieldBadge field={field} />}
-        {a.regionLabel && <Chip>{a.regionLabel}</Chip>}
-      </div>
-      <h1 data-part="title" className="mt-5 text-[28px] leading-[1.3] font-black tracking-tight text-navy-900 [overflow-wrap:anywhere] sm:text-[36px]">
-        {a.title}
-      </h1>
-      {series && (
-        <p data-part="series" className="mt-3 text-[15px] font-bold text-hermes-800">
-          {series}
-        </p>
-      )}
-      {a.summary && <p className="mt-5 text-[17px] leading-relaxed text-navy-700">{a.summary}</p>}
-      <div className="mt-6 space-y-1">
+        {a.summary && <p data-part="summary" className="mt-5 text-[17px] leading-relaxed text-navy-700 [overflow-wrap:anywhere]">{a.summary}</p>}
         {a.author && (
-          <p data-part="byline" className="text-[15px] text-navy-700">
+          <p data-part="byline" className="mt-6 text-[15px] text-navy-700 max-sm:mt-auto max-sm:pt-6">
             <span className="mr-1">{a.author.kind === "opinion" ? "필자" : "기자"}</span>
             <UiLink href={a.author.href} className="inline-flex min-h-11 min-w-11 items-center justify-center font-bold text-navy-900 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
               {a.author.name}
             </UiLink>
           </p>
         )}
-        <p data-part="dates" className="font-mono text-[13px] tracking-wide text-navy-600">
-          {dates.published && (
-            <span>
-              최초 발행{" "}
-              <time data-date="published" dateTime={dates.published.iso}>
-                {dates.published.text}
-              </time>
-            </span>
-          )}
-          {dates.modified && (
-            <span>
-              <span aria-hidden="true"> · </span>실질 수정{" "}
-              <time data-date="modified" dateTime={dates.modified.iso}>
-                {dates.modified.text}
-              </time>
-            </span>
-          )}
-          {dates.basis && (
-            <span>
-              <span aria-hidden="true"> · </span>법령 기준일{" "}
-              <time data-date="basis" dateTime={dates.basis}>
-                {dates.basis}
-              </time>
-            </span>
-          )}
-        </p>
       </div>
+      <p data-part="dates" className={cx("font-mono text-[13px] tracking-wide text-navy-600 max-sm:mt-6", a.author ? "mt-1" : "mt-6")}>
+        {dates.published && (
+          <span>
+            최초 발행{" "}
+            <time data-date="published" dateTime={dates.published.iso}>
+              {dates.published.text}
+            </time>
+          </span>
+        )}
+        {dates.modified && (
+          <span>
+            <span aria-hidden="true"> · </span>실질 수정{" "}
+            <time data-date="modified" dateTime={dates.modified.iso}>
+              {dates.modified.text}
+            </time>
+          </span>
+        )}
+        {dates.basis && (
+          <span>
+            <span aria-hidden="true"> · </span>법령 기준일{" "}
+            <time data-date="basis" dateTime={dates.basis}>
+              {dates.basis}
+            </time>
+          </span>
+        )}
+      </p>
       <div className="mt-6">
         <ShareButton url={a.share.url} title={a.title} measure={{ articleId: a.id, section: a.section }} />
       </div>
@@ -255,6 +261,8 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
       {/* 측정 (W2-c — article_viewed · 30초 article_engaged). 그리는 것 0 */}
       {a.contentType && <MeasureArticle articleId={a.id} section={a.section} format={a.format ?? "general"} contentType={a.contentType} />}
+      {/* 다음 행동 띠 누름 → next_action_clicked (W2-c 3단계 — 첫 방문 깔때기). 그리는 것 0 */}
+      <MeasureNextActions section={a.section} screen="article" />
       {parts.map((part) => {
         switch (part) {
           case "head":

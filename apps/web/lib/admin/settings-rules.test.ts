@@ -184,3 +184,14 @@ describe("W2-c 수집·집계 설정 — 관리자 화면이 고치는 값과 �
     ]);
   });
 });
+
+describe("W2-c 지표 대시보드 — 운영 도메인 전환일 (설계 2.6)", () => {
+  const seed = { version: "2026-10-18.1", date: null };
+  test("관리자 화면에서 고칠 수 있고, 전환일을 적으면 버전도 바꿔야 한다 — 대시보드와 같은 검사", () => {
+    expect(isEditableSetting("domain_cutover")).toBe(true);
+    expect(validateSettingValue("domain_cutover", seed, seed)).toEqual({ ok: true, value: seed });
+    expect(errorsOf(validateSettingValue("domain_cutover", { ...seed, date: "2026-11-02" }, seed))).toEqual(["version: 값을 바꾸면 버전도 바꿔야 합니다 (지금 2026-10-18.1)"]);
+    expect(validateSettingValue("domain_cutover", { version: "2026-11-01.1", date: "2026-11-02" }, seed).ok).toBe(true);
+    expect(errorsOf(validateSettingValue("domain_cutover", { version: "2026-11-01.1", date: "11월 2일" }, seed))).toEqual(["date: 한국 날짜 YYYY-MM-DD 또는 null(전환 전)이어야 합니다"]);
+  });
+});

@@ -62,6 +62,7 @@ export const ACTIONS = {
   "product.manage": "스토어 상품·주문 경로·구독 운영",
   "brand.manage": "인물 페이지·표준 약력·증빙·동의 기록",
   "expert.manage": "전문가 등재·연락 요청 처리",
+  "metrics.read": "측정 지표 대시보드 열람 (GROW-01)",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
@@ -186,6 +187,9 @@ export function check(viewer: Viewer, action: Action, resource?: Resource): Deci
     case "audit.read":
     case "member.read":
     case "member.suspend":
+    // 측정 지표 대시보드(/admin/metrics) — PRD-00 6장 표에 행이 없어 관리자 전권만(같은 표의 수익 대시보드도 관리자만).
+    // 집계 숫자를 읽는 일이라 거부는 감사 대상(AUDITED_DENIALS)이 아니다 (W2-c 설계 9장)
+    case "metrics.read":
       return viewer.isAdmin ? ALLOW : deny(ADMIN_ONLY);
 
     case "partner.read":

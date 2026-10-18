@@ -465,7 +465,7 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
   const reporter = await login(u.reporter);
   const asg = await createAssignment(reporter, { hypothesis: `착한 임대인 재산세 감면 신청이 적은 이유는 증빙 부담이다 ${staff.run}`, method: "qualitative" });
   for (const s of ["assigned", "reporting", "fact_check", "review"]) await moveAssignment(reporter, asg, s);
-  const id = await writeFromAssignment(reporter, asg, { title: `‘착한 임대인’ 재산세 감면, 신청이 적은 이유는 ${staff.run}`, slug: `e2e-ui-qual-${staff.run}`, template: "qualitative" });
+  const id = await writeFromAssignment(reporter, asg, { title: `‘착한 임대인’ 감면, 신청이 적은 이유는 ${staff.run}`, slug: `e2e-ui-qual-${staff.run}`, template: "qualitative" });
   ids.qual = id;
   assert.equal((await one("select reporting_method from public.articles where id = $1", [id])).reporting_method, "qualitative");
 
