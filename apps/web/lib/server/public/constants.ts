@@ -120,7 +120,8 @@ export const LIMITS = {
 
 /**
  * 공개 링크로 내보내지 않는 경로 — 단계 전 경로(HOME-02: 자체 계산기 `/calc/…`, `/law`, `/cases`, `/workspace`, `/qna`, `/library`)와
- * v1.2 경로(`/region`, `/resources`, `/authors`, `/news/cards`, 옛 정책 경로 — MIG-02). 사이트 안 주소(`/`로 시작)만 본다
+ * v1.2 경로(PRD-01A 3장 · PRD-00 8장 'v1.2 경로 대체' — `/region`, `/resources`, `/academy`, `/authors`, `/pricing`, `/ask`, `/realestate/trust`,
+ * `/news/cards`, 옛 정책 경로 — MIG-02). 사이트 안 주소(`/`로 시작)만 본다
  */
 const BLOCKED_PREFIXES = [
   "/calc/",
@@ -131,7 +132,11 @@ const BLOCKED_PREFIXES = [
   "/library",
   "/region",
   "/resources",
+  "/academy",
   "/authors",
+  "/pricing",
+  "/ask",
+  "/realestate/trust",
   "/news/cards",
   "/editorial-policy",
   "/corrections",
@@ -141,11 +146,50 @@ const BLOCKED_PREFIXES = [
   "/no-email-collection",
 ] as const;
 
+/** 주소의 경로 — 쿼리·조각·끝의 '/'를 뗀다 */
+const pathOf = (href: string) => href.split(/[?#]/)[0]!.replace(/\/+$/, "") || "/";
+const isUnder = (path: string, prefix: string) => path.startsWith(`${prefix}/`);
+
 export function isBlockedPath(href: string): boolean {
   if (!href.startsWith("/") || href.startsWith("//")) return false;
-  const path = href.split(/[?#]/)[0]!.replace(/\/+$/, "") || "/";
-  return BLOCKED_PREFIXES.some((p) => (p.endsWith("/") ? path.startsWith(p) : path === p || path.startsWith(`${p}/`)));
+  const path = pathOf(href);
+  return BLOCKED_PREFIXES.some((p) => (p.endsWith("/") ? path.startsWith(p) : path === p || isUnder(path, p)));
 }
+
+/**
+ * 아직 없는 화면 — 설계 7장 '만들지 않는 경로' 중 기능 키가 없는 것: 많이 본 기사·동영상·포토(W2-c) · 용어사전(W2-d) · 내 화면·브리핑(W2-e) · 행사안내(01B W6).
+ * 그 작업이 화면을 만들 때 이 목록에서 뺀다
+ */
+const UNBUILT_PREFIXES = ["/news/popular", "/news/video", "/news/photo", "/glossary", "/my", "/brief", "/local/events"] as const;
+/** 정책 페이지 묶음(W2-e) — 공개 승인된 정책 페이지(POLICY_LINKS 주소 그대로)만 열린다 (HELP-05) */
+const POLICY_ROOTS = ["/about", "/help"] as const;
+/** 기능 키로 여는 화면 — 유틸 메뉴 화면과 그 아래(HOME-02) · 트래커 상세(01B W3) · 시·도·시·군·구 허브(01B W4). self = 그 주소 자체도 */
+const FEATURE_PREFIXES: ReadonlyArray<{ prefix: string; feature: FeatureKey; self: boolean }> = [
+  ...UTILITY_LINKS.map((u) => ({ prefix: u.href, feature: u.key, self: true })),
+  // `/tax/amendments` 자체는 하위 분야 목록이다 (설계 9장 #28) — 트래커 상세 `/tax/amendments/[slug]`만
+  { prefix: "/tax/amendments", feature: "amendments", self: false },
+  // `/local`(허브)·`/local?topic=`은 그대로 — `/local/[sido](/[sigungu])`만
+  { prefix: "/local", feature: "region_hubs", self: false },
+];
+
+/**
+ * 사이트 안 주소가 지금 열린 화면인가 — 숨긴·v1.2 경로, 아직 없는 화면, 꺼진 기능의 화면이면 false (HOME-02 '빈 링크 0' · HELP-05 · ART-06).
+ * 편집국이 손으로 쓴 링크(기사 문단·「지방세로 읽기」 박스)도 이 판정을 지난다. 바깥 주소는 true (판정 대상 아님)
+ */
+export function isOpenPath(href: string, features: Features): boolean {
+  if (!href.startsWith("/") || href.startsWith("//")) return true;
+  if (isBlockedPath(href)) return false;
+  const path = pathOf(href);
+  if (UNBUILT_PREFIXES.some((p) => path === p || isUnder(path, p))) return false;
+  const policy = POLICY_LINKS.find((p) => p.href === path);
+  if (policy) return features[policy.feature];
+  if (POLICY_ROOTS.some((r) => path === r || isUnder(path, r))) return false;
+  const gate = FEATURE_PREFIXES.find((g) => (g.self && path === g.prefix) || isUnder(path, g.prefix));
+  return gate ? features[gate.feature] : true;
+}
+
+/** 기사 문단의 링크 표기 [글](주소) — 공개 데이터 함수(열린 화면만 링크로)와 화면(링크 조각)이 같은 표기를 읽는다 */
+export const MARKDOWN_LINK = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
 
 export const newsHref = (slug: string) => `/news/${encodeURIComponent(slug)}`;
 export const personHref = (slug: string) => `/people/${encodeURIComponent(slug)}`;

@@ -36,7 +36,7 @@
     {
       "path": "/tax/columns",
       "enforce": true,
-      "note": "칼럼 목록 (W2-b 4단계 — 의견 고지·연재 묶음, DB에 칼럼이 없으면 빈 목록 안내). 기사 상세·카드뉴스·인물은 주소가 시험 자료라 e2e/site-article.test.mjs가 폭 360·640·1024로 잰다"
+      "note": "칼럼 목록 (W2-b 4단계 — 의견 고지·연재 묶음, DB에 칼럼이 없으면 빈 목록 안내). 기사 상세·카드뉴스·인물은 주소가 시험 자료라 e2e/site-article.test.mjs가 폭 360·640·1024로 잰다. W2-b 수용 묶음(홈·허브·상황 페이지·기사 상세 — 한 시험 자료)은 e2e/w2b-acceptance.test.mjs가 같은 폭으로 잰다"
     },
     {
       "path": "/_design",

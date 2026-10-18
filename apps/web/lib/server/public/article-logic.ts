@@ -2,7 +2,7 @@
 import type { StoredBlock, StoredTaxLens } from "../articles/content";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import type { ArticleListItem } from "./cards";
-import { LIMITS, NEXT_ACTION_LABELS, isBlockedPath, type Features, type NextActionKey, type SectionKey } from "./constants";
+import { LIMITS, MARKDOWN_LINK, NEXT_ACTION_LABELS, isBlockedPath, isOpenPath, type Features, type NextActionKey, type SectionKey } from "./constants";
 import type { CorrectionRow, RevisionRow } from "./rows";
 
 // ── 비슷한 사례 (ART-06) ─────────────────────────────────
@@ -114,7 +114,8 @@ const MAX_POINTS = 3;
 /**
  * 박스를 보일지 — 내용이 있고, 생략 사유가 없고, 현재 버전이 감수됐고, 서명 기록(감수위원)이 공개 인물이고, 법령 기준일이 있을 때만.
  * 아니면 null(박스 요소 0 — 생략 사유 기사·감수 전 박스·서명자 비공개). 링크는 열린 기능만(계산기·도서·전문가),
- * 사이트 안 링크는 숨긴 경로가 아닌 것만. 링크가 하나도 안 남으면 박스도 없다. reviewers = 공개 인물 번호 → 이름
+ * 사이트 안 링크는 숨긴 경로가 아닌 것만 — 해설 링크(편집자가 주소를 쓴다)는 지금 열린 화면만(isOpenPath — 꺼진 기능·아직 없는 화면 0).
+ * 링크가 하나도 안 남으면 박스도 없다. reviewers = 공개 인물 번호 → 이름
  */
 export function taxLensSlot(
   stored: StoredTaxLens | null,
@@ -134,7 +135,7 @@ export function taxLensSlot(
     const feature = LINK_FEATURE[l.kind];
     if (feature === undefined || (feature !== null && !features[feature])) return [];
     const external = /^https?:\/\//i.test(l.url);
-    if (!external && (!l.url.startsWith("/") || isBlockedPath(l.url))) return [];
+    if (!external && (!l.url.startsWith("/") || (feature === null ? !isOpenPath(l.url, features) : isBlockedPath(l.url)))) return [];
     return [{ kind: l.kind, label: l.label, href: l.url, external }];
   });
   if (links.length === 0) return null;
@@ -184,6 +185,22 @@ export function updateEntries(rows: readonly RevisionRow[]): UpdateEntry[] {
 /** 이미지·인포그래픽 블록은 읽을 수 있는(권리 확인·공개) media만 — 아니면 블록을 뺀다 (NAV-04 · REG1-09) */
 export function publicBlocks(blocks: readonly StoredBlock[], readableMedia: ReadonlySet<string>): StoredBlock[] {
   return blocks.filter((b) => (b.type === "image" || b.type === "infographic" ? readableMedia.has(String(b.mediaId)) : true));
+}
+
+// ── 본문 문단의 사이트 안 링크 (HOME-02 '빈 링크 0' · HELP-05) ──────────
+
+/**
+ * 문단 글의 링크 표기 [글](/주소) 중 지금 열리지 않은 화면(꺼진 기능의 화면·아직 없는 화면 — isOpenPath)으로 가는 것은 글자만 남긴다.
+ * 편집국이 쓴 원고는 그대로이고 화면만 바뀐다 — 기능이 켜지면 배포 없이 다시 링크가 된다.
+ * 숨긴·v1.2 경로(isBlockedPath)는 건드리지 않는다 — 화면이 표기를 그대로 보여 편집자가 옛 주소를 고친다 (article-view paragraphSegments)
+ */
+export function openParagraphLinks(text: string, features: Features): string {
+  return text.replace(MARKDOWN_LINK, (whole: string, label: string, href: string) => (isBlockedPath(href) || isOpenPath(href, features) ? whole : label));
+}
+
+/** 본문 블록 — 문단마다 openParagraphLinks (다른 블록은 그대로) */
+export function openBlockLinks(blocks: readonly StoredBlock[], features: Features): StoredBlock[] {
+  return blocks.map((b) => (b.type === "paragraph" ? { ...b, text: openParagraphLinks(b.text, features) } : b));
 }
 
 export function blockMediaIds(blocks: readonly StoredBlock[]): string[] {

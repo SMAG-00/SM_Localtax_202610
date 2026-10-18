@@ -4,6 +4,8 @@ import type { StoredBlock, StoredTaxLens } from "../articles/content";
 import {
   blockMediaIds,
   correctionEntries,
+  openBlockLinks,
+  openParagraphLinks,
   publicBio,
   publicBioItems,
   publicBlocks,
@@ -193,6 +195,12 @@ describe("「지방세로 읽기」 자리 (CORE-01 · 01C BR-03)", () => {
     const blocked = lens({ links: [{ kind: "explainer", label: "옛 주소", url: "/region/seoul" }, { kind: "explainer", label: "이상한 주소", url: "news/x" }] });
     expect(taxLensSlot(blocked, 3, "2026-10-01", OPEN, REVIEWERS)).toBeNull();
   });
+
+  test("해설 링크가 꺼진 기능·아직 없는 화면으로 가면 뺀다 — 기능이 켜지면 다시 (HOME-02 빈 링크 0)", () => {
+    const closedPage = lens({ links: [{ kind: "explainer", label: "취득세 계산기", url: "/calc" }, { kind: "explainer", label: "용어사전", url: "/glossary" }, { kind: "explainer", label: "해설 읽기", url: "/news/a" }] });
+    expect(taxLensSlot(closedPage, 3, "2026-10-01", CLOSED_FEATURES, REVIEWERS)!.links.map((l) => l.href)).toEqual(["/news/a"]);
+    expect(taxLensSlot(closedPage, 3, "2026-10-01", { ...CLOSED_FEATURES, calc: true }, REVIEWERS)!.links.map((l) => l.href)).toEqual(["/calc", "/news/a"]);
+  });
 });
 
 describe("정정 이력 · 업데이트 표시", () => {
@@ -234,6 +242,32 @@ describe("본문 이미지 — 읽을 수 있는(권리 확인·공개) media만
   test("읽히지 않는 이미지·인포그래픽 블록은 뺀다 — 다른 블록은 그대로", () => {
     expect(publicBlocks(blocks, new Set(["11", "12"])).map((b) => b.type)).toEqual(["paragraph", "image", "infographic"]);
     expect(blockMediaIds(blocks)).toEqual(["11", "12", "13"]);
+  });
+});
+
+describe("본문 문단 링크 — 열린 화면만 링크로 (HOME-02 빈 링크 0 · HELP-05)", () => {
+  const text = "흐름은 [지방세 허브](/tax)에서, 세액은 [취득세 계산기](/calc)에서 본다. [편집 원칙](/about/editorial-policy) · [용어사전](/glossary) · [옛 자료실](/resources) · [법령](https://www.law.go.kr/법령/지방세법)";
+
+  test("꺼진 기능·아직 없는 화면으로 가는 링크는 글자만 — 열린 화면·바깥 주소는 그대로, 숨긴·v1.2 주소는 표기 그대로(편집자가 고친다)", () => {
+    expect(openParagraphLinks(text, CLOSED_FEATURES)).toBe(
+      "흐름은 [지방세 허브](/tax)에서, 세액은 취득세 계산기에서 본다. 편집 원칙 · 용어사전 · [옛 자료실](/resources) · [법령](https://www.law.go.kr/법령/지방세법)",
+    );
+  });
+
+  test("기능을 켜면 배포 없이 다시 링크가 된다 — 아직 없는 화면(용어사전)은 그대로 글자", () => {
+    expect(openParagraphLinks(text, { ...CLOSED_FEATURES, calc: true, page_editorial_policy: true })).toBe(
+      "흐름은 [지방세 허브](/tax)에서, 세액은 [취득세 계산기](/calc)에서 본다. [편집 원칙](/about/editorial-policy) · 용어사전 · [옛 자료실](/resources) · [법령](https://www.law.go.kr/법령/지방세법)",
+    );
+  });
+
+  test("문단만 바꾸고 다른 블록은 그대로", () => {
+    const blocks: StoredBlock[] = [
+      { type: "paragraph", text: "[계산기](/calc)" },
+      { type: "callout", kind: "tip", title: "[계산기](/calc)", text: "그대로" },
+    ];
+    const r = openBlockLinks(blocks, CLOSED_FEATURES);
+    expect(r[0]).toEqual({ type: "paragraph", text: "계산기" });
+    expect(r[1]).toBe(blocks[1]);
   });
 });
 

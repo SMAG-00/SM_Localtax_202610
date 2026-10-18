@@ -9,6 +9,7 @@ import {
   blockMediaIds,
   publicBio,
   correctionEntries,
+  openBlockLinks,
   publicBlocks,
   reporterKind,
   selectNextActions,
@@ -217,7 +218,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   const view = toArticleView(viewSource, { siteUrl: site, publisherName: brand.productName, now: now.toISOString() });
   const facts = renderedFacts(view);
   const supersededSources = new Set(sources.flatMap((s) => (s.supersedes_id === null ? [] : [num(s.supersedes_id)])));
-  const { slides, rest } = splitCardNews(a.format, publicBlocks(body.blocks, readable));
+  const { slides, rest } = splitCardNews(a.format, openBlockLinks(publicBlocks(body.blocks, readable), settings.features));
   const mediaViews = Object.fromEntries(media.map((m) => [num(m.id), mediaOf(m, site)]));
   const lead = a.lead_media_id === null ? null : (mediaViews[num(a.lead_media_id)] ?? null);
   const badge = sponsorBadgeOf(a.label, partnerRow?.name);

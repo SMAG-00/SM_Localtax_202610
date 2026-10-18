@@ -4,7 +4,7 @@
 //  · 표기 배지: 광고는 기사 유형 배지 "광고" 하나, 공동 기획은 제휴 배지 "공동 기획 ○○" 하나 — 목록 카드와 같은 함수 (PRD-00 8.8 '섞지 않는다')
 //  · 날짜: 최초 발행(늘) · 실질 수정(실질 수정·정정이 있을 때만 — 오탈자는 바꾸지 않는다, OPT-07) · 법령 기준일(있을 때)
 import type { ArticleTypeBadgeKind, TaxLensLinkKind } from "@ltr/ui";
-import { isBlockedPath } from "@/lib/server/public/constants";
+import { MARKDOWN_LINK, isBlockedPath } from "@/lib/server/public/constants";
 import { typeBadgeKind } from "./home-view";
 
 export type SponsorMarkView = { kind: "ad" } | { kind: "co_planned"; partner: string } | null;
@@ -91,16 +91,15 @@ export function seriesLine(series: { title: string; episode: number } | null): s
 
 export type Segment = { kind: "text"; text: string } | { kind: "link"; text: string; href: string; external: boolean };
 
-const MD_LINK = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
-
 /**
  * 문단 글의 링크 표기 [글](주소) → 조각. 사이트 안 주소(/…)는 숨긴 경로가 아닐 때만, 바깥 주소는 http(s)만 링크가 된다.
- * 링크가 될 수 없는 표기는 글 그대로 둔다 (주소를 지우지 않는다 — 편집자가 고친다)
+ * 링크가 될 수 없는 표기는 글 그대로 둔다 (주소를 지우지 않는다 — 편집자가 고친다).
+ * 꺼진 기능·아직 없는 화면으로 가는 링크는 공개 데이터 함수가 먼저 글자로 바꿔 둔다 (article-logic openParagraphLinks)
  */
 export function paragraphSegments(text: string): Segment[] {
   const out: Segment[] = [];
   let last = 0;
-  for (const m of text.matchAll(MD_LINK)) {
+  for (const m of text.matchAll(MARKDOWN_LINK)) {
     const [whole, label, href] = m as unknown as [string, string, string];
     const internal = href.startsWith("/") && !href.startsWith("//");
     const external = /^https?:\/\//i.test(href);

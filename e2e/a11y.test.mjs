@@ -10,12 +10,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
-import lighthouse from "lighthouse";
 import { chromium } from "playwright";
+import { A11Y_MIN as MIN, accessibility as measureA11y } from "./lib/a11y.mjs";
 import { ROOT, buildWeb, freePort, localSupabase, startServer } from "./lib/local.mjs";
 import { StaffFixture } from "./lib/staff.mjs";
 
-const MIN = 0.95;
 let server;
 let base;
 let fixtureServer;
@@ -140,16 +139,7 @@ after(async () => {
   }
 });
 
-async function accessibility(url) {
-  const r = await lighthouse(url, { port, output: "json", logLevel: "error", onlyCategories: ["accessibility"] });
-  const cat = r.lhr.categories.accessibility;
-  const failing = cat.auditRefs
-    .map((ref) => r.lhr.audits[ref.id])
-    .filter((a) => a.score !== null && a.score < 1 && a.scoreDisplayMode === "binary")
-    .map((a) => a.id);
-  console.log(`접근성 ${Math.round(cat.score * 100)}점 — ${url.replace(/^https?:\/\/[^/]+/, "")}${failing.length ? ` (미흡: ${failing.join(", ")})` : ""}`);
-  return { score: cat.score, failing };
-}
+const accessibility = (url) => measureA11y(url, port);
 
 test("역검사 — 일부러 문제를 넣은 견본은 95점 미만이고 문제 항목을 잡는다", async () => {
   const r = await accessibility(`${fixtureBase}/bad.html`);
