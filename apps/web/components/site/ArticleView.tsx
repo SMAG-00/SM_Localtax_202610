@@ -23,6 +23,7 @@ import { formatBadge, sectionTones, type SectionTone } from "@/lib/site/home-vie
 import { ArticleBlocks } from "./ArticleBlocks";
 import { ArticleGrid } from "./ArticleItem";
 import { CardNewsSlider } from "./CardNewsSlider";
+import { MeasureArticle } from "./Measure";
 import { ShareButton } from "./ShareButton";
 import { TEXT_LINK } from "./SiteSection";
 
@@ -116,7 +117,7 @@ function Head({ a }: { a: ArticleDetail }) {
         </p>
       </div>
       <div className="mt-6">
-        <ShareButton url={a.share.url} title={a.title} />
+        <ShareButton url={a.share.url} title={a.title} measure={{ articleId: a.id, section: a.section }} />
       </div>
     </header>
   );
@@ -224,6 +225,8 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
   return (
     <article data-ui="article-page" data-article-id={a.id} data-format={a.format ?? "general"} data-content-type={a.contentType ?? "none"}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+      {/* 측정 (W2-c — article_viewed · 30초 article_engaged). 그리는 것 0 */}
+      {a.contentType && <MeasureArticle articleId={a.id} section={a.section} format={a.format ?? "general"} contentType={a.contentType} />}
       {parts.map((part) => {
         switch (part) {
           case "head":

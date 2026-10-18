@@ -1,6 +1,8 @@
 // 운영 설정(settings) 값 검사 시험 — 아는 키마다 모양을 검사하고, 틀리면 칸 경로가 붙은 오류. 검사를 지난 값은 발행 판정 설정 읽기를 통과한다.
 import { describe, expect, test } from "vitest";
 import { parseGateSettings } from "@/lib/server/articles/gate";
+import { ANALYTICS_SETTING_KEYS, parseCollectSettings } from "@/lib/analytics/settings";
+import { designSeeds } from "@/lib/analytics/test-design";
 import { isEditableSetting, parseJsonText, sameJson, validateSettingValue } from "./settings-rules";
 
 const SIM = {
@@ -93,8 +95,9 @@ describe("개정 확정 기준 단계 amendment_confirmed_stage (TX-08)", () => 
 describe("화면에서 고칠 수 있는 설정", () => {
   test("검사 규칙이 있는 키만 고친다 — 모르는 키는 거부(닫힌 쪽)", () => {
     expect(isEditableSetting("similarity_internal")).toBe(true);
-    expect(isEditableSetting("hot_weights")).toBe(false);
-    expect(validateSettingValue("hot_weights", { views: 1 }, null)).toEqual({ ok: false, errors: ["이 설정은 검사 규칙이 아직 없어 화면에서 고칠 수 없습니다"] });
+    // 크롤러 정책(OPT-08 — W7)은 아직 검사 규칙이 없다 (HOT 가중치는 W2-c에서 규칙이 생겼다)
+    expect(isEditableSetting("crawler_policy")).toBe(false);
+    expect(validateSettingValue("crawler_policy", { gptbot: "allow" }, null)).toEqual({ ok: false, errors: ["이 설정은 검사 규칙이 아직 없어 화면에서 고칠 수 없습니다"] });
   });
 });
 
@@ -146,5 +149,38 @@ describe("W2-b 공개 설정 — 관리자 화면이 고치는 값과 공개 데
   test("다음 행동 우선순위 — 아는 버튼 키, 중복 없이 1개 이상", () => {
     expect(validateSettingValue("next_action_priority", ["expert_finder", "situation"], null).ok).toBe(true);
     for (const bad of [[], ["situation", "situation"], ["call_us"], "situation"]) expect(validateSettingValue("next_action_priority", bad, null).ok).toBe(false);
+  });
+});
+
+describe("W2-c 수집·집계 설정 — 관리자 화면이 고치는 값과 수집 API가 읽는 모양이 같다 (설계 2.5)", () => {
+  const SEEDS = designSeeds();
+  const seed = (key: string) => structuredClone(SEEDS.get(key)) as Record<string, unknown>;
+
+  test("설정 키 5개 모두 고칠 수 있다 · 씨앗 값은 검사를 지난다", () => {
+    for (const key of ANALYTICS_SETTING_KEYS) {
+      expect(isEditableSetting(key), key).toBe(true);
+      expect(validateSettingValue(key, seed(key), seed(key)), key).toEqual({ ok: true, value: seed(key) });
+    }
+  });
+
+  test("HOT 가중치를 바꾸면 버전도 바꿔야 한다 — 바꾼 값은 검사를 지난다 (코드 상수 0, HOME-05)", () => {
+    const current = seed("hot_weights");
+    expect(errorsOf(validateSettingValue("hot_weights", { ...current, share: 3 }, current))).toEqual(["version: 값을 바꾸면 버전도 바꿔야 합니다 (지금 2026-10-18.1)"]);
+    expect(validateSettingValue("hot_weights", { ...current, version: "2026-10-19.1", share: 3 }, current).ok).toBe(true);
+  });
+
+  test("검사를 지난 수집 설정은 수집 API 설정 읽기를 통과한다 · 사람을 봇으로 만드는 조각은 화면에서 거부", () => {
+    const analytics = { ...seed("analytics"), version: "2026-10-19.1", respect_dnt: true };
+    expect(validateSettingValue("analytics", analytics, seed("analytics")).ok).toBe(true);
+    const read = parseCollectSettings([
+      { key: "analytics", value: analytics },
+      { key: "bot_user_agents", value: seed("bot_user_agents") },
+      { key: "analytics_referrers", value: seed("analytics_referrers") },
+    ]);
+    expect(read.ok && read.settings.analytics.respect_dnt).toBe(true);
+    const bots = seed("bot_user_agents");
+    expect(errorsOf(validateSettingValue("bot_user_agents", { version: "2026-10-19.1", patterns: [...(bots.patterns as string[]), "android"] }, bots))).toEqual([
+      `patterns[${(bots.patterns as string[]).length}]: 사람 브라우저 견본 User-Agent에 들어 있어 사람을 봇으로 셉니다`,
+    ]);
   });
 });

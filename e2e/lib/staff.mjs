@@ -28,6 +28,8 @@ export class StaffFixture {
     this.settingsSnapshot = null;
     this.categoriesSnapshot = null;
     this.run = `${Date.now().toString(36)}${crypto.randomBytes(3).toString("hex")}`;
+    /** 이 시험이 시작한 시각 — 공개 화면을 브라우저로 열면 측정 이벤트(W2-c analytics_events)가 생긴다. 정리 단계가 이 뒤의 측정 행을 지운다 (로컬 DB) */
+    this.startedAt = new Date();
   }
 
   async connect() {
@@ -222,6 +224,8 @@ export class StaffFixture {
         if (snaps.length) await q("delete from public.raw_snapshots where id = any($1::bigint[])", [snaps.map((s) => s.snapshot_id)]);
         await q("delete from public.article_revisions where article_id = any($1::bigint[])", ids);
         await q("delete from public.inquiries where related_article_id = any($1::bigint[])", ids);
+        // 기사 시간 단위 집계(W2-c) — 트리거를 끈 세션이라 외래 키 cascade가 돌지 않으니 기사보다 먼저 직접 지운다
+        await q("delete from public.article_stats where article_id = any($1::bigint[])", ids);
         await q("delete from public.articles where id = any($1::bigint[])", ids);
       }
       // 시험이 넣은 이미지 (W2-b 4단계 — 기사가 대표·본문 이미지로 가리키므로 기사 뒤에)
@@ -230,6 +234,8 @@ export class StaffFixture {
         await q("delete from public.story_assignment_events where assignment_id = any($1::bigint[])", [assignmentIds]);
         await q("delete from public.story_assignments where id = any($1::bigint[])", [assignmentIds]);
       }
+      // 측정 이벤트(W2-c) — 시험 동안 공개 화면·수집 API가 만든 행. 로컬 DB에서 시험은 하나씩 도므로 시작 시각 뒤의 행은 이 시험의 것이다
+      await q("delete from public.analytics_events where occurred_at >= $1", [this.startedAt]);
       await this.#restoreOperations(q);
       const targets = [
         ...articleIds.map((id) => `articles:${id}`),

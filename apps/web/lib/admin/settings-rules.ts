@@ -3,6 +3,7 @@
 //  · 검사를 지난 값은 발행 판정 설정 읽기(lib/server/articles/gate.ts parseGateSettings)를 그대로 통과한다 — 같은 키·같은 모양.
 //  · 버전이 있는 값(사전·유사도 기준)은 내용을 바꾸면 버전도 바꿔야 한다 — 점검 기록에 남는 버전이 값과 어긋나지 않게.
 import { normalizeText } from "@ltr/editorial";
+import { ANALYTICS_SETTING_CHECKS } from "@/lib/analytics/settings";
 // 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
 import { SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings";
@@ -220,6 +221,33 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "다음 행동 버튼 우선순위 (ART-06)",
     guide: `버튼 키 목록 — 열린 버튼 중 앞의 2개만 보입니다. 키: ${NEXT_ACTION_KEYS.join(" · ")}`,
     check: (value) => priority(value),
+  },
+  // ── W2-c 수집·집계 설정 (docs/dev/W2-c_설계.md 2.5) — 수집 API(lib/analytics/settings.ts parseCollectSettings)와 같은 검사 ──
+  analytics: {
+    label: "측정 수집 설정 (GROW-01)",
+    guide:
+      "stage 단계 1~5 · session_idle_minutes 세션 경계(무활동 분) · visitor_id_days 방문자 ID 쿠키 수명(일, 400 이하) · respect_dnt DNT를 측정 거부로 볼지 · retention_days 원본 보존(일) · rate_limits 방문자·IP 1분 상한. 값을 바꾸면 version도 바꿉니다 — 늦어도 1분 뒤 적용",
+    check: (value, current) => ANALYTICS_SETTING_CHECKS.analytics(value, current),
+  },
+  bot_user_agents: {
+    label: "봇 User-Agent 목록 (ART-11 · HOME-05)",
+    guide: '{ "version": "새 버전", "patterns": ["bot", "crawl", …] } — 소문자 글자 조각, 하나라도 들어 있으면 봇. 사람 브라우저에도 들어 있는 조각(mozilla·chrome·kakaotalk 등)은 거부됩니다',
+    check: (value, current) => ANALYTICS_SETTING_CHECKS.bot_user_agents(value, current),
+  },
+  analytics_referrers: {
+    label: "진입 경로 리퍼러 목록 (PRD-00 13장 · OPT-09)",
+    guide: '{ "version": "새 버전", "ai_answer_engine": ["chatgpt.com", …], "naver": [...], "search": [...] } — 호스트 이름만, 한 호스트는 한 목록에만. AI → 네이버 → 검색 순서로 봅니다',
+    check: (value, current) => ANALYTICS_SETTING_CHECKS.analytics_referrers(value, current),
+  },
+  hot_weights: {
+    label: "상담 사례 HOT 가중치 (HOME-05)",
+    guide: '{ "version": "새 버전", "window_days": 7, "view": 1, "share": 5, "engaged": 2, "max_pins": 2 } — 바꾸면 다음 집계부터 순위가 바뀝니다',
+    check: (value, current) => ANALYTICS_SETTING_CHECKS.hot_weights(value, current),
+  },
+  popular_rules: {
+    label: "많이 본 기사 규칙 (ART-11)",
+    guide: '{ "version": "새 버전", "window_hours": 168, "dedupe_minutes": 30, "exclude_content_types": ["digest", "sponsored"], "sidebar_size": 5, "list_size": 20 }',
+    check: (value, current) => ANALYTICS_SETTING_CHECKS.popular_rules(value, current),
   },
 };
 

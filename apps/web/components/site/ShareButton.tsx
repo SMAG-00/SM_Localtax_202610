@@ -1,19 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@/lib/analytics/client";
+import type { SectionKey } from "@/lib/server/public/constants";
 
 // 공유 (ART-02 '공유 버튼') — 휴대전화는 기기 공유 창, 아니면 주소 복사. 바깥 공유 서비스 스크립트·추적 0. 주 버튼이 아니다(R2)
-export function ShareButton({ url, title }: { url: string; title: string }) {
+// 공유가 끝나면 article_shared(분야·공유 채널) 1건 — 자체 측정(W2-c, 측정 거부·GPC면 보내지 않는다). 상담 사례 HOT 점수에 쓴다(HOME-05)
+export function ShareButton({ url, title, measure }: { url: string; title: string; measure?: { articleId: number; section: SectionKey } }) {
   const [message, setMessage] = useState("");
+  const shared = (channel: "native_share" | "copy_link") => {
+    if (measure) void track("article_shared", { section: measure.section, props: { article_id: measure.articleId, channel } });
+  };
   async function share() {
     const href = /^https?:\/\//.test(url) ? url : new URL(url, window.location.href).toString();
     try {
       if (typeof navigator.share === "function") {
         await navigator.share({ title, url: href });
+        shared("native_share");
         return;
       }
       await navigator.clipboard.writeText(href);
       setMessage("기사 주소를 복사했습니다");
+      shared("copy_link");
     } catch (err) {
       // 사용자가 공유 창을 닫은 경우(AbortError)는 알리지 않는다
       if (!(err instanceof DOMException && err.name === "AbortError")) setMessage("주소를 복사하지 못했습니다 — 주소창의 주소를 써 주세요");

@@ -2,6 +2,7 @@ import { Chip, FieldHubHead, LocalHubBlocks, SituationCard, UiLink, type HubBloc
 import type { ArticleListItem, HubData } from "@/lib/server/public";
 import { HUB_HEADINGS, hubParts } from "@/lib/site/hub-view";
 import { ArticleGrid, ArticleItem } from "./ArticleItem";
+import { MeasureView } from "./Measure";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
 import { UnavailableNotice } from "./Unavailable";
 
@@ -18,6 +19,8 @@ export function HubView({ hub }: { hub: HubData }) {
   const parts = hubParts(hub);
   return (
     <div data-ui="hub" data-hub={hub.section}>
+      {/* 측정 (W2-c — hub_viewed, 지자체뉴스는 분야 탭). 닫힌 허브(공개 데이터를 읽지 못함)는 보내지 않는다. 그리는 것 0 */}
+      {!hub.unavailable && <MeasureView name="hub_viewed" section={hub.section} props={hub.topic ? { topic: hub.topic } : undefined} />}
       {parts.map(({ key, tone }) => {
         switch (key) {
           case "head":

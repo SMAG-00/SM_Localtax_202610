@@ -3,6 +3,7 @@ import { Chip, Eyebrow, FieldCards, Hero, HomeSearch, ProgressStageBadge, UiLink
 import type { AmendmentsSection, HomeData, HomeSection, StoryCard, TrackerCard } from "@/lib/server/public";
 import { HERO_EYEBROW, HERO_HIGHLIGHT, SEARCH_LABEL, SEARCH_PLACEHOLDER, SECTION_HEADINGS, sectionTones, type SectionTone } from "@/lib/site/home-view";
 import { ArticleItem } from "./ArticleItem";
+import { MeasureHomeEntry } from "./Measure";
 import { UnavailableNotice } from "./Unavailable";
 
 // 홈 섹션 (HOME-01 · HOME-03 · HOME-04 · PRD-01A 3장 홈 골격) — 홈 데이터(getHomeData)가 정한 순서·섹션만 그린다 (내용 0건 섹션은 데이터에 없다).
@@ -96,6 +97,8 @@ function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: stri
       return (
         <div className="mt-8">
           <FieldCards />
+          {/* 측정 (W2-c — 카드를 누르면 home_entry_clicked). 그리는 것 0 */}
+          <MeasureHomeEntry />
         </div>
       );
     case "latest_reports":
