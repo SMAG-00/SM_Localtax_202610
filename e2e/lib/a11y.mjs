@@ -5,7 +5,10 @@ import lighthouse from "lighthouse";
 /** 통과 기준 — 95점 */
 export const A11Y_MIN = 0.95;
 
-/** url의 접근성 점수(0~1)와 통과하지 못한 항목 id. port = 브라우저 원격 디버깅 포트 */
+/**
+ * url의 접근성 점수(0~1)와 통과하지 못한 항목 id. port = 브라우저 원격 디버깅 포트.
+ * finalUrl = Lighthouse가 실제로 잰 주소 — 로그인 화면으로 넘어가 엉뚱한 쪽을 재지 않았는지 시험이 본다
+ */
 export async function accessibility(url, port) {
   const r = await lighthouse(url, { port, output: "json", logLevel: "error", onlyCategories: ["accessibility"] });
   const cat = r.lhr.categories.accessibility;
@@ -14,5 +17,5 @@ export async function accessibility(url, port) {
     .filter((a) => a.score !== null && a.score < 1 && a.scoreDisplayMode === "binary")
     .map((a) => a.id);
   console.log(`접근성 ${Math.round(cat.score * 100)}점 — ${url.replace(/^https?:\/\/[^/]+/, "")}${failing.length ? ` (미흡: ${failing.join(", ")})` : ""}`);
-  return { score: cat.score, failing };
+  return { score: cat.score, failing, finalUrl: r.lhr.finalDisplayedUrl ?? r.lhr.finalUrl ?? null };
 }

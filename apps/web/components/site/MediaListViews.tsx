@@ -49,6 +49,7 @@ export function VideoListView({ data, unavailable = false }: { data: ListPage<Vi
       <ListHead id="video" copy={VIDEO_LIST_COPY} unavailable={unavailable} />
       {!unavailable && (
         <SiteSection id="video-items" tone="ivory-dark" data={{ "data-hub-part": "latest" }}>
+          <h2 className="sr-only">{VIDEO_LIST_COPY.listHeading}</h2>
           {data.items.length > 0 ? (
             <ul data-part="video-articles" className={GRID}>
               {data.items.map((e) => (
@@ -76,6 +77,7 @@ export function PhotoListView({ data, unavailable = false }: { data: ListPage<Ar
       <ListHead id="photo" copy={PHOTO_LIST_COPY} unavailable={unavailable} />
       {!unavailable && (
         <SiteSection id="photo-items" tone="ivory-dark" data={{ "data-hub-part": "latest" }}>
+          <h2 className="sr-only">{PHOTO_LIST_COPY.listHeading}</h2>
           {data.items.length > 0 ? (
             <ArticleGrid part="photo-articles" items={data.items} />
           ) : (

@@ -33,6 +33,7 @@ step "기사 상세·카드뉴스·칼럼·인물 E2E (배지 글자·박스 자
 step "형식·제휴 콘텐츠 E2E (W2-c 4단계 — 인포그래픽 대체 텍스트·표 없으면 저장 422·표 접힘·키보드 펼침 / 동영상 nocookie만 저장·재생 전 유튜브 요청 0·video_played 1건·요약·자막·16:9 없으면 발행 422 / 포토 출처·이용 조건·대체 텍스트 없으면 발행 422·원본 비율 / 동영상·포토 목록 / 제휴사 프로필·같은 배지·partner_content_viewed 1건·비공개 404 / R1~R3·360px·접근성 95)"; node --test --test-concurrency=1 e2e/site-media.test.mjs
 step "공개 화면 — DB를 읽지 못할 때 (목록 200 + 안내 · 상세 503 · 500 0)"; node --test --test-concurrency=1 e2e/site-degraded.test.mjs
 step "W2-b 수용 E2E (홈 섹션 순서 · 홈·허브·상황·기사 R1~R3 · 이어 걷기 새로고침 0 · 링크 전수: 숨긴 메뉴·v1.2 경로 0·깨진 링크 0·noindex·360px · 접근성 95)"; node --test --test-concurrency=1 e2e/w2b-acceptance.test.mjs
+step "W2-c 수용 E2E (FND-06 칸 검사·events 0·health 503 / 인포그래픽·동영상·포토 저장·발행 조건·재생 전 유튜브 요청 0 / 제휴사 비공개 뒤 배지 그대로 / 수집 API 봇 100+사람 3 < 사람 5·반복 1회·168/169시간 경계·비공개 제외 / HOT 고정·가중치 → 다음 집계 / 실제 브라우저 29초 0·30초 1·깔때기·측정 거부·GPC·편집자·봇 0·재방문 30/31일 / 요건 미확정·규정 확정·확정 버전 그대로·기준 상수 0 / 권한 표·360px·접근성 95)"; node --test --test-concurrency=1 e2e/w2c-acceptance.test.mjs
 step "견본 페이지 브라우저 E2E (70종·가로 스크롤 0)"; node --test --test-concurrency=1 e2e/design-page.test.mjs
 step "화면 규칙 측정 시험 (R1~R3 경계 견본)"; node --test --test-concurrency=1 e2e/screen-rules.test.mjs
 step "화면 규칙 측정 (주요 화면 × 뷰포트 표)"; node e2e/run-screen-rules.mjs

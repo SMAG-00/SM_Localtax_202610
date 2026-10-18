@@ -10,6 +10,8 @@ export const VIDEO_LIST_COPY = {
   title: "동영상",
   intro: "편집국이 만든 동영상 기사입니다. 누르기 전에는 유튜브에 연결하지 않습니다.",
   empty: "아직 공개된 동영상 기사가 없습니다.",
+  /** 목록 부분의 제목 — 화면 읽기용(sr-only). 머리 h1 다음 카드 제목(h3)으로 건너뛰지 않게 (접근성 heading-order) */
+  listHeading: "동영상 기사 목록",
 } as const;
 
 export const PHOTO_LIST_COPY = {
@@ -17,6 +19,8 @@ export const PHOTO_LIST_COPY = {
   title: "포토",
   intro: "사진으로 전하는 기사입니다. 사진마다 출처와 이용 조건을 적습니다.",
   empty: "아직 공개된 포토 기사가 없습니다.",
+  /** 목록 부분의 제목 — 화면 읽기용(sr-only), 동영상 목록과 같은 이유 */
+  listHeading: "포토 기사 목록",
 } as const;
 
 export const PARTNER_COPY = {

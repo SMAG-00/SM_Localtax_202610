@@ -15,6 +15,22 @@ export function cachedRequestInit(init?: RequestInit): RequestInit {
   return { ...rest, next: { revalidate: PUBLIC_DATA_REVALIDATE_SECONDS, tags: [PUBLIC_DATA_TAG] } };
 }
 
+/** 즉시 만료의 여유(ms) — 한 프로세스 안에서 두 시계의 어긋남이 흔들리는 폭(측정 3ms 남짓)보다 넉넉히 */
+export const EXPIRY_LEAD_MS = 10;
+
+/**
+ * 편집국 쓰기 뒤 '다음 공개 요청은 새 값'을 지키는 만료 프로필 — `revalidateTag(PUBLIC_DATA_TAG, 이것)`.
+ * Next.js(16.3 incremental-cache)는 태그 만료 시각을 벽시계(`Date.now() + expire초`)로 적고, 읽을 때는 단조 시계
+ * (`performance.timeOrigin + performance.now()`)가 그 시각을 지났는지 본다. 두 시계는 프로세스마다 다르게 어긋나서(측정: 새 프로세스 절반에서
+ * 벽시계가 1~13ms 앞섬) `{ expire: 0 }`이면 쓰기 직후 그만큼 동안의 요청이 '만료'가 아니라 '낡음'으로 읽혀 옛 값을 한 번 그렸다
+ * (W2-c 6단계 — 기능 키를 끈 직후 /news/video가 200). 만료 시각을 앞선 만큼 + 여유만큼 앞당겨 적어 단조 시계로도 이미 지난 시각이 되게 한다.
+ * 그 폭(수십 ms) 안에 막 저장된 응답만 '낡음'으로 남고, 그것도 다음 요청이 뒤에서 새로 읽는다.
+ */
+export function immediateExpiryProfile(wallNowMs: number, monotonicNowMs: number): { expire: number } {
+  const ahead = Math.max(0, Math.ceil(wallNowMs - monotonicNowMs));
+  return { expire: -(ahead + EXPIRY_LEAD_MS) / 1000 };
+}
+
 /** 편집국 API 응답 뒤 공개 데이터 캐시를 비울지 — 읽기(GET·HEAD) 밖의 요청이 성공(2xx)했을 때만 */
 export function shouldRevalidatePublic(method: string, status: number): boolean {
   const m = method.toUpperCase();
