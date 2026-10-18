@@ -32,6 +32,7 @@ export const targetOf = {
   homeCuration: (id: number | string) => `home_curations:${id}`,
   situation: (id: number | string) => `situations:${id}`,
   requirement: (id: number | string) => `news_partner_requirements:${id}`,
+  synonym: (id: number | string) => `search_synonyms:${id}`,
 };
 
 /** 감사 로그 한 줄. 실패하면 예외 — 감사 기록 없는 변경을 성공으로 알리지 않는다 */

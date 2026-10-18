@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import { TabNav } from "@ltr/ui";
 import { GlossaryDelete, GlossaryForm, PhraseEditor } from "@/components/admin/DictionaryControls";
+import { SynonymDelete, SynonymForm, TermKey } from "@/components/admin/SynonymControls";
 import { EmptyNote, PageTitle, Panel, ToneChip } from "@/components/admin/ui";
 import { PHRASE_DICTIONARIES, isPhraseKind, readPhraseDictionary } from "@/lib/admin/dictionary-rules";
 import { SECTION_LABELS, labelOf } from "@/lib/admin/labels";
 import { listGlossary, readSetting } from "@/lib/server/admin/backoffice";
+import { listSynonyms } from "@/lib/server/admin/synonyms";
 import { pageViewer, queryValue, requirePage } from "@/lib/server/admin/pages";
 import { serviceDb } from "@/lib/server/articles/service";
 
-// 사전 (/admin/dictionaries, UX-01 · UX-03 · ADM-01) — 탭 3개: 금지 표현 · 공포 표현 · 쉬운 말 사전(용어). 편집 책임자·관리자.
-// 금지·공포 표현은 settings(forbidden_phrases·fear_phrases)에, 용어는 glossary_terms에 있다. 바꾸면 배포 없이 다음 점검부터 적용된다.
+// 사전 (/admin/dictionaries, UX-01 · UX-03 · ADM-01 · W2-d 설계 5장) — 탭 4개: 금지 표현 · 공포 표현 · 쉬운 말 사전(용어) · 검색 동의어. 편집 책임자·관리자.
+// 금지·공포 표현은 settings(forbidden_phrases·fear_phrases)에, 용어는 glossary_terms에, 검색 동의어는 search_synonyms에 있다. 바꾸면 배포 없이 다음 점검·검색부터 적용된다.
 export const metadata: Metadata = { title: "사전" };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -18,6 +20,7 @@ const TABS = [
   { id: "forbidden", label: "금지 표현" },
   { id: "fear", label: "공포 표현" },
   { id: "glossary", label: "쉬운 말 사전" },
+  { id: "synonyms", label: "검색 동의어" },
 ] as const;
 
 export default async function DictionariesPage({ searchParams }: Props) {
@@ -31,7 +34,7 @@ export default async function DictionariesPage({ searchParams }: Props) {
     <>
       <PageTitle title="사전" description="발행 점검이 쓰는 사전입니다. 고치면 배포 없이 다음 점검·저장부터 적용됩니다." />
       <TabNav label="사전 종류" items={TABS.map((t) => ({ id: t.id, label: t.label, href: `/admin/dictionaries?tab=${t.id}` }))} current={tab} />
-      <div className="mt-6">{isPhraseKind(tab) ? <PhraseTab kind={tab} db={db} /> : <GlossaryTab db={db} />}</div>
+      <div className="mt-6">{isPhraseKind(tab) ? <PhraseTab kind={tab} db={db} /> : tab === "synonyms" ? <SynonymTab db={db} /> : <GlossaryTab db={db} />}</div>
     </>
   );
 }
@@ -80,6 +83,50 @@ async function GlossaryTab({ db }: { db: ReturnType<typeof serviceDb> }) {
                   <GlossaryForm mode="patch" item={t} />
                 </details>
                 <GlossaryDelete id={t.id} term={t.term} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+    </div>
+  );
+}
+
+/** 검색 동의어 (W2-d 설계 5장) — 검색어의 낱말 하나가 낱말(띄어쓰기·기호를 뺀 열쇠)과 같으면 동의어도 함께 찾는다. 한쪽 방향 */
+async function SynonymTab({ db }: { db: ReturnType<typeof serviceDb> }) {
+  const rows = await listSynonyms(db);
+  return (
+    <div className="space-y-6">
+      <Panel
+        id="synonym-add"
+        title="동의어 더하기"
+        description="독자가 다르게 부르는 말을 함께 찾습니다. 예: '매도'를 찾으면 '양도'·'팔기'도 찾기. 반대 방향은 따로 한 줄을 더합니다. 저장하면 다음 검색부터 바로 쓰입니다."
+      >
+        <details>
+          <summary className="min-h-11 cursor-pointer text-[15px] font-bold text-navy-800">새 줄 적기</summary>
+          <SynonymForm mode="create" />
+        </details>
+      </Panel>
+      <Panel id="synonym-list" title={`검색 동의어 ${rows.length}줄`}>
+        {rows.length === 0 && <EmptyNote>동의어 사전이 비어 있습니다.</EmptyNote>}
+        <ul className="space-y-3" data-testid="synonym-list">
+          {rows.map((r) => (
+            <li key={r.id} data-testid={`synonym-${r.id}`} className="rounded-xl border border-navy-100 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[17px] font-black text-navy-900 [overflow-wrap:anywhere]">{r.term}</span>
+                <ToneChip tone={r.enabled ? "emerald" : "plain"}>{r.enabled ? "사용 중" : "쉬는 중"}</ToneChip>
+                <span className="text-[14px] text-navy-600">
+                  찾는 열쇠 <TermKey value={r.term_key} />
+                </span>
+              </div>
+              <p className="mt-1 text-[15px] text-navy-800 [overflow-wrap:anywhere]">함께 찾을 말: {r.synonyms.join(", ")}</p>
+              {r.note && <p className="text-[14px] text-navy-600 [overflow-wrap:anywhere]">메모: {r.note}</p>}
+              <div className="mt-2 flex flex-wrap items-start gap-4">
+                <details className="min-w-0 flex-1">
+                  <summary className="min-h-11 cursor-pointer text-[15px] font-bold text-navy-800">고치기</summary>
+                  <SynonymForm mode="patch" item={{ id: r.id, term: r.term, termKey: r.term_key, synonyms: r.synonyms, enabled: r.enabled, note: r.note }} />
+                </details>
+                <SynonymDelete id={r.id} term={r.term} />
               </div>
             </li>
           ))}

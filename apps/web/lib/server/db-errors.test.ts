@@ -21,6 +21,23 @@ describe("DB 오류 변환", () => {
     const limit = "허브 상황 카드는 분야마다 4장까지입니다 — 자리 5는 지정할 수 없습니다 (UX-05)";
     expect(mapDbError({ code: "23514", message: limit })).toEqual({ status: 409, message: limit });
   });
+  test("검색 별칭·동의어 사전 제약 (W2-d) — 모양은 422, 같은 정규형 낱말은 409", () => {
+    expect(mapDbError({ code: "23514", message: 'new row for relation "situations" violates check constraint "situations_aliases_shape"' })).toMatchObject({
+      status: 422,
+      message: expect.stringContaining("검색 별칭은 20개까지"),
+      constraint: "situations_aliases_shape",
+    });
+    for (const name of ["search_synonyms_term_check", "search_synonyms_term_key", "search_synonyms_shape"]) {
+      const r = mapDbError({ code: "23514", message: `new row for relation "search_synonyms" violates check constraint "${name}"` });
+      expect(r).toMatchObject({ status: 422, constraint: name });
+      expect(r.message).not.toMatch(/new row|violates/);
+    }
+    expect(mapDbError({ code: "23505", message: 'duplicate key value violates unique constraint "search_synonyms_term_key_unique"' })).toMatchObject({
+      status: 409,
+      message: expect.stringContaining("같은 낱말이 이미 동의어 사전에"),
+    });
+  });
+
   test("트리거가 낸 한국어 규칙 문장은 409로 그대로", () => {
     const message = "편집 승인 역할(editor)과 편집국 외 역할은 한 사람에게 함께 줄 수 없습니다 (ACC-04 — 이미 ad_ops, 새로 editor)";
     expect(mapDbError({ code: "23514", message })).toEqual({ status: 409, message });

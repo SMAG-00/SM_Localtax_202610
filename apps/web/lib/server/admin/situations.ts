@@ -22,6 +22,8 @@ export interface SituationAdminRow {
   glossary_ids: number[];
   tool_links: unknown;
   region_select: boolean;
+  /** 검색 별칭 (W2-d SRCH-01) */
+  aliases: string[];
   hub_slot: number | null;
   sort: number;
   visible: boolean;
@@ -33,7 +35,7 @@ export interface SituationAdminRow {
 }
 
 export const SITUATION_ADMIN_COLUMNS =
-  "id, slug, section, title, subtitle, pictogram, checks, checklist, mistakes, article_ids, solved_case_ids, glossary_ids, tool_links, region_select, hub_slot, sort, visible, reviewer_id, reviewed_at, updated_by, created_at, updated_at";
+  "id, slug, section, title, subtitle, pictogram, checks, checklist, mistakes, article_ids, solved_case_ids, glossary_ids, tool_links, region_select, aliases, hub_slot, sort, visible, reviewer_id, reviewed_at, updated_by, created_at, updated_at";
 
 const num = (v: unknown) => Number(v);
 
@@ -47,6 +49,7 @@ export function normalizeRow(r: SituationAdminRow): SituationAdminRow {
     article_ids: (r.article_ids ?? []).map(num),
     solved_case_ids: (r.solved_case_ids ?? []).map(num),
     glossary_ids: (r.glossary_ids ?? []).map(num),
+    aliases: r.aliases ?? [],
   };
 }
 
@@ -127,6 +130,8 @@ export interface SituationItem {
   visible: boolean;
   hubSlot: number | null;
   checksCount: number;
+  /** 검색 별칭 수 (W2-d) */
+  aliasCount: number;
   /** 세무 감수 기록 — 없으면 null (감수 대상 문장을 고치면 지워진다) */
   review: { by: string | null; at: string } | null;
   updatedAt: string;
@@ -145,6 +150,7 @@ export function describeSituation(r: SituationAdminRow, names: ReadonlyMap<numbe
     visible: r.visible,
     hubSlot: r.hub_slot,
     checksCount: Array.isArray(r.checks) ? r.checks.length : 0,
+    aliasCount: (r.aliases ?? []).length,
     review: r.reviewed_at ? { by: r.reviewer_id === null ? null : (names.get(r.reviewer_id) ?? null), at: r.reviewed_at } : null,
     updatedAt: r.updated_at,
     publicHref: r.visible ? `/situations/${r.slug}` : null,

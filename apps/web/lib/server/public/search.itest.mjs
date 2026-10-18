@@ -81,6 +81,12 @@ beforeAll(async () => {
     },
     "situations",
   );
+  // 감수 전(비공개) 상황 — 결과 없음 화면의 상황 카드에도 0 (2단계)
+  w.hiddenSituation = await insert(
+    "situations",
+    { slug: `it-search-hidden-${RUN}`, section: "tax", title: `감수 전 상황 ${M}`, pictogram: "car-sold", checks: JSON.stringify([{ title: "하나" }]), visible: false },
+    "situations",
+  );
   w.tracker = await insert("amendments", { slug: `it-search-reform-${RUN}`, title: `2026년 지방세제 개편안 ${M}`, status: "public" }, "amendments");
   const snap = await insert("raw_snapshots", { source: "mois", url: "https://www.mois.go.kr/it", content_hash: "h", payload: "원문" }, "snapshots");
   await db.query("insert into public.amendment_events (amendment_id, stage, occurred_on, source_url, snapshot_id, recorded_by) values ($1, 'announced', '2026-08-01', 'https://www.mois.go.kr/it', $2, 'user:시험')", [
@@ -196,5 +202,55 @@ describe("캐시·요청 (설계 8장)", () => {
       expect(r).toMatchObject({ total: 0, items: [], hasMore: false });
     }
     expect(rpcCalls()).toHaveLength(0);
+  });
+});
+
+describe("2단계 — 탭 숫자 다시 읽기 · 검색 화면 값 (getSearchPage)", () => {
+  test("고른 탭에 결과가 없어도 탭 숫자는 온다 — 같은 거르개로 한 번 더 읽는다(종류 거르개 없이 한 행)", async () => {
+    const all = await api.searchSite(options({ q: `${M} 취득세` }));
+    expect(all.counts.article).toBeGreaterThan(0);
+    expect(all.counts.tracker).toBe(0);
+    calls.length = 0;
+    const r = await api.searchSite(options({ q: `${M} 취득세`, tab: "tracker" }));
+    expect(r.items).toEqual([]);
+    expect(r.counts).toEqual(all.counts); // 탭 숫자는 탭과 상관없다 — 전체 탭과 같은 수
+    const rpc = rpcCalls();
+    expect(rpc).toHaveLength(2);
+    expect(JSON.parse(rpc[1].init.body)).toMatchObject({ p_kinds: null, p_limit: 1, p_offset: 0, p_per_kind: null });
+    // 목록 끝을 넘긴 쪽도 같다
+    const beyond = await api.searchSite(options({ q: `${M} 취득세`, tab: "article", page: 2 }));
+    expect(beyond).toMatchObject({ items: [], hasMore: false });
+    expect(beyond.counts).toEqual(all.counts);
+    // 전체 탭 1쪽 0건은 정말 0건 — 다시 읽지 않는다
+    calls.length = 0;
+    const none = await api.searchSite(options({ q: `${M} 없는낱말` }));
+    expect(none.counts).toEqual({ region: 0, situation: 0, tracker: 0, glossary: 0, category: 0, article: 0, person: 0 });
+    expect(rpcCalls()).toHaveLength(1);
+  });
+
+  test("검색 기능 키가 꺼져 있으면 null(화면 404), 켜면 결과·결과 없음 상황 카드(공개 상황만)·지역 목록", async () => {
+    await setFlags({ ...savedFlags, search: false });
+    expect(await api.getSearchPage(options({ q: `${M} 취득세` }))).toBeNull();
+    await setFlags({ ...savedFlags, search: true });
+    try {
+      const page = await api.getSearchPage(options({ q: `${M} 취득세`, tab: "event", page: 3 }));
+      expect(page.options).toMatchObject({ tab: "all", page: 1 }); // 종류 없는 탭 → 전체 탭(1쪽)
+      expect(page.result.counts).toEqual((await api.searchSite(options({ q: `${M} 취득세` }))).counts);
+      expect(page.result.counts.article).toBeGreaterThan(0);
+      expect(page.situations).toEqual([]); // 결과가 있으면 상황 카드를 읽지 않는다
+      expect(page.regions.some((r) => r.code === "1100000000" && r.level === "sido")).toBe(true);
+
+      const empty = await api.getSearchPage(options({ q: `${M} 없는낱말`, section: "tax" }));
+      const slugs = empty.situations.map((s) => s.slug);
+      expect(slugs).toContain(`it-search-car-${RUN}`);
+      expect(slugs).not.toContain(`it-search-hidden-${RUN}`);
+      expect(empty.situations.every((s) => s.section === "tax")).toBe(true);
+      expect((await api.getSearchPage(options({ q: `${M} 없는낱말`, section: "finance" }))).situations.map((s) => s.slug)).not.toContain(`it-search-car-${RUN}`);
+
+      const start = await api.getSearchPage(options({ q: "" }));
+      expect(start.result).toBeNull(); // 검색어가 없으면 검색하지 않는다
+    } finally {
+      await setFlags(savedFlags);
+    }
   });
 });

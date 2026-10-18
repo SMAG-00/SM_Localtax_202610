@@ -15,6 +15,8 @@ import {
   SEARCH_MAX_PAGE,
   SEARCH_TABS,
   TAB_KINDS,
+  countArgs,
+  countsMissing,
   emptySearchResult,
   parseSearchParams,
   queryTerms,
@@ -22,6 +24,7 @@ import {
   searchHitView,
   squash,
   toSearchResult,
+  withCounts,
   type SearchRow,
 } from "./search-logic";
 
@@ -249,5 +252,41 @@ describe("결과 — 탭 숫자·전체 수·다음 쪽", () => {
     expect(toSearchResult([row({ query_terms: ["차", "팔았"] })], CLOSED_FEATURES, { q: "차 팔았", page: 1 }, { p_limit: 20, p_offset: 0 }).terms).toEqual(["차", "팔았"]);
     expect(toSearchResult([], CLOSED_FEATURES, { q: "차 팔았", page: 1 }, { p_limit: 20, p_offset: 0 })).toMatchObject({ terms: ["차팔았"], total: 0, items: [], hasMore: false });
     expect(emptySearchResult({ q: "", page: 1 })).toMatchObject({ terms: [], total: 0, pageSize: 20 });
+  });
+});
+
+describe("탭 숫자 다시 읽기 (2단계 — 고른 탭·쪽에 행이 없을 때)", () => {
+  const base = { q: "취득세", tab: "tracker" as const, section: "tax" as const, contentType: null, region: null, from: "2026-10-01", to: null, page: 3 };
+
+  test("countArgs — 종류 거르개 없이 같은 거르개로 한 행만 (탭·쪽은 보지 않는다), 남는 글자 없는 검색어는 null", () => {
+    expect(countArgs(base)).toEqual({
+      p_query: "취득세",
+      p_kinds: null,
+      p_section: "tax",
+      p_content_type: null,
+      p_region: null,
+      p_from: "2026-10-01",
+      p_to: null,
+      p_limit: 1,
+      p_offset: 0,
+      p_per_kind: null,
+    });
+    expect(countArgs({ ...base, q: "  ?!·  " })).toBeNull();
+    expect(countArgs({ ...base, tab: "event" })).toMatchObject({ p_kinds: null, p_limit: 1 });
+  });
+
+  test("countsMissing — 행이 0이고 종류 탭이거나 2쪽 이후일 때만 (전체 탭 1쪽 0건은 정말 0건)", () => {
+    expect(countsMissing([], { p_kinds: ["tracker"], p_offset: 0 })).toBe(true);
+    expect(countsMissing([], { p_kinds: null, p_offset: 20 })).toBe(true);
+    expect(countsMissing([], { p_kinds: null, p_offset: 0 })).toBe(false);
+    expect(countsMissing([row({})], { p_kinds: ["article"], p_offset: 0 })).toBe(false);
+  });
+
+  test("withCounts — 탭 숫자와 쓴 낱말만 바꾸고 결과 목록·쪽은 그대로", () => {
+    const empty = toSearchResult([], CLOSED_FEATURES, { q: "차 팔았", page: 3 }, { p_limit: 20, p_offset: 40, p_per_kind: null });
+    const counted = withCounts(empty, [row({ kind_counts: { situation: 1, article: 3 }, query_terms: ["차", "팔았"] })]);
+    expect(counted.counts).toEqual({ region: 0, situation: 1, tracker: 0, glossary: 0, category: 0, article: 3, person: 0 });
+    expect(counted).toMatchObject({ terms: ["차", "팔았"], items: [], page: 3, total: 0, hasMore: false });
+    expect(withCounts(empty, [])).toEqual(empty);
   });
 });

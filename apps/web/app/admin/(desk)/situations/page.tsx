@@ -77,7 +77,7 @@ export default async function SituationsPage() {
                   <StatusChips item={d} />
                 </div>
                 <p className="text-[14px] text-navy-600">
-                  <span className={MONO}>/situations/{r.slug}</span> · 먼저 확인할 것 {d.checksCount}개
+                  <span className={MONO}>/situations/{r.slug}</span> · 먼저 확인할 것 {d.checksCount}개 · <span data-testid={`alias-count-${r.id}`}>검색 별칭 {d.aliasCount}개</span>
                   {d.publicHref && (
                     <>
                       {" · "}

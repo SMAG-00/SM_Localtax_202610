@@ -7,6 +7,8 @@ import { adminApi, apiErrorDetails, apiErrorMessage } from "@/lib/admin/api-clie
 import type { FieldErrors } from "@/lib/admin/form-utils";
 import { SECTION_LABELS } from "@/lib/admin/labels";
 import {
+  ALIASES_MAX,
+  ALIAS_CHARS_MAX,
   CHECKS_COUNT,
   CHECKLIST_NOTICE,
   FIELD,
@@ -113,6 +115,16 @@ export function SituationForm({
         <TextField id={FIELD.title} label="상황 한 문장" required hint="예: 차를 팔았어요·폐차했어요 (60자 이하)" value={form.title} onChange={text("title")} error={errors[FIELD.title]} />
         <TextField id={FIELD.subtitle} label="무엇을 알 수 있는지 한 줄" hint="예: 돌려받을 세금이 있는지 먼저 확인합니다" value={form.subtitle} onChange={text("subtitle")} error={errors[FIELD.subtitle]} />
       </div>
+
+      <TextAreaField
+        id={FIELD.aliases}
+        label="검색 별칭 (한 줄에 하나)"
+        hint={`독자가 이 상황을 부르는 말 — 예: 차 팔았어요, 폐차. ${ALIASES_MAX}개·${ALIAS_CHARS_MAX}자까지. 감수 대상이 아니어서 공개 중에도 고칠 수 있고, 저장하면 다음 검색부터 찾힙니다`}
+        rows={3}
+        value={form.aliases}
+        onChange={text("aliases")}
+        error={errors[FIELD.aliases]}
+      />
 
       <fieldset className="min-w-0 space-y-3 rounded-xl border border-navy-100 p-4" aria-describedby={errors[FIELD.pictogram] ? `${FIELD.pictogram}-error` : undefined}>
         <legend id={FIELD.pictogram} tabIndex={-1} className="px-1 text-[15px] font-black text-navy-900">

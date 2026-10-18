@@ -52,6 +52,11 @@ const CHECK_CONSTRAINTS: Record<string, [number, string]> = {
   situations_mistakes_shape: [422, "자주 틀리는 점은 3개까지, 빈 항목 없이 적습니다"],
   situations_tool_links_shape: [422, "연결 칸의 기능 키가 비었습니다"],
   situations_hub_slot_positive: [422, "허브 자리는 1번부터입니다 (UX-05)"],
+  // 검색 별칭·동의어 사전 (W2-d — 20261018000020_w2d_search.sql)
+  situations_aliases_shape: [422, "검색 별칭은 20개까지, 별칭마다 빈칸 없이 50자 이하로 적습니다 (SRCH-01)"],
+  search_synonyms_term_check: [422, "동의어 사전의 낱말은 1~50자입니다"],
+  search_synonyms_term_key: [422, "낱말에 글자나 숫자가 있어야 합니다 — 기호만 있는 낱말은 찾을 수 없습니다"],
+  search_synonyms_shape: [422, "동의어는 1~10개, 하나마다 50자 이하이고 글자나 숫자가 있어야 하며, 띄어쓰기·기호만 다른 같은 말은 한 번만 적습니다"],
   situations_publish_ready: [
     409,
     "공개 상황은 먼저 확인할 것 정확히 3개와 세무 감수 기록이 있어야 합니다 — 감수 대상 문장을 고치면 감수 기록이 지워지므로, 먼저 내린 뒤 고치고 다시 감수를 받으세요 (UX-05)",
@@ -68,6 +73,7 @@ const UNIQUE_CONSTRAINTS: Record<string, string> = {
   glossary_terms_term_key: "이미 사전에 있는 용어입니다",
   situations_slug_key: "같은 주소(slug)의 상황이 이미 있습니다 — 다른 주소를 적으세요",
   situations_hub_slot_unique: "이 분야 허브의 그 자리에 이미 다른 상황 카드가 있습니다 (UX-05)",
+  search_synonyms_term_key_unique: "같은 낱말이 이미 동의어 사전에 있습니다 (띄어쓰기·기호만 다른 것 포함) — 그 줄을 고치세요",
 };
 
 const FK_CONSTRAINTS: Record<string, string> = {

@@ -4,8 +4,10 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { sectionOfHref, track } from "@/lib/analytics/client";
 import { EngagementClock } from "@/lib/analytics/engagement";
 import type { EventName } from "@/lib/analytics/events";
-import { NEXT_ACTION_KEYS, type SectionKey } from "@/lib/server/public/constants";
+import { NEXT_ACTION_KEYS, isSectionKey, type SectionKey } from "@/lib/server/public/constants";
 import { partnerViewedProps } from "@/lib/site/media-view";
+import { createSearchMeasure } from "@/lib/site/search-measure";
+import type { SearchEventProps } from "@/lib/site/search-view";
 
 // 공개 화면 측정 연결 (docs/dev/W2-c_설계.md 6장) — 그리는 것 0(빈 요소). 보내기는 lib/analytics/client.ts track() 하나이고,
 // 측정 거부 쿠키·브라우저 GPC 신호가 있으면 track()이 아무것도 보내지 않는다 (GROW-01 전송 0).
@@ -122,6 +124,38 @@ export function MeasureSituationCards({ section }: { section: SectionKey }) {
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
   }, [section]);
+  return null;
+}
+
+/** 문서 하나에 하나 — 화면 전환(탭·쪽 링크)으로 같은 검색을 다시 그려도 한 번만 보낸다 (lib/site/search-measure.ts) */
+const searchMeasure = createSearchMeasure();
+
+/**
+ * 검색 결과 화면을 열면 search_submitted 1건 (W2-c 2.2 · docs/dev/W2-d_설계.md 8장) — 속성은 길이·결과 수·결과 유형 수·지역 분류 여부뿐,
+ * 검색어 원문은 이 컴포넌트에 오지도 않는다(서버가 센 숫자만 받는다). 같은 검색(검색어·거르개)에서 탭·쪽만 바꾸면 보내지 않는다
+ */
+export function MeasureSearch({ section, props }: { section: SectionKey | null; props: SearchEventProps }) {
+  const key = JSON.stringify([section, props]);
+  useEffect(() => {
+    if (!searchMeasure.shouldSend(window.location.search)) return;
+    const [s, p] = JSON.parse(key) as [SectionKey | null, SearchEventProps];
+    void track("search_submitted", { section: s, props: p });
+  }, [key]);
+  return null;
+}
+
+/** 검색 결과 없음 화면의 상황 카드를 누르면 situation_card_clicked(상황·위치 search_empty) 1건 (UX-05 · W2-c 2.3). 분야는 카드의 data-situation-section */
+export function MeasureSearchSituationCards() {
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const item = clickedIn(event, '[data-part="search-situations"] [data-situation-slug]');
+      const slug = item?.getAttribute("data-situation-slug");
+      const section = item?.getAttribute("data-situation-section");
+      if (slug && isSectionKey(section)) void track("situation_card_clicked", { section, props: { situation: slug, position: "search_empty" } });
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
   return null;
 }
 

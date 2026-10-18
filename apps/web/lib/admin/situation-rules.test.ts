@@ -1,6 +1,10 @@
 // 상황 카드 규칙 (UX-05 · FAM-02) — '먼저 확인할 것' 2·3·4개 경계, 허브 5번째 카드 거부, 감수 대상 칸 판정, 폼 → 본문
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, test } from "vitest";
 import {
+  ALIASES_MAX,
+  ALIAS_CHARS_MAX,
   CHECKLIST_NOTICE,
   FIELD,
   changesReviewedFields,
@@ -18,6 +22,21 @@ import {
   type SituationForm,
 } from "./situation-rules";
 
+const rowLike = {
+  slug: "car-sold",
+  section: "tax",
+  title: "차를 팔았어요",
+  subtitle: null,
+  pictogram: "car-sold",
+  checks: [{ title: "a" }, { title: "b" }, { title: "c" }],
+  checklist: null,
+  mistakes: [],
+  article_ids: [],
+  solved_case_ids: [],
+  glossary_ids: [],
+  tool_links: [],
+  region_select: false,
+};
 const checks = (n: number) => Array.from({ length: n }, (_, i) => ({ title: `확인 ${i + 1}` }));
 const create = (over: Record<string, unknown> = {}) => ({ slug: "car-sold", section: "tax", title: "차를 팔았어요·폐차했어요", pictogram: "car-sold", checks: checks(3), ...over });
 
@@ -69,6 +88,7 @@ describe("만들기 본문 (UX-05 · FAM-02)", () => {
         glossary_ids: [],
         tool_links: [],
         region_select: false,
+        aliases: [],
         sort: 0,
       },
     });
@@ -232,6 +252,7 @@ describe("화면 폼 → 본문 (API를 부르기 전에 2개·4개를 막는다
       glossaryIds: [],
       toolLinks: ["sm_calculator"],
       regionSelect: true,
+      aliases: [],
     });
     expect(parseSituationCreate((r as { body: Record<string, unknown> }).body).ok).toBe(true);
   });
@@ -269,6 +290,7 @@ describe("화면 폼 → 본문 (API를 부르기 전에 2개·4개를 막는다
       glossary_ids: [7],
       tool_links: [{ feature: "expert_finder" }],
       region_select: false,
+      aliases: ["차 팔았어요", "폐차"],
     };
     const r = situationFormToBody(situationToForm(row), "patch");
     expect(r.ok && r.body).toEqual({
@@ -284,6 +306,60 @@ describe("화면 폼 → 본문 (API를 부르기 전에 2개·4개를 막는다
       glossaryIds: [7],
       toolLinks: ["expert_finder"],
       regionSelect: false,
+      aliases: ["차 팔았어요", "폐차"],
     });
+  });
+});
+
+
+describe("검색 별칭 (SRCH-01 — 독자가 상황을 부르는 말, 설계 2.3 alias_limits)", () => {
+  const MD = fs.readFileSync(path.resolve(__dirname, "../../../../docs/dev/W2-d_설계.md"), "utf8");
+  const limits = [...MD.split("\n").find((l) => l.startsWith("| alias_limits "))!.split("|")[2]!.matchAll(/`([^`]*)`/g)].map((m) => Number(m[1]));
+
+  test("한도는 설계 문서 2.3과 같다 (DB 제약 situations_aliases_shape)", () => {
+    expect([ALIASES_MAX, ALIAS_CHARS_MAX]).toEqual(limits);
+  });
+
+  test("만들기·고치기 — 앞뒤 공백을 지운 목록, 20개·50자는 받는다", () => {
+    const twenty = Array.from({ length: 20 }, (_, i) => `별칭 ${i + 1}`);
+    const r = parseSituationCreate(create({ aliases: ["  차 팔았어요 ", "폐차", "가".repeat(50), ...twenty.slice(3)] }));
+    expect(r.ok && r.value.aliases).toEqual(["차 팔았어요", "폐차", "가".repeat(50), ...twenty.slice(3)]);
+    const patch = parseSituationPatch({ aliases: ["자동차 팔았어요"] });
+    expect(patch.ok && patch.value).toEqual({ content: { aliases: ["자동차 팔았어요"] }, placement: {} });
+    expect(parseSituationPatch({ aliases: [] }).ok).toBe(true);
+  });
+
+  test.each([
+    [Array.from({ length: 21 }, (_, i) => `별칭 ${i}`), "situation.aliases: 검색 별칭은 20개까지입니다 — 지금 21개"],
+    [["가".repeat(51)], `situation.aliases: 별칭마다 50자 이하로 줄이세요 — ‘${"가".repeat(51)}’`],
+    [["  "], "situation.aliases: 빈 별칭이 있습니다"],
+    [["?!·"], "situation.aliases: 글자나 숫자가 없는 별칭은 찾을 수 없습니다 — ‘?!·’"],
+    [["차 팔았어요", "차팔았어요"], "situation.aliases: 같은 별칭이 두 번 있습니다(띄어쓰기·기호만 다른 것 포함) — ‘차팔았어요’"],
+    ["차 팔았어요", "situation.aliases: 글자 목록이어야 합니다"],
+    [[1], "situation.aliases: 글자 목록이어야 합니다"],
+  ])("%j → 거부", (aliases, message) => {
+    const r = parseSituationPatch({ aliases });
+    expect(!r.ok && r.errors).toEqual([message]);
+  });
+
+  test("화면 폼 — 한 줄에 하나(빈 줄은 뺀다), 21줄·51자·같은 별칭은 API를 부르기 전에 칸 오류", () => {
+    const base = { ...emptySituationForm(), slug: "car-sold", section: "tax", title: "차를 팔았어요", pictogram: "car-sold", checks: checks(3).map((c) => ({ ...emptyCheck(), ...c })) };
+    const ok = situationFormToBody({ ...base, aliases: "차 팔았어요\n\n  폐차  \n" }, "create");
+    expect(ok.ok && ok.body.aliases).toEqual(["차 팔았어요", "폐차"]);
+    const cases: Array<[string, string]> = [
+      [Array.from({ length: 21 }, (_, i) => `별칭 ${i}`).join("\n"), "검색 별칭은 20개까지입니다 — 지금 21개"],
+      ["가".repeat(51), "별칭마다 50자 이하로 줄이세요 — 1번째 줄"],
+      ["차 팔았어요\n차팔았어요", "같은 별칭이 두 번 있습니다(띄어쓰기·기호만 다른 것 포함) — 2번째 줄"],
+      ["?!", "글자나 숫자가 없는 별칭은 찾을 수 없습니다 — 1번째 줄"],
+    ];
+    for (const [aliases, message] of cases) {
+      const r = situationFormToBody({ ...base, aliases }, "create");
+      expect(!r.ok && r.errors).toEqual({ [FIELD.aliases]: message });
+    }
+  });
+
+  test("저장된 행의 별칭 → 폼은 한 줄에 하나, 별칭 칸이 없는 옛 행은 빈 칸", () => {
+    expect(situationToForm({ ...rowLike, aliases: ["차 팔았어요", "폐차"] }).aliases).toBe("차 팔았어요\n폐차");
+    expect(situationToForm(rowLike).aliases).toBe("");
   });
 });

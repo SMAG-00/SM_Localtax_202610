@@ -4,7 +4,10 @@
 //  · 감수 대상 칸(먼저 확인할 것·일반적 체크리스트·자주 틀리는 점)을 고치면 DB가 감수 기록을 지운다 — 공개 중인 상황은 먼저 내려야 고칠 수 있다
 //  · 허브 자리(hub_slot)는 1..허브 상한(settings.hub_situation_limit, 초기값 4), 분야 안에서 겹치지 않는다 — 상한이 찬 허브에 5번째 카드는 거부
 //  · 주소(slug)는 만들 때 한 번 정하고 바꾸지 않는다 (영속 주소 /situations/[slug])
+//  · 검색 별칭(aliases — W2-d SRCH-01)은 독자가 이 상황을 부르는 말("차 팔았어요"·"폐차"). 20개·50자, 띄어쓰기·기호만 다른 같은 말은 한 번만.
+//    감수 대상 칸이 아니다 — 공개 중에도 고칠 수 있고 감수 기록은 그대로다(DB situations_guard). 저장하면 다음 검색부터 찾힌다(찾는 글은 생성 칸)
 import { PICTOGRAM_NAMES, type PictogramName } from "@ltr/ui";
+import { squash } from "@/lib/server/public/search-normalize";
 import { blank, splitLines, type FieldErrors } from "./form-utils";
 
 export type Result<T> = { ok: true; value: T } | { ok: false; errors: string[] };
@@ -23,6 +26,9 @@ export const LINKED_IDS_MAX = 20;
 export const TEXT_MAX = 60;
 export const NOTE_MAX = 180;
 export const LONG_MAX = 120;
+/** 검색 별칭 — 개수·글자 (W2-d 설계 2.3 alias_limits · DB 제약 situations_aliases_shape) */
+export const ALIASES_MAX = 20;
+export const ALIAS_CHARS_MAX = 50;
 const SORT_MAX = 100_000;
 
 /** 일반적 체크리스트 고지 (FAM-02 — 감수본 문구). 화면이 체크리스트를 쓰기 시작하면 이 문장을 채워 둔다 */
@@ -59,6 +65,8 @@ export interface SituationContent {
   tool_links: { feature: ToolFeature }[];
   region_select: boolean;
   sort: number;
+  /** 검색 별칭 (W2-d) */
+  aliases: string[];
 }
 
 export interface SituationCreate extends SituationContent {
@@ -135,7 +143,41 @@ function ids(raw: Obj, key: string, errors: string[]): number[] | undefined {
   return v as number[];
 }
 
-const CONTENT_KEYS = ["section", "title", "subtitle", "pictogram", "checks", "checklist", "mistakes", "articleIds", "solvedCaseIds", "glossaryIds", "toolLinks", "regionSelect", "sort"] as const;
+const CONTENT_KEYS = ["section", "title", "subtitle", "pictogram", "checks", "checklist", "mistakes", "articleIds", "solvedCaseIds", "glossaryIds", "toolLinks", "regionSelect", "sort", "aliases"] as const;
+
+type AliasProblem = { kind: "count"; count: number } | { kind: "blank"; index: number } | { kind: "long" | "empty" | "duplicate"; index: number; alias: string };
+
+/** 검색 별칭 목록(앞뒤 공백을 지운 것)의 첫 문제 — 개수 → 빈 별칭 → 글자 수 → 글자·숫자 없음 → 같은 말(정규형이 같다) 차례 */
+function aliasProblem(aliases: readonly string[]): AliasProblem | null {
+  if (aliases.length > ALIASES_MAX) return { kind: "count", count: aliases.length };
+  const keys = new Set<string>();
+  for (const [index, alias] of aliases.entries()) {
+    if (alias === "") return { kind: "blank", index };
+    if ([...alias].length > ALIAS_CHARS_MAX) return { kind: "long", index, alias };
+    const key = squash(alias);
+    if (key === "") return { kind: "empty", index, alias };
+    if (keys.has(key)) return { kind: "duplicate", index, alias };
+    keys.add(key);
+  }
+  return null;
+}
+
+const DUPLICATE_ALIAS = "같은 별칭이 두 번 있습니다(띄어쓰기·기호만 다른 것 포함)";
+
+function aliasMessage(p: AliasProblem, where: (index: number, alias: string) => string): string {
+  switch (p.kind) {
+    case "count":
+      return `검색 별칭은 ${ALIASES_MAX}개까지입니다 — 지금 ${p.count}개`;
+    case "blank":
+      return "빈 별칭이 있습니다";
+    case "long":
+      return `별칭마다 ${ALIAS_CHARS_MAX}자 이하로 줄이세요 — ${where(p.index, p.alias)}`;
+    case "empty":
+      return `글자나 숫자가 없는 별칭은 찾을 수 없습니다 — ${where(p.index, p.alias)}`;
+    case "duplicate":
+      return `${DUPLICATE_ALIAS} — ${where(p.index, p.alias)}`;
+  }
+}
 const PLACEMENT_KEYS = ["visible", "hubSlot"] as const;
 
 function readContent(raw: Obj, errors: string[], mode: "create" | "patch"): Partial<SituationContent> {
@@ -198,6 +240,16 @@ function readContent(raw: Obj, errors: string[], mode: "create" | "patch"): Part
     if (typeof raw.sort === "number" && Number.isInteger(raw.sort) && raw.sort >= 0 && raw.sort <= SORT_MAX) out.sort = raw.sort;
     else errors.push(`situation.sort: 0~${SORT_MAX} 정수여야 합니다`);
   }
+  if (raw.aliases !== undefined) {
+    const a = raw.aliases;
+    if (!Array.isArray(a) || !a.every((x) => typeof x === "string")) errors.push("situation.aliases: 글자 목록이어야 합니다");
+    else {
+      const list = (a as string[]).map((x) => x.trim());
+      const problem = aliasProblem(list);
+      if (problem) errors.push(`situation.aliases: ${aliasMessage(problem, (_, alias) => `‘${alias}’`)}`);
+      else out.aliases = list;
+    }
+  }
   return out;
 }
 
@@ -229,6 +281,7 @@ export function parseSituationCreate(raw: Obj): Result<SituationCreate> {
       tool_links: content.tool_links ?? [],
       region_select: content.region_select ?? false,
       sort: content.sort ?? 0,
+      aliases: content.aliases ?? [],
     },
   };
 }
@@ -344,6 +397,8 @@ export interface SituationForm {
   glossaryIds: string;
   toolLinks: string[];
   regionSelect: boolean;
+  /** 검색 별칭 — 한 줄에 하나 */
+  aliases: string;
 }
 
 export const emptyCheck = () => ({ title: "", when: "", note: "" });
@@ -364,6 +419,7 @@ export function emptySituationForm(): SituationForm {
     glossaryIds: "",
     toolLinks: [],
     regionSelect: false,
+    aliases: "",
   };
 }
 
@@ -382,6 +438,8 @@ export function situationToForm(row: {
   glossary_ids: number[];
   tool_links: unknown;
   region_select: boolean;
+  /** 검색 별칭 (W2-d — 칸이 없는 옛 행은 빈 목록) */
+  aliases?: string[] | null;
 }): SituationForm {
   const checks = Array.isArray(row.checks)
     ? row.checks.map((c) => ({ title: String((c as Obj)?.title ?? ""), when: String((c as Obj)?.when ?? ""), note: String((c as Obj)?.note ?? "") }))
@@ -402,7 +460,19 @@ export function situationToForm(row: {
     glossaryIds: (row.glossary_ids ?? []).join(", "),
     toolLinks: Array.isArray(row.tool_links) ? row.tool_links.flatMap((t) => (isObj(t) && typeof t.feature === "string" ? [t.feature] : [])) : [],
     regionSelect: row.region_select,
+    aliases: (row.aliases ?? []).join("\n"),
   };
+}
+
+/** 빈 줄을 뺀 index번째 별칭이 폼 글의 몇째 줄인가 (1부터 — 칸 오류 문장) */
+function lineOf(textValue: string, index: number): number {
+  let seen = -1;
+  const lines = textValue.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i]!.trim() !== "") seen++;
+    if (seen === index) return i + 1;
+  }
+  return index + 1;
 }
 
 function idList(textValue: string, field: string, errors: FieldErrors): number[] {
@@ -435,6 +505,7 @@ export const FIELD = {
   articleIds: "situation-article-ids",
   solvedCaseIds: "situation-solved-ids",
   glossaryIds: "situation-glossary-ids",
+  aliases: "situation-aliases",
 } as const;
 
 /**
@@ -461,6 +532,9 @@ export function situationFormToBody(form: SituationForm, mode: "create" | "patch
   if (checklistItems.length > 0 && blank(form.checklistNotice)) errors[FIELD.checklistNotice] = "일반적 체크리스트에는 고지 문장이 필요합니다";
   const mistakes = splitLines(form.mistakes);
   if (mistakes.length > MISTAKES_MAX) errors[FIELD.mistakes] = `자주 틀리는 점은 ${MISTAKES_MAX}개까지입니다 — 지금 ${mistakes.length}개`;
+  const aliases = splitLines(form.aliases);
+  const aliasError = aliasProblem(aliases);
+  if (aliasError) errors[FIELD.aliases] = aliasMessage(aliasError, (index) => `${lineOf(form.aliases, index)}번째 줄`);
   const articleIds = idList(form.articleIds, FIELD.articleIds, errors);
   const solvedCaseIds = idList(form.solvedCaseIds, FIELD.solvedCaseIds, errors);
   const glossaryIds = idList(form.glossaryIds, FIELD.glossaryIds, errors);
@@ -481,6 +555,7 @@ export function situationFormToBody(form: SituationForm, mode: "create" | "patch
       glossaryIds,
       toolLinks: form.toolLinks.filter((f) => (TOOL_FEATURES as readonly string[]).includes(f)),
       regionSelect: form.regionSelect,
+      aliases,
     },
   };
 }

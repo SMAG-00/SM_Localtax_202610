@@ -4,6 +4,7 @@
 //  · DB 행 → 결과 보기 값: 주소는 열린 화면만(isOpenPath — 꺼진 기능·아직 없는 화면이면 null), 유형 표시 글자, 기사 배지는 목록 카드와 같은 함수
 import { INFO_LIST_MARKER_LABELS } from "@ltr/ui";
 import { isoToKstDate } from "@/lib/admin/form-utils";
+import { SEARCH_LIMITS, leftChars, queryTerms } from "./search-normalize";
 import { sponsorMark, type SponsorMark } from "./article-logic";
 import { sponsorBadgeOf } from "./cards";
 import {
@@ -41,8 +42,9 @@ export const TAB_KINDS: Readonly<Record<SearchTab, readonly SearchKind[]>> = {
   expert: [],
 };
 
-/** 한도 (설계 2.3 — DB 함수 상수와 같다) */
-export const SEARCH_LIMITS = { queryChars: 100, maxTerms: 8, pageSize: 20, maxPageSize: 50, maxOffset: 1000, maxPerKind: 10 } as const;
+/** 검색 화면 값 (설계 2.4) — 전체 탭은 종류마다 앞 allPerKind개, 결과 없음 화면의 추천 검색어 suggestions개 */
+export const SEARCH_SCREEN = { allPerKind: 5, suggestions: 3 } as const;
+
 /** 쪽 번호 최대 — 건너뛰기 최대 ÷ 한 쪽 + 1 */
 export const SEARCH_MAX_PAGE = Math.floor(SEARCH_LIMITS.maxOffset / SEARCH_LIMITS.pageSize) + 1;
 
@@ -59,66 +61,8 @@ export const KIND_LABELS: Readonly<Record<SearchKind, string>> = {
 /** 행사 결과(01B W6)의 표시 — 기사 유형 배지 글자를 쓰지 않는다 (원칙 ⑥) */
 export const EVENT_LABEL = INFO_LIST_MARKER_LABELS.event;
 
-// ── 정규화 (설계 4장) ─────────────────────────────────────────
-
-/** 남기는 글자 밖 — 숫자·영문 소문자·한글 음절·한글 자모(NFKC가 호환 자모 ㄱ을 첫소리 글자 ᄀ로 바꾼다 — 둘 다)·한자만 남긴다 (DB public.search_squash와 같은 범위) */
-const DROP = /[^0-9a-z가-힣ᄀ-ᇿㄱ-ㆎ一-鿿]+/gu;
-const ONE_SYLLABLE = /^[가-힣]$/u;
-
-/** 한 칸의 정규형 — NFKC → 소문자 → 남기는 글자만 */
-export function squash(text: string): string {
-  return text.normalize("NFKC").toLowerCase().replace(DROP, "");
-}
-
-/** 앞에서 n글자(코드 포인트) — DB left(text, n)과 같다 */
-function leftChars(text: string, n: number): string {
-  return Array.from(text).slice(0, n).join("");
-}
-
-const firstUnique = (xs: readonly string[], max: number) => [...new Set(xs)].slice(0, max);
-
-export interface QueryTerms {
-  /** 찾는 낱말 — 한 글자 한글 낱말을 옆 낱말에 붙인 것 */
-  terms: string[];
-  /** 찾는 낱말로 0건일 때 다시 찾는 낱말(띄어 쓴 그대로) — 찾는 낱말과 같으면 null */
-  split: string[] | null;
-}
-
-/** 검색어 → 찾는 낱말 (설계 4장 3 — DB search_public과 같은 규칙, 2.2 견본 표) */
-export function queryTerms(raw: string | null | undefined): QueryTerms {
-  const parts = leftChars(raw ?? "", SEARCH_LIMITS.queryChars)
-    .normalize("NFKC")
-    .toLowerCase()
-    .replace(DROP, " ")
-    .split(" ")
-    .filter((x) => x !== "");
-  const work = [...parts];
-  const glued: string[] = [];
-  for (let i = 0; i < work.length; i++) {
-    const cur = work[i]!;
-    if (work.length > 1 && ONE_SYLLABLE.test(cur)) {
-      const prev = glued.at(-1);
-      // 앞 낱말이 숫자로 끝나면 앞에("2026 년"), 아니면 뒤 낱말이 한글·숫자로 시작하면 뒤에("재 건축"), 아니면 앞 낱말이 한글로 끝날 때 앞에("취득 세")
-      if (prev !== undefined && /[0-9]$/u.test(prev)) {
-        glued[glued.length - 1] = prev + cur;
-        continue;
-      }
-      if (i + 1 < work.length && /^[가-힣0-9]/u.test(work[i + 1]!)) {
-        work[i + 1] = cur + work[i + 1]!;
-        continue;
-      }
-      if (prev !== undefined && /[가-힣]$/u.test(prev)) {
-        glued[glued.length - 1] = prev + cur;
-        continue;
-      }
-    }
-    glued.push(cur);
-  }
-  const terms = firstUnique(glued, SEARCH_LIMITS.maxTerms);
-  const split = firstUnique(parts, SEARCH_LIMITS.maxTerms);
-  const same = split.length === terms.length && split.every((x, i) => x === terms[i]);
-  return { terms, split: same ? null : split };
-}
+// ── 정규화 (설계 4장) — 규칙은 search-normalize.ts 한 곳(상황 별칭·동의어 편집 화면도 같이 쓴다) ──
+export { SEARCH_LIMITS, queryTerms, squash, type QueryTerms } from "./search-normalize";
 
 // ── URL 쿼리 → 검색 옵션 (설계 8장) ────────────────────────────
 
@@ -174,6 +118,12 @@ export function parseSearchParams(src: ParamSource): SearchOptions {
   };
 }
 
+/** 검색 화면이 쓰는 옵션 — 종류 없는 탭(행사·전문가)은 전체 탭으로(탭이 화면에 없다), 전체 탭은 종류별 묶음이라 쪽이 없다(1쪽) */
+export function screenOptions(o: SearchOptions): SearchOptions {
+  const tab = TAB_KINDS[o.tab].length > 0 ? o.tab : "all";
+  return { ...o, tab, page: tab === "all" ? 1 : o.page };
+}
+
 /** search_public 인자 — 부를 것이 없으면(검색어 없음·종류 없는 탭·쪽 끝 넘음) null */
 export function searchArgs(o: SearchOptions, mode: { perKind?: number; pageSize?: number } = {}): Record<string, unknown> | null {
   if (queryTerms(o.q).terms.length === 0) return null;
@@ -194,6 +144,31 @@ export function searchArgs(o: SearchOptions, mode: { perKind?: number; pageSize?
     p_offset: mode.perKind === undefined ? offset : 0,
     p_per_kind: mode.perKind === undefined ? null : Math.min(Math.max(1, Math.floor(mode.perKind)), SEARCH_LIMITS.maxPerKind),
   };
+}
+
+/**
+ * 탭 숫자만 읽는 인자 (2단계) — 고른 탭·쪽에 행이 없으면 kind_counts(탭 숫자)도 오지 않는다. 같은 거르개로 종류 거르개 없이 한 행만 읽는다.
+ * 탭·쪽은 보지 않는다(탭 숫자는 탭과 상관없다 — 설계 7장 kind_counts). 남는 글자 없는 검색어면 null
+ */
+export function countArgs(o: SearchOptions): Record<string, unknown> | null {
+  if (queryTerms(o.q).terms.length === 0) return null;
+  return {
+    p_query: o.q,
+    p_kinds: null,
+    p_section: o.section,
+    p_content_type: o.contentType,
+    p_region: o.region,
+    p_from: o.from,
+    p_to: o.to,
+    p_limit: 1,
+    p_offset: 0,
+    p_per_kind: null,
+  };
+}
+
+/** 탭 숫자가 빠졌나 — 행이 0인데 종류 탭이거나 2쪽 이후(다른 종류·앞 쪽에 결과가 있을 수 있다). 전체 탭 1쪽 0건은 정말 0건 */
+export function countsMissing(rows: readonly unknown[], args: Record<string, unknown>): boolean {
+  return rows.length === 0 && (args.p_kinds !== null || Number(args.p_offset) > 0);
 }
 
 // ── DB 행 → 결과 보기 값 ───────────────────────────────────────
@@ -364,6 +339,23 @@ export interface SearchResult {
 
 export const zeroCounts = (): Record<SearchKind, number> => Object.fromEntries(SEARCH_KINDS.map((k) => [k, 0])) as Record<SearchKind, number>;
 
+/** 첫 행의 종류별 수 (탭 숫자) — 모르는 값·음수는 0 */
+function countsOf(first: SearchRow | undefined): Record<SearchKind, number> {
+  const counts = zeroCounts();
+  for (const k of SEARCH_KINDS) {
+    const n = Number(first?.kind_counts?.[k] ?? 0);
+    counts[k] = Number.isFinite(n) && n > 0 ? n : 0;
+  }
+  return counts;
+}
+
+/** 탭 숫자 다시 읽기(countArgs)의 행으로 탭 숫자와 쓴 낱말만 채운다 — 결과 목록·쪽은 그대로. 읽은 행이 없으면 그대로 */
+export function withCounts(result: SearchResult, countRows: readonly SearchRow[]): SearchResult {
+  const first = countRows[0];
+  if (!first) return result;
+  return { ...result, counts: countsOf(first), terms: first.query_terms ?? result.terms };
+}
+
 export function emptySearchResult(o: Pick<SearchOptions, "q" | "page">, pageSize: number = SEARCH_LIMITS.pageSize): SearchResult {
   return { query: o.q, terms: queryTerms(o.q).terms, total: 0, counts: zeroCounts(), items: [], page: o.page, pageSize, hasMore: false };
 }
@@ -372,11 +364,7 @@ export function emptySearchResult(o: Pick<SearchOptions, "q" | "page">, pageSize
 export function toSearchResult(rows: readonly SearchRow[], features: Features, o: Pick<SearchOptions, "q" | "page">, args: Record<string, unknown>): SearchResult {
   const pageSize = Number(args.p_limit);
   const first = rows[0];
-  const counts = zeroCounts();
-  for (const k of SEARCH_KINDS) {
-    const n = Number(first?.kind_counts?.[k] ?? 0);
-    counts[k] = Number.isFinite(n) && n > 0 ? n : 0;
-  }
+  const counts = countsOf(first);
   const total = first ? Number(first.total_count) : 0;
   const perKind = args.p_per_kind !== null && args.p_per_kind !== undefined;
   return {

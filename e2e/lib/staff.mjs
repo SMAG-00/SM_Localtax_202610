@@ -23,7 +23,7 @@ export class StaffFixture {
     this.articleIds = new Set();
     this.assignmentIds = new Set();
     /** 시험이 만든 운영 행 — 분야·제휴사·용어 (기사를 지운 뒤 지운다) · 홈 배치·개정 트래커 (W2-b — 기사보다 먼저 지운다) */
-    this.extraRows = { categories: new Set(), partners: new Set(), glossary_terms: new Set(), home_curations: new Set(), amendments: new Set(), situations: new Set(), media: new Set() };
+    this.extraRows = { categories: new Set(), partners: new Set(), glossary_terms: new Set(), home_curations: new Set(), amendments: new Set(), situations: new Set(), media: new Set(), search_synonyms: new Set() };
     /** 시험 전 운영 설정·분야 행 — 끝나면 그대로 되돌린다 (씨앗 데이터 시험이 값을 대조한다) */
     this.settingsSnapshot = null;
     this.categoriesSnapshot = null;
@@ -116,7 +116,7 @@ export class StaffFixture {
     if (id) this.assignmentIds.add(Number(id));
   }
 
-  /** 시험이 만든 분야(categories)·제휴사(partners)·용어(glossary_terms)·홈 배치(home_curations)·개정 트래커(amendments)·상황(situations)·이미지(media) 행 */
+  /** 시험이 만든 분야(categories)·제휴사(partners)·용어(glossary_terms)·홈 배치(home_curations)·개정 트래커(amendments)·상황(situations)·이미지(media)·검색 동의어(search_synonyms — W2-d) 행 */
   trackRow(table, id) {
     if (!this.extraRows[table]) throw new Error(`지울 수 없는 표: ${table}`);
     if (id) this.extraRows[table].add(Number(id));
@@ -195,6 +195,8 @@ export class StaffFixture {
       // 홈 배치 → 개정 트래커(단계 기록·스냅샷) — 트리거를 끈 세션이라 외래 키 cascade가 돌지 않으니 직접 지운다
       // 상황 카드(W2-b) — 시험이 넣은 행과 시험 계정이 API로 만든 행 (감수자 인물보다 먼저)
       await q("delete from public.situations where id = any($1::bigint[]) or updated_by = any($2::text[])", [[...this.extraRows.situations], actors]);
+      // 검색 동의어(W2-d) — 시험이 넣은 줄과 시험 계정이 사전 화면·API로 만든 줄
+      await q("delete from public.search_synonyms where id = any($1::bigint[]) or updated_by = any($2::text[])", [[...this.extraRows.search_synonyms], actors]);
       const curationIds = [...this.extraRows.home_curations];
       const amendmentIds = [...this.extraRows.amendments];
       await q("delete from public.home_curations where id = any($1::bigint[]) or article_id = any($2::bigint[]) or amendment_id = any($3::bigint[])", [
@@ -252,6 +254,7 @@ export class StaffFixture {
         ...[...this.extraRows.glossary_terms].map((id) => `glossary_terms:${id}`),
         ...[...this.extraRows.home_curations].map((id) => `home_curations:${id}`),
         ...[...this.extraRows.situations].map((id) => `situations:${id}`),
+        ...[...this.extraRows.search_synonyms].map((id) => `search_synonyms:${id}`),
       ];
       await q("delete from public.audit_logs where actor = any($1::text[]) or target = any($2::text[])", [actors, targets]);
       if (personIds.length) await q("delete from public.people where id = any($1::bigint[])", [personIds]);
