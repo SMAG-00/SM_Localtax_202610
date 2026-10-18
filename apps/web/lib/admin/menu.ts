@@ -40,6 +40,8 @@ const RULES: readonly MenuRule[] = [
   },
   { id: "categories", label: "분야", href: "/admin/categories", when: (a) => a.has("category.edit"), paths: ["/admin/categories"] },
   { id: "dictionaries", label: "사전", href: "/admin/dictionaries", when: (a) => a.has("dictionary.edit"), paths: ["/admin/dictionaries"] },
+  // 검색어 집계 (SRCH-03) — 편집 책임자·관리자 (W2-d 설계 8.3)
+  { id: "query-terms", label: "검색어", href: "/admin/query-terms", when: (a) => a.has("query_terms.read"), paths: ["/admin/query-terms"] },
   {
     id: "sponsored",
     label: "광고·협찬 콘텐츠",

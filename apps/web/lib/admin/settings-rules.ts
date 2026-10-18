@@ -4,6 +4,7 @@
 //  · 버전이 있는 값(사전·유사도 기준)은 내용을 바꾸면 버전도 바꿔야 한다 — 점검 기록에 남는 버전이 값과 어긋나지 않게.
 import { normalizeText } from "@ltr/editorial";
 import { checkDomainCutover } from "@/lib/analytics/metrics";
+import { checkQueryTermsSettings } from "@/lib/analytics/query-terms";
 import { ANALYTICS_SETTING_CHECKS } from "@/lib/analytics/settings";
 import { checkWindowsSetting } from "@/lib/readiness/windows";
 // 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
@@ -250,6 +251,13 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "많이 본 기사 규칙 (ART-11)",
     guide: '{ "version": "새 버전", "window_hours": 168, "dedupe_minutes": 30, "exclude_content_types": ["digest", "sponsored"], "sidebar_size": 5, "list_size": 20 }',
     check: (value, current) => ANALYTICS_SETTING_CHECKS.popular_rules(value, current),
+  },
+  // ── W2-d 검색어 집계 (docs/dev/W2-d_설계.md 2.7) — 편집국 화면·보존 기한 정리 배치(lib/server/analytics/query-terms.ts)와 같은 검사 ──
+  query_terms: {
+    label: "검색어 집계 (SRCH-03)",
+    guide:
+      '{ "version": "새 버전", "retention_days": 395, "display_min_count": 2 } — retention_days 기간(한국 날짜) 행 보존 일수(31~1825, 매일 정리) · display_min_count 편집국 검색어 화면에 보이는 최소 합계 횟수(1~100 — 그보다 적게 찾은 검색어는 수만 보입니다). 값을 바꾸면 version도 바꿉니다',
+    check: (value, current) => checkQueryTermsSettings(value, current),
   },
   // ── W2-c 지표 대시보드 (docs/dev/W2-c_설계.md 2.6) — 대시보드(lib/analytics/metrics.ts readCutover)와 같은 검사 ──
   domain_cutover: {

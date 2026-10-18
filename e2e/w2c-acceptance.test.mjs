@@ -12,10 +12,11 @@
 // 자료는 끝나면 모두 지운다 — 표마다 시험 전 행 수, 운영 설정 값 그대로.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { promisify } from "node:util";
 import zlib from "node:zlib";
 import pg from "pg";
 import { chromium } from "playwright";
@@ -41,6 +42,7 @@ const DESKTOP = { width: 1280, height: 900 };
 const MOBILE = { width: 360, height: 740 };
 const BANNED = ["인정", "예상 점수", "예측", "판정", "선정 예정", "제휴 확정", "네이버 제휴 언론사"];
 const shell = process.platform === "win32";
+const execFileAsync = promisify(execFile);
 
 // ── 기준 — 문서에서 읽는다 (문서와 다르면 문서가 맞다) ─────────────────
 
@@ -292,6 +294,13 @@ const cardIds = (page, part) => page.$$eval(`[data-part="${part}"] [data-article
 async function eventsOf(name, article, since = staff.startedAt) {
   return (await db.query("select section, props, is_bot from public.analytics_events where name = $1 and props ->> 'article_id' = $2 and occurred_at >= $3 order by id", [name, String(article.id), since])).rows;
 }
+/**
+ * 지금까지 넣은 측정 행의 마지막 번호 — 이 뒤에 수집 API가 넣는 행은 번호가 더 크다(analytics_events.id는 넣은 차례의 identity).
+ * 수집 API로 보낸 바로 그 행을 고를 때는 시각 대신 이 번호를 쓴다: occurred_at은 웹 서버 프로세스의 Date.now()이고, Windows의 Node(V8)는
+ * 프로세스마다 시스템 시각을 60초마다 다시 읽어 고해상도 틱으로 이어 가므로 두 프로세스의 시계가 1~2ms(시스템 틱만큼까지) 어긋난다.
+ * 시험 프로세스의 new Date() 바로 뒤에 보낸 첫 요청이 그보다 1ms 이른 시각으로 저장되는 것을 재현했다(30회 중 1회 — 202·저장은 됐다)
+ */
+const eventMark = async () => Number((await one("select coalesce(max(id), 0)::bigint m from public.analytics_events")).m);
 async function waitForEvents(name, article, expected, since) {
   const end = Date.now() + 10_000;
   let rows = [];
@@ -979,7 +988,8 @@ test("6) HOME-05 집계 전 — /news/popular는 빈 목록 안내, 지방세 �
 });
 
 test("7) ART-11 — 수집 API로 받은 조회(봇 User-Agent 100 + 사람 3 · 사람 5 · 같은 방문자 30분 안 반복) + 경계 자료 → 1시간 집계: 사람 5 > 봇 100 + 사람 3, 반복 1회, 168시간 전 포함·169시간 전 제외, 편집국·광고 0", async () => {
-  const t0 = new Date();
+  // 받은 행은 번호로 고른다(eventMark — 시험 프로세스와 웹 서버의 시계는 몇 ms 어긋난다, occurred_at >= 지금 시각으로 고르면 첫 요청을 놓칠 수 있다)
+  const mark = await eventMark();
   // 수집 API — 봇은 User-Agent로 서버가 표시한다(원문 0). 사람은 쿠키 없는 새 브라우저마다 새 방문자
   const statuses = [];
   for (let i = 0; i < 100; i += 20) statuses.push(...(await Promise.all(Array.from({ length: 20 }, () => sendEvent(viewEvent(fx.A), { ua: GOOGLEBOT_UA })))).map((r) => r.status));
@@ -990,7 +1000,7 @@ test("7) ART-11 — 수집 API로 받은 조회(봇 User-Agent 100 + 사람 3 ·
   statuses.push(first.status);
   for (let i = 0; i < 2; i++) statuses.push((await sendEvent(viewEvent(fx.R), { cookie: visitor })).status);
   assert.deepEqual([...new Set(statuses)], [202], "모두 저장");
-  const received = (await db.query("select id, props ->> 'article_id' aid, is_bot, visitor_id from public.analytics_events where occurred_at >= $1 and name = 'article_viewed' and props ->> 'article_id' = any($2)", [t0, [fx.A, fx.B, fx.R].map((a) => String(a.id))])).rows;
+  const received = (await db.query("select id, props ->> 'article_id' aid, is_bot, visitor_id from public.analytics_events where id > $1 and name = 'article_viewed' and props ->> 'article_id' = any($2)", [mark, [fx.A, fx.B, fx.R].map((a) => String(a.id))])).rows;
   const of = (a) => received.filter((r) => r.aid === String(a.id));
   assert.deepEqual([of(fx.A).length, of(fx.A).filter((r) => r.is_bot).length, of(fx.B).filter((r) => r.is_bot).length], [103, 100, 0], "봇 표시는 서버가 User-Agent로");
   assert.equal(new Set(of(fx.R).map((r) => r.visitor_id)).size, 1, "같은 방문자 3번");
@@ -1439,13 +1449,14 @@ test("10b) NAV-13 규정 버전 — 원문·확인일·등록 유형이 없는 �
   await expectOfficial(2, 50);
 });
 
-test("10c) NAV-13 저장소 검사 — 코드·설정 기본값·마이그레이션에 심사 점수·합격선·요건 기준 숫자·규정 씨앗 0 (lib/readiness/no-criteria.test.ts를 그대로 돌린다)", () => {
-  const out = execFileSync("pnpm", ["--filter", "@ltr/web", "exec", "vitest", "run", "lib/readiness/no-criteria.test.ts"], {
+test("10c) NAV-13 저장소 검사 — 코드·설정 기본값·마이그레이션에 심사 점수·합격선·요건 기준 숫자·규정 씨앗 0 (lib/readiness/no-criteria.test.ts를 그대로 돌린다)", async () => {
+  // 비동기로 기다린다 — execFileSync로 이벤트 루프를 10초 넘게 막으면 그동안 웹 서버가 keep-alive(5초)로 닫은 소켓을 fetch 연결 풀이 알지 못해,
+  // 다음 시험의 첫 요청이 그 소켓을 다시 써서 ECONNRESET으로 끝난다(재현: 7초 막으면 3번 중 2번, 비동기로 같은 시간 기다리면 0번)
+  const { stdout: out } = await execFileAsync("pnpm", ["--filter", "@ltr/web", "exec", "vitest", "run", "lib/readiness/no-criteria.test.ts"], {
     cwd: ROOT,
     encoding: "utf8",
     shell,
     env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0", CI: "1" },
-    stdio: ["ignore", "pipe", "pipe"],
   });
   assert.match(out, /Tests\s+5 passed \(5\)/, out.slice(-800));
 });

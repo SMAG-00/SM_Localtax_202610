@@ -65,6 +65,7 @@ export const ACTIONS = {
   "metrics.read": "측정 지표 대시보드 열람 (GROW-01)",
   "readiness.read": "기사 생산·제휴 준비 대시보드 열람 (NAV-13·14)",
   "readiness.requirements": "제휴 규정 버전 등록·고치기·확정 (NAV-13)",
+  "query_terms.read": "검색어 집계 열람 (SRCH-03 — 편집 기획 참고)",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
@@ -201,6 +202,11 @@ export function check(viewer: Viewer, action: Action, resource?: Resource): Deci
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("기사 생산·제휴 준비 화면은 편집 책임자와 관리자만 봅니다 (PRD-01A 3장)");
     case "readiness.requirements":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("제휴 규정 버전은 편집 책임자와 관리자만 적고 확정합니다 (NAV-13)");
+
+    // 검색어 집계 (SRCH-03 — 편집 기획 참고·많이 찾은 검색어 옆 동의어 더하기). PRD-00 6장 표에 행이 없어 동의어 사전을 고치는 사람(dictionary.edit)과
+    // 같게 편집 책임자·관리자만. 가린 값·정규형 합계만 읽는 일이라 거부는 감사 대상이 아니다 (W2-d 설계 8.3 · 12장)
+    case "query_terms.read":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("검색어 집계는 편집 책임자와 관리자만 봅니다");
 
     case "partner.read":
       // 편집 책임자는 공동 기획 표기 확인을 위해 읽기만 한다 — 등록·수정은 sponsored.manage

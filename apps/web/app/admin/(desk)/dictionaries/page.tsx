@@ -5,6 +5,7 @@ import { SynonymDelete, SynonymForm, TermKey } from "@/components/admin/SynonymC
 import { EmptyNote, PageTitle, Panel, ToneChip } from "@/components/admin/ui";
 import { PHRASE_DICTIONARIES, isPhraseKind, readPhraseDictionary } from "@/lib/admin/dictionary-rules";
 import { glossaryWarnings } from "@/lib/admin/glossary-rules";
+import { SYNONYM_LIMITS } from "@/lib/admin/synonym-rules";
 import { SECTION_LABELS, labelOf } from "@/lib/admin/labels";
 import { listGlossary, readSetting } from "@/lib/server/admin/backoffice";
 import { listSynonyms } from "@/lib/server/admin/synonyms";
@@ -27,7 +28,8 @@ const TABS = [
 export default async function DictionariesPage({ searchParams }: Props) {
   const viewer = await pageViewer();
   requirePage(viewer, "dictionary.edit");
-  const requested = queryValue((await searchParams).tab);
+  const params = await searchParams;
+  const requested = queryValue(params.tab);
   const tab = TABS.some((t) => t.id === requested) ? requested : "forbidden";
   const db = serviceDb();
 
@@ -35,7 +37,7 @@ export default async function DictionariesPage({ searchParams }: Props) {
     <>
       <PageTitle title="사전" description="발행 점검이 쓰는 사전입니다. 고치면 배포 없이 다음 점검·저장부터 적용됩니다." />
       <TabNav label="사전 종류" items={TABS.map((t) => ({ id: t.id, label: t.label, href: `/admin/dictionaries?tab=${t.id}` }))} current={tab} />
-      <div className="mt-6">{isPhraseKind(tab) ? <PhraseTab kind={tab} db={db} /> : tab === "synonyms" ? <SynonymTab db={db} /> : <GlossaryTab db={db} />}</div>
+      <div className="mt-6">{isPhraseKind(tab) ? <PhraseTab kind={tab} db={db} /> : tab === "synonyms" ? <SynonymTab db={db} prefill={synonymPrefill(queryValue(params.term))} /> : <GlossaryTab db={db} />}</div>
     </>
   );
 }
@@ -105,8 +107,14 @@ async function GlossaryTab({ db }: { db: ReturnType<typeof serviceDb> }) {
   );
 }
 
+/** 검색어 화면(/admin/query-terms)의 '동의어 더하기'가 넘긴 낱말 — 앞뒤 공백을 떼고 낱말 한도까지. 비면 null (W2-d 설계 8.3) */
+function synonymPrefill(raw: string): string | null {
+  const term = Array.from(raw.trim()).slice(0, SYNONYM_LIMITS.termChars).join("");
+  return term === "" ? null : term;
+}
+
 /** 검색 동의어 (W2-d 설계 5장) — 검색어의 낱말 하나가 낱말(띄어쓰기·기호를 뺀 열쇠)과 같으면 동의어도 함께 찾는다. 한쪽 방향 */
-async function SynonymTab({ db }: { db: ReturnType<typeof serviceDb> }) {
+async function SynonymTab({ db, prefill }: { db: ReturnType<typeof serviceDb>; prefill: string | null }) {
   const rows = await listSynonyms(db);
   return (
     <div className="space-y-6">
@@ -115,16 +123,16 @@ async function SynonymTab({ db }: { db: ReturnType<typeof serviceDb> }) {
         title="동의어 더하기"
         description="독자가 다르게 부르는 말을 함께 찾습니다. 예: '매도'를 찾으면 '양도'·'팔기'도 찾기. 반대 방향은 따로 한 줄을 더합니다. 저장하면 다음 검색부터 바로 쓰입니다."
       >
-        <details>
+        <details open={prefill !== null}>
           <summary className="min-h-11 cursor-pointer text-[15px] font-bold text-navy-800">새 줄 적기</summary>
-          <SynonymForm mode="create" />
+          <SynonymForm mode="create" initialTerm={prefill ?? undefined} />
         </details>
       </Panel>
       <Panel id="synonym-list" title={`검색 동의어 ${rows.length}줄`}>
         {rows.length === 0 && <EmptyNote>동의어 사전이 비어 있습니다.</EmptyNote>}
         <ul className="space-y-3" data-testid="synonym-list">
           {rows.map((r) => (
-            <li key={r.id} data-testid={`synonym-${r.id}`} className="rounded-xl border border-navy-100 p-4">
+            <li key={r.id} id={`synonym-${r.id}`} data-testid={`synonym-${r.id}`} className="scroll-mt-4 rounded-xl border border-navy-100 p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[17px] font-black text-navy-900 [overflow-wrap:anywhere]">{r.term}</span>
                 <ToneChip tone={r.enabled ? "emerald" : "plain"}>{r.enabled ? "사용 중" : "쉬는 중"}</ToneChip>

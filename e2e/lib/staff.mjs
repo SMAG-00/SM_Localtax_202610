@@ -34,6 +34,8 @@ export class StaffFixture {
 
   async connect() {
     await this.db.connect();
+    // 검색어 집계(W2-d 4단계) — 이 시험 동안 공개 검색이 더한 행은 번호가 이보다 크다(시각은 웹 서버의 시계라 번호로 고른다). 정리 단계가 지운다
+    this.queryTermsMark = Number((await this.db.query("select coalesce(max(id), 0) m from public.query_terms")).rows[0].m);
   }
 
   /** 이 실행만의 이메일 */
@@ -243,6 +245,8 @@ export class StaffFixture {
       await q("delete from public.news_partner_requirements where created_by = any($1::text[])", [actors]);
       // 측정 이벤트(W2-c) — 시험 동안 공개 화면·수집 API가 만든 행. 로컬 DB에서 시험은 하나씩 도므로 시작 시각 뒤의 행은 이 시험의 것이다
       await q("delete from public.analytics_events where occurred_at >= $1", [this.startedAt]);
+      // 검색어 집계(W2-d 4단계) — 시험 동안 공개 검색이 더한 날 행 (봇·편집국 요청은 세지 않아 대개 0)
+      if (this.queryTermsMark !== undefined) await q("delete from public.query_terms where id > $1", [this.queryTermsMark]);
       await this.#restoreOperations(q);
       const targets = [
         ...articleIds.map((id) => `articles:${id}`),

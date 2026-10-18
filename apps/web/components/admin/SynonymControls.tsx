@@ -22,12 +22,12 @@ export interface SynonymItem {
   note: string | null;
 }
 
-/** 동의어 줄 더하기·고치기 */
-export function SynonymForm({ mode, item }: { mode: "create" | "patch"; item?: SynonymItem }) {
+/** 동의어 줄 더하기·고치기 — initialTerm: 검색어 화면에서 '동의어 더하기'로 왔을 때 낱말 칸을 채워 둔다(더하기만) */
+export function SynonymForm({ mode, item, initialTerm }: { mode: "create" | "patch"; item?: SynonymItem; initialTerm?: string }) {
   const hydrated = useHydrated();
   const router = useRouter();
   const base = mode === "create" ? "synonym-new" : `synonym-${item!.id}`;
-  const [form, setForm] = useState<Form>(item ? synonymToForm(item) : emptySynonymForm());
+  const [form, setForm] = useState<Form>(item ? synonymToForm(item) : { ...emptySynonymForm(), term: initialTerm ?? "" });
   const [errors, setErrors] = useState<FieldErrors>({});
   const [failure, setFailure] = useState<{ title: string; details: string[] } | null>(null);
   const [done, setDone] = useState("");

@@ -13,6 +13,8 @@ export interface JobServices {
   aggregatePopular(now: Date): Promise<Record<string, unknown>>;
   /** W2-c 보존 기한 정리 — analytics.retention_days보다 오래된 원본 이벤트·시간 단위 집계를 나눠 지운다 (FND-06 · 설계 9장 #4) */
   purgeAnalytics(now: Date): Promise<Record<string, unknown>>;
+  /** W2-d 검색어 집계 보존 기한 정리 — query_terms.retention_days보다 오래된 날 행을 나눠 지운다 (SRCH-03 · W2-d 설계 8.3) */
+  purgeQueryTerms(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -23,8 +25,8 @@ export const jobs: Record<string, Job> = {
   "scheduler-heartbeat": async ({ now }) => ({ detail: { checkedAt: now.toISOString() } }),
   // 많이 본 기사·상담 사례 HOT 집계 (1시간마다 — docs/dev/W2-c_설계.md 8.2). 순위가 바뀌므로 공개 화면 캐시를 비운다
   "popular-hourly": async ({ now, services }) => ({ detail: await services.aggregatePopular(now), revalidatePublic: true }),
-  // 측정 원본 보존 기한 정리 (하루 한 번)
-  "analytics-retention": async ({ now, services }) => ({ detail: await services.purgeAnalytics(now) }),
+  // 측정 원본 보존 기한 정리 (하루 한 번) — 검색어 집계(query_terms)의 오래된 날 행도 같은 실행에서 지운다(detail.queryTerms)
+  "analytics-retention": async ({ now, services }) => ({ detail: { ...(await services.purgeAnalytics(now)), queryTerms: await services.purgeQueryTerms(now) } }),
 };
 
 export function findJob(name: string): Job | undefined {

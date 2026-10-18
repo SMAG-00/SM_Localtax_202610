@@ -1,5 +1,6 @@
 import "server-only";
 import { randomBytes, randomUUID } from "node:crypto";
+import type { Viewer } from "@/lib/access";
 import { ingest, type EventRow, type IngestDeps, type IngestRequest } from "@/lib/analytics/ingest";
 import { TokenBuckets, ipKey } from "@/lib/analytics/rate-limit";
 import { readLimited, sameSiteHosts } from "@/lib/analytics/request";
@@ -17,7 +18,8 @@ import { adminClient } from "../supabase";
 const SETTINGS_TTL_MS = 60_000;
 let cached: { at: number; value: CollectSettings } | null = null;
 
-async function collectSettings(): Promise<CollectSettings | null> {
+/** 수집 설정 (60초 메모리) — 수집 API와 검색어 집계(lib/server/analytics/query-terms.ts — 봇 목록·DNT)가 같이 쓴다. 읽지 못하거나 모양이 틀리면 null */
+export async function readCollectSettings(): Promise<CollectSettings | null> {
   const now = Date.now();
   if (cached && now - cached.at < SETTINGS_TTL_MS) return cached.value;
   const db = adminClient();
@@ -54,18 +56,18 @@ async function storeEvent(row: EventRow): Promise<boolean> {
 const limiter = new TokenBuckets();
 const salt = randomBytes(16).toString("hex");
 
+/** 편집국·관리자 — 역할이 하나라도 있거나 관리자(ADMIN_EMAILS). 측정 이벤트 is_staff · 검색어 집계 제외가 같은 판정 */
+export const isStaffViewer = (viewer: Viewer | null): boolean => viewer !== null && (viewer.isAdmin || viewer.roles.length > 0);
+
 export function collectDeps(request: Request): IngestDeps {
   return {
     now: () => Date.now(),
     newId: () => randomUUID(),
-    settings: collectSettings,
+    settings: readCollectSettings,
     limiter,
     ipKey: (ip) => ipKey(ip, salt),
     // 편집국·관리자 — 역할이 하나라도 있거나 관리자(ADMIN_EMAILS). 회원 ID는 쓰지 않는다
-    isStaff: async () => {
-      const viewer = await getViewer(request);
-      return viewer !== null && (viewer.isAdmin || viewer.roles.length > 0);
-    },
+    isStaff: async () => isStaffViewer(await getViewer(request)),
     store: storeEvent,
   };
 }
