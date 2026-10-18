@@ -27,7 +27,8 @@
   },
   "tooling": [
     "E2E_TARGET",
-    "E2E_BASE_URL"
+    "E2E_BASE_URL",
+    "SEARCH_PERF_ARTICLES"
   ],
   "platform": [
     "NODE_ENV",
