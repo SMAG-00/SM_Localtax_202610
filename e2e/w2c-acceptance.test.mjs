@@ -405,6 +405,9 @@ async function loginPage(user, { viewport = DESKTOP, userAgent } = {}) {
   const context = await browser.newContext({ viewport, ...(userAgent ? { userAgent } : {}) });
   contexts.push(context);
   const page = await context.newPage();
+  // 로그인 뒤 편집국 첫 화면은 화면 전환 요청(RSC)을 더 보낸다 — 그것이 끝나기 전에 다음 문서로 가면 끊긴 요청이
+  // 'requestfailed' 없이 남아(리눅스 CI) 뒤의 pendingTracker가 15초를 기다리다 실패했다. 돌려주기 전에 조용해질 때까지 기다린다
+  const quiet = pendingTracker(context);
   await page.goto(`${base}/admin/login`);
   await interactive(page);
   await page.fill("#login-email", user.email);
@@ -412,6 +415,7 @@ async function loginPage(user, { viewport = DESKTOP, userAgent } = {}) {
   await page.getByRole("button", { name: "로그인" }).click();
   await page.waitForURL((url) => url.pathname !== "/admin/login");
   await interactive(page);
+  await quiet();
   return page;
 }
 const text = async (page, sel) => (await page.locator(sel).innerText()).trim();

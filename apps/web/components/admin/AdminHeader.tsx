@@ -9,8 +9,10 @@ export function AdminHeader({ viewer }: { viewer: Viewer }) {
   return (
     <header className="bg-navy-800">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+        {/* 미리 받기 끔 — 편집국 화면은 매번 로그인·DB를 확인하는 요청 때 그리는 화면이라, 미리 받으면 서버 일만 늘고(화면마다 /admin 한 번 더) 얻는 것이 없다 */}
         <Link
           href="/admin"
+          prefetch={false}
           className="mr-auto inline-flex min-h-11 items-center text-[17px] font-extrabold tracking-tight text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400"
         >
           {brand.wordmark.lead} <span className="text-hermes-500">·</span> 편집국
