@@ -15,6 +15,15 @@ export function cachedRequestInit(init?: RequestInit): RequestInit {
   return { ...rest, next: { revalidate: PUBLIC_DATA_REVALIDATE_SECONDS, tags: [PUBLIC_DATA_TAG] } };
 }
 
+/**
+ * 캐시하지 않는 요청 — 통합 검색(W2-d 설계 8장). 발행 취소·비공개가 다음 검색에 바로 빠지고(30초 창도 없다),
+ * 끝없는 검색어 조합을 데이터 캐시에 쌓지 않는다. 요청 쪽이 넣은 next(재검증·태그)는 뺀다 — no-store와 겹치면 Next.js가 경고하고 하나를 버린다
+ */
+export function uncachedRequestInit(init?: RequestInit & { next?: unknown }): RequestInit {
+  const { cache: _ignored, next: _next, ...rest } = init ?? {};
+  return { ...rest, cache: "no-store" };
+}
+
 /** 즉시 만료의 여유(ms) — 한 프로세스 안에서 두 시계의 어긋남이 흔들리는 폭(측정 3ms 남짓)보다 넉넉히 */
 export const EXPIRY_LEAD_MS = 10;
 

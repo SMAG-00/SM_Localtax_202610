@@ -14,6 +14,8 @@ export { getPersonPage, type PersonPage } from "./people";
 export { getPartnerPage, getPhotoList, getVideoList, type ListPage, type PartnerPage } from "./media-lists";
 export type { MediaView, VideoBlockView, VideoListEntry } from "./media-logic";
 export { PublicDataError } from "./db";
+export { searchSite } from "./search";
+export { parseSearchParams, SEARCH_TABS, TAB_KINDS, KIND_LABELS, EVENT_LABEL, type SearchHit, type SearchKind, type SearchOptions, type SearchResult, type SearchTab } from "./search-logic";
 export type { HomeSection, TrackerCard, StoryCard, AmendmentsSection } from "./home-logic";
 export type { ArticleListItem, TrackerState } from "./cards";
 export type { SituationCard, CheckItem, RegionChoice, RegionArticles } from "./situation-logic";

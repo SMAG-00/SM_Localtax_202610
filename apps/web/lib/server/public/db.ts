@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { anonClient } from "../supabase";
-import { publicDataFetch } from "./cache";
+import { publicDataFetch, uncachedFetch } from "./cache";
 
 // 공개 데이터 함수의 DB 접근 — anon 키(RLS가 경계)로만 읽는다 (docs/dev/W2-b_설계.md 4장). service_role은 쓰지 않는다:
 // 함수에 필터를 하나 빠뜨려도 초안·비공개 행·내부 칸이 새지 않게 (FND-04 심층 방어).
@@ -19,6 +19,13 @@ export class PublicDataError extends Error {
 
 export function publicDb(): SupabaseClient {
   const db = anonClient({ fetch: publicDataFetch });
+  if (!db) throw new PublicDataError("서버 설정 — NEXT_PUBLIC_SUPABASE_URL·NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  return db;
+}
+
+/** 통합 검색의 DB 접근 — 같은 anon 키, 다만 캐시하지 않는다 (docs/dev/W2-d_설계.md 8장) */
+export function publicSearchDb(): SupabaseClient {
+  const db = anonClient({ fetch: uncachedFetch });
   if (!db) throw new PublicDataError("서버 설정 — NEXT_PUBLIC_SUPABASE_URL·NEXT_PUBLIC_SUPABASE_ANON_KEY");
   return db;
 }

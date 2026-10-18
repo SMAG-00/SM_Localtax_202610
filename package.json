@@ -19,6 +19,7 @@
     "verify:dev-port": "node e2e/dev-port.mjs",
     "test:e2e": "node --test --test-concurrency=1 e2e/api-health-jobs.test.mjs",
     "test:e2e:docker": "node e2e/run-docker.mjs",
+    "test:search-perf": "node --test --test-concurrency=1 e2e/search-perf.test.mjs",
     "check:vercel-env": "node scripts/check-vercel-env.mjs",
     "verify:rls:remote": "pnpm --filter @ltr/db verify:rls:remote"
   },

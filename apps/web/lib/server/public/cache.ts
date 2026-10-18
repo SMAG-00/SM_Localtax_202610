@@ -1,12 +1,17 @@
 import "server-only";
 import { revalidateTag } from "next/cache";
-import { PUBLIC_DATA_TAG, cachedRequestInit, immediateExpiryProfile } from "./cache-policy";
+import { PUBLIC_DATA_TAG, cachedRequestInit, immediateExpiryProfile, uncachedRequestInit } from "./cache-policy";
 
 // 공개 데이터 캐시 (규칙은 cache-policy.ts) — 공개 데이터 함수의 anon 요청과, 편집국 쓰기 뒤 즉시 만료
 
 /** 공개 데이터 함수의 요청 — Next.js 데이터 캐시(태그 public-data, 30초 재검증)를 쓴다 */
 export function publicDataFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   return fetch(input, cachedRequestInit(init));
+}
+
+/** 캐시하지 않는 공개 요청 — 통합 검색(W2-d 설계 8장) */
+export function uncachedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  return fetch(input, uncachedRequestInit(init));
 }
 
 /**

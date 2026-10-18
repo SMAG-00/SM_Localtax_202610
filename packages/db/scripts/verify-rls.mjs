@@ -33,6 +33,8 @@ export const PUBLIC_READ_ALLOWLIST = new Map([
   ["public.article_tombstones", "공개됐다가 삭제된 기사의 주소·삭제 시각만 — 410 응답과 삭제 안내, NAV-06"],
   // W2-c 2단계 (20261018000015_w2c_popular.sql — 시험 tests/w2c-popular.test.mjs). 원본 analytics_events·집계 article_stats는 넣지 않는다(0행)
   ["public.article_rankings", "공개 기사의 많이 본 기사·HOT 순위·고정 여부·집계 시각만(점수 비공개) — ART-11·HOME-05"],
+  // W2-d 1단계 (20261018000020_w2d_search.sql — 시험 tests/w2d-search.test.mjs)
+  ["public.search_synonyms", "검색 동의어 사전 — 사용 중인 줄의 정규형 열쇠·동의어 칸만(메모·고친 사람 비공개), 공개 검색 어휘 — SRCH-01"],
 ]);
 
 export async function tablesWithoutRls(client) {

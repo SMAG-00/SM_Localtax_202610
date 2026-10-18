@@ -1,7 +1,7 @@
 // 공개 데이터 캐시 규칙 (HOME-03·HOME-04 "1분 안에 홈에 반영 — 캐시 재검증", 설계 7.1)
 import { createRequire } from "node:module";
 import { describe, expect, test } from "vitest";
-import { EXPIRY_LEAD_MS, PUBLIC_DATA_REVALIDATE_SECONDS, PUBLIC_DATA_TAG, cachedRequestInit, immediateExpiryProfile, shouldRevalidatePublic } from "./cache-policy";
+import { EXPIRY_LEAD_MS, PUBLIC_DATA_REVALIDATE_SECONDS, PUBLIC_DATA_TAG, cachedRequestInit, immediateExpiryProfile, shouldRevalidatePublic, uncachedRequestInit } from "./cache-policy";
 
 /** Next.js 16 FileSystemCache.revalidateTag가 프로필로 적는 만료 시각 (벽시계 + expire초) */
 const stampedExpiry = (wallAtStamp: number, profile: { expire: number }) => wallAtStamp + profile.expire * 1000;
@@ -70,6 +70,21 @@ describe("공개 데이터 요청의 캐시 옵션", () => {
     expect(init.signal).toBe(signal);
     expect("cache" in init).toBe(false);
     expect(init.next).toEqual({ revalidate: PUBLIC_DATA_REVALIDATE_SECONDS, tags: [PUBLIC_DATA_TAG] });
+  });
+});
+
+describe("통합 검색 요청 — 캐시하지 않는다 (W2-d 설계 8장)", () => {
+  test("no-store만 붙이고 재검증·태그(next)는 뺀다 — 공개 데이터 태그로 묶이지 않는다", () => {
+    const init = uncachedRequestInit({ ...cachedRequestInit(), cache: "force-cache" });
+    expect(init).toEqual({ cache: "no-store" });
+    expect("next" in init).toBe(false);
+  });
+
+  test("요청 쪽의 방법·머리글·본문·신호는 그대로 둔다", () => {
+    const headers = new Headers({ apikey: "k", "content-type": "application/json" });
+    const signal = new AbortController().signal;
+    const init = uncachedRequestInit({ method: "POST", headers, body: '{"p_query":"취득세"}', signal });
+    expect(init).toEqual({ method: "POST", headers, body: '{"p_query":"취득세"}', signal, cache: "no-store" });
   });
 });
 

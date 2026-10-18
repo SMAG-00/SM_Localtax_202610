@@ -1,7 +1,7 @@
 // W2-c 2단계 DB — 많이 본 기사·상담 사례 HOT 순위 · 집계 함수 · 보존 기한 정리 (ART-11 · HOME-05 · FND-06, docs/dev/W2-c_설계.md 3·8장)
 //  · article_rankings: 값 제약(목록 2종·순위 1~100·같은 목록에 같은 기사 하나·고정은 HOT만·UTC 정시 창)·기사와 함께 지워짐
 //  · 최소 권한: anon·authenticated는 지금 공개된 기사의 순위·고정·집계 시각 칸만 — 비공개로 바뀐 기사는 바로 0행, 점수·창 칸·쓰기는 권한 거부,
-//    원본 analytics_events·집계 article_stats는 그대로 0. 집계 함수 6개는 service_role만 실행 (anon 실행은 health_ping뿐)
+//    원본 analytics_events·집계 article_stats는 그대로 0. 집계 함수 6개는 service_role만 실행 (anon 실행은 허용 목록 — health_ping·W2-d 통합 검색뿐)
 //  · 집계 함수 동작: 시간 단위 집계 바꾸기(범위 안만·멱등·없는 기사 뺌) · 창 합계(시작 포함·끝 제외) · 순위 바꾸기(다시 세기·다른 목록 그대로) ·
 //    바뀐 이벤트 시간대 찾기(번호 뒤·기사 이벤트만) · 보존 기한 정리(기준 시각 앞만·한 번에 최대 건수)
 // 모든 시험은 트랜잭션 안에서 하고 되돌린다 (남는 행 0).
@@ -9,6 +9,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { connect, dbUrl, isLocal } from "../scripts/db.mjs";
+import { ANON_EXECUTE_ALLOWED } from "../scripts/verify-rls-remote.mjs";
 
 let client;
 before(async () => {
@@ -165,11 +166,11 @@ for (const role of ["anon", "authenticated"]) {
     }));
 }
 
-test("anon이 실행할 수 있는 public 함수는 health_ping 하나 (verify-rls-remote 기준과 같다)", async () => {
+test("anon이 실행할 수 있는 public 함수는 허용 목록뿐 — 집계 함수 0 (verify-rls-remote 기준과 같다)", async () => {
   const { rows } = await client.query(
     "select p.proname as name from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1",
   );
-  assert.deepEqual(rows.map((r) => r.name), ["health_ping"]);
+  assert.deepEqual(rows.map((r) => r.name), [...ANON_EXECUTE_ALLOWED].sort());
 });
 
 test("service_role — 집계 함수 6개를 실행하고 순위 표를 쓰고·읽고·고치고·지운다", () =>

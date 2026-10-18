@@ -16,8 +16,9 @@ const ROOT = path.join(HERE, "..", "..", "..");
 const DB_DIR = path.join(HERE, "..");
 const shell = process.platform === "win32";
 
-// anon(공개 키)이 실행해도 되는 함수 — 데이터를 읽지 않는 상태 확인만 (FND-06)
-export const ANON_EXECUTE_ALLOWED = new Set(["health_ping"]);
+// anon(공개 키)이 실행해도 되는 함수 — 데이터를 읽지 않는 상태 확인(FND-06)과, 공개 행만 돌려주는 통합 검색(W2-d — security invoker라
+// 부르는 역할의 RLS·칸 권한이 그대로 걸린다, docs/dev/W2-d_설계.md 7장)
+export const ANON_EXECUTE_ALLOWED = new Set(["health_ping", "search_public"]);
 
 /** 응답 판정 — 빈 배열·401·403·404는 차단, 행이 있는 200은 노출, 그 밖은 오류 */
 export function classify(status, body) {
