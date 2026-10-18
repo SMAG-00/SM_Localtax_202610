@@ -1,15 +1,17 @@
 import "server-only";
 import type { LocalTopic } from "@ltr/ui";
 import type { ArticleListItem } from "./cards";
-import { LIMITS, LOCAL_BLOCK_TOPICS, POLICY_LINKS, SECTION_INFO, isLocalTopic, type SectionKey } from "./constants";
+import { HOT_CATEGORY, LIMITS, LOCAL_BLOCK_TOPICS, POLICY_LINKS, SECTION_INFO, isLocalTopic, type SectionKey } from "./constants";
 import { publicDb, rowsOf } from "./db";
 import { ALL_TAB, hubTabs, localBlocks, newsTabs, pageNumber, type HubData, type HubTab } from "./hub-logic";
+import { getHotBlock, type HotBlock } from "./rankings";
 import { readArticleList, readCategories, readCategoryCounts, readPublicSettings, readTopicCounts } from "./reads";
 import { GLOSSARY_COLUMNS, SITUATION_COLUMNS, num, type GlossaryRow, type SituationRow } from "./rows";
 import { hubSituationCards } from "./situation-logic";
 
 // 4대 분야 허브 공통 골격 (CAT-02 · UX-05) · 하위 분야 목록 · 뉴스 전체 — 네 허브가 같은 모양의 값을 받는다 (규칙은 hub-logic.ts).
-// 분야 지방세 포인트(01B CORE-02 — W3)·지방세·부동산·개발금융 허브의 분야 고유 블록(01B)·상담 사례 HOT(W2-c)은 그 작업에서 더한다.
+// 분야 지방세 포인트(01B CORE-02 — W3)·지방세·부동산·개발금융 허브의 분야 고유 블록(01B)은 그 작업에서 더한다.
+// 상담 사례 HOT(HOME-05 — W2-c 2단계)은 지방세 허브와 상담 사례 분야 목록(HOT_CATEGORY)의 첫 쪽에 둔다 (rankings.ts).
 // 지자체뉴스 허브는 분야 고유 블록 자리에 LG-08 순서의 지자체 허브 블록 중 데이터가 있는 ② 지방세·지방재정 ③ 부동산·개발을 둔다.
 
 export type { HubData, HubTab } from "./hub-logic";
@@ -17,7 +19,7 @@ export type { HubData, HubTab } from "./hub-logic";
 export async function getHubData(section: SectionKey, opts: { topic?: string | null } = {}): Promise<HubData> {
   const db = publicDb();
   const topic: LocalTopic | null = section === "local" && isLocalTopic(opts.topic) ? opts.topic : null;
-  const [settings, categories, counts, topicCounts, latest, situations, terms, blockTax, blockRealEstate] = await Promise.all([
+  const [settings, categories, counts, topicCounts, latest, situations, terms, blockTax, blockRealEstate, hot] = await Promise.all([
     readPublicSettings(),
     readCategories(),
     readCategoryCounts(),
@@ -28,6 +30,7 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     // 지자체 허브 블록 — 전체 보기에서만 (분야를 고르면 목록 하나로 좁힌다)
     section === "local" && !topic ? readArticleList(db, { section, editorialFields: LOCAL_BLOCK_TOPICS.localTax, limit: LIMITS.localBlock }) : null,
     section === "local" && !topic ? readArticleList(db, { section, editorialFields: LOCAL_BLOCK_TOPICS.realEstate, limit: LIMITS.localBlock }) : null,
+    section === HOT_CATEGORY.section ? getHotBlock() : null,
   ]);
   return {
     section,
@@ -40,6 +43,7 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     topic,
     blocks: blockTax && blockRealEstate ? localBlocks(blockTax.items, blockRealEstate.items) : null,
     latest: latest.items,
+    hot,
     situations: hubSituationCards(situations, section, settings.hubSituationLimit),
     terms: terms.map((t) => ({ id: num(t.id), term: t.term, plain: t.plain })),
     taxPoint: null,
@@ -55,6 +59,8 @@ export interface CategoryListData {
   /** 허브와 같은 탭 — 지금 하위 분야가 고른 탭 (기사 0건이면 탭에 없다) */
   tabs: HubTab[];
   items: ArticleListItem[];
+  /** 상담 사례 HOT (HOME-05) — 상담 사례 분야 목록(HOT_CATEGORY)의 첫 쪽만, 아니면 null */
+  hot: HotBlock | null;
   page: number;
   total: number;
   hasMore: boolean;
@@ -70,7 +76,11 @@ export async function getCategoryList(section: SectionKey, slug: string, page = 
   const category = categories.find((c) => c.section === section && c.slug === slug);
   if (!category) return null;
   const current = pageNumber(page);
-  const { items, total } = await readArticleList(publicDb(), { section, categoryId: num(category.id), limit: LIMITS.pageSize, offset: (current - 1) * LIMITS.pageSize, count: true });
+  const isHot = section === HOT_CATEGORY.section && slug === HOT_CATEGORY.slug && current === 1;
+  const [{ items, total }, hot] = await Promise.all([
+    readArticleList(publicDb(), { section, categoryId: num(category.id), limit: LIMITS.pageSize, offset: (current - 1) * LIMITS.pageSize, count: true }),
+    isHot ? getHotBlock() : null,
+  ]);
   const hub = SECTION_INFO[section];
   return {
     section,
@@ -78,6 +88,7 @@ export async function getCategoryList(section: SectionKey, slug: string, page = 
     category: { id: num(category.id), slug: category.slug, name: category.name, intro: category.intro, needsDisclaimer: category.needs_disclaimer },
     tabs: hubTabs(section, categories, counts, topicCounts),
     items,
+    hot,
     page: current,
     total,
     hasMore: current * LIMITS.pageSize < total,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { sectionOfHref, track } from "@/lib/analytics/client";
 import { EngagementClock } from "@/lib/analytics/engagement";
 import type { EventName } from "@/lib/analytics/events";
@@ -72,4 +72,30 @@ export function MeasureHomeEntry() {
     return () => document.removeEventListener("click", onClick, true);
   }, []);
   return null;
+}
+
+/** 순위 목록 누름 — 많이 본 기사(popular_article_clicked: 순위·위치)·상담 사례 HOT(hot_article_clicked: 순위·고정 여부) 1건.
+ *  목록 컴포넌트(@ltr/ui PopularArticles 등)를 바꾸지 않고 감싼 요소에서 누름을 듣는다. 링크 주소로 항목을 찾는다 */
+export function MeasureClicks({
+  name,
+  items,
+  children,
+}: {
+  name: "popular_article_clicked" | "hot_article_clicked";
+  items: ReadonlyArray<{ href: string; section: SectionKey; props: Props }>;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      data-measure-clicks={name}
+      onClickCapture={(event) => {
+        const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+        if (!link || !event.currentTarget.contains(link)) return;
+        const item = items.find((i) => i.href === link.getAttribute("href"));
+        if (item) void track(name, { section: item.section, props: item.props });
+      }}
+    >
+      {children}
+    </div>
+  );
 }

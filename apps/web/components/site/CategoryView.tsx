@@ -1,13 +1,15 @@
 import { FieldHubHead, UiLink } from "@ltr/ui";
 import type { CategoryListData } from "@/lib/server/public";
-import { pagerLinks } from "@/lib/site/hub-view";
+import { HUB_HEADINGS, pagerLinks } from "@/lib/site/hub-view";
 import { ArticleGrid } from "./ArticleItem";
+import { HotBlock } from "./HotBlock";
 import { Pager } from "./Pager";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
 
 // 하위 분야 목록 (CAT-02 · PRD-01A 3장 '하위 분야 목록') — 허브와 같은 머리(분야 허브 머리 + 허브 탭, 지금 하위 분야가 고른 탭)와 기사 카드 목록.
 // 기사 0건이면 목록 대신 상위 허브 안내 — 이 주소는 noindex이고 탭·메뉴에는 없다 (화면 metadata가 정한다).
 // 분야 고유 목록(트래커·프로젝트·사례)·기간·지역 필터는 01B·뒤 단계가 더한다 (설계 9장).
+// 상담 사례 분야 목록(지방세 › 해석 — HOT_CATEGORY)의 첫 쪽은 머리 다음에 상담 사례 HOT(해결 사례 카드 3 + HOT 목록 5 — HOME-05, W2-c 2단계)을 둔다.
 
 export function CategoryView({ list }: { list: CategoryListData }) {
   const { prev, next } = pagerLinks(`${list.hubHref}/${list.category.slug}`, {}, list.page, list.hasMore);
@@ -23,9 +25,14 @@ export function CategoryView({ list }: { list: CategoryListData }) {
           tabs={{ items: list.tabs, current: list.category.slug, label: "하위 분야" }}
         />
       </SiteSection>
+      {list.hot && (
+        <SiteSection id="category-hot" tone="ivory-dark" heading={HUB_HEADINGS.hot} data={{ "data-hub-part": "hot" }}>
+          <HotBlock hot={list.hot} moreLink={false} />
+        </SiteSection>
+      )}
       <SiteSection
         id="category-list"
-        tone="ivory-dark"
+        tone={list.hot ? "ivory" : "ivory-dark"}
         heading={{ eyebrow: "ARTICLES", title: empty ? "아직 기사가 없습니다" : `기사 ${list.total}건` }}
         data={{ "data-hub-part": "latest" }}
       >

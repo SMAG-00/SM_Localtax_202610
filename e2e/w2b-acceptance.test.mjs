@@ -804,7 +804,9 @@ test("4a) 전수 페이지 응답 200 — 500 0 · 깨진 사이트 안 링크(4
 test("4b) 꺼진 기능·아직 없는 화면·v1.2·단계 전 경로로 가는 링크 0 — 헤더에 정책·지방세봇·지역·축제·AI 도우미 메뉴 0, 상단 메뉴 4", () => {
   assert.ok(crawl, "4) 전수가 먼저 돈다");
   // 기준 목록이 PRD를 담았는지 — 비어 있으면 검사가 빈 검사가 된다
-  for (const p of ["/calc", "/experts", "/store", "/edu", "/search", "/about", "/about/editorial-policy", "/help/report", "/glossary", "/news/popular"]) assert.ok(hitRules(p, CLOSED).length, `꺼진 기능 목록에 ${p}`);
+  for (const p of ["/calc", "/experts", "/store", "/edu", "/search", "/about", "/about/editorial-policy", "/help/report", "/glossary", "/news/video"]) assert.ok(hitRules(p, CLOSED).length, `꺼진 기능 목록에 ${p}`);
+  // 많이 본 기사(/news/popular)는 W2-c 2단계가 만든 열린 화면이다 — 꺼진 목록에 없다
+  assert.equal(hitRules("/news/popular", CLOSED).length, 0);
   for (const p of ["/region", "/resources", "/authors/1", "/news/cards/x", "/law", "/cases", "/workspace", "/qna", "/library", "/academy", "/pricing", "/ask", "/realestate/trust", "/no-email-collection"]) assert.ok(hitRules(p, STAGED_V12).length, `v1.2·단계 전 목록에 ${p}`);
   const closed = [];
   const old = [];

@@ -224,8 +224,11 @@ export class StaffFixture {
         if (snaps.length) await q("delete from public.raw_snapshots where id = any($1::bigint[])", [snaps.map((s) => s.snapshot_id)]);
         await q("delete from public.article_revisions where article_id = any($1::bigint[])", ids);
         await q("delete from public.inquiries where related_article_id = any($1::bigint[])", ids);
-        // 기사 시간 단위 집계(W2-c) — 트리거를 끈 세션이라 외래 키 cascade가 돌지 않으니 기사보다 먼저 직접 지운다
+        // 기사 시간 단위 집계·순위(W2-c) — 트리거를 끈 세션이라 외래 키 cascade가 돌지 않으니 기사보다 먼저 직접 지운다
         await q("delete from public.article_stats where article_id = any($1::bigint[])", ids);
+        await q("delete from public.article_rankings where article_id = any($1::bigint[])", ids);
+        // 시험 기사의 측정 이벤트 — 집계 시험이 지난 시각으로 넣은 행까지 (시작 시각 앞이라 아래 시각 정리에 걸리지 않는다)
+        await q("delete from public.analytics_events where props ? 'article_id' and props ->> 'article_id' = any($1::text[])", [articleIds.map(String)]);
         await q("delete from public.articles where id = any($1::bigint[])", ids);
       }
       // 시험이 넣은 이미지 (W2-b 4단계 — 기사가 대표·본문 이미지로 가리키므로 기사 뒤에)

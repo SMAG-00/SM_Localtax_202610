@@ -2,6 +2,9 @@
 // 일정 문법(분 시 일 월 요일)과 시각 판정을 구체적인 시각으로 확인한다. 시각은 UTC 기준 (Vercel Cron과 같다).
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseCron, matches, dueJobs } from "../../deploy/scheduler/cron.mjs";
 
 const at = (iso) => new Date(iso);
@@ -56,4 +59,38 @@ test("vercel.json의 crons에서 지금 실행할 작업만 고른다 — 경로
   assert.deepEqual(dueJobs(crons, at("2026-10-18T21:00:00Z")), ["link-check"]);
   assert.deepEqual(dueJobs(crons, at("2026-10-18T21:01:00Z")), []);
   assert.throws(() => dueJobs([{ path: "/api/other", schedule: "* * * * *" }], at("2026-10-18T21:00:00Z")));
+});
+
+// ── 저장소의 일정 파일 (apps/web/vercel.json — Vercel Cron과 사내 스케줄러가 같이 읽는다) ─────────────
+// Vercel Hobby 요금제는 일정 한 줄이 하루 한 번 넘게 돌면 배포가 실패한다(Vercel 문서 'Hobby scheduling limits').
+// 그래서 1시간 집계(popular-hourly)는 하루 한 번짜리 줄 24개로 적는다 — Hobby는 그 시간 안 아무 때(±59분), Pro·사내 스케줄러는 정각 5분 (W2-c 설계 8.2)
+
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const SCHEDULE = JSON.parse(fs.readFileSync(path.join(ROOT, "apps", "web", "vercel.json"), "utf8")).crons;
+const DAY_MINUTES = Array.from({ length: 24 * 60 }, (_, m) => new Date(Date.UTC(2026, 9, 18, 0, m)));
+
+test("일정 파일의 줄마다 하루 한 번만 돈다 (Vercel Hobby 배포 조건) — 하루 1,440분 중 맞는 분이 정확히 1개", () => {
+  assert.ok(SCHEDULE.length >= 3);
+  for (const { path: p, schedule } of SCHEDULE) {
+    const c = parseCron(schedule);
+    const hits = DAY_MINUTES.filter((d) => matches(c, d)).length;
+    assert.equal(hits, 1, `${p} ${schedule}: 하루 ${hits}번`);
+  }
+});
+
+test("popular-hourly는 UTC 매시 5분에 한 번씩 — 24개 시간대마다 정확히 1번, 다른 작업은 하루 1번", () => {
+  const perHour = Array.from({ length: 24 }, () => 0);
+  for (const d of DAY_MINUTES) for (const job of dueJobs(SCHEDULE, d)) if (job === "popular-hourly") perHour[d.getUTCHours()] += 1;
+  assert.deepEqual(perHour, Array.from({ length: 24 }, () => 1));
+  assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T07:05:00Z")), ["popular-hourly"]);
+  assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T07:06:00Z")), []);
+  const daily = DAY_MINUTES.flatMap((d) => dueJobs(SCHEDULE, d)).filter((j) => j !== "popular-hourly");
+  assert.deepEqual(daily.sort(), ["analytics-retention", "scheduler-heartbeat"]);
+});
+
+test("일정 파일의 작업은 모두 작업 목록(workflows)에 있다 — 없는 작업을 부르는 일정 0", async () => {
+  const { jobs } = await import("../../workflows/src/index.ts");
+  const names = [...new Set(SCHEDULE.map((c) => c.path.replace("/api/jobs/", "")))];
+  for (const n of names) assert.ok(Object.hasOwn(jobs, n), `${n}이 workflows 작업 목록에 없다`);
+  assert.deepEqual(names.sort(), Object.keys(jobs).sort(), "목록의 작업은 모두 일정이 있다");
 });

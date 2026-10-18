@@ -231,3 +231,29 @@ export function parseCollectSettings(rows: readonly { key: string; value: unknow
     },
   };
 }
+
+/** 키 → 검사를 지난 값의 모양 */
+export interface AnalyticsSettingValues {
+  analytics: AnalyticsConfig;
+  bot_user_agents: BotList;
+  analytics_referrers: ReferrerSettings;
+  hot_weights: HotWeights;
+  popular_rules: PopularRules;
+}
+
+export type CheckedSettings<K extends AnalyticsSettingKey> = { ok: true; values: Pick<AnalyticsSettingValues, K> } | { ok: false; problems: string[] };
+
+/** 고른 키만 검사해 읽는다 — 집계 배치(popular_rules·hot_weights)·보존 기한 정리(analytics)가 쓴다. 문제는 "키: 문장" */
+export function parseCheckedSettings<K extends AnalyticsSettingKey>(rows: readonly { key: string; value: unknown }[], keys: readonly K[]): CheckedSettings<K> {
+  const byKey = new Map(rows.map((r) => [r.key, r.value]));
+  const problems: string[] = [];
+  for (const key of keys) {
+    if (!byKey.has(key)) {
+      problems.push(`${key}: 설정 행이 없습니다`);
+      continue;
+    }
+    for (const e of ANALYTICS_SETTING_CHECKS[key](byKey.get(key))) problems.push(`${key}: ${e}`);
+  }
+  if (problems.length) return { ok: false, problems };
+  return { ok: true, values: Object.fromEntries(keys.map((k) => [k, byKey.get(k)])) as unknown as Pick<AnalyticsSettingValues, K> };
+}

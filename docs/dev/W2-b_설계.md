@@ -34,7 +34,7 @@ PRD-01A 9장 W2-b(홈 골격·히어로·메뉴·4대 분야 허브 공통 골�
 
 | 이름 | 값 |
 |---|---|
-| settings.public_keys (anon이 읽는 설정 키) | `home_core_message` · `home_search_chips` · `hub_intros` · `amendment_confirmed_stage` · `hub_situation_limit` · `feature_flags` · `next_action_priority` |
+| settings.public_keys (anon이 읽는 설정 키 — 마지막 키는 W2-c 2단계가 더했다: 많이 본 기사 사이드바·목록 건수) | `home_core_message` · `home_search_chips` · `hub_intros` · `amendment_confirmed_stage` · `hub_situation_limit` · `feature_flags` · `next_action_priority` · `popular_rules` |
 | feature_flags (기능 공개 목록 — 없거나 false면 닫힘) | `calc` · `experts` · `store` · `edu` · `search` · `sm_calculator` · `expert_finder` · `self_calculator` · `taxbot` · `region_hubs` · `amendments` · `page_about` · `page_editorial_policy` · `page_ethics` · `page_corrections` · `page_ad_policy` · `page_privacy` · `page_help` |
 | next_action (다음 행동 버튼 키, ART-06) | `situation` · `same_section` · `local_news` · `sm_calculator` · `expert_finder` · `self_calculator` · `taxbot` |
 | home_sections (홈 섹션 순서 고정, HOME-01) | `hero` · `fields` · `latest_reports` · `weekly_hot` · `amendments` · `column` · `product` · `experts` |
@@ -183,7 +183,7 @@ PRD-01A 9장 W2-b(홈 골격·히어로·메뉴·4대 분야 허브 공통 골�
 | `/tax/columns` · `/finance/columns` | 칼럼 목록 (`opinion`, 연재 회차 순서, 의견 고지, 필자 링크) — `/[section]/[category]`의 `columns` 하위 분야가 칼럼 목록이 된다(부동산은 01B W4가 하위 분야를 더하면 같은 규칙) | ART-04 | 4 |
 | `/people/[slug]` | 인물(기자·필자) — 비공개·없는 인물 404 | ART-04 · NAV-03 | 4 |
 
-만들지 않는 경로(다른 작업): `/news/popular`·`/news/video`·`/news/photo`(W2-c) · `/search`·`/glossary`(W2-d) · `/about/*`·`/help/*`·`/my`·`/brief`(W2-e) · `/tax/amendments/[slug]`·`/calc`(01B W3) · `/local/[sido](/[sigungu])`·`/local/events`(01B W4~W6) · `/experts`·`/store`·`/edu`(01C). 이 경로로 가는 링크는 기능 키가 켜질 때까지 0이다.
+만들지 않는 경로(다른 작업): `/news/video`·`/news/photo`(W2-c 4단계 — 많이 본 기사 목록은 W2-c 2단계가 만들었다) · `/search`·`/glossary`(W2-d) · `/about/*`·`/help/*`·`/my`·`/brief`(W2-e) · `/tax/amendments/[slug]`·`/calc`(01B W3) · `/local/[sido](/[sigungu])`·`/local/events`(01B W4~W6) · `/experts`·`/store`·`/edu`(01C). 이 경로로 가는 링크는 기능 키가 켜질 때까지 0이다.
 
 - **하위 분야 목록은 공개 하위 분야 전부의 경로다** (3단계 결정 — 9장 #28). PRD-01A 3장 '하위 분야 목록'(기사 카드 목록)은 01A 화면이고, `/tax/amendments`·`/realestate/projects` 같은 01B 화면은 같은 경로에 분야 고유 목록(트래커·프로젝트·사례)을 더한다. 기사 0건이면 탭·메뉴에 없다. `amendments` 기능 키는 트래커 상세(`/tax/amendments/[slug]`) 링크만 연다.
 - **지자체뉴스의 하위 경로는 만들지 않는다** (9장 #27). `/local/[category]`는 시·도 주소 `/local/[sido]`와 겹친다 — 허브 탭·헤더 하위 메뉴는 기사 있는 편집 분야(`/local?topic=local_tax` 등, 분야 필터 값)로 두고, `/local/reporting` 등은 404다.

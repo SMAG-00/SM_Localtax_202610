@@ -2,12 +2,17 @@
 import { describe, expect, test } from "vitest";
 import { HUB_PARTS, hubParts, listRobots, pagerLinks, parsePage, regionHref, reviewedLine, situationSteps } from "./hub-view";
 
-const hub = (over: Partial<Parameters<typeof hubParts>[0]> = {}) => ({ blocks: null, latest: [1], situations: [1], terms: [1], noindex: false, ...over });
+const hub = (over: Partial<Parameters<typeof hubParts>[0]> = {}) => ({ blocks: null, hot: null, latest: [1], situations: [1], terms: [1], noindex: false, ...over });
 
 describe("허브 골격 (CAT-02 — 네 허브 같은 순서, 0건 부분은 빠짐)", () => {
-  test("모두 있으면 머리 → 분야 고유 블록 → 최신 목록 → 상황 카드 → 관련 용어, 바탕은 ivory부터 번갈아", () => {
-    expect(hubParts(hub({ blocks: {} })).map((p) => `${p.key}:${p.tone}`)).toEqual(["head:ivory", "blocks:ivory-dark", "latest:ivory", "situations:ivory-dark", "terms:ivory"]);
-    expect(hubParts(hub({ blocks: {} })).map((p) => p.key)).toEqual([...HUB_PARTS]);
+  test("모두 있으면 머리 → 분야 고유 블록 → 최신 목록 → 상담 사례 HOT → 상황 카드 → 관련 용어, 바탕은 ivory부터 번갈아", () => {
+    expect(hubParts(hub({ blocks: {}, hot: {} })).map((p) => `${p.key}:${p.tone}`)).toEqual(["head:ivory", "blocks:ivory-dark", "latest:ivory", "hot:ivory-dark", "situations:ivory", "terms:ivory-dark"]);
+    expect(hubParts(hub({ blocks: {}, hot: {} })).map((p) => p.key)).toEqual([...HUB_PARTS]);
+  });
+
+  test("상담 사례 HOT(HOME-05)은 블록이 있을 때만 — 최신 목록 뒤, 상황 카드 앞 (지방세 허브)", () => {
+    expect(hubParts(hub({ hot: {} })).map((p) => p.key)).toEqual(["head", "latest", "hot", "situations", "terms"]);
+    expect(hubParts(hub({ hot: null })).map((p) => p.key)).toEqual(["head", "latest", "situations", "terms"]);
   });
 
   test("분야 고유 블록이 없는 허브(지방세·부동산·개발금융 — 01B 전)는 그 자리만 빠지고 순서는 같다", () => {

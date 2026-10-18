@@ -7,6 +7,7 @@ import type { ArticleListItem } from "./cards";
 import { subsectionLinks } from "./chrome-logic";
 import { LIMITS, LOCAL_BLOCK_TOPICS, NEWS_TAB_LABELS, SECTION_INFO, SECTION_KEYS, type SectionKey } from "./constants";
 import type { PublicCategoryRow } from "./rows";
+import type { HotBlock } from "./rankings";
 import type { SituationCard } from "./situation-logic";
 
 export interface HubTab {
@@ -70,6 +71,8 @@ export interface HubData {
   /** 분야 고유 블록 (01B) — 지자체뉴스 전체 보기에서 LG-08 ②·③만, 그 밖은 null */
   blocks: LocalBlocks | null;
   latest: ArticleListItem[];
+  /** 상담 사례 HOT (HOME-05) — 지방세 허브만, 상담 사례 기사가 없으면 null */
+  hot: HotBlock | null;
   /** 상황 카드 줄 — 0장이면 빈 목록(줄 숨김, UX-05) */
   situations: SituationCard[];
   /** 관련 용어 칩 */
@@ -95,6 +98,7 @@ export function closedHubData(section: SectionKey): HubData {
     topic: null,
     blocks: null,
     latest: [],
+    hot: null,
     situations: [],
     terms: [],
     taxPoint: null,

@@ -3,6 +3,8 @@ import { describe, expect, test } from "vitest";
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "./constants";
 import { CLOSED_FEATURES, parseFeatures, parsePriority, parsePublicSettings, parseSearchChips } from "./settings";
 
+/** W2-c 설계 2.5 popular_rules 씨앗 */
+const POPULAR_SEED = { version: "2026-10-18.1", window_hours: 168, dedupe_minutes: 30, exclude_content_types: ["digest", "sponsored"], sidebar_size: 5, list_size: 20 };
 const rows = (o: Record<string, unknown>) => Object.entries(o).map(([key, value]) => ({ key, value }));
 
 describe("parsePublicSettings", () => {
@@ -16,6 +18,7 @@ describe("parsePublicSettings", () => {
         hub_situation_limit: 4,
         feature_flags: CLOSED_FEATURES,
         next_action_priority: [...NEXT_ACTION_KEYS],
+        popular_rules: POPULAR_SEED,
       }),
     );
     expect(s).toEqual({
@@ -26,6 +29,7 @@ describe("parsePublicSettings", () => {
       hubSituationLimit: 4,
       features: CLOSED_FEATURES,
       nextActionPriority: [...NEXT_ACTION_KEYS],
+      popular: { sidebarSize: 5, listSize: 20, windowHours: 168 },
     });
   });
 
@@ -49,6 +53,16 @@ describe("parsePublicSettings", () => {
 
   test("허브 소개 — 4대 분야 키의 글자만", () => {
     expect(parsePublicSettings(rows({ hub_intros: { tax: " 지방세 소식 ", tourism: "관광", local: 3 } })).hubIntros).toEqual({ tax: "지방세 소식" });
+  });
+});
+
+describe("많이 본 기사 건수 (popular_rules — ART-11 사이드바 5·목록 20, 설정값)", () => {
+  test("설정을 바꾸면 그 건수 — 사이드바 3·목록 10·창 48시간", () => {
+    expect(parsePublicSettings(rows({ popular_rules: { ...POPULAR_SEED, version: "v2", sidebar_size: 3, list_size: 10, window_hours: 48 } })).popular).toEqual({ sidebarSize: 3, listSize: 10, windowHours: 48 });
+  });
+  test("없거나 모양이 틀리면 0건 — 목록을 숨긴다(닫힌 쪽)", () => {
+    expect(parsePublicSettings([]).popular).toEqual({ sidebarSize: 0, listSize: 0, windowHours: 0 });
+    expect(parsePublicSettings(rows({ popular_rules: { ...POPULAR_SEED, list_size: 0 } })).popular).toEqual({ sidebarSize: 0, listSize: 0, windowHours: 0 });
   });
 });
 

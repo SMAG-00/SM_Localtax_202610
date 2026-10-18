@@ -1,5 +1,5 @@
 // 허브·하위 분야 목록·뉴스 전체·상황 페이지의 화면 값 (CAT-02 · UX-05 · PRD-01A 3장 화면 표) — 순수 함수 (시험 hub-view.test.ts)
-//  · 허브 골격은 네 허브가 같다: 머리(분야 허브 머리 — 아이브로·제목·소개 → 지방세 포인트 → 탭) → 분야 고유 블록 자리 → 최신 목록 → 상황 카드 → 관련 용어.
+//  · 허브 골격은 네 허브가 같다: 머리(분야 허브 머리 — 아이브로·제목·소개 → 지방세 포인트 → 탭) → 분야 고유 블록 자리 → 최신 목록 → (상담 사례 HOT — 지방세 허브만, HOME-05) → 상황 카드 → 관련 용어.
 //    내용이 0건인 부분은 빠지고(빈 칸 0), 빠지지 않은 부분의 순서는 그대로다. 바탕은 보이는 순서대로 ivory ↔ ivory-dark (머리가 ivory)
 //  · 기사 0건인 목록(빈 하위 분야·기사 없는 편집 분야)은 상위 허브 안내 + noindex — 응답은 200 (설계 9장)
 //  · 쪽 넘김은 주소 쿼리 page (2쪽부터). 다른 쿼리(section·topic)는 그대로 둔다
@@ -7,18 +7,21 @@ import { brand, type StepTimelineItem } from "@ltr/ui";
 import { sectionTones, type SectionTone } from "./home-view";
 
 /** 허브 본문 부분 — 이 순서 고정 */
-export const HUB_PARTS = ["head", "blocks", "latest", "situations", "terms"] as const;
+export const HUB_PARTS = ["head", "blocks", "latest", "hot", "situations", "terms"] as const;
 export type HubPart = (typeof HUB_PARTS)[number];
 
 /** 부분 머리 — 아이브로(영문)와 제목 (분야 고유 블록은 블록마다 제목이 있어 머리가 없다) */
 export const HUB_HEADINGS = {
   latest: { eyebrow: "LATEST", title: "최신 기사" },
+  hot: { eyebrow: "HOT", title: "상담 사례 HOT" },
   situations: { eyebrow: "SITUATIONS", title: "상황으로 찾기" },
   terms: { eyebrow: "GLOSSARY", title: "관련 용어" },
 } as const;
 
 interface HubShape {
   blocks: unknown;
+  /** 상담 사례 HOT 블록 (HOME-05 — 지방세 허브) — 없으면 null */
+  hot: unknown;
   latest: readonly unknown[];
   situations: readonly unknown[];
   terms: readonly unknown[];
@@ -31,6 +34,7 @@ export function hubParts(hub: HubShape): Array<{ key: HubPart; tone: SectionTone
   const present: HubPart[] = ["head"];
   if (hub.blocks) present.push("blocks");
   if (hub.latest.length > 0 || hub.noindex) present.push("latest");
+  if (hub.hot) present.push("hot");
   if (hub.situations.length > 0) present.push("situations");
   if (hub.terms.length > 0) present.push("terms");
   return sectionTones(present);

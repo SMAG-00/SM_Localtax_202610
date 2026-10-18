@@ -36,6 +36,7 @@ export const PUBLIC_SETTING_KEYS = [
   "hub_situation_limit",
   "feature_flags",
   "next_action_priority",
+  "popular_rules",
 ] as const;
 
 /** 기능 공개 목록 (settings.feature_flags) — 없거나 false면 닫힘 */
@@ -116,7 +117,16 @@ export const LIMITS = {
   localBlock: 4,
   /** 목록 한 쪽 */
   pageSize: 20,
+  /** HOME-05 상담 사례 HOT — 해결 사례 카드 3장 + HOT 목록 5건 */
+  hotCards: 3,
+  hotList: 5,
 } as const;
+
+/**
+ * 상담 사례 HOT(HOME-05)을 매기는 하위 분야 — 지방세 › 해석. PRD-00 5.3 '해석 … v1.2의 판례 해설·유권해석·상담 사례(하위 유형 해결 사례 CAT-05, HOT HOME-05)를 받는다'.
+ * 1단계 하위 경로에 상담 사례 경로가 따로 없어(CAT-01) 이 분야 목록(/tax/interpretations)이 '상담 사례 분야 목록'이다 [확인 필요 — W2-c 설계 9장]
+ */
+export const HOT_CATEGORY = { section: "tax", slug: "interpretations" } as const satisfies { section: SectionKey; slug: string };
 
 /**
  * 공개 링크로 내보내지 않는 경로 — 단계 전 경로(HOME-02: 자체 계산기 `/calc/…`, `/law`, `/cases`, `/workspace`, `/qna`, `/library`)와
@@ -157,10 +167,10 @@ export function isBlockedPath(href: string): boolean {
 }
 
 /**
- * 아직 없는 화면 — 설계 7장 '만들지 않는 경로' 중 기능 키가 없는 것: 많이 본 기사·동영상·포토(W2-c) · 용어사전(W2-d) · 내 화면·브리핑(W2-e) · 행사안내(01B W6).
- * 그 작업이 화면을 만들 때 이 목록에서 뺀다
+ * 아직 없는 화면 — 설계 7장 '만들지 않는 경로' 중 기능 키가 없는 것: 동영상·포토(W2-c 4단계) · 용어사전(W2-d) · 내 화면·브리핑(W2-e) · 행사안내(01B W6).
+ * 그 작업이 화면을 만들 때 이 목록에서 뺀다 (많이 본 기사 /news/popular는 W2-c 2단계가 만들어 뺐다)
  */
-const UNBUILT_PREFIXES = ["/news/popular", "/news/video", "/news/photo", "/glossary", "/my", "/brief", "/local/events"] as const;
+const UNBUILT_PREFIXES = ["/news/video", "/news/photo", "/glossary", "/my", "/brief", "/local/events"] as const;
 /** 정책 페이지 묶음(W2-e) — 공개 승인된 정책 페이지(POLICY_LINKS 주소 그대로)만 열린다 (HELP-05) */
 const POLICY_ROOTS = ["/about", "/help"] as const;
 /** 기능 키로 여는 화면 — 유틸 메뉴 화면과 그 아래(HOME-02) · 트래커 상세(01B W3) · 시·도·시·군·구 허브(01B W4). self = 그 주소 자체도 */

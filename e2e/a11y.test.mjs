@@ -167,12 +167,13 @@ test("공개 홈(/) 접근성 95점 이상 — 내용이 찬 모습(최신 자�
   assert.ok(r.score >= MIN, `점수 ${r.score} — 실패 항목: ${r.failing.join(", ")}`);
 });
 
-test("지방세 허브(/tax) 접근성 95점 이상 — 탭·최신 목록·상황 카드·관련 용어가 찬 모습", async () => {
+test("지방세 허브(/tax) 접근성 95점 이상 — 탭·최신 목록·상담 사례 HOT·상황 카드·관련 용어가 찬 모습", async () => {
   if (!process.env.E2E_BASE_URL) {
     const page = await browser.newPage();
     await page.goto(`${base}/tax`, { waitUntil: "load" });
     const parts = await page.$$eval("[data-hub-part]", (els) => els.map((e) => e.getAttribute("data-hub-part")));
-    assert.deepEqual(parts, ["head", "latest", "situations", "terms"]);
+    // 상담 사례 HOT(W2-c 2단계 — 해석 분야 기사가 있으면 집계 전에도 최신 상담 사례로 채운 블록)
+    assert.deepEqual(parts, ["head", "latest", "hot", "situations", "terms"]);
     assert.ok((await page.locator('[data-ui="tab-nav"] a').count()) >= 2);
     await page.close();
   }

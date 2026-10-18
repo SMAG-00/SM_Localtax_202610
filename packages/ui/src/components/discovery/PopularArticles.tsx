@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { UiLink } from "../link";
 
 export type PopularArticleItem = { href: string; title: string };
 
@@ -11,7 +12,8 @@ export type PopularArticlesProps = {
 
 /**
  * 많이 본 기사 목록 — 순위 숫자(고정폭, navy-300) + 제목 한 줄, "최근 7일 기준" (PRD-00 8.6, ART-11)
- * 순위 숫자는 20px 굵은 글자(큰 글자 기준 3:1 — navy-300/흰 바탕 3.2:1)로 쓴다. 0건이면 목록 전체를 숨긴다
+ * 순위 숫자는 20px 굵은 글자(큰 글자 기준 3:1 — navy-300/흰 바탕 3.2:1)로 쓴다. 0건이면 목록 전체를 숨긴다.
+ * 항목은 사이트 안 링크(UiLink — 앱이 넘긴 링크로 새로고침 없는 화면 전환, FND-09)
  */
 export function PopularArticles({ items, limit = 5 }: PopularArticlesProps) {
   const headingId = useId();
@@ -28,7 +30,7 @@ export function PopularArticles({ items, limit = 5 }: PopularArticlesProps) {
       <ol className="mt-3 divide-y divide-navy-100">
         {shown.map((item, i) => (
           <li key={item.href}>
-            <a
+            <UiLink
               href={item.href}
               data-rank={i + 1}
               className="flex min-h-11 items-center gap-3 py-2 text-navy-900 transition hover:text-hermes-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500"
@@ -38,7 +40,7 @@ export function PopularArticles({ items, limit = 5 }: PopularArticlesProps) {
               </span>
               {/* contain-inline-size: 한 줄(nowrap) 제목이 부모 격자 칸의 최소 너비를 키우지 않게 고유 너비를 0으로 둔다 */}
               <span className="min-w-0 flex-1 truncate text-[16px] font-semibold contain-inline-size">{item.title}</span>
-            </a>
+            </UiLink>
           </li>
         ))}
       </ol>

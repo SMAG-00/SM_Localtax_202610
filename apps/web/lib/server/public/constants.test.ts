@@ -103,7 +103,7 @@ describe("열린 화면 판정 isOpenPath (HOME-02 빈 링크 0 · HELP-05 · �
   const features = (on: FeatureKey[] = []): Features => Object.fromEntries(FEATURE_KEYS.map((k) => [k, on.includes(k)])) as Features;
   const off = features();
 
-  test.each(["/", "/tax", "/tax/interpretations", "/tax/amendments", "/tax/columns", "/local", "/local?topic=local_tax", "/news", "/news/some-article", "/news?section=tax", "/situations/car-sold", "/people/kim", "/finance/cases"])(
+  test.each(["/", "/tax", "/tax/interpretations", "/tax/amendments", "/tax/columns", "/local", "/local?topic=local_tax", "/news", "/news/some-article", "/news?section=tax", "/situations/car-sold", "/people/kim", "/finance/cases", "/news/popular"])(
     "%s — 기능이 모두 꺼져도 열린 화면",
     (href) => expect(isOpenPath(href, off)).toBe(true),
   );
@@ -121,7 +121,7 @@ describe("열린 화면 판정 isOpenPath (HOME-02 빈 링크 0 · HELP-05 · �
     for (const href of paths) expect(isOpenPath(href, off), href).toBe(false);
   });
 
-  test.each(["/glossary", "/glossary/abc", "/news/popular", "/news/video", "/news/photo", "/my", "/brief", "/local/events", "/about/terms", "/about/advertise", "/help/faq"])(
+  test.each(["/glossary", "/glossary/abc", "/news/video", "/news/photo", "/my", "/brief", "/local/events", "/about/terms", "/about/advertise", "/help/faq"])(
     "%s — 아직 없는 화면은 기능을 모두 켜도 닫힘",
     (href) => expect(isOpenPath(href, features([...FEATURE_KEYS]))).toBe(false),
   );

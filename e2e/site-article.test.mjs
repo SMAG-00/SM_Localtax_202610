@@ -456,7 +456,7 @@ test("f) 삭제된 기사 410 + 삭제 안내 · 초안 404 · 예약 목록 경
   assert.match(html, /삭제된 기사입니다/);
   assert.match(html, /편집국이 내렸습니다/);
   assert.doesNotMatch(html, /삭제될 기사|권리 문제/, "삭제된 기사의 제목·사유는 보이지 않는다");
-  for (const p of [fx.draft.href, "/news/no-such-article", "/news/video", "/news/popular", `/people/${fx.hiddenSlug}`, "/people/no-such-person"]) {
+  for (const p of [fx.draft.href, "/news/no-such-article", "/news/video", `/people/${fx.hiddenSlug}`, "/people/no-such-person"]) {
     const res = await fetch(`${base}${p}`);
     assert.equal(res.status, 404, p);
   }

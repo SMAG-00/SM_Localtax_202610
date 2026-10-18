@@ -83,7 +83,7 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 
 ### 2.5 수집·집계 설정 씨앗 (`settings` — 관리자 설정 화면이 같은 규칙으로 검사한다, 시험이 이 블록을 읽어 DB 씨앗과 대조한다)
 
-값마다 `version`이 있고, 내용을 바꾸면 버전도 바꿔야 한다(W2-a 사전·유사도 기준과 같은 규칙). 수집 API는 `analytics`·`bot_user_agents`·`analytics_referrers`를 60초까지 서버 메모리에 두고 읽는다(바꾸면 늦어도 1분 뒤 적용). `hot_weights`·`popular_rules`는 2단계 집계 배치가 읽는다 — 가중치·기간·중복 제거 창은 코드 상수 0 (HOME-05·ART-11).
+값마다 `version`이 있고, 내용을 바꾸면 버전도 바꿔야 한다(W2-a 사전·유사도 기준과 같은 규칙). 수집 API는 `analytics`·`bot_user_agents`·`analytics_referrers`를 60초까지 서버 메모리에 두고 읽는다(바꾸면 늦어도 1분 뒤 적용). `hot_weights`·`popular_rules`는 2단계 집계 배치가 읽는다 — 가중치·기간·중복 제거 창은 코드 상수 0 (HOME-05·ART-11). `popular_rules`는 공개 화면이 사이드바·목록 건수와 창 길이를 읽도록 anon 공개 키이기도 하다(2단계 마이그레이션 15 — 숫자·기사 유형 목록뿐, W2-b 설계 2.3 `settings.public_keys`).
 
 #### `analytics`
 
@@ -132,6 +132,9 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
   - `props`는 JSON 객체, 값은 글자·숫자·참거짓만(객체·배열 0), 글자로 2,048바이트 이하, 금지 이름(`ip`·`user_agent`·`email`·`phone`·`address`·`lat`·`lng`·`query`·`question`·`input`·`user_id` 등) 칸 거부 — 수집 API가 막지 못해도 DB가 막는다.
   - 서버 시각(`occurred_at` 기본값 `now()`·수집 API가 서버 시계로 적는다). 브라우저가 보낸 시각은 받지 않는다.
 - `article_stats` (2단계 배치가 채운다) — `(article_id, hour)` 기본 키 · `hour`는 UTC 정시(분·초 0)만 · `views_all`(모든 조회)·`views_human`(봇·편집자·측정 거부 제외, 30분 중복 제거)·`shares`·`engaged_views`(사람만, 30초 이상) 0 이상 · `views_human ≤ views_all` · 기사를 지우면 함께 지워진다.
+- `article_rankings` (2단계 — 마이그레이션 `20261018000015_w2c_popular.sql`, 시험 `packages/db/tests/w2c-popular.test.mjs`) — 배치가 매 실행 통째로 바꾸는 순위 목록 두 개(`popular` 많이 본 기사 · `hot` 상담 사례 HOT). `(list, rank)` 기본 키 · `(list, article_id)` 하나 · 순위 1~100 · 고정(`pinned`)은 `hot`만 · 집계 창 `[window_start, window_end)`는 UTC 정시 · 점수(`score`)·창·설정 버전 칸 · 기사를 지우면 함께 지워진다.
+  - **최소 권한**: anon·authenticated는 `list`·`rank`·`article_id`·`pinned`·`computed_at` 칸만(칸 권한), 행은 RLS 정책 — 정책 안의 기사 하위 질의가 읽는 역할의 RLS로 돌아 **지금 공개된 기사의 행만** 보인다(보류·삭제로 바뀌면 다음 집계 전에도 0행). 점수·창 칸·쓰기는 권한 거부. 원본 `analytics_events`·`article_stats`는 1단계 그대로 0 — 공개 화면은 순위 목록만 읽는다(service_role을 공개 경로에 쓰지 않는다 — W2-b 공개 데이터 함수 원칙). `verify-rls.mjs` 허용 목록에 이 표만 더했다.
+  - 집계 함수 6개(`analytics_article_changes`·`article_stats_replace`·`article_stats_totals`·`article_rankings_replace`·`analytics_events_purge`·`article_stats_purge`) — security invoker·search_path 빈칸, service_role만 실행(anon·authenticated 실행 0 — anon 실행 허용은 `health_ping`뿐, DB 시험이 public 함수 전체를 본다). 바꾸기 함수는 한 트랜잭션에 지우고 넣고(advisory lock으로 겹친 실행을 한 줄로 세움), 지금 없는 기사의 행은 넣지 않는다. 합계·변경 함수는 JSON 한 값을 돌려 API 행 상한(1,000)과 상관없다.
 - 표 이름 `events` 0 — 마이그레이션 검사(`lint-migrations.mjs`, FND-06 이름 충돌)와 DB 시험(public 스키마에 `events` 관계 0) 둘 다.
 - RLS 기본 거부 — 두 표 모두 anon·authenticated 읽기 0·쓰기 0(정책 없음·권한 없음, PRD-01A 8.2 RLS). 수집은 서버 API가 service_role로만 쓴다. service_role은 읽기·추가·고치기·지우기 전권(관리자 전권 시험 `admin-rights.test.mjs` — 보존 기한 정리·잘못 들어온 행 지우기). `scripts/verify-rls.mjs` 허용 목록에 넣지 않는다.
 
@@ -218,7 +221,9 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 | `POST /api/events` | 수집 API (5장) | 1 |
 | `POST /api/measurement` | 측정 거부·허용 (5.1) | 1 |
 | `/about/measurement` | 측정 거부 화면 (5.1) — 링크는 W2-e 바닥글 | 1 |
-| `/news/popular` · `/news/video` · `/news/photo` · `/partners/[id]` | 2·4단계 | 2·4 |
+| `/news/popular` | 많이 본 기사 목록(설정 `list_size` — 씨앗 20) · "최근 7일 기준 · 집계 시각(한국 시간, 고정폭)" (8.2) | 2 |
+| `/api/jobs/popular-hourly` · `/api/jobs/analytics-retention` | 1시간 집계 · 보존 기한 정리 (CRON_SECRET — 8.2) | 2 |
+| `/news/video` · `/news/photo` · `/partners/[id]` | 4단계 | 4 |
 | `/admin/metrics` · 기사 생산·제휴 준비 대시보드 | 3·5단계 | 3·5 |
 
 ## 8. 산출물
@@ -233,6 +238,61 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 - 통합 시험 `apps/web/lib/analytics/settings.itest.mjs` — 로컬 DB 씨앗 값이 수집 설정 읽기를 통과한다.
 - E2E `e2e/analytics-api.test.mjs`(CI 2단계) — 정상 이벤트 저장(UA·IP 0)·세션 29·31분·봇 표시·거부 204·GPC 204·측정 거부 화면·4xx 저장 0·429·편집국 `is_staff`·칸 검사·브라우저(GPC·거부 쿠키 → `/api/events` 요청 0, 기사·허브·홈 카드 이벤트 저장).
 - 시험 데이터 정리: E2E 공용 `e2e/lib/staff.mjs` 정리 단계가 시험 동안 생긴 측정 행(로컬 DB, 시험 시작 뒤 `occurred_at`)과 시험 기사의 `article_stats`를 지운다 — 공개 화면을 브라우저로 여는 E2E가 이벤트를 남기지 않게.
+
+### 8.2 2단계 — 1시간 집계·많이 본 기사·상담 사례 HOT·보존 기한 정리 (2026-10-18)
+
+**세는 규칙** (순수 함수 `apps/web/lib/analytics/aggregate.ts` — 시험 `aggregate.test.ts`)
+
+- 시간대 = UTC 정시 `[h, h+1시간)`(`article_stats.hour`). 원본은 기사 이벤트 3종(`article_viewed`·`article_engaged`·`article_shared`)의 `props.article_id`.
+- `views_all` = 모든 조회(봇·편집국 포함, 중복 제거 없음). 사람 값(`views_human`·`shares`·`engaged_views`) = `is_bot`·`is_staff`가 아닌 이벤트.
+- 중복 제거(`popular_rules.dedupe_minutes`, 씨앗 30분): 같은 방문자·같은 기사·같은 이벤트가 **마지막 이벤트**(세지 않은 반복 포함)에서 30분 안에 다시 오면 세지 않는다 — 계속 새로고침하면 1회. 정확히 30분 뒤면 다시 1회(세션 경계 '정확히 30분 → 새 세션'과 같은 쪽). 경계 시험: 29분 59.999초 → 1회 · 30분 → 2회. 시간대를 넘는 반복(9:50 → 10:10)도 앞 시간대를 이력으로 본다. 방문자 ID가 없는 이벤트는 중복 제거 없이 센다(ART-11 '측정 거부 조회' — 지금은 거부 이벤트를 저장하지 않으므로 0, 9장 #1). 공유·30초 열람도 같은 규칙(9장 #21).
+
+**다시 집계할 시간대·늦은 이벤트** (`planAggregation` — 실행 기록 `agent_runs.detail.watermark`)
+
+- 지난 성공 실행이 본 마지막 이벤트 번호(watermark) 뒤에 들어온 기사 이벤트의 시간대 + 중복 제거가 넘어가는 뒤 시간대(30분 → 다음 1개) + **늘 바로 앞 시간대**(시간대 끝에 막 저장된 이벤트)를 다시 센다. 지금(끝나지 않은) 시간대는 끝난 뒤 다음 실행이 센다 — 그 시간대에 든 이벤트의 가장 작은 번호 − 1을 다음 watermark로 남긴다.
+- 늦게 들어온 이벤트(시각이 지난 시간대 — 수집 지연·되살린 자료)도 번호가 새것이라 그 시간대를 다시 센다. 실행이 빠지거나(Vercel Cron은 최선 노력) 두 번 와도 결과가 같다(멱등 — `article_stats_replace`가 범위 안 행을 지우고 다시 넣는다).
+- 순위가 보는 가장 긴 창(`window_hours`·`window_days` × 24 중 큰 값)보다 오래된 시간대는 다시 세지 않는다. 처음 실행(기록 없음)은 창 안 이벤트가 있는 시간대를 모두 센다(하루씩 나눠 쓴다).
+- 손으로 이벤트 행을 지운 경우(잘못 들어온 행)는 그 시간대를 다시 세지 않는다 — 지운 뒤 `agent_runs`의 마지막 `popular-hourly` 기록을 지우면 다음 실행이 창 전체를 다시 센다(운영 메모).
+
+**순위** (순수 함수 `apps/web/lib/analytics/ranking.ts` — 시험 `ranking.test.ts`)
+
+- 창 = 집계 시각이 든 시간대의 시작(끝)에서 `window_hours`(168)시간 앞까지의 **끝난 시간대** `[끝 − 168시간, 끝)` — 168시간 전 시간대 포함, 169시간 전 시간대 제외, 지금 시간대 제외(ART-11 '집계 시각 기준 168시간').
+- 많이 본 기사 = 창 안 사람 조회 합계 순. 0회·지금 공개되지 않은 기사·유형 없음·금주 핫뉴스·`exclude_content_types`(씨앗 `digest`·`sponsored`)는 빠진다. 같으면 최신 발행이 앞, 발행 시각도 같으면 나중 기사.
+- 상담 사례 HOT = 상담 사례 분야(9장 #17) 공개 기사 중 — 편집자 고정(`articles.hot_pin_until` > 지금, 최대 `hot_weights.max_pins`건)이 점수와 관계없이 맨 앞(고정끼리는 점수·최신 순) → 점수(조회×`view` + 공유×`share` + 30초 열람×`engaged`, 최근 `window_days`일) 순, 0점은 HOT 아님, 동점은 최신 발행 앞.
+- 배치가 계산한 순위를 `article_rankings`에 100건까지 둔다(화면 건수보다 넉넉히 — 비공개로 빠진 기사가 있어도 목록이 찬다). **가중치·창·건수를 바꾸면 다음 집계부터** 순위가 바뀐다(그 전까지는 지난 순위 — 화면은 순위 표를 그대로 읽는다, 코드 상수 0). 실행 기록에 쓴 설정 버전이 남는다.
+- HOT 고정 판정(편집국 API `POST /api/admin/articles/[id]/placement`): 상담 사례 분야 기사만(아니면 422), 지금 고정 중인 다른 기사가 `max_pins`건이면 409(HOME-05 '3번째 고정은 막힌다'), 고정 풀기·지난 시각은 늘 된다.
+
+**화면** (공개 데이터 함수 `lib/server/public/rankings.ts` — anon 키로 순위 표만)
+
+| 화면 | 무엇 | 측정 |
+|---|---|---|
+| `/news/popular` | 머리('많이 본 기사' · 창 글자) · "최근 7일 기준 · 집계 YYYY-MM-DD HH:MM (한국 시간)"(고정폭) · 많이 본 기사 목록 `list_size`건(`@ltr/ui` PopularArticles). 집계 전이면 안내 한 줄 | `popular_article_clicked`(기사 번호·화면 순위·`list`) |
+| 기사 상세 사이드바 | 많이 본 기사 `sidebar_size`건(지금 기사 제외) + '더 보기'. 1024px 이상은 본문 오른쪽 열(따라 내려옴 — 목록이 있으면 모든 부분이 같은 두 칸 틀이라 왼쪽 선이 맞는다), 그 아래는 본문 뒤. 목록 0건이면 자리 0 | `popular_article_clicked`(… `sidebar`) |
+| 지방세 허브 `/tax` | 최신 목록 뒤 '상담 사례 HOT'(`data-hub-part="hot"`) — 해결 사례 카드 3장(SolvedCaseCard) + HOT 목록 5건(HotBadge) + '상담 사례 전체 보기' | `hot_article_clicked`(기사 번호·목록 순위·고정 여부) |
+| 상담 사례 분야 목록 `/tax/interpretations` 첫 쪽 | 머리 다음에 같은 HOT 블록, 그 아래 전체 목록 | 같음 |
+
+- HOT 블록: 카드 = 순위의 고정이 아닌 해결 사례(카드로 그릴 수 있는 것 — 4칸·결론·근거) 위에서부터 3장, 모자라면 최신 해결 사례로 채운다(9장 #20). 목록 = 카드에 나온 기사를 뺀 순위 앞 5건(HOT 배지), 5건 미만이면 배지 없이 최신 상담 사례로 채운다(HOME-05). 카드와 목록에 같은 기사 0. 상담 사례 기사가 하나도 없으면 블록 0. 홈에는 두지 않는다(홈 HTML에 HOT 0 — E2E).
+- 많이 본 기사 목록 컴포넌트는 사이트 안 링크(UiLink)로 새로고침 없이 이동한다(FND-09 — `@ltr/ui` PopularArticles를 고쳤다, `link.test.tsx`).
+- 순위가 바뀌면 배치가 공개 데이터 캐시를 바로 비운다(작업 결과 `revalidatePublic` → 작업 경로가 `revalidatePublicData()`).
+
+**일정** (`apps/web/vercel.json` 한 곳 — 사내 스케줄러 `deploy/scheduler`도 같은 파일을 읽는다)
+
+- Vercel Hobby 요금제는 일정 한 줄이 하루 한 번 넘게 돌면 **배포가 실패**한다(Vercel 문서 'Hobby scheduling limits' — `0 * * * *` 거부). 지금 팀은 Hobby이고(계정점검표), main push가 Production 배포를 부르므로 시간마다 도는 한 줄을 넣으면 배포가 깨진다.
+- 그래서 `popular-hourly`를 **하루 한 번짜리 줄 24개**(`5 0 * * *` … `5 23 * * *` — 같은 경로의 여러 줄은 Vercel이 허용한다)로 적었다. Hobby는 그 시간 안 아무 때(±59분)에 부르고, Pro·사내 스케줄러는 매시 5분에 부른다. 늦거나 빠진 실행은 위 '다시 집계할 시간대'가 메운다. Pro로 바꾸면 `5 * * * *` 한 줄로 줄여도 된다(같은 동작).
+- 보존 기한 정리 `analytics-retention`은 하루 한 번 `40 18 * * *`(한국 03:40). 시험(`scripts/__tests__/scheduler-cron.test.mjs`)이 vercel.json을 읽어 줄마다 하루 1번·popular-hourly 매시 1번·일정의 작업이 모두 작업 목록에 있는지 본다.
+- 요청 때 집계하는 방식(화면을 열 때 낡았으면 집계)은 쓰지 않는다 — 방문자 요청이 service_role 배치를 부르게 되고, '다음 집계부터 순위가 바뀐다'를 지키기 어렵다.
+
+**보존 기한 정리** (`analytics-retention`)
+
+- `analytics.retention_days`(씨앗 395일)보다 앞선 원본 이벤트를 오래된 것부터 5,000건씩, 한 실행 20번까지 지운다(남으면 다음 날 이어서 — 결과 `done`). `article_stats`도 같은 기한(그 시간대 시작 기준)으로 지운다(9장 #22). 기한과 같은 시각의 이벤트는 남는다.
+
+**산출물**
+
+- 마이그레이션 `20261018000015_w2c_popular.sql` — `article_rankings`·RLS·칸 권한, 집계 함수 6개, 공개 설정 키 `popular_rules`.
+- 작업 목록 `workflows/src/index.ts`(`popular-hourly`·`analytics-retention` — 작업은 웹 앱이 넘기는 서버 기능 `JobServices`를 부른다) · 서버 `apps/web/lib/server/analytics/aggregate.ts`·`lib/server/jobs.ts` · 작업 경로 `app/api/jobs/[job]/route.ts`(서버 기능 넘김·캐시 비움) · 설정 읽기 `lib/analytics/settings.ts` `parseCheckedSettings`.
+- 공개 `lib/server/public/rankings.ts`(`getPopularList`·`readPopularSidebar`·`getHotBlock`) · 화면 `app/(site)/news/popular/page.tsx`·`components/site/PopularView.tsx`·`HotBlock.tsx`·`Measure.tsx` `MeasureClicks` · `ArticleView.tsx`(사이드바) · `HubView.tsx`·`CategoryView.tsx`(HOT) · 화면 값 `lib/site/popular-view.ts`·`hub-view.ts`(`hot` 부분).
+- 시험 — 단위 `aggregate.test.ts`·`ranking.test.ts`·`popular-view.test.ts`·`settings.test.ts`(집계 설정)·`hub-view.test.ts`·공개 `settings.test.ts`·`constants.test.ts` · DB `w2c-popular.test.mjs` · 통합 `lib/server/public/rankings.itest.mjs` · E2E `e2e/analytics-popular.test.mjs`(CI 2단계) · 스크립트 `scheduler-cron.test.mjs`.
+- 고친 기존 시험 — `site-hubs`·`a11y`(지방세 허브 골격에 `hot`), `site-article`·`w2b-acceptance`(`/news/popular`가 이제 열린 화면), `compose`(떠 있는 스케줄러가 매시 5분 집계를 부를 수 있어 자기 작업 기록만 세고 시험 동안의 스케줄러 기록을 지운다), `e2e/lib/staff.mjs` 정리(순위 행·지난 시각으로 넣은 시험 기사 이벤트). W2-b 설계 2.3 `settings.public_keys`에 `popular_rules`, '만들지 않는 경로'에서 `/news/popular`를 뺐다.
 
 ## 9. 결정·확인 필요
 
@@ -253,3 +313,16 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 | 13 | 속도 제한 값 | 방문자 1분 120 · IP 1분 600(사무실 공유 IP 고려) — 설정값 | [확인 필요 — 운영 뒤 조정] |
 | 14 | 30초 열람의 '화면에 머문' 시간 | 탭이 보이는 시간만 더한다(숨은 탭 0). 스크롤 위치는 보지 않는다 | [확인 필요] |
 | 15 | 봇 판정 | User-Agent 조각 목록(설정) + 빈 User-Agent. 브라우저 자동화(`HeadlessChrome`)도 봇 — E2E가 사람으로 시험할 때는 보통 브라우저 User-Agent를 쓴다 | [결정] |
+| 16 | 30분 중복 제거의 기준 (ART-11 '같은 방문자의 30분 안 반복 조회는 1회') | 마지막 조회(세지 않은 반복 포함)에서 30분 — 계속 새로고침하는 방문자는 1회. 첫 조회에서 30분마다 1회씩 세는 방식이 아니다. 정확히 30분 뒤는 다시 1회 | [확인 필요] |
+| 17 | '상담 사례 분야'가 어느 하위 분야인가 — PRD-01A 3장은 `/tax/[분야]`(상담 사례 분야), 1단계 하위 경로(CAT-01)·씨앗(PRD-00 5.3)에는 상담 사례가 따로 없고 '해석'이 v1.2 상담 사례(해결 사례·HOT)를 받는다 | 지방세 › 해석(`/tax/interpretations`) 기사 전체로 HOT을 매긴다(코드 `HOT_CATEGORY` 한 곳). 상담 사례 하위 분야를 따로 만들면 그 값만 바꾼다 | [확인 필요 — PRD 문구 충돌] |
+| 18 | 1시간 집계 일정 — Vercel Hobby는 하루 한 번 넘게 도는 일정 줄로 배포 실패 | 하루 한 번짜리 24줄(Hobby는 그 시간 안 아무 때, Pro·사내 스케줄러는 매시 5분). Pro(상업 서비스에 필요 — 인프라 개설 요청)로 바꾸면 한 줄로 줄여도 된다 | [결정 — PO 알림] |
+| 19 | 편집자 고정 기사가 해결 사례이면 | 카드로 보내지 않고 HOT 목록 맨 앞(고정 표시) — 고정의 뜻이 'HOT 맨 앞'이라. 고정끼리는 점수·최신 순 | [확인 필요] |
+| 20 | 점수 있는 해결 사례가 3건 미만일 때 카드 (HOME-05는 HOT 목록만 '최신으로 채운다') | 최신 해결 사례로 카드를 채운다(배지 없는 카드라 HOT 뜻과 섞이지 않는다). 해결 사례가 0건이면 카드 줄 0 | [확인 필요] |
+| 21 | 공유·30초 열람의 중복 | 조회와 같은 30분 규칙 — 한 방문자가 공유 버튼을 여러 번 눌러 점수(가중치 5)를 올리지 못하게 | [확인 필요] |
+| 22 | `article_stats` 보존 기한 (방문자 정보 없음) | 원본 이벤트와 같은 `analytics.retention_days`(395일) — 3단계 대시보드가 기사별 숫자를 1년 넘게 보려면 늘린다 | [결정 안건 — #4와 함께] |
+| 23 | HOT 고정 대상·상한 | 상담 사례 분야 기사만(다른 기사 422), 상한 `hot_weights.max_pins`(씨앗 2 — 3번째 409). DB 트리거가 아니라 편집국 API가 막는다(상한이 설정값) | [결정] |
+| 24 | 상담 사례 목록의 탭 [HOT]·[해결 사례]·[전체] (PRD-01A 3장) | 지금은 첫 쪽에 HOT 블록(카드 3 + HOT 5) + 그 아래 전체 목록. 탭 나누기는 01B TX-09 해석 화면과 함께 | [확인 필요] |
+| 25 | `hot_article_clicked`를 무엇에 보낼까 | HOT 목록 5건 누름만(순위·고정 여부). 해결 사례 카드 누름은 보내지 않는다 — '순위'의 뜻이 섞이지 않게 | [확인 필요] |
+| 26 | 많이 본 기사 목록 상자의 "최근 7일 기준" 글자 | 디자인 컴포넌트 글자(고정). 창 설정(`window_hours`)을 바꾸면 `/news/popular` 머리·집계 줄은 설정을 따르지만 상자 글자는 그대로 — 바꾸면 컴포넌트에 글자 칸을 더한다 | [확인 필요] |
+| 27 | HOT 후보의 광고(`sponsored`) | 상담 사례 분야에 있으면 HOT 후보다(제외 설정은 많이 본 기사 `exclude_content_types`만) | [확인 필요] |
+| 28 | '비공개로 바뀐 기사는 다음 집계에서 빠진다'(ART-11) | 더 빠르게 — 순위 표 공개 범위(RLS)가 바로 뺀다. 다음 집계가 표에서도 지운다 | [결정] |

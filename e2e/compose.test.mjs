@@ -17,6 +17,10 @@ const PROJECT = "ltr-compose-e2e";
 const COMPOSE = path.join(ROOT, "deploy", "compose.yaml");
 let dir, override, envFile, port, db;
 const runIds = [];
+// 떠 있는 스케줄러는 일정(vercel.json)대로도 부른다 — 1시간 집계(popular-hourly, 매시 5분)가 시험 중에 돌 수 있다.
+// 시험은 자기가 부른 작업(scheduler-heartbeat) 기록만 세고, 끝나면 시험 동안 스케줄러가 남긴 기록을 모두 지운다
+const startedAt = new Date();
+const HEARTBEAT = "scheduler-heartbeat";
 
 const compose = (...args) =>
   spawnSync("docker", ["compose", "-p", PROJECT, "-f", COMPOSE, "-f", override, ...args], { cwd: ROOT, encoding: "utf8" });
@@ -60,6 +64,7 @@ before(async () => {
 
 after(async () => {
   if (runIds.length) await db?.query("delete from public.agent_runs where id = any($1::bigint[])", [runIds]);
+  await db?.query("delete from public.agent_runs where trigger = 'scheduler' and started_at >= $1", [startedAt]);
   await db?.end();
   if (override) compose("down", "-v", "--remove-orphans");
   if (dir) fs.rmSync(dir, { recursive: true, force: true });
@@ -85,7 +90,7 @@ test("컨테이너 스케줄러가 /api/jobs/scheduler-heartbeat를 불러 trigg
   assert.equal(r.status, 0, r.stdout + r.stderr);
   const line = JSON.parse(r.stdout.trim().split("\n").filter((l) => l.startsWith("{")).pop());
   assert.equal(line.status, 200);
-  const { rows } = await db.query("select * from public.agent_runs where id > $1 order by id", [before]);
+  const { rows } = await db.query("select * from public.agent_runs where id > $1 and job = $2 order by id", [before, HEARTBEAT]);
   runIds.push(...rows.map((x) => x.id));
   assert.equal(rows.length, 1);
   assert.equal(rows[0].trigger, "scheduler");
@@ -94,11 +99,12 @@ test("컨테이너 스케줄러가 /api/jobs/scheduler-heartbeat를 불러 trigg
 });
 
 test("스케줄러에 CRON_SECRET이 틀리면 거절되고(401) 실행 기록이 생기지 않는다", async () => {
-  const before = (await db.query("select count(*)::int n from public.agent_runs")).rows[0].n;
+  const count = async () => (await db.query("select count(*)::int n from public.agent_runs where job = $1", [HEARTBEAT])).rows[0].n;
+  const before = await count();
   const r = compose("run", "--rm", "--no-deps", "-e", "CRON_SECRET=wrong-secret", "scheduler", "node", "run.mjs", "--once", "scheduler-heartbeat");
   assert.notEqual(r.status, 0);
   assert.match(r.stdout, /"status":401/);
-  assert.equal((await db.query("select count(*)::int n from public.agent_runs")).rows[0].n, before);
+  assert.equal(await count(), before);
 });
 
 test("스케줄러는 Vercel Cron과 같은 일정 파일(apps/web/vercel.json)을 쓴다", () => {

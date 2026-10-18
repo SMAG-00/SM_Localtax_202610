@@ -7,6 +7,7 @@ export { getHubData, getCategoryList, getNewsList, type HubData, type HubTab, ty
 export { closedHubData } from "./hub-logic";
 export { getSituationPage, type SituationPage } from "./situations";
 export { getArticleDetail, type ArticleDetail, type ArticleMedia } from "./article";
+export { getHotBlock, getPopularList, type HotBlock, type HotEntry, type PopularList } from "./rankings";
 export { getColumnList, COLUMN_SLUG, type ColumnListData } from "./columns";
 export { readPublic, isUnavailable, UNAVAILABLE, type Unavailable } from "./fallback";
 export { getPersonPage, type PersonPage } from "./people";

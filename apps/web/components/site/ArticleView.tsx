@@ -6,6 +6,7 @@ import {
   EditorialFieldBadge,
   NextActionBand,
   PartnerBadge,
+  PopularArticles,
   ProgressStageBadge,
   ReporterBlock,
   SolvedCaseCard,
@@ -23,7 +24,8 @@ import { formatBadge, sectionTones, type SectionTone } from "@/lib/site/home-vie
 import { ArticleBlocks } from "./ArticleBlocks";
 import { ArticleGrid } from "./ArticleItem";
 import { CardNewsSlider } from "./CardNewsSlider";
-import { MeasureArticle } from "./Measure";
+import { popularClickItems } from "@/lib/site/popular-view";
+import { MeasureArticle, MeasureClicks } from "./Measure";
 import { ShareButton } from "./ShareButton";
 import { TEXT_LINK } from "./SiteSection";
 
@@ -34,17 +36,42 @@ import { TEXT_LINK } from "./SiteSection";
 //  → 본문(대표 이미지 · 카드뉴스 장 · 해결 사례 카드 · 블록 · 개정 트래커 · 출처) → 「지방세로 읽기」(본문 뒤·기자 소개 앞) → 기자 소개
 //  → 자사 상품(01C 전 0) → 면책(면책 대상 하위 분야만) → 관련 기사 → 다음 행동 띠 → 기사 하단 정책 링크(공개 승인된 것만)
 // JSON-LD는 화면과 같은 데이터 객체(detail.view)를 structured-data 생성기에 넘긴다 (OPT-02 — 손으로 쓴 JSON-LD 0)
+// 많이 본 기사 목록(ART-11 — 지금 보는 기사 제외, 설정 sidebar_size건): 1024px 이상은 본문 오른쪽 열, 그 아래는 본문 뒤. 목록이 있으면
+// 모든 부분이 같은 두 칸 틀(본문 칸 + 오른쪽 열)을 써서 왼쪽 선이 맞는다. 누르면 popular_article_clicked(순위·위치 sidebar) 1건
 
 const CORRECTION_KIND: Record<string, CorrectionKind> = { correction: "correction", rebuttal: "rebuttal", follow_up: "follow-up", title_change: "title-change" };
 const AMENDMENT_STAGES = new Set<string>(["발표", "입법예고", "국회 제출", "의결", "공포", "시행"]);
 const EDITORIAL_FIELDS = new Set<string>(["local_tax", "realestate", "local_finance", "urban_policy"]);
 const H2 = "text-[22px] leading-tight font-black tracking-tight text-navy-900";
 
-function Part({ part, tone, first = false, children }: { part: ArticlePart; tone: SectionTone; first?: boolean; children: React.ReactNode }) {
+const RAIL = "lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-x-12";
+
+function Part({ part, tone, first = false, rail = false, aside, children }: { part: ArticlePart; tone: SectionTone; first?: boolean; rail?: boolean; aside?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section data-article-part={part} className={cx(!first && "border-t border-navy-100", tone === "ivory" ? "bg-ivory" : "bg-ivory-dark")}>
-      <div className="mx-auto max-w-3xl px-4 py-20">{children}</div>
+      <div className={cx("mx-auto max-w-3xl px-4 py-20", rail && RAIL)}>
+        <div className="min-w-0">{children}</div>
+        {aside}
+      </div>
     </section>
+  );
+}
+
+/** 많이 본 기사 사이드바 — 1024px 이상 오른쪽 열(따라 내려옴), 그 아래는 본문 뒤 */
+function PopularRail({ a }: { a: ArticleDetail }) {
+  return (
+    <div data-part="popular-sidebar" className="mt-12 min-w-0 lg:mt-0">
+      <div className="lg:sticky lg:top-6">
+        <MeasureClicks name="popular_article_clicked" items={popularClickItems(a.popular, "sidebar")}>
+          <PopularArticles items={a.popular.map((p) => ({ href: p.href, title: p.title }))} limit={a.popular.length} />
+        </MeasureClicks>
+        <p className="mt-3">
+          <UiLink href="/news/popular" className={TEXT_LINK}>
+            많이 본 기사 더 보기
+          </UiLink>
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -221,6 +248,7 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
   const tone = (p: ArticlePart): SectionTone => tones.get(p) ?? "ivory";
   const links = reporterPolicyLinks(a.policyLinks);
   const jsonLd = toJsonLdScriptContent(pageJsonLd({ kind: "article", article: a.view }));
+  const rail = a.popular.length > 0;
 
   return (
     <article data-ui="article-page" data-article-id={a.id} data-format={a.format ?? "general"} data-content-type={a.contentType ?? "none"}>
@@ -231,26 +259,26 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
         switch (part) {
           case "head":
             return (
-              <Part key={part} part={part} tone={tone(part)} first>
+              <Part key={part} part={part} tone={tone(part)} first rail={rail}>
                 <Head a={a} />
               </Part>
             );
           case "notices":
             return (
-              <Part key={part} part={part} tone={tone(part)}>
+              <Part key={part} part={part} tone={tone(part)} rail={rail}>
                 <Notices a={a} />
               </Part>
             );
           case "body":
             return (
-              <Part key={part} part={part} tone={tone(part)}>
+              <Part key={part} part={part} tone={tone(part)} rail={rail} aside={rail ? <PopularRail a={a} /> : undefined}>
                 <Body a={a} today={today} />
               </Part>
             );
           case "tax-lens":
             return (
               a.taxLens && (
-                <Part key={part} part={part} tone={tone(part)}>
+                <Part key={part} part={part} tone={tone(part)} rail={rail}>
                   <TaxLensBox taxes={a.taxLens.topics} points={a.taxLens.points} links={taxLensBoxLinks(a.taxLens.links)} reviewer={a.taxLens.reviewer} basisDate={a.taxLens.basisDate} />
                 </Part>
               )
@@ -259,7 +287,7 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
             return (
               a.author &&
               a.firstPublishedAt && (
-                <Part key={part} part={part} tone={tone(part)}>
+                <Part key={part} part={part} tone={tone(part)} rail={rail}>
                   {a.author.kind === "opinion" ? (
                     <ReporterBlock
                       kind="opinion"
@@ -287,7 +315,7 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
             return null;
           case "disclaimer":
             return (
-              <Part key={part} part={part} tone={tone(part)}>
+              <Part key={part} part={part} tone={tone(part)} rail={rail}>
                 <p data-part="disclaimer" className="text-[15px] text-navy-700">
                   {ARTICLE_DISCLAIMER}
                 </p>
@@ -295,14 +323,14 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
             );
           case "related":
             return (
-              <Part key={part} part={part} tone={tone(part)}>
+              <Part key={part} part={part} tone={tone(part)} rail={rail}>
                 <h2 className={H2}>관련 기사</h2>
                 <ArticleGrid part="related-articles" items={a.related} />
               </Part>
             );
           case "next":
             return (
-              <Part key={part} part={part} tone={tone(part)}>
+              <Part key={part} part={part} tone={tone(part)} rail={rail}>
                 {/* 640px 미만은 띠를 화면 폭으로 펼친다 — 버튼 너비 = 화면 폭 − 32px (UX-06) */}
                 <div className="-mx-4 sm:mx-0">
                   <NextActionBand similarCases={a.similarCases.map((c) => ({ href: c.href, title: c.title, kind: c.kind }))} actions={a.nextActions.map((n) => ({ key: n.key, label: n.label, href: n.href, enabled: true, external: n.external }))} />
@@ -311,7 +339,7 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
             );
           case "policy":
             return (
-              <Part key={part} part={part} tone={tone(part)}>
+              <Part key={part} part={part} tone={tone(part)} rail={rail}>
                 <nav aria-label="회사·정책" className="flex flex-wrap gap-x-6">
                   {a.policyLinks.map((l) => (
                     <UiLink key={l.key} href={l.href} data-policy={l.key} className={TEXT_LINK}>

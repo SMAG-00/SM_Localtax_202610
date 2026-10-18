@@ -229,13 +229,16 @@ test("a) 네 허브의 골격 DOM이 같다 — 머리(아이브로 → 제목 �
     assert.deepEqual(seen[h.key].tabs[0], ["전체", h.path, "page"], `${h.path}: 첫 탭 [전체]가 지금 탭`);
     await page.close();
   }
-  const common = (s) => s.parts.filter((p) => p !== "blocks");
+  // 분야 고유 블록(지자체뉴스)·상담 사례 HOT(지방세 허브 — HOME-05, W2-c 2단계)은 그 허브에만 있는 자리다
+  const common = (s) => s.parts.filter((p) => p !== "blocks" && p !== "hot");
   for (const h of HUBS) {
     assert.deepEqual(common(seen[h.key]), ["head", "latest", "situations", "terms"], `${h.path} 골격`);
     assert.deepEqual(seen[h.key].headOrder, ["eyebrow", "h1", "tab-nav"], `${h.path} 머리 골격 (지방세 포인트는 01B 감수본 전이라 0)`);
   }
   assert.deepEqual(seen.local.parts, ["head", "blocks", "latest", "situations", "terms"], "지자체 허브 블록은 탭과 최신 목록 사이 고정 자리");
   for (const k of ["tax", "realestate", "finance"]) assert.ok(!seen[k].parts.includes("blocks"), `${k}: 분야 고유 블록(01B) 0`);
+  assert.deepEqual(seen.tax.parts, ["head", "latest", "hot", "situations", "terms"], "지방세 허브 — 최신 목록 뒤에 상담 사례 HOT (해석 분야 기사가 있다)");
+  for (const k of ["realestate", "finance", "local"]) assert.ok(!seen[k].parts.includes("hot"), `${k}: 상담 사례 HOT 0 (지방세 허브에만)`);
 
   // 지자체뉴스 — 탭은 기사 있는 편집 분야, 블록은 LG-08 순서(데이터가 있는 ② 지방세·지방재정 → ③ 부동산·개발만)
   assert.deepEqual(seen.local.tabs.map((t) => t[1]), ["/local", "/local?topic=local_tax", "/local?topic=urban_policy"]);

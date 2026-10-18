@@ -370,7 +370,7 @@ test("RLS가 켜져 있고 공개 읽기 정책이 없다 (두 표)", async () =
 
 // ── 설정 씨앗 ─────────────────────────────────────────────
 
-test("설정 씨앗 5개 = 설계 2.5 블록 (값 그대로), anon이 읽지 못한다", async () => {
+test("설정 씨앗 5개 = 설계 2.5 블록 (값 그대로), anon은 많이 본 기사 건수 규칙(popular_rules)만 읽는다 — 수집 설정·봇 목록·리퍼러·HOT 가중치 0", async () => {
   const keys = [...SEEDS.keys()];
   const { rows } = await client.query("select key, value from public.settings where key = any($1::text[]) order by key", [keys]);
   assert.deepEqual(
@@ -379,9 +379,9 @@ test("설정 씨앗 5개 = 설계 2.5 블록 (값 그대로), anon이 읽지 못
   );
   for (const r of rows) assert.deepEqual(r.value, SEEDS.get(r.key), `settings.${r.key}`);
   await tx(async () => {
-    const r = await attempt("select count(*)::int n from public.settings where key = any($1::text[])", [keys], "anon");
+    const r = await attempt("select key from public.settings where key = any($1::text[]) order by key", [keys], "anon");
     assert.ok(r.ok, r.message);
-    assert.equal(r.rows[0].n, 0, "수집 설정은 공개 설정 키가 아니다");
+    assert.deepEqual(r.rows.map((x) => x.key), ["popular_rules"], "화면이 사이드바·목록 건수를 읽는 키만 공개 (2단계 — 마이그레이션 15)");
   });
 });
 

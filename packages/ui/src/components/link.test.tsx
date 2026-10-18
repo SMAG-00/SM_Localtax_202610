@@ -15,6 +15,7 @@ import { StepTimeline } from "./shell/StepTimeline";
 import { SituationCard } from "./discovery/SituationCard";
 import { NextActionBand } from "./discovery/NextActionBand";
 import { SolvedCaseCard } from "./discovery/SolvedCaseCard";
+import { PopularArticles } from "./discovery/PopularArticles";
 import { FieldTaxPoint } from "./local/FieldTaxPoint";
 import { LocalHubBlocks } from "./local/LocalHubBlocks";
 import { ReporterBlock } from "./services/ReporterBlock";
@@ -170,5 +171,14 @@ describe("기사 신뢰 블록의 사이트 안 링크 (W2-b 4단계)", () => {
     );
     expect(appLinks()).toEqual(["/people/kim-gaon", "/about/corrections", "/news/acquisition-date", "/tax/amendments/2026-reform"]);
     expect(plainLinks()).toEqual(["https://sm.example.com/calc"]);
+  });
+});
+
+describe("많이 본 기사 목록의 링크 (W2-c 2단계 — ART-11)", () => {
+  it("순위 항목은 화면 전환(앱 링크) — 새로고침 없이 기사로 가고, 순위 표식(data-rank)은 그대로", () => {
+    withApp(<PopularArticles items={[{ href: "/news/a-1", title: "첫째" }, { href: "/news/a-2", title: "둘째" }]} />);
+    expect(appLinks()).toEqual(["/news/a-1", "/news/a-2"]);
+    expect(plainLinks()).toEqual([]);
+    expect([...document.querySelectorAll("a[data-rank]")].map((a) => a.getAttribute("data-rank"))).toEqual(["1", "2"]);
   });
 });

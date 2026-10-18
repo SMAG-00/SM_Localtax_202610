@@ -35,6 +35,7 @@ import {
 import { regionLabel, sponsorBadgeOf, trackerState, type ArticleListItem, type TrackerState } from "./cards";
 import { CONTENT_TYPE_NAMES, LIMITS, POLICY_LINKS, SECTION_INFO, amendmentHref, categoryHref, isSectionKey, personHref, situationHref, type SectionKey } from "./constants";
 import { publicDb, rowsOf } from "./db";
+import { readPopularSidebar } from "./rankings";
 import { readArticleList, readCategories, readPublicSettings, readRegions } from "./reads";
 import {
   AMENDMENT_COLUMNS,
@@ -115,7 +116,7 @@ export interface ArticleDetail {
   related: ArticleListItem[];
   /** 자사 상품 카드 (01C BIZ-03) — 01C 전 null */
   product: null;
-  /** 많이 본 기사 (W2-c ART-11) — 전에는 빈 목록 */
+  /** 많이 본 기사 사이드바 (ART-11) — 지금 보는 기사를 뺀 popular_rules.sidebar_size건, 집계 전이면 빈 목록 */
   popular: ArticleListItem[];
   policyLinks: { key: string; label: string; href: string }[];
   /** 공유 미리보기 — 카드뉴스는 첫 장 글을 설명으로 (ART-03 '공유 미리보기에 첫 장') */
@@ -147,7 +148,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   // 기자와 「지방세로 읽기」 서명 감수위원 — 공개 인물만 읽힌다(RLS). 비공개 감수위원이면 박스 0 (BR-03)
   const personIds = [...new Set([a.author_id, lens?.reviewed_by ?? null].filter((x): x is number => x !== null).map(num))];
 
-  const [settings, categories, regions, people, partner, media, sources, corrections, revisions, tagRows, situation] = await Promise.all([
+  const [settings, categories, regions, people, partner, media, sources, corrections, revisions, tagRows, situation, popular] = await Promise.all([
     readPublicSettings(),
     readCategories(),
     readRegions(),
@@ -159,6 +160,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     rowsOf<RevisionRow>(db.from("article_revisions").select(REVISION_COLUMNS).eq("article_id", id), "수정 이력"),
     rowsOf<{ tag_id: number }>(db.from("article_tags").select("tag_id").eq("article_id", id), "태그"),
     rowsOf<{ slug: string }>(db.from("situations").select("slug").contains("article_ids", [id]).order("sort").limit(1), "연결 상황"),
+    readPopularSidebar(id),
   ]);
 
   const category = a.category_id === null ? undefined : categories.find((c) => num(c.id) === num(a.category_id));
@@ -271,7 +273,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     nextActions: selectNextActions(settings.nextActionPriority, targets, settings.features),
     related,
     product: null,
-    popular: [],
+    popular,
     policyLinks: POLICY_LINKS.filter((p) => settings.features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
     share: { title, description: shareDescription(a.summary ?? "", slides, badge), image: view.mainImage?.url ?? null, url: view.url },
     view,

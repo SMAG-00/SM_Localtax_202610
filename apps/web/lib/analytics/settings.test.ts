@@ -8,6 +8,7 @@ import {
   checkPopularRules,
   checkReferrers,
   parseCollectSettings,
+  parseCheckedSettings,
   ANALYTICS_SETTING_CHECKS,
 } from "./settings";
 import { designList, designSeeds } from "./test-design";
@@ -122,5 +123,23 @@ describe("수집 설정 읽기 (수집 API)", () => {
     expect(parseCollectSettings(rows().filter((r) => r.key !== "bot_user_agents"))).toEqual({ ok: false, problems: ["bot_user_agents: 설정 행이 없습니다"] });
     const broken = rows().map((r) => (r.key === "analytics" ? { ...r, value: { ...(r.value as object), stage: 0 } } : r));
     expect(parseCollectSettings(broken)).toEqual({ ok: false, problems: ["analytics: stage: 1~5 정수여야 합니다"] });
+  });
+});
+
+describe("집계 배치 설정 읽기 (1시간 집계·보존 기한 정리 — 코드 상수 0)", () => {
+  const rows = (keys: string[]) => keys.map((key) => ({ key, value: seed(key) }));
+  test("고른 키만 검사해 값으로 — 씨앗이면 가중치 1·5·2, 창 168시간", () => {
+    const r = parseCheckedSettings(rows(["popular_rules", "hot_weights", "analytics"]), ["popular_rules", "hot_weights"]);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect([r.values.hot_weights.view, r.values.hot_weights.share, r.values.hot_weights.engaged]).toEqual([1, 5, 2]);
+      expect(r.values.popular_rules.window_hours).toBe(168);
+      expect(Object.keys(r.values).sort()).toEqual(["hot_weights", "popular_rules"]);
+    }
+  });
+  test("키가 없거나 모양이 틀리면 '키: 문장' 목록 (배치는 실패로 기록하고 순위를 바꾸지 않는다)", () => {
+    expect(parseCheckedSettings(rows(["hot_weights"]), ["popular_rules", "hot_weights"])).toEqual({ ok: false, problems: ["popular_rules: 설정 행이 없습니다"] });
+    const broken = [{ key: "hot_weights", value: { ...seed<Record<string, unknown>>("hot_weights"), view: 0, share: 0, engaged: 0 } }];
+    expect(parseCheckedSettings(broken, ["hot_weights"])).toEqual({ ok: false, problems: ["hot_weights: view·share·engaged: 하나는 0보다 커야 합니다"] });
   });
 });
