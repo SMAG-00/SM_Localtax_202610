@@ -1,6 +1,6 @@
 // 시험용 기사 한 판 — DB 행 모양 그대로(칸 이름 snake_case). 가상 도시 가온시 정량형 보도기사, 발행 판정 통과 상태.
 // mapping·gate·plan 시험이 한 곳만 바꿔 쓴다. 시험 전용 (*.test.ts만 가져온다)
-import type { ArticleGraph, ArticleRow } from "./rows";
+import type { ArticleGraph, ArticleRow, MediaRow } from "./rows";
 import type { GateSettings } from "./gate";
 import { INTERNAL_SIMILARITY_RULES } from "@ltr/similarity";
 
@@ -71,6 +71,11 @@ export function articleRow(over: Partial<ArticleRow> = {}): ArticleRow {
     updated_at: "2026-10-12T00:00:00+00:00",
     ...over,
   };
+}
+
+/** media 행 — 출처·이용 조건·크기는 비운 사진 (시험이 한 칸씩 채운다) */
+export function mediaRow(over: Partial<MediaRow> & Pick<MediaRow, "id">): MediaRow {
+  return { path: `media/${over.id}.jpg`, alt: null, rights_status: "unconfirmed", credit: null, photographer: null, license: null, kind: "photo", width: null, height: null, ...over };
 }
 
 export function graph(over: Partial<ArticleGraph> = {}, article: Partial<ArticleRow> = {}): ArticleGraph {

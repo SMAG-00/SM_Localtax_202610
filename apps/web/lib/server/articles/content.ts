@@ -1,6 +1,8 @@
 // 기사 JSON 칸의 저장 모양과 입력 검사 — 순수 함수 (시험: content.test.ts)
 //  · articles.body (공개 칸)       = { blocks: 블록[], claims: 핵심 주장[] } — 블록 모양은 @ltr/editorial ArticleBlock.
 //    이미지·인포그래픽 블록의 권리 상태는 저장하지 않는다 — 읽을 때 media 표에서 다시 읽는다(작성자가 '확인됨'을 적어 넣을 수 없다).
+//    형식 콘텐츠(W2-c 4단계): 인포그래픽 = 템플릿·같은 내용의 표·목록(data), 동영상 = youtube-nocookie 주소·요약·'자막 있음'·썸네일·재생 시간.
+//    저장 규칙(applySaveRules — 인포그래픽 대체 텍스트·같은 내용, 동영상 주소)은 저장 때만, 읽기는 모양만 본다(발행 판정이 다시 막는다)
 //  · articles.tax_lens (공개 칸)   = { topics, points, links, skip_reason, reviewed, reviewed_for_version, reviewed_by, reviewed_at } (01B CORE-01).
 //    감수 표시(reviewed·reviewed_for_version)와 서명 기록(reviewed_by = 서명한 감수위원 people.id · reviewed_at = 서명 시각)은 서버만 쓴다 —
 //    세무 감수 승인 때 켜고, 박스를 고치면 그 버전에서 멈춘다(재감수 필요). 공개 화면의 '감수 ○○'는 서명 기록에서만 그린다(01C BR-03 — 손으로 넣는 이름 칸 0).
@@ -10,12 +12,16 @@
 //  · 근거 참조 ID — 공개 출처는 "src:<article_sources.id>", 비공개 근거는 "ev:<article_evidence.id>" (두 표의 번호가 겹치지 않게)
 import {
   CALLOUT_KINDS,
+  INFOGRAPHIC_TEMPLATES,
   PERSPECTIVE_KEYS,
   SOLVED_CASE_CONCLUSIONS,
   TAX_LENS_LINK_KINDS,
+  infographicSaveProblems,
+  parseYoutubeEmbed,
   type ArticleBlock,
   type ChartLabels,
   type CoreClaim,
+  type InfographicData,
   type PerspectiveKey,
   type PerspectiveRecord,
   type QualitativeChecklist,
@@ -25,11 +31,15 @@ import {
 
 export type Result<T> = { ok: true; value: T } | { ok: false; errors: string[] };
 
-/** 저장하는 블록 — 이미지·인포그래픽의 rightsStatus는 빼고 저장한다 */
+/**
+ * 저장하는 블록 — media 표에서 다시 읽는 칸은 빼고 저장한다(작성자가 '확인됨'·출처를 적어 넣을 수 없다):
+ * 이미지의 권리·출처·이용 조건·media 대체 텍스트, 인포그래픽의 권리, 동영상 썸네일의 권리·크기
+ */
 export type StoredBlock =
-  | Exclude<ArticleBlock, { type: "image" } | { type: "infographic" }>
-  | Omit<Extract<ArticleBlock, { type: "image" }>, "rightsStatus">
-  | Omit<Extract<ArticleBlock, { type: "infographic" }>, "rightsStatus">;
+  | Exclude<ArticleBlock, { type: "image" } | { type: "infographic" } | { type: "video" }>
+  | Omit<Extract<ArticleBlock, { type: "image" }>, "rightsStatus" | "credit" | "license" | "mediaAlt">
+  | Omit<Extract<ArticleBlock, { type: "infographic" }>, "rightsStatus">
+  | Omit<Extract<ArticleBlock, { type: "video" }>, "thumbnail">;
 
 export interface StoredBody {
   blocks: StoredBlock[];
@@ -202,6 +212,57 @@ function mediaIdOf(c: Checker, o: Obj, path: string): string {
   return id;
 }
 
+/** 고르지 않아도 되는 media 번호 (동영상 썸네일 — 고르지 않으면 발행 판정이 막는다) */
+function optionalMediaId(c: Checker, o: Obj, key: string, path: string): string | null {
+  const raw = o[key];
+  if (raw === undefined || raw === null || raw === "") return null;
+  const id = typeof raw === "number" ? String(raw) : raw;
+  if (typeof id !== "string" || !MEDIA_ID.test(id)) {
+    c.fail(`${path}.${key}`, "media 표의 번호여야 합니다");
+    return null;
+  }
+  return id;
+}
+
+const MAX_INFOGRAPHIC_CELL = 500;
+
+/** 인포그래픽의 같은 내용 표·목록 (ART-07) — 모양만 본다(빈 칸·빈 행은 저장 규칙 infographicSaveProblems가 막는다). 없으면 null */
+function infographicData(c: Checker, o: Obj, path: string): InfographicData | null {
+  if (o.data === undefined || o.data === null) return null;
+  const d = c.object(o.data, `${path}.data`);
+  if (!d) return null;
+  const at = `${path}.data`;
+  const kind = c.oneOf(d, "kind", at, ["table", "list"] as const);
+  const longCell = (cells: readonly string[], key: string) => {
+    if (cells.some((x) => x.length > MAX_INFOGRAPHIC_CELL)) c.fail(`${at}.${key}`, `칸마다 ${MAX_INFOGRAPHIC_CELL}자 이하여야 합니다`);
+  };
+  if (kind === "list") {
+    const items = c.texts(d, "items", at, { maxItems: 50 });
+    longCell(items, "items");
+    return { kind, items };
+  }
+  const columns = c.texts(d, "columns", at, { maxItems: 12 });
+  longCell(columns, "columns");
+  const rows = d.rows;
+  const okRows = Array.isArray(rows) && rows.every((r) => Array.isArray(r) && r.every((x) => typeof x === "string"));
+  if (!okRows) c.fail(`${at}.rows`, "글자 표(2차원 목록)여야 합니다");
+  else if (rows.length > 100) c.fail(`${at}.rows`, "행은 100개 이하여야 합니다");
+  const list = okRows ? (rows as string[][]) : [];
+  longCell(list.flat(), "rows");
+  return { kind, columns, rows: list };
+}
+
+/** 재생 시간(초) — 0~24시간 정수, 모르면 null */
+function durationOf(c: Checker, o: Obj, path: string): number | null {
+  const v = o.durationSeconds;
+  if (v === undefined || v === null) return null;
+  if (typeof v !== "number" || !Number.isInteger(v) || v < 0 || v > 86_400) {
+    c.fail(`${path}.durationSeconds`, "재생 시간은 0~86400 사이의 초(정수)여야 합니다");
+    return null;
+  }
+  return v;
+}
+
 function block(c: Checker, raw: unknown, path: string): StoredBlock | null {
   const o = c.object(raw, path);
   if (!o) return null;
@@ -223,12 +284,15 @@ function block(c: Checker, raw: unknown, path: string): StoredBlock | null {
     case "image":
       return { type, mediaId: mediaIdOf(c, o, path), alt: c.text(o, "alt", path, { required: false }), caption: c.text(o, "caption", path, { required: false }), ...extra };
     case "infographic":
+      // 대체 텍스트·같은 내용(data)이 비어도 모양은 읽는다 — 저장은 parseBodyInput의 저장 규칙이, 발행은 발행 판정이 막는다 (ART-07)
       return {
         type,
         mediaId: mediaIdOf(c, o, path),
         alt: c.text(o, "alt", path, { required: false }),
         caption: c.text(o, "caption", path, { required: false }),
         chart: chart(c, o, path),
+        template: c.oneOf(o, "template", path, INFOGRAPHIC_TEMPLATES),
+        data: infographicData(c, o, path),
         ...extra,
       };
     case "quote": {
@@ -246,7 +310,17 @@ function block(c: Checker, raw: unknown, path: string): StoredBlock | null {
     case "callout":
       return { type, kind: c.oneOf(o, "kind", path, CALLOUT_KINDS), title: c.text(o, "title", path, { required: false }), text: c.text(o, "text", path), ...extra };
     case "video":
-      return { type, embedUrl: c.text(o, "embedUrl", path), caption: c.text(o, "caption", path, { required: false }), ...extra };
+      // 주소 모양(youtube-nocookie만)은 parseBodyInput의 저장 규칙이 막는다 — 읽을 때는 발행 판정이 볼 수 있게 글자 그대로 (ART-08)
+      return {
+        type,
+        embedUrl: c.text(o, "embedUrl", path, { required: false, max: 2000 }),
+        caption: c.text(o, "caption", path, { required: false }),
+        summary: c.text(o, "summary", path, { required: false, max: 5000 }),
+        captions: c.bool(o, "captions", path),
+        thumbnailMediaId: optionalMediaId(c, o, "thumbnailMediaId", path),
+        durationSeconds: durationOf(c, o, path),
+        ...extra,
+      };
     case "faq": {
       const items = Array.isArray(o.items) ? o.items : null;
       if (!items) c.fail(`${path}.items`, "질문·답 목록이어야 합니다");
@@ -290,7 +364,28 @@ function claim(c: Checker, raw: unknown, path: string, blockCount: number): Core
   };
 }
 
-/** 편집 화면이 보낸 본문 검사 — { blocks, claims } (claims는 비울 수 있다) */
+/**
+ * 저장 규칙 — 모양이 맞아도 저장하지 않는 블록 (ART-07 · ART-08 '저장 불가'). 편집 화면도 같은 함수(@ltr/editorial)로 먼저 막는다.
+ *  · 인포그래픽: 대체 텍스트 · 같은 내용의 표·목록
+ *  · 동영상: 주소가 youtube-nocookie 임베드 주소 — 통과하면 정리한 주소로 바꿔 저장한다
+ */
+function applySaveRules(c: Checker, b: StoredBlock, path: string): StoredBlock {
+  if (b.type === "infographic") {
+    for (const p of infographicSaveProblems(b)) c.fail(`${path}.${p.field}`, p.message);
+    return b;
+  }
+  if (b.type === "video") {
+    const embed = parseYoutubeEmbed(b.embedUrl);
+    if (!embed.ok) {
+      c.fail(`${path}.embedUrl`, embed.problem);
+      return b;
+    }
+    return { ...b, embedUrl: embed.url };
+  }
+  return b;
+}
+
+/** 편집 화면이 보낸 본문 검사 — { blocks, claims } (claims는 비울 수 있다). 모양 검사 뒤 저장 규칙(applySaveRules) */
 export function parseBodyInput(raw: unknown): Result<StoredBody> {
   const c = new Checker();
   const o = c.object(raw, "body");
@@ -298,7 +393,11 @@ export function parseBodyInput(raw: unknown): Result<StoredBody> {
   if (!Array.isArray(o.blocks)) c.fail("body.blocks", "블록 목록이어야 합니다");
   const rawBlocks = Array.isArray(o.blocks) ? o.blocks : [];
   if (rawBlocks.length > MAX_BLOCKS) c.fail("body.blocks", `블록은 ${MAX_BLOCKS}개 이하여야 합니다`);
-  const blocks = rawBlocks.map((b, i) => block(c, b, `body.blocks[${i}]`)).filter((b): b is StoredBlock => b !== null);
+  const blocks = rawBlocks.flatMap((b, i) => {
+    const path = `body.blocks[${i}]`;
+    const parsed = block(c, b, path);
+    return parsed ? [applySaveRules(c, parsed, path)] : [];
+  });
   if (o.claims !== undefined && o.claims !== null && !Array.isArray(o.claims)) c.fail("body.claims", "핵심 주장 목록이어야 합니다");
   const rawClaims = Array.isArray(o.claims) ? o.claims : [];
   const claims = rawClaims.map((x, i) => claim(c, x, `body.claims[${i}]`, rawBlocks.length)).filter((x): x is CoreClaim => x !== null);

@@ -237,6 +237,11 @@ describe("분야 허브 머리 (RP-02)", () => {
     expect(screen.getByRole("link", { name: "프로젝트" }).getAttribute("aria-current")).toBe("page");
   });
 
+  it("제목은 띄어쓰기 없는 긴 이름도 줄을 바꾼다 (본문은 keep-all — 제휴사 이름 등, 360px 가로 스크롤 0)", () => {
+    render(<FieldHubHead field="news" eyebrow="PARTNER" title="법무법인가온앤파트너스지방세실무연구소" />);
+    expect(screen.getByRole("heading", { level: 1 }).className).toContain("[overflow-wrap:anywhere]");
+  });
+
   it("골격 순서 = 머리(아이브로·제목·소개) → 분야 지방세 포인트 → 하위 분야 탭 (CAT-02 '머리 → 지방세 포인트 → 탭')", () => {
     const { container } = render(<FieldHubHead field="realestate" eyebrow="REAL ESTATE" title="부동산" intro="소개" tabs={tabs} taxPoint={taxPoint} />);
     const order = [...container.querySelectorAll('[data-ui="eyebrow"], h1, p, [data-ui="field-tax-point"], [data-ui="tab-nav"]')]

@@ -5,6 +5,7 @@ import { sectionOfHref, track } from "@/lib/analytics/client";
 import { EngagementClock } from "@/lib/analytics/engagement";
 import type { EventName } from "@/lib/analytics/events";
 import { NEXT_ACTION_KEYS, type SectionKey } from "@/lib/server/public/constants";
+import { partnerViewedProps } from "@/lib/site/media-view";
 
 // 공개 화면 측정 연결 (docs/dev/W2-c_설계.md 6장) — 그리는 것 0(빈 요소). 보내기는 lib/analytics/client.ts track() 하나이고,
 // 측정 거부 쿠키·브라우저 GPC 신호가 있으면 track()이 아무것도 보내지 않는다 (GROW-01 전송 0).
@@ -57,6 +58,21 @@ export function MeasureArticle({ articleId, section, format, contentType }: { ar
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [articleId, section, format, contentType]);
+  return null;
+}
+
+/**
+ * 제휴 기사를 열면 partner_content_viewed(제휴사·기사 번호) 1건 (ART-10 '제휴 기사를 열면 partner_content_viewed(제휴사) 1건').
+ * 공개 제휴사가 지정된 기사만 부른다. 같은 기사를 다시 그려도(개발 모드 효과 두 번) 한 번 — 보낸 열쇠를 ref에 둔다
+ */
+export function MeasurePartnerContent({ partnerId, articleId, section }: { partnerId: number; articleId: number; section: SectionKey }) {
+  const sent = useRef<string | null>(null);
+  useEffect(() => {
+    const key = `${partnerId}:${articleId}`;
+    if (sent.current === key) return;
+    sent.current = key;
+    void track("partner_content_viewed", { section, props: partnerViewedProps(partnerId, articleId) });
+  }, [partnerId, articleId, section]);
   return null;
 }
 

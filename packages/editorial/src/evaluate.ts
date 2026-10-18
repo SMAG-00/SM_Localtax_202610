@@ -3,6 +3,7 @@ import { checkAmendment } from "./checks/amendment";
 import { checkArticleBasics } from "./checks/article-basics";
 import { checkCardNews } from "./checks/card-news";
 import { checkExternal } from "./checks/external";
+import { checkMediaFormats } from "./checks/media-formats";
 import { checkPartnership } from "./checks/partnership";
 import { checkPlainLanguage } from "./checks/plain-language";
 import { checkPressure } from "./checks/pressure";
@@ -23,6 +24,7 @@ export type PublishCheck = (article: ArticleForPublish, ctx: PublishContext) => 
 export const BUILT_IN_CHECKS: readonly PublishCheck[] = [
   checkArticleBasics,
   checkCardNews,
+  checkMediaFormats,
   checkSourcing,
   checkReviews,
   checkQuantitative,

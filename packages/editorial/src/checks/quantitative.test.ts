@@ -95,6 +95,8 @@ describe("NAV-10 묶음 안의 칸", () => {
       caption: "구별 아파트 매매 거래량",
       rightsStatus: "confirmed" as const,
       chart: table.chart,
+      template: "compare" as const,
+      data: { kind: "table" as const, columns: ["구", "거래량"], rows: [["가온구", "120건"]] },
     };
     expect(blockers(withBlock(q, 3, infographic))).toEqual([]);
   });

@@ -74,6 +74,14 @@ export interface MediaRow {
   path: string;
   alt: string | null;
   rights_status: string;
+  /** 출처 · 촬영자 · 이용 조건 (ART-09 포토 기사) */
+  credit: string | null;
+  photographer: string | null;
+  license: string | null;
+  kind: string;
+  /** 원본 가로·세로(픽셀) — 동영상 썸네일 16:9 판정 (ART-08). 모르면 null */
+  width: number | null;
+  height: number | null;
 }
 
 export interface SourceRow {
@@ -153,7 +161,7 @@ export interface ArticleGraph {
   author: PersonRow | null;
   category: CategoryRow | null;
   partner: PartnerRow | null;
-  /** 대표 이미지와 본문 이미지·인포그래픽 블록이 가리키는 media 행 */
+  /** 대표 이미지와 본문 이미지·인포그래픽 블록·동영상 썸네일이 가리키는 media 행 */
   media: MediaRow[];
   /** 대체되지 않은(최신) 공개 출처 */
   sources: SourceRow[];

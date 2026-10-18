@@ -2,10 +2,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { VideoCard, formatDuration } from "./VideoCard";
+import { LinkProvider, type UiLinkProps } from "../link";
+import { VideoCard, formatDuration, playableSrc } from "./VideoCard";
 
 const THUMB = { src: "/media/video-acquisition.jpg", width: 1280, height: 720 };
-const EMBED = "https://www.youtube-nocookie.com/embed/abc123XYZ" as const;
+const EMBED = "https://www.youtube-nocookie.com/embed/abc123XYZ_-" as const;
 const BASE = {
   title: "생애 첫 집, 취득세 감면 요건 3가지",
   summary: "처음 집을 산 사람이 받을 수 있는 취득세 감면 요건을 4분 동안 차례로 설명합니다.",
@@ -82,7 +83,7 @@ describe("동영상 카드", () => {
     const iframe = container.querySelector("iframe")!;
     const src = new URL(iframe.getAttribute("src")!);
     expect(src.hostname).toBe("www.youtube-nocookie.com");
-    expect(src.pathname).toBe("/embed/abc123XYZ");
+    expect(src.pathname).toBe("/embed/abc123XYZ_-");
     expect(src.searchParams.get("autoplay")).toBe("1");
     expect(iframe.getAttribute("title")).toBe(BASE.title);
     expect(onPlay).toHaveBeenCalledTimes(1);
@@ -122,5 +123,58 @@ describe("동영상 카드", () => {
   it("루트 data-ui=video-card", () => {
     const { container } = render(<VideoCard {...BASE} embedUrl={EMBED} />);
     expect(container.firstElementChild!.getAttribute("data-ui")).toBe("video-card");
+  });
+
+  it("재생을 누르면 키보드 초점이 플레이어로 옮겨 간다 (재생 단추가 사라져도 초점을 잃지 않는다)", async () => {
+    const { container } = render(<VideoCard {...BASE} embedUrl={EMBED} />);
+    await userEvent.click(screen.getByRole("button", { name: /동영상 재생/ }));
+    expect(document.activeElement).toBe(container.querySelector("iframe"));
+  });
+
+  it("배지 자리 — 기사 유형·제휴 배지가 재생 시간 줄에 같은 글자로 들어간다", () => {
+    render(<VideoCard {...BASE} href="/news/a" badges={<span data-ui="partner-badge">공동 기획 가온세무법인</span>} />);
+    const badge = screen.getByText("공동 기획 가온세무법인");
+    expect(badge.closest('[data-ui="video-card"]')).not.toBeNull();
+    expect(badge.closest("[data-thumbnail-frame]")).toBeNull();
+  });
+
+  it("썸네일 크기를 모르면 width·height 속성 없이 원본 비율로 줄인다, 재생 시간을 빼면 시간 표기가 없다", () => {
+    const { container } = render(<VideoCard title="t" summary="s" captions={false} thumbnail={{ src: "/m.jpg" }} embedUrl={EMBED} />);
+    const img = container.querySelector("img")!;
+    expect(img.hasAttribute("width")).toBe(false);
+    expect(img.hasAttribute("height")).toBe(false);
+    expect(img.className).toContain("h-auto");
+    expect(container.querySelector("time")).toBeNull();
+  });
+
+  it("링크형 제목은 사이트 안 이동 링크(앱 링크)다 — 새로고침 없이 기사로 (FND-09)", () => {
+    const AppLink = (p: UiLinkProps) => <a data-app-link="" {...p} />;
+    render(
+      <LinkProvider component={AppLink}>
+        <VideoCard {...BASE} href="/news/acquisition-video" />
+      </LinkProvider>,
+    );
+    expect(screen.getByRole("link", { name: BASE.title }).hasAttribute("data-app-link")).toBe(true);
+  });
+});
+
+describe("플레이어 주소 (누른 뒤 여는 주소)", () => {
+  it("저장 검사를 지난 모양이면 autoplay를 붙여 연다", () => {
+    expect(playableSrc(`${EMBED}?start=30`)).toBe(`${EMBED}?start=30&autoplay=1`);
+  });
+
+  it.each([
+    "https://www.youtube.com/embed/abc123XYZ_-",
+    "http://www.youtube-nocookie.com/embed/abc123XYZ_-",
+    "https://www.youtube-nocookie.com.evil.example/embed/abc123XYZ_-",
+    "https://user@www.youtube-nocookie.com/embed/abc123XYZ_-",
+    "https://www.youtube-nocookie.com:8443/embed/abc123XYZ_-",
+    "https://www.youtube-nocookie.com/embed/abc123XYZ_-/extra",
+    "https://www.youtube-nocookie.com/embed/short",
+    "https://www.youtube-nocookie.com/",
+    "not a url",
+    "",
+  ])("%s → 플레이어 0", (url) => {
+    expect(playableSrc(url)).toBeNull();
   });
 });

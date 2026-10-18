@@ -32,7 +32,8 @@ export function FieldHubHead(props: FieldHubHeadProps) {
   return (
     <header data-ui="field-hub-head" data-field={props.field}>
       <Eyebrow>{eyebrow}</Eyebrow>
-      <h1 className="mt-3 text-[32px] leading-tight font-black tracking-tight text-navy-900 sm:text-[40px]">{title}</h1>
+      {/* 띄어쓰기 없는 긴 이름(제휴사 이름 등)도 줄을 바꾼다 — 360px 가로 스크롤 0 (본문은 한국어 단어 단위 줄바꿈 keep-all) */}
+      <h1 className="mt-3 text-[32px] leading-tight font-black tracking-tight text-navy-900 [overflow-wrap:anywhere] sm:text-[40px]">{title}</h1>
       {introText && <p className="mt-2 text-[17px] text-navy-600">{introText}</p>}
       {taxPoint && (
         <div className="mt-8">

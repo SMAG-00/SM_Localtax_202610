@@ -4,7 +4,7 @@ import { sponsorBadge } from "@ltr/editorial";
 import { sponsorLabelText } from "@ltr/structured-data";
 import { runGate, kstDate, parseGateSettings, saveChecks } from "./gate";
 import { renderedFacts, similarityDraft, similaritySources, toArticleForPublish, toArticleView, toLintArticle } from "./mapping";
-import { AUTHOR_PERSON, EDITOR_PERSON, GATE_OPTIONS, SETTINGS, articleRow, graph } from "./test-graph";
+import { AUTHOR_PERSON, EDITOR_PERSON, GATE_OPTIONS, SETTINGS, articleRow, graph, mediaRow } from "./test-graph";
 
 const failedOf = (g: ReturnType<typeof graph>) => runGate(g, SETTINGS, GATE_OPTIONS).failed;
 
@@ -85,9 +85,9 @@ describe("출처·이미지 권리 (NAV-02 · NAV-04)", () => {
   test("이미지 블록의 권리는 본문에 적힌 값이 아니라 media 표에서 읽는다", () => {
     const body = articleRow().body as { blocks: unknown[]; claims: unknown[] };
     const withImage = { ...body, blocks: [...body.blocks, { type: "image", mediaId: "9", alt: "민원 창구", caption: "", rightsStatus: "confirmed" }] };
-    const unconfirmed = graph({ media: [{ id: 9, path: "media/9.jpg", alt: "민원 창구", rights_status: "unconfirmed" }] }, { body: withImage });
+    const unconfirmed = graph({ media: [mediaRow({ id: 9, alt: "민원 창구", rights_status: "unconfirmed" })] }, { body: withImage });
     expect(failedOf(unconfirmed)).toContain("nav04.image-rights");
-    const confirmed = graph({ media: [{ id: 9, path: "media/9.jpg", alt: "민원 창구", rights_status: "confirmed" }] }, { body: withImage });
+    const confirmed = graph({ media: [mediaRow({ id: 9, alt: "민원 창구", rights_status: "confirmed" })] }, { body: withImage });
     expect(failedOf(confirmed)).not.toContain("nav04.image-rights");
     const missingRow = graph({}, { body: withImage });
     expect(failedOf(missingRow)).toContain("nav04.image-rights");
@@ -255,5 +255,32 @@ describe("매핑 — 인물 참조와 근거 참조", () => {
       reviewed: false,
       reviewedForVersion: null,
     });
+  });
+});
+
+describe("형식 콘텐츠 — media 기록에서 읽는 칸(권리·출처·이용 조건·썸네일 크기)으로 판정 (ART-08 · ART-09 · NAV-04)", () => {
+  const body = articleRow().body as { blocks: unknown[]; claims: unknown[] };
+  const VIDEO = { type: "video", embedUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ", caption: "", summary: "징수 실적 설명 영상입니다.", captions: true, thumbnailMediaId: "21", durationSeconds: 60 };
+  const withVideo = { ...body, blocks: [...body.blocks, VIDEO] };
+  const thumb = (over: Parameters<typeof mediaRow>[0]) => mediaRow({ kind: "thumbnail", rights_status: "confirmed", credit: "편집국", license: "자체 제작", width: 1920, height: 1080, ...over });
+
+  test("동영상 기사 — 권리 확인된 16:9 썸네일이면 형식 판정 통과", () => {
+    expect(failedOf(graph({ media: [thumb({ id: 21 })] }, { format: "video", body: withVideo })).filter((id) => /^art08|^nav04/.test(id))).toEqual([]);
+  });
+
+  test("썸네일 크기를 모르거나 4:3이면 art08.thumbnail-ratio, 권리 미확인이면 nav04.image-rights — 본문에 적은 값은 보지 않는다", () => {
+    expect(failedOf(graph({ media: [thumb({ id: 21, width: null, height: null })] }, { format: "video", body: withVideo }))).toContain("art08.thumbnail-ratio");
+    expect(failedOf(graph({ media: [thumb({ id: 21, width: 1200, height: 900 })] }, { format: "video", body: withVideo }))).toContain("art08.thumbnail-ratio");
+    const forged = { ...body, blocks: [...body.blocks, { ...VIDEO, thumbnail: { rightsStatus: "confirmed", width: 1920, height: 1080 } }] };
+    expect(failedOf(graph({ media: [thumb({ id: 21, rights_status: "unconfirmed" })] }, { format: "video", body: forged }))).toContain("nav04.image-rights");
+    expect(failedOf(graph({}, { format: "video", body: withVideo })), "media 행이 없으면 권리·크기 모름").toEqual(expect.arrayContaining(["nav04.image-rights", "art08.thumbnail-ratio"]));
+  });
+
+  test("포토 기사 — 사진의 출처·이용 조건은 media 기록에서 (본문에 적어 넣어도 무시)", () => {
+    const photoBody = { ...body, blocks: [...body.blocks, { type: "image", mediaId: "31", alt: "구청 창구", caption: "", credit: "적어 넣은 출처", license: "적어 넣은 조건" }] };
+    const noCredit = mediaRow({ id: 31, rights_status: "unconfirmed", license: "공공누리 제1유형" });
+    expect(failedOf(graph({ media: [noCredit] }, { format: "photo", body: photoBody }))).toEqual(expect.arrayContaining(["art09.photo-credit"]));
+    const full = mediaRow({ id: 31, rights_status: "confirmed", credit: "가온시청", photographer: "김가온", license: "공공누리 제1유형" });
+    expect(failedOf(graph({ media: [full] }, { format: "photo", body: photoBody })).filter((id) => id.startsWith("art09"))).toEqual([]);
   });
 });

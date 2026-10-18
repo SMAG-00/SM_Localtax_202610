@@ -35,12 +35,12 @@ PRD-01A 9장 W2-b(홈 골격·히어로·메뉴·4대 분야 허브 공통 골�
 | 이름 | 값 |
 |---|---|
 | settings.public_keys (anon이 읽는 설정 키 — 마지막 키는 W2-c 2단계가 더했다: 많이 본 기사 사이드바·목록 건수) | `home_core_message` · `home_search_chips` · `hub_intros` · `amendment_confirmed_stage` · `hub_situation_limit` · `feature_flags` · `next_action_priority` · `popular_rules` |
-| feature_flags (기능 공개 목록 — 없거나 false면 닫힘) | `calc` · `experts` · `store` · `edu` · `search` · `sm_calculator` · `expert_finder` · `self_calculator` · `taxbot` · `region_hubs` · `amendments` · `page_about` · `page_editorial_policy` · `page_ethics` · `page_corrections` · `page_ad_policy` · `page_privacy` · `page_help` |
+| feature_flags (기능 공개 목록 — 없거나 false면 닫힘, 마지막 키는 W2-c 4단계가 더했다: 동영상 목록) | `calc` · `experts` · `store` · `edu` · `search` · `sm_calculator` · `expert_finder` · `self_calculator` · `taxbot` · `region_hubs` · `amendments` · `page_about` · `page_editorial_policy` · `page_ethics` · `page_corrections` · `page_ad_policy` · `page_privacy` · `page_help` · `video_list` |
 | next_action (다음 행동 버튼 키, ART-06) | `situation` · `same_section` · `local_news` · `sm_calculator` · `expert_finder` · `self_calculator` · `taxbot` |
 | home_sections (홈 섹션 순서 고정, HOME-01) | `hero` · `fields` · `latest_reports` · `weekly_hot` · `amendments` · `column` · `product` · `experts` |
 | policy_links (기사 하단 정책 링크 7종 순서, ART-02) | `about` · `editorial_policy` · `ethics` · `corrections` · `ad_policy` · `privacy` · `help` |
 
-- 기능 키의 화면 이름·주소: 유틸 메뉴 `calc` 계산기 `/calc` · `experts` 전문가 소개 `/experts` · `store` 구독·도서 `/store` · `edu` 교육 `/edu` · `search` 검색 `/search` (HOME-02 순서). `sm_calculator` SM 계산기 카드(01B TX-01) · `expert_finder` [전문가 찾기](01C EXPL-06) · `self_calculator` 자체 계산기(2단계) · `taxbot` 지방세봇 모드(4단계) · `region_hubs` 시·도·시·군·구 지자체 허브 `/local/[sido](/[sigungu])`(01B W4) · `amendments` 개정 트래커 페이지 `/tax/amendments/[slug]`(01B W3 — 홈 트래커 카드·개정 브리핑 배지의 트래커 링크. `/tax/amendments` 자체는 3단계부터 하위 분야 목록 — 9장 #28) · `page_*` 정책 페이지(HELP-05 — 법률 검토 승인 기록 뒤 켠다, W2-e).
+- 기능 키의 화면 이름·주소: 유틸 메뉴 `calc` 계산기 `/calc` · `experts` 전문가 소개 `/experts` · `store` 구독·도서 `/store` · `edu` 교육 `/edu` · `search` 검색 `/search` (HOME-02 순서). `sm_calculator` SM 계산기 카드(01B TX-01) · `expert_finder` [전문가 찾기](01C EXPL-06) · `self_calculator` 자체 계산기(2단계) · `taxbot` 지방세봇 모드(4단계) · `region_hubs` 시·도·시·군·구 지자체 허브 `/local/[sido](/[sigungu])`(01B W4) · `amendments` 개정 트래커 페이지 `/tax/amendments/[slug]`(01B W3 — 홈 트래커 카드·개정 브리핑 배지의 트래커 링크. `/tax/amendments` 자체는 3단계부터 하위 분야 목록 — 9장 #28) · `page_*` 정책 페이지(HELP-05 — 법률 검토 승인 기록 뒤 켠다, W2-e) · `video_list` 동영상 목록 `/news/video`(W2-c 4단계 — 동영상 채널 결정 전에는 꺼 둔다, PRD-01A 1.3. 꺼져 있으면 404·링크 0).
 - 정책 링크 주소: 회사 소개 `/about` · 편집 원칙 `/about/editorial-policy` · 윤리강령 `/about/ethics` · 정정·반론 창구 `/about/corrections` · 광고 정책 `/about/ad-policy` · 개인정보처리방침 `/about/privacy` · 고객센터 `/help/report` [확인 필요 — 3장 화면 표에 고객센터 첫 화면 경로가 없어 첫 폼(기사 제보)으로 둔다].
 - 다음 행동 버튼 글자: `situation` 이 상황 모아 보기 · `same_section` 같은 분야 더 보기 · `local_news` 이 지역 뉴스 더 보기 · `sm_calculator` SM 계산기로 계산하기(새 창) · `expert_finder` 전문가 찾기 · `self_calculator` 계산해 보기 · `taxbot` 지방세봇에게 묻기. 우선순위는 `settings.next_action_priority`(씨앗 = 위 순서 — ART-06 본문에 적힌 순서).
 
@@ -183,7 +183,9 @@ PRD-01A 9장 W2-b(홈 골격·히어로·메뉴·4대 분야 허브 공통 골�
 | `/tax/columns` · `/finance/columns` | 칼럼 목록 (`opinion`, 연재 회차 순서, 의견 고지, 필자 링크) — `/[section]/[category]`의 `columns` 하위 분야가 칼럼 목록이 된다(부동산은 01B W4가 하위 분야를 더하면 같은 규칙) | ART-04 | 4 |
 | `/people/[slug]` | 인물(기자·필자) — 비공개·없는 인물 404 | ART-04 · NAV-03 | 4 |
 
-만들지 않는 경로(다른 작업): `/news/video`·`/news/photo`(W2-c 4단계 — 많이 본 기사 목록은 W2-c 2단계가 만들었다) · `/search`·`/glossary`(W2-d) · `/about/*`·`/help/*`·`/my`·`/brief`(W2-e) · `/tax/amendments/[slug]`·`/calc`(01B W3) · `/local/[sido](/[sigungu])`·`/local/events`(01B W4~W6) · `/experts`·`/store`·`/edu`(01C). 이 경로로 가는 링크는 기능 키가 켜질 때까지 0이다.
+만들지 않는 경로(다른 작업): `/search`·`/glossary`(W2-d) · `/about/*`·`/help/*`·`/my`·`/brief`(W2-e) · `/tax/amendments/[slug]`·`/calc`(01B W3) · `/local/[sido](/[sigungu])`·`/local/events`(01B W4~W6) · `/experts`·`/store`·`/edu`(01C). 이 경로로 가는 링크는 기능 키가 켜질 때까지 0이다.
+
+W2-c가 만든 목록 — 많이 본 기사(2단계)·포토 목록(4단계)은 열린 화면이고, 동영상 목록(4단계)은 기능 키 video_list가 켜졌을 때만 열린다(꺼져 있으면 404). 메뉴 링크는 셋 다 아직 없다 (W2-c 설계 7장·9장).
 
 - **하위 분야 목록은 공개 하위 분야 전부의 경로다** (3단계 결정 — 9장 #28). PRD-01A 3장 '하위 분야 목록'(기사 카드 목록)은 01A 화면이고, `/tax/amendments`·`/realestate/projects` 같은 01B 화면은 같은 경로에 분야 고유 목록(트래커·프로젝트·사례)을 더한다. 기사 0건이면 탭·메뉴에 없다. `amendments` 기능 키는 트래커 상세(`/tax/amendments/[slug]`) 링크만 연다.
 - **지자체뉴스의 하위 경로는 만들지 않는다** (9장 #27). `/local/[category]`는 시·도 주소 `/local/[sido]`와 겹친다 — 허브 탭·헤더 하위 메뉴는 기사 있는 편집 분야(`/local?topic=local_tax` 등, 분야 필터 값)로 두고, `/local/reporting` 등은 404다.
@@ -339,7 +341,7 @@ PRD-01A 9장 W2-b(홈 골격·히어로·메뉴·4대 분야 허브 공통 골�
 | 48 | 칼럼 목록에 넣는 기사 | 그 분야의 공개 `opinion` 전부(하위 분야 상관없이 — ART-04 정의). 허브 탭 '칼럼'은 여전히 하위 분야 `columns`에 기사가 있을 때만(3단계 규칙). 부동산 칼럼 경로는 01B W4가 하위 분야 `columns`를 더하면 열린다(지금 404). 한 쪽 100편 | [확인 필요] |
 | 49 | 공동 기획 기사의 기사 유형 배지 | 공동 기획(`sponsored` + `co_planned`)은 유형 배지 '광고'를 빼고 제휴 배지 '공동 기획 ○○'만 — PRD-00 8.8 '광고와 공동 기획을 섞지 않는다'. 광고는 유형 배지 '광고' 하나. 목록 카드·상세 머리가 같은 함수 | [확인 필요] |
 | 50 | 칼럼 필자 블록의 이해관계 줄 (TX-15) | 이해관계 공개 칸이 아직 없어 '이해관계: 확인 필요'로 보인다(컴포넌트 규칙 — 줄을 빼지 않는다). 필자 체계 W3에서 칸을 정한다 | [확인 필요 — W3] |
-| 51 | 동영상 블록·인포그래픽 블록 | 동영상은 유튜브 nocookie 주소만 새 창 링크(재생기·썸네일 카드는 ART-08 W2-c), 인포그래픽은 그림 + 캡션·단위·출처(같은 내용의 표 접기 — ART-07 — 는 블록에 표 칸이 없어 W2-c) | [확인 필요] |
+| 51 | 동영상 블록·인포그래픽 블록 | W2-c 4단계에서 바꿨다 — 동영상은 누르면 그 자리에서 재생되는 카드(누르기 전 유튜브 요청 0, 새 창 링크 없앰), 인포그래픽은 그림 + 같은 내용의 표·목록(기본 접힘)·단위·출처 (W2-c 설계 8.4) | [W2-c] |
 | 52 | 기사 상세 첫 화면 R1 (2026-10-18 고침 — Linux CI에서 줄바꿈 차이로 알림 첫 줄이 첫 화면에 들어와 168자) | 좁은 화면(sm 680px 미만)은 **머리가 첫 화면을 맡는다** — 분야 칩·배지·제목·요약은 위, 기자 줄은 첫 화면 아래 끝(머리 상자 높이 = 화면 높이 − 머리글 64px − 위 여백 80px). 날짜 줄(최초 발행·실질 수정·법령 기준일)·공유 버튼·알림(업데이트·정정)·본문은 첫 화면 바로 아래에서 시작한다. 첫 화면 글자 = 머리글 + 칩·배지 + 제목 + 요약 + 기자 — 줄바꿈·알림 길이와 상관없이 정해진다(최악 견본: 제목 40자·요약 60자 자연 문장 100자, 공백 없는 글자 125자). 넓은 화면은 그대로 흐른다(칩 → 제목 → 요약 → 기자 → 날짜 → 공유). 요약도 제목처럼 긴 낱말을 줄바꿈한다(`overflow-wrap:anywhere`). 날짜는 그대로 `<time datetime>` — JSON-LD·compareRendered 일치 그대로. 시험 `e2e/site-article.test.mjs` l)(최악 견본 2개 + 알림 — 기자 줄은 첫 화면 안, 날짜·알림은 첫 화면 아래) | [결정 — PO 확인: 휴대폰 첫 화면에 날짜·공유가 안 보인다] |
 | 37 | 상황 페이지 다음 행동 | `[같은 분야 더 보기]`(그 분야 허브)를 늘 둔다 + 연결 칸 기능이 열리면 그 버튼(우선순위 설정 순서, 2개까지) | [확인 필요] |
 | 38 | R1(첫 화면 150자)을 재는 폭 | PRD-00 8.2대로 360×740에서만 — 허브는 1024px에서 기사 카드 3장이 한 줄에 보여 150자를 넘는다(시험 자료 180자). 640·1024는 R2·R3만 판정 | [확인 필요] |

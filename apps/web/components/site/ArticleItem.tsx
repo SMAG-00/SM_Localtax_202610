@@ -13,9 +13,14 @@ export type CardItem = Pick<ArticleListItem, "href" | "title" | "summary" | "sec
 
 const EDITORIAL_FIELDS = new Set<string>(["local_tax", "realestate", "local_finance", "urban_policy"]);
 
-export function ArticleItem({ item }: { item: CardItem }) {
+/** 카드의 기사 유형 배지 또는 제휴 배지 — 기사 카드·동영상 카드·기사 상세 머리가 같은 함수(typeBadgeFor·partnerBadgeFor) (ART-10 빠진 곳 0) */
+export function cardTypeBadge(item: Pick<CardItem, "contentType" | "sponsor">): ReactNode {
   const type = typeBadgeFor(item.contentType, item.sponsor ?? null);
   const partner = partnerBadgeFor(item.sponsor ?? null);
+  return type ? <ArticleTypeBadge type={type} /> : partner ? <PartnerBadge partner={partner} /> : undefined;
+}
+
+export function ArticleItem({ item }: { item: CardItem }) {
   const field = item.editorialField && EDITORIAL_FIELDS.has(item.editorialField) ? (item.editorialField as EditorialFieldBadgeKind) : undefined;
   return (
     <ArticleCard
@@ -27,7 +32,7 @@ export function ArticleItem({ item }: { item: CardItem }) {
       publishedAt={item.publishedOn}
       region={item.regionLabel ?? undefined}
       byline={item.authorName ?? undefined}
-      typeBadge={type ? <ArticleTypeBadge type={type} /> : partner ? <PartnerBadge partner={partner} /> : undefined}
+      typeBadge={cardTypeBadge(item)}
       editorialBadge={field ? <EditorialFieldBadge field={field} /> : undefined}
       format={formatBadge(item.format)}
     />

@@ -381,3 +381,78 @@ describe("칼럼 연재 (ART-04)", () => {
     expect(fieldErrorsFromServer(["seriesEpisode: 1 이상의 회차 번호여야 합니다"], [], [])).toEqual({ "meta-series-episode": "1 이상의 회차 번호여야 합니다" });
   });
 });
+
+describe("형식 콘텐츠 블록 (ART-07 인포그래픽 · ART-08 동영상) — 편집기 ↔ 저장 모양 · 저장 전 확인은 API와 같은 문장", () => {
+  const ok = { published: false, canSkipTaxLens: true, storedOmissionReason: null };
+  const ID = "dQw4w9WgXcQ";
+  const stored: StoredBody = {
+    blocks: [
+      {
+        type: "infographic",
+        mediaId: "12",
+        alt: "비교 그림",
+        caption: "올해와 작년",
+        chart: { axis: "구분", unit: "%", source: "세정과" },
+        template: "compare",
+        data: { kind: "table", columns: ["구분", "올해", "작년"], rows: [["세율", "1%", "2%"]] },
+      },
+      { type: "infographic", mediaId: "13", alt: "절차 그림", caption: "", chart: null, template: "flow", data: { kind: "list", items: ["계약", "신고"] } },
+      { type: "video", embedUrl: `https://www.youtube-nocookie.com/embed/${ID}`, caption: "따라 하기", summary: "신고 순서를 보여 줍니다.", captions: true, thumbnailMediaId: "21", durationSeconds: 95 },
+      { type: "video", embedUrl: `https://www.youtube-nocookie.com/embed/${ID}`, caption: "", summary: "", captions: false, thumbnailMediaId: null, durationSeconds: null },
+    ],
+    claims: [],
+  };
+
+  test("저장 모양 → 편집기 → 저장 모양이 같고, 그 본문이 API 입력 검사(저장 규칙 포함)를 지난다", () => {
+    const s = editorStateFromArticle(article({ format: "video", reportingMethod: null, contentType: "explainer", body: stored }), key);
+    expect(s.blocks.map((b) => [b.template, b.dataKind, b.dataText])).toEqual([
+      ["compare", "table", "구분 | 올해 | 작년\n세율 | 1% | 2%"],
+      ["flow", "list", "계약\n신고"],
+      ["flow", "list", ""],
+      ["flow", "list", ""],
+    ]);
+    const payload = editorPayload(s, { published: false, version: 3 });
+    expect((payload.body as StoredBody).blocks).toEqual(stored.blocks);
+    const parsed = parseBodyInput(payload.body);
+    expect(parsed.ok).toBe(true);
+    expect(validateEditor(s, ok)).toEqual({});
+  });
+
+  test("인포그래픽 대체 텍스트·같은 내용이 없으면 저장 전에 막는다 — 문장은 저장 API(parseBodyInput)와 같다", () => {
+    const s = editorStateFromArticle(article({ body: stored }), key);
+    const blocks = s.blocks.map((b, i) => (i === 0 ? { ...b, alt: " ", dataText: "" } : b));
+    const errors = validateEditor({ ...s, blocks }, ok);
+    const k = blocks[0]!.key;
+    const api = parseBodyInput(editorPayload({ ...s, blocks }, { published: false, version: 3 }).body);
+    expect(api.ok).toBe(false);
+    const apiErrors = api.ok ? [] : api.errors;
+    expect(errors[`block-${k}-alt`]).toBe(apiErrors.find((e) => e.startsWith("body.blocks[0].alt: "))!.slice("body.blocks[0].alt: ".length));
+    expect(errors[`block-${k}-data`]).toBe(apiErrors.find((e) => e.startsWith("body.blocks[0].data: "))!.slice("body.blocks[0].data: ".length));
+    // 서버 422 문장도 같은 칸으로 간다
+    expect(Object.keys(fieldErrorsFromServer(apiErrors, [], blocks.map((b) => b.key))).sort()).toEqual([`block-${k}-alt`, `block-${k}-data`].sort());
+  });
+
+  test("youtube-nocookie가 아닌 주소·숫자가 아닌 재생 시간은 저장 전에 막는다", () => {
+    const s = editorStateFromArticle(article({ body: stored }), key);
+    const blocks = s.blocks.map((b, i) => (i === 2 ? { ...b, embedUrl: `https://www.youtube.com/watch?v=${ID}`, durationText: "1분 35초" } : b));
+    const errors = validateEditor({ ...s, blocks }, ok);
+    const k = blocks[2]!.key;
+    expect(errors[`block-${k}-embedUrl`]).toContain("youtube-nocookie");
+    expect(errors[`block-${k}-durationSeconds`]).toContain("초 단위");
+  });
+
+  test("새 인포그래픽 블록은 절차 흐름 틀(빈 목록) — 그대로 저장하면 막힌다(대체 텍스트·같은 내용 없음)", () => {
+    const s = editorStateFromArticle(article(), key);
+    const blocks = addBlock(s.blocks, "infographic", key);
+    const last = blocks.at(-1)!;
+    expect([last.template, last.dataKind, last.dataText]).toEqual(["flow", "list", ""]);
+    const errors = validateEditor({ ...s, blocks: blocks.map((b) => (b.key === last.key ? { ...b, mediaId: "12" } : b)) }, ok);
+    expect(Object.keys(errors).sort()).toEqual([`block-${last.key}-alt`, `block-${last.key}-data`]);
+  });
+
+  test("요약·같은 내용 글자의 '기한'·'가산세'도 '할 일을 함께 썼다' 확인 대상이다 (UX-03 — 발행 판정과 같은 글)", () => {
+    const s = editorStateFromArticle(article({ body: stored }), key);
+    expect(needsActionCheck({ ...s.blocks[2]!, summary: "신고 기한을 알려 줍니다." })).toBe(true);
+    expect(needsActionCheck({ ...s.blocks[1]!, dataText: "가산세 안내" })).toBe(true);
+  });
+});

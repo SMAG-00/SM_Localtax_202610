@@ -1,6 +1,7 @@
 // 검토용 원고 미리 보기 (서버에서 그린다) — 블록을 읽기 쉬운 모양으로. 공개 기사 화면(W2-b)과 다르다: 근거 참조(src:·ev:)를 함께 보인다.
 import type { EditorView } from "@/lib/server/articles/editor-view";
 import { BLOCK_TYPE_LABELS, CALLOUT_KIND_LABELS, CLAIM_KIND_LABELS, labelOf } from "@/lib/admin/labels";
+import { INFOGRAPHIC_TEMPLATE_LABELS } from "@/lib/admin/media-blocks";
 import { MONO, Panel } from "./ui";
 
 const TEXT = "whitespace-pre-wrap text-[17px] text-navy-900 [overflow-wrap:anywhere]";
@@ -73,7 +74,18 @@ export function ArticlePreview({ view }: { view: EditorView }) {
               </dl>
             )}
             {(b.type === "image" || b.type === "infographic") && <p className="text-[15px] text-navy-700">이미지 media {b.mediaId} · {b.alt || "대체 텍스트 없음"}</p>}
-            {b.type === "video" && <p className="text-[15px] text-navy-700 [overflow-wrap:anywhere]">동영상 {b.embedUrl}</p>}
+            {b.type === "infographic" && (
+              <p className="text-[14px] text-navy-600 [overflow-wrap:anywhere]">
+                {`템플릿 ${INFOGRAPHIC_TEMPLATE_LABELS[b.template]} · 같은 내용 ${b.data ? (b.data.kind === "table" ? `표 ${b.data.rows.length}행` : `목록 ${b.data.items.length}항목`) : "없음"}`}
+              </p>
+            )}
+            {b.type === "video" && (
+              <div className="space-y-1 text-[15px] text-navy-700 [overflow-wrap:anywhere]">
+                <p>동영상 {b.embedUrl}</p>
+                <p className="text-[14px] text-navy-600">{`썸네일 ${b.thumbnailMediaId ? `media ${b.thumbnailMediaId}` : "없음"} · 자막 ${b.captions ? "있음 확인" : "확인 안 함"}`}</p>
+                <p className={TEXT}>{b.summary || "(요약 텍스트 없음)"}</p>
+              </div>
+            )}
             {b.type === "slide" && (
               <div className="rounded-xl border border-navy-100 bg-ivory p-4">
                 <p className="font-bold text-navy-900 [overflow-wrap:anywhere]">{b.title || "(제목 없음)"}</p>

@@ -2,26 +2,60 @@
 
 import { useRef, useState } from "react";
 import { CheckboxField, SelectField, TextField } from "@ltr/ui";
-import { BLOCK_TYPES, ROSE_BOX_TITLE, type BlockType } from "@ltr/editorial";
+import { BLOCK_TYPES, INFOGRAPHIC_TEMPLATES, ROSE_BOX_TITLE, YOUTUBE_EMBED_PREFIX, type BlockType, type InfographicTemplate } from "@ltr/editorial";
 import { addBlock, moveBlock, needsActionCheck, removeBlock, updateBlock, type BlockDraft } from "@/lib/admin/editor-state";
-import { BLOCK_TYPE_LABELS, CALLOUT_KIND_LABELS, EVIDENCE_RIGHTS_LABELS, labelOf, optionsOf } from "@/lib/admin/labels";
+import { BLOCK_TYPE_LABELS, CALLOUT_KIND_LABELS, optionsOf } from "@/lib/admin/labels";
+import {
+  INFOGRAPHIC_TEMPLATE_LABELS,
+  changeTemplate,
+  infographicChecks,
+  mediaOptionLabel,
+  photoChecks,
+  photoSetSummary,
+  videoChecks,
+  type CheckLine,
+  type EditorMedia,
+  type InfographicDataKind,
+} from "@/lib/admin/media-blocks";
 import { FieldErrorText, TextAreaField } from "../fields";
-import { OUTLINE_BUTTON } from "../ui";
+import { OUTLINE_BUTTON, ToneChip } from "../ui";
 import type { RefOption, SectionProps } from "./types";
 
-type Media = { id: number; path: string; alt: string | null; rights_status: string };
+/** 발행 전 확인 줄 — 글자로 '됨'·'빠짐'을 적는다(색만으로 구분 0). 최종 판정은 점검 패널(발행 판정)이 한다 */
+function CheckLines({ title, lines, testId }: { title: string; lines: readonly CheckLine[]; testId: string }) {
+  const missing = lines.filter((l) => !l.ok).length;
+  return (
+    <div data-testid={testId} className="rounded-xl border border-navy-100 bg-white p-3">
+      <p className="text-[14px] font-bold text-navy-900">
+        {title} — {missing === 0 ? "모두 됨" : `${missing}개 빠짐 (빠지면 발행되지 않습니다)`}
+      </p>
+      <ul className="mt-2 flex flex-wrap gap-2">
+        {lines.map((l) => (
+          <li key={l.key} data-check={l.key} data-ok={l.ok ? "true" : "false"}>
+            <ToneChip tone={l.ok ? "emerald" : "amber"}>{`${l.label} ${l.ok ? "됨" : "빠짐"}`}</ToneChip>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 /**
  * 블록 편집기 (ART-01) — 문단·표·이미지·인용·상자·인포그래픽·동영상·FAQ·핵심 요약. 더하기·지우기·위아래로 옮기기.
  * 인용 블록은 인터뷰 기록(ev:) 또는 문서 출처(src:)를 잇는다 (NAV-11). '기한'·'가산세'가 든 블록에는 '할 일을 함께 썼다' 확인 (UX-03).
+ * 형식 콘텐츠 (W2-c 4단계): 인포그래픽은 템플릿 3종·대체 텍스트·같은 내용의 표·목록(둘 다 없으면 저장되지 않는다 — ART-07),
+ * 동영상은 youtube-nocookie 주소(아니면 저장되지 않는다)·썸네일·요약·'자막 있음' 확인(ART-08), 포토 기사는 사진마다 출처·이용 조건·대체 텍스트 상태(ART-09)
  */
-export function BlockEditor({ state, update, errors, readOnly, refs, media, makeKey }: SectionProps & { refs: readonly RefOption[]; media: readonly Media[]; makeKey: () => string }) {
+export function BlockEditor({ state, update, errors, readOnly, refs, media, makeKey }: SectionProps & { refs: readonly RefOption[]; media: readonly EditorMedia[]; makeKey: () => string }) {
   const [addType, setAddType] = useState<BlockType>("paragraph");
   const listRef = useRef<HTMLOListElement>(null);
   const blocks = state.blocks;
   const setBlocks = (next: BlockDraft[]) => update({ blocks: next });
   const patch = (key: string, p: Partial<BlockDraft>) => setBlocks(updateBlock(blocks, key, p));
-  const mediaOptions = media.map((m) => ({ value: String(m.id), label: `${m.id} · ${m.alt || m.path} (${labelOf(EVIDENCE_RIGHTS_LABELS, m.rights_status)})` }));
+  const mediaOptions = media.map((m) => ({ value: String(m.id), label: mediaOptionLabel(m) }));
+  const photo = state.format === "photo";
+  const photoSet = photo ? photoSetSummary(blocks, media) : null;
+  const has = (type: BlockType) => blocks.some((b) => b.type === type);
 
   function add() {
     setBlocks(addBlock(blocks, addType, makeKey));
@@ -32,6 +66,13 @@ export function BlockEditor({ state, update, errors, readOnly, refs, media, make
   return (
     <div className="space-y-4">
       <FieldErrorText id="blocks" error={errors.blocks} />
+      {photoSet && (
+        <p data-testid="photo-set-summary" className="rounded-xl border border-navy-100 bg-white px-4 py-3 text-[15px] text-navy-800">
+          {`포토 기사 — 사진 ${photoSet.photos}장${photoSet.photos === 0 ? " (이미지 블록을 더해 주세요 — 사진이 없으면 발행되지 않습니다)" : photoSet.incomplete > 0 ? ` · 표기가 빠진 사진 ${photoSet.incomplete}장` : " · 모두 표기됨"}`}
+        </p>
+      )}
+      {state.format === "video" && !has("video") && <p className="text-[15px] text-amber-800">형식이 동영상인 기사에는 동영상 블록이 있어야 발행됩니다.</p>}
+      {state.format === "infographic" && !has("infographic") && <p className="text-[15px] text-amber-800">형식이 인포그래픽인 기사에는 인포그래픽 블록이 있어야 발행됩니다.</p>}
       <ol ref={listRef} className="space-y-4">
         {blocks.map((b, i) => {
           const f = (name: string) => `block-${b.key}-${name}`;
@@ -77,6 +118,19 @@ export function BlockEditor({ state, update, errors, readOnly, refs, media, make
                   />
                 )}
 
+                {b.type === "infographic" && (
+                  <SelectField
+                    id={f("template")}
+                    label="인포그래픽 템플릿"
+                    disabled={readOnly}
+                    hint="고르면 아래 '같은 내용' 칸에 그 템플릿의 틀이 들어갑니다 (이미 쓴 내용은 그대로)"
+                    options={INFOGRAPHIC_TEMPLATES.map((t) => ({ value: t, label: INFOGRAPHIC_TEMPLATE_LABELS[t] }))}
+                    value={b.template}
+                    onChange={(e) => patch(b.key, changeTemplate(b, e.target.value as InfographicTemplate))}
+                    error={errors[f("template")]}
+                  />
+                )}
+
                 {(b.type === "table" || b.type === "infographic" || b.type === "image" || b.type === "video") && (
                   <TextField id={f("caption")} label="설명(캡션)" disabled={readOnly} value={b.caption} onChange={(e) => patch(b.key, { caption: e.target.value })} error={errors[f("caption")]} />
                 )}
@@ -101,14 +155,60 @@ export function BlockEditor({ state, update, errors, readOnly, refs, media, make
                       label="이미지"
                       required
                       disabled={readOnly}
-                      hint={mediaOptions.length === 0 ? "등록된 이미지가 없습니다 — 이미지 등록 뒤 고릅니다" : "권리 상태는 이미지 기록에서 읽습니다"}
+                      hint={mediaOptions.length === 0 ? "등록된 이미지가 없습니다 — 이미지 등록 뒤 고릅니다" : "권리 상태·출처는 이미지 기록에서 읽습니다. 그림은 원본 비율 그대로 보이고 잘리지 않습니다"}
                       options={mediaOptions}
                       placeholder="골라 주세요"
                       value={b.mediaId}
                       onChange={(e) => patch(b.key, { mediaId: e.target.value })}
                       error={errors[f("mediaId")]}
                     />
-                    <TextField id={f("alt")} label="대체 텍스트" disabled={readOnly} value={b.alt} onChange={(e) => patch(b.key, { alt: e.target.value })} />
+                    <TextField
+                      id={f("alt")}
+                      label="대체 텍스트"
+                      required={b.type === "infographic" || photo}
+                      hint={
+                        b.type === "infographic"
+                          ? "그림이 보여 주는 내용을 글로 적습니다 — 없으면 저장되지 않습니다 (ART-07)"
+                          : photo
+                            ? "사진에 무엇이 있는지 적습니다 — 비우면 이미지 기록의 설명을 쓰고, 둘 다 없으면 발행되지 않습니다 (ART-09)"
+                            : undefined
+                      }
+                      disabled={readOnly}
+                      value={b.alt}
+                      onChange={(e) => patch(b.key, { alt: e.target.value })}
+                      error={errors[f("alt")]}
+                    />
+                  </>
+                )}
+
+                {b.type === "infographic" && (
+                  <>
+                    <SelectField
+                      id={f("dataKind")}
+                      label="같은 내용의 모양"
+                      disabled={readOnly}
+                      options={[
+                        { value: "table", label: "표" },
+                        { value: "list", label: "목록" },
+                      ]}
+                      value={b.dataKind}
+                      onChange={(e) => patch(b.key, { dataKind: e.target.value as InfographicDataKind })}
+                    />
+                    <TextAreaField
+                      id={f("data")}
+                      label="그림과 같은 내용의 표·목록"
+                      required
+                      hint={
+                        b.dataKind === "table"
+                          ? "첫 줄은 머리 칸, 그 아래 줄마다 한 행 — 칸은 | 로 나눕니다. 공개 화면에는 접혀 있고 눌러서 펼칩니다. 없으면 저장되지 않습니다"
+                          : "줄마다 한 항목 — 공개 화면에는 접혀 있고 눌러서 펼칩니다. 없으면 저장되지 않습니다"
+                      }
+                      rows={4}
+                      disabled={readOnly}
+                      value={b.dataText}
+                      onChange={(e) => patch(b.key, { dataText: e.target.value })}
+                      error={errors[f("data")]}
+                    />
                   </>
                 )}
 
@@ -119,6 +219,9 @@ export function BlockEditor({ state, update, errors, readOnly, refs, media, make
                     <TextField id={f("source")} label="출처" disabled={readOnly} value={b.source} onChange={(e) => patch(b.key, { source: e.target.value })} />
                   </div>
                 )}
+
+                {b.type === "infographic" && <CheckLines title="인포그래픽 확인" lines={infographicChecks(b, media)} testId={`block-${i}-checks`} />}
+                {b.type === "image" && photo && <CheckLines title={`사진 표기`} lines={photoChecks(b, media)} testId={`block-${i}-checks`} />}
 
                 {b.type === "quote" && (
                   <>
@@ -198,7 +301,59 @@ export function BlockEditor({ state, update, errors, readOnly, refs, media, make
                 )}
 
                 {b.type === "video" && (
-                  <TextField id={f("embedUrl")} label="동영상 주소" disabled={readOnly} value={b.embedUrl} onChange={(e) => patch(b.key, { embedUrl: e.target.value })} error={errors[f("embedUrl")]} />
+                  <>
+                    <TextField
+                      id={f("embedUrl")}
+                      label="동영상 주소"
+                      required
+                      inputMode="url"
+                      hint={`유튜브 '공유 → 퍼가기'의 개인정보 보호 주소만 저장됩니다 — ${YOUTUBE_EMBED_PREFIX}영상번호`}
+                      disabled={readOnly}
+                      value={b.embedUrl}
+                      onChange={(e) => patch(b.key, { embedUrl: e.target.value })}
+                      error={errors[f("embedUrl")]}
+                    />
+                    <SelectField
+                      id={f("thumbnailMediaId")}
+                      label="썸네일 이미지"
+                      disabled={readOnly}
+                      hint="16:9 이미지를 고릅니다 — 원본 비율 그대로 보이고, 누르기 전에는 이 그림만 보입니다"
+                      options={mediaOptions}
+                      placeholder="골라 주세요"
+                      value={b.thumbnailMediaId}
+                      onChange={(e) => patch(b.key, { thumbnailMediaId: e.target.value })}
+                      error={errors[f("thumbnailMediaId")]}
+                    />
+                    <TextAreaField
+                      id={f("summary")}
+                      label="요약 텍스트"
+                      required
+                      hint="영상을 보지 않아도 내용을 알 수 있게 적습니다 — 없으면 발행되지 않습니다 (ART-08)"
+                      rows={3}
+                      disabled={readOnly}
+                      value={b.summary}
+                      onChange={(e) => patch(b.key, { summary: e.target.value })}
+                      error={errors[f("summary")]}
+                    />
+                    <TextField
+                      id={f("durationSeconds")}
+                      label="재생 시간(초)"
+                      inputMode="numeric"
+                      hint="예: 95 — 비우면 카드에 시간을 적지 않습니다"
+                      disabled={readOnly}
+                      value={b.durationText}
+                      onChange={(e) => patch(b.key, { durationText: e.target.value })}
+                      error={errors[f("durationSeconds")]}
+                    />
+                    <CheckboxField
+                      id={f("captions")}
+                      label="자막 있음 — 영상에 자막이 있는지 직접 확인했다 (확인하지 않으면 발행되지 않습니다)"
+                      disabled={readOnly}
+                      checked={b.captions}
+                      onChange={(e) => patch(b.key, { captions: e.target.checked })}
+                    />
+                    <CheckLines title="동영상 확인" lines={videoChecks(b, media)} testId={`block-${i}-checks`} />
+                  </>
                 )}
 
                 {b.type === "faq" && (

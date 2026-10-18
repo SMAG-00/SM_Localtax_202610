@@ -138,16 +138,6 @@ export function reporterPolicyLinks(policyLinks: readonly { key: string; href: s
   return { correctionHref: of("corrections"), editorialPolicyHref: of("editorial_policy") };
 }
 
-/** 동영상 블록 — 유튜브 nocookie 주소만 링크로 (ART-08). 아니면 null(블록 0) */
-export function videoHref(embedUrl: string): string | null {
-  try {
-    const u = new URL(embedUrl);
-    return u.protocol === "https:" && (u.hostname === "www.youtube-nocookie.com" || u.hostname === "youtube-nocookie.com") ? u.toString() : null;
-  } catch {
-    return null;
-  }
-}
-
 /** 기사 본문 면책 (ART-02 — 하위 분야의 면책 대상 값일 때만) */
 export const ARTICLE_DISCLAIMER = "이 기사는 일반 정보이며 세무 자문이 아닙니다. 내 상황에 맞는 판단은 세무 전문가와 확인하세요.";
 /** 업데이트 표시 글자 — 정정 이력(정정·반론·추후보도)과 다른 라벨 (ART-05) */

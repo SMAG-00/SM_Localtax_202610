@@ -92,6 +92,10 @@ export interface ListFilter {
   authorId?: number;
   amendmentId?: number;
   subtype?: string;
+  /** 기사 형식 (W2-c 4단계 — 동영상·포토 목록, ART-08 · ART-09) */
+  format?: string;
+  /** 제휴사 (W2-c 4단계 — 제휴사 프로필의 기사 목록, ART-10) */
+  partnerId?: number;
   ids?: readonly number[];
   /** 이 지역 코드 가운데 하나라도 태그된 기사 */
   regionCodes?: readonly string[];
@@ -116,6 +120,8 @@ export async function readArticleList(db: Db, f: ListFilter): Promise<{ items: A
   if (f.authorId !== undefined) q = q.eq("author_id", f.authorId);
   if (f.amendmentId !== undefined) q = q.eq("amendment_id", f.amendmentId);
   if (f.subtype) q = q.eq("subtype", f.subtype);
+  if (f.format) q = q.eq("format", f.format);
+  if (f.partnerId !== undefined) q = q.eq("partner_id", f.partnerId);
   if (f.ids) q = q.in("id", [...f.ids]);
   if (f.regionCodes?.length) q = q.overlaps("region_codes", [...f.regionCodes]);
   const from = f.offset ?? 0;

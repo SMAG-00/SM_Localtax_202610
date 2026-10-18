@@ -90,6 +90,37 @@ describe("인포그래픽 블록", () => {
     expect(container.innerHTML).toBe("");
   });
 
+  it("절차 흐름(차례 있는 목록)은 번호 목록(ol)으로, 그 밖의 목록은 점 목록(ul)으로", () => {
+    const { container, rerender } = render(<InfographicBlock title="t" image={IMAGE} data={{ kind: "list", items: ["계약", "잔금", "신고"], ordered: true }} template="flow" />);
+    expect(container.querySelector("ol")!.className).toContain("list-decimal");
+    expect(container.querySelector("ul")).toBeNull();
+    expect(container.querySelector("figure")!.getAttribute("data-template")).toBe("flow");
+    rerender(<InfographicBlock title="t" image={IMAGE} data={{ kind: "list", items: ["계약"] }} />);
+    expect(container.querySelector("ul")).not.toBeNull();
+    expect(container.querySelector("ol")).toBeNull();
+  });
+
+  it("단위·출처 줄은 그림 아래(표 밖)에 있을 때만, 빈 줄은 빼고", () => {
+    const { container, rerender } = render(<InfographicBlock title="t" image={IMAGE} data={TABLE} notes={["단위 건", " ", "그림 편집국"]} />);
+    const notes = container.querySelector('[data-part="infographic-notes"]')!;
+    expect([...notes.querySelectorAll("p")].map((p) => p.textContent)).toEqual(["단위 건", "그림 편집국"]);
+    expect(notes.closest("details")).toBeNull();
+    rerender(<InfographicBlock title="t" image={IMAGE} data={TABLE} />);
+    expect(container.querySelector('[data-part="infographic-notes"]')).toBeNull();
+  });
+
+  it("이미지 크기를 모르면 width·height 없이 원본 비율로 줄인다", () => {
+    const { container } = render(<InfographicBlock title="t" image={{ src: IMAGE.src, alt: IMAGE.alt }} data={TABLE} />);
+    const img = container.querySelector("img")!;
+    expect(img.hasAttribute("width")).toBe(false);
+    expect(img.className).toContain("h-auto");
+  });
+
+  it("표는 표 안에서만 가로로 밀린다 (화면 가로 스크롤 0)", () => {
+    const { container } = render(<InfographicBlock title="t" image={IMAGE} data={TABLE} />);
+    expect(container.querySelector("table")!.parentElement!.className).toContain("overflow-x-auto");
+  });
+
   it("대체 텍스트를 빼면 타입 검사가 실패한다 (tsc가 확인)", () => {
     const image = { src: IMAGE.src, width: 10, height: 10 };
     // @ts-expect-error image.alt는 필수다 (ART-07)

@@ -13,6 +13,10 @@ export type { RevisionInput } from "./checks/revision";
 export { validateSolvedCaseForSave } from "./checks/solved-case";
 export { checkScreenCopy } from "./checks/plain-language";
 export type { ScreenCopy } from "./checks/plain-language";
+// ART-07·08·09 — 저장 불가 조건(기사 저장 API·편집 화면 공용)과 동영상 주소·썸네일 비율 판정
+export { YOUTUBE_EMBED_HOST, YOUTUBE_EMBED_PREFIX, infographicSaveProblems, isSixteenByNine, parseYoutubeEmbed } from "./checks/media-formats";
+export type { BlockProblem, EmbedParse } from "./checks/media-formats";
+export { infographicTexts } from "./text";
 
 // 판정 보조 — 편집 화면이 상태 표시에 쓴다
 export { isApproved, taxReviewReasons } from "./checks/reviews";

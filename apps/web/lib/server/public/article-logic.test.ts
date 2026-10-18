@@ -235,7 +235,7 @@ describe("본문 이미지 — 읽을 수 있는(권리 확인·공개) media만
   const blocks: StoredBlock[] = [
     { type: "paragraph", text: "본문" },
     { type: "image", mediaId: "11", alt: "현장 사진", caption: "" },
-    { type: "infographic", mediaId: "12", alt: "그림", caption: "", chart: null },
+    { type: "infographic", mediaId: "12", alt: "그림", caption: "", chart: null, template: "flow", data: { kind: "list", items: ["한 줄"] } },
     { type: "image", mediaId: "13", alt: "권리 미확인", caption: "" },
   ];
 

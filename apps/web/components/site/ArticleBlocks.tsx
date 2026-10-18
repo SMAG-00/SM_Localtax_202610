@@ -1,14 +1,19 @@
-import { Callout, FaqBlock, KeySummary, StatusBox, UiLink } from "@ltr/ui";
+import { Callout, FaqBlock, InfographicBlock, KeySummary, StatusBox, UiLink } from "@ltr/ui";
 import type { StoredBlock } from "@/lib/server/articles/content";
 import type { ArticleMedia } from "@/lib/server/public";
-import { paragraphSegments, tableView, videoHref } from "@/lib/site/article-view";
-import { TEXT_LINK } from "./SiteSection";
+import type { SectionKey } from "@/lib/server/public/constants";
+import { paragraphSegments, tableView } from "@/lib/site/article-view";
+import { infographicNotes, infographicView, photoCreditLine, videoTitle } from "@/lib/site/media-view";
+import { VideoPlayer } from "./VideoPlayer";
 
 // 기사 본문 블록 (ART-01 블록 9종 — 카드뉴스 장은 CardNewsSlider) — 문단·표·이미지·인용·상자·인포그래픽·동영상·FAQ·핵심 요약 상자.
-//  · 이미지·인포그래픽은 권리 확인되어 읽히는 것만 온다(공개 데이터 함수가 뺀다) — 사진마다 대체 텍스트·출처(credit)
+//  · 이미지·인포그래픽·동영상 썸네일은 권리 확인되어 읽히는 것만 온다(공개 데이터 함수가 뺀다) — 사진마다 대체 텍스트·출처(credit).
+//    그림은 원본 비율 그대로 줄이고 자르지 않는다(크기를 알면 width·height로 자리를 잡는다 — ART-07 · ART-08 · ART-09)
+//  · 포토 기사(ART-09)는 사진마다 촬영·출처·이용 조건 줄
+//  · 인포그래픽(ART-07)은 그림 + 같은 내용의 표·목록(기본 접힘, 키보드로 펼침) — @ltr/ui InfographicBlock
+//  · 동영상(ART-08)은 누르면 재생되는 카드 — 누르기 전 유튜브·구글 요청 0, 누르면 video_played 1건 (VideoPlayer)
 //  · rose 상자는 '자주 틀리는 점'에만(UX-03), 절세 체크포인트는 emerald 상태 상자, 정보·주의는 강조 문단
 //  · 표는 좁은 화면에서 표 안에서만 가로로 밀린다 — 화면 전체 가로 스크롤 0 (UX-06)
-//  · 동영상은 유튜브 nocookie 주소만 새 창 링크로 (재생기·썸네일 카드는 ART-08 동영상 기사 — W2-c)
 
 const PARAGRAPH = "text-[17px] leading-[1.8] text-navy-900 [overflow-wrap:anywhere]";
 
@@ -29,24 +34,34 @@ function Paragraph({ text }: { text: string }) {
   );
 }
 
-function Figure({ media, caption, chart, kind }: { media: ArticleMedia; caption: string; chart: { axis: string; unit: string; source: string } | null; kind: "image" | "infographic" }) {
+/** 그림의 원본 크기 — 알면 img width·height(자리 확보). CSS는 h-auto w-full이라 원본 비율 그대로 줄어든다(자르지 않음) */
+const sizeOf = (m: ArticleMedia) => (m.width && m.height ? { width: m.width, height: m.height } : {});
+
+/** 기사 블록이 그리는 데 쓰는 기사 값 — 동영상 측정(기사 번호·분야)·카드 제목 · 포토 기사 표기 줄 */
+export interface BlockArticle {
+  id: number;
+  section: SectionKey;
+  title: string;
+  format: string | null;
+}
+
+function Figure({ media, caption, photo }: { media: ArticleMedia; caption: string; photo: boolean }) {
+  const credit = photo ? photoCreditLine(media) : media.credit ? `사진·그림 ${media.credit}` : "";
   return (
-    <figure data-block={kind} data-media-id={media.id}>
-      {/* 원본 비율 그대로 줄이고 자르지 않는다 (ART-07 · ART-09) — 크기는 이미지 파일이 정한다 */}
+    <figure data-block="image" data-media-id={media.id}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={media.src} alt={media.alt} loading="lazy" decoding="async" className="block h-auto w-full rounded-xl border border-navy-100 bg-white" />
-      {(caption || media.credit || chart) && (
+      <img src={media.src} alt={media.alt} {...sizeOf(media)} loading="lazy" decoding="async" className="block h-auto w-full rounded-xl border border-navy-100 bg-white" />
+      {(caption || credit) && (
         <figcaption className="mt-2 space-y-1 text-[14px] text-navy-600">
           {caption && <p>{caption}</p>}
-          {chart && (chart.unit || chart.source) && <p>{[chart.unit && `단위 ${chart.unit}`, chart.source && `출처 ${chart.source}`].filter(Boolean).join(" · ")}</p>}
-          {media.credit && <p data-part="credit">{`사진·그림 ${media.credit}`}</p>}
+          {credit && <p data-part={photo ? "photo-credit" : "credit"}>{credit}</p>}
         </figcaption>
       )}
     </figure>
   );
 }
 
-function Block({ block, media, index }: { block: StoredBlock; media: Record<number, ArticleMedia>; index: number }) {
+function Block({ block, media, index, article }: { block: StoredBlock; media: Record<number, ArticleMedia>; index: number; article: BlockArticle }) {
   switch (block.type) {
     case "paragraph":
       return <Paragraph text={block.text} />;
@@ -90,11 +105,26 @@ function Block({ block, media, index }: { block: StoredBlock; media: Record<numb
         </figure>
       );
     }
-    case "image":
-    case "infographic": {
+    case "image": {
       const m = media[Number(block.mediaId)];
       if (!m) return null;
-      return <Figure media={{ ...m, alt: block.alt || m.alt }} caption={block.caption} chart={block.type === "infographic" ? block.chart : null} kind={block.type} />;
+      return <Figure media={{ ...m, alt: block.alt || m.alt }} caption={block.caption} photo={article.format === "photo"} />;
+    }
+    case "infographic": {
+      const m = media[Number(block.mediaId)];
+      // 대체 텍스트·같은 내용이 없는 블록은 공개 데이터 함수가 이미 뺐다 — 화면도 한 번 더 (컴포넌트도 그리지 않는다)
+      if (!m || !block.data) return null;
+      return (
+        <div data-block="infographic" data-media-id={m.id}>
+          <InfographicBlock
+            title={block.caption.trim() || block.alt}
+            image={{ src: m.src, alt: block.alt, ...sizeOf(m) }}
+            data={infographicView({ caption: block.caption, alt: block.alt, template: block.template, data: block.data })}
+            notes={infographicNotes(block.chart, m.credit)}
+            template={block.template}
+          />
+        </div>
+      );
     }
     case "quote":
       return (
@@ -123,15 +153,22 @@ function Block({ block, media, index }: { block: StoredBlock; media: Record<numb
         </div>
       );
     case "video": {
-      const href = videoHref(block.embedUrl);
-      if (!href) return null;
+      const thumb = block.thumbnailMediaId === null ? undefined : media[Number(block.thumbnailMediaId)];
+      // 주소·썸네일이 맞지 않는 블록은 공개 데이터 함수(publicBlocks)가 이미 뺐다
+      if (!thumb) return null;
       return (
-        <p data-block="video" className="text-[15px] text-navy-700">
-          {block.caption && <span className="mr-2">{block.caption}</span>}
-          <a href={href} target="_blank" rel="noopener noreferrer" className={TEXT_LINK}>
-            동영상 보기<span className="sr-only"> (새 창)</span>
-          </a>
-        </p>
+        <div data-block="video" data-media-id={thumb.id}>
+          <VideoPlayer
+            articleId={article.id}
+            section={article.section}
+            title={videoTitle(block.caption, article.title)}
+            summary={block.summary}
+            embedUrl={block.embedUrl}
+            thumbnail={{ src: thumb.src, ...sizeOf(thumb) }}
+            durationSeconds={block.durationSeconds}
+            captions={block.captions}
+          />
+        </div>
       );
     }
     case "faq":
@@ -142,13 +179,13 @@ function Block({ block, media, index }: { block: StoredBlock; media: Record<numb
   }
 }
 
-export function ArticleBlocks({ blocks, media }: { blocks: readonly StoredBlock[]; media: Record<number, ArticleMedia> }) {
+export function ArticleBlocks({ blocks, media, article }: { blocks: readonly StoredBlock[]; media: Record<number, ArticleMedia>; article: BlockArticle }) {
   if (blocks.length === 0) return null;
   return (
     <div data-part="blocks" className="mt-10 space-y-8">
       {blocks.map((b, i) => (
         <div key={i} data-block-index={i} data-block-type={b.type}>
-          <Block block={b} media={media} index={i} />
+          <Block block={b} media={media} index={i} article={article} />
         </div>
       ))}
     </div>

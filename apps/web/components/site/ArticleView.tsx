@@ -25,7 +25,7 @@ import { ArticleBlocks } from "./ArticleBlocks";
 import { ArticleGrid } from "./ArticleItem";
 import { CardNewsSlider } from "./CardNewsSlider";
 import { popularClickItems } from "@/lib/site/popular-view";
-import { MeasureArticle, MeasureClicks, MeasureNextActions } from "./Measure";
+import { MeasureArticle, MeasureClicks, MeasureNextActions, MeasurePartnerContent } from "./Measure";
 import { ShareButton } from "./ShareButton";
 import { TEXT_LINK } from "./SiteSection";
 
@@ -96,7 +96,16 @@ function Head({ a }: { a: ArticleDetail }) {
             <Chip>{a.subsection ? `${a.sectionName} › ${a.subsection.name}` : a.sectionName}</Chip>
           </UiLink>
           {type && <ArticleTypeBadge type={type} />}
-          {partner && <PartnerBadge partner={partner} />}
+          {partner &&
+            (a.partner ? (
+              // 제휴 배지 → 제휴사 프로필 (ART-10). 배지 글자는 목록 카드와 같다 — 링크 이름에 '제휴사 소개'를 덧붙인다(화면 읽기용)
+              <UiLink href={a.partner.href} data-part="partner-link" className="inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
+                <PartnerBadge partner={partner} />
+                <span className="sr-only"> 제휴사 소개</span>
+              </UiLink>
+            ) : (
+              <PartnerBadge partner={partner} />
+            ))}
           {format && (
             <span data-format-badge className="inline-flex items-center rounded-md bg-navy-50 px-2 py-0.5 text-[12px] font-bold text-navy-700">
               {format}
@@ -191,7 +200,13 @@ function Body({ a, today }: { a: ArticleDetail; today: string }) {
       {a.leadImage && (
         <figure data-part="lead-figure">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img data-part="lead-image" src={a.leadImage.src} alt={a.leadImage.alt} className="block h-auto w-full rounded-2xl border border-navy-100 bg-white" />
+          <img
+            data-part="lead-image"
+            src={a.leadImage.src}
+            alt={a.leadImage.alt}
+            {...(a.leadImage.width && a.leadImage.height ? { width: a.leadImage.width, height: a.leadImage.height } : {})}
+            className="block h-auto w-full rounded-2xl border border-navy-100 bg-white"
+          />
           {a.leadImage.credit && <figcaption className="mt-2 text-[14px] text-navy-600">{`사진·그림 ${a.leadImage.credit}`}</figcaption>}
         </figure>
       )}
@@ -201,7 +216,7 @@ function Body({ a, today }: { a: ArticleDetail; today: string }) {
           <SolvedCaseCard situation={a.solvedCase.situation} issue={a.solvedCase.issue} result={a.solvedCase.result} lesson={a.solvedCase.lesson} />
         </div>
       )}
-      <ArticleBlocks blocks={a.blocks} media={a.media} />
+      <ArticleBlocks blocks={a.blocks} media={a.media} article={{ id: a.id, section: a.section, title: a.title, format: a.format }} />
       {a.amendment && (
         <aside data-part="amendment" aria-label="이 기사가 다룬 개정안" className="mt-10 rounded-2xl border border-navy-100 bg-white p-6">
           <p className="text-[13px] font-bold text-hermes-800">개정 트래커</p>
@@ -263,6 +278,8 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
       {a.contentType && <MeasureArticle articleId={a.id} section={a.section} format={a.format ?? "general"} contentType={a.contentType} />}
       {/* 다음 행동 띠 누름 → next_action_clicked (W2-c 3단계 — 첫 방문 깔때기). 그리는 것 0 */}
       <MeasureNextActions section={a.section} screen="article" />
+      {/* 제휴 기사 열람 → partner_content_viewed(제휴사·기사) 1건 (ART-10). 그리는 것 0 */}
+      {a.partner && <MeasurePartnerContent partnerId={a.partner.id} articleId={a.id} section={a.section} />}
       {parts.map((part) => {
         switch (part) {
           case "head":

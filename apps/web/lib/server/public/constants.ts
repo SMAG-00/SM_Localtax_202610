@@ -59,6 +59,8 @@ export const FEATURE_KEYS = [
   "page_ad_policy",
   "page_privacy",
   "page_help",
+  // W2-c 4단계 — 동영상 목록 /news/video (동영상 채널 결정 전에는 꺼 둔다, PRD-01A 1.3)
+  "video_list",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;
@@ -167,10 +169,14 @@ export function isBlockedPath(href: string): boolean {
 }
 
 /**
- * 아직 없는 화면 — 설계 7장 '만들지 않는 경로' 중 기능 키가 없는 것: 동영상·포토(W2-c 4단계) · 용어사전(W2-d) · 내 화면·브리핑(W2-e) · 행사안내(01B W6).
- * 그 작업이 화면을 만들 때 이 목록에서 뺀다 (많이 본 기사 /news/popular는 W2-c 2단계가 만들어 뺐다)
+ * 아직 없는 화면 — 설계 7장 '만들지 않는 경로' 중 기능 키가 없는 것: 용어사전(W2-d) · 내 화면·브리핑(W2-e) · 행사안내(01B W6).
+ * 그 작업이 화면을 만들 때 이 목록에서 뺀다 (많이 본 기사 /news/popular는 W2-c 2단계, 포토 목록 /news/photo는 W2-c 4단계가 만들어 뺐다 —
+ * 동영상 목록 /news/video는 기능 키 video_list로 연다)
  */
-const UNBUILT_PREFIXES = ["/news/video", "/news/photo", "/glossary", "/my", "/brief", "/local/events"] as const;
+const UNBUILT_PREFIXES = ["/glossary", "/my", "/brief", "/local/events"] as const;
+/** 형식별 목록 (W2-c 4단계 — ART-08 · ART-09). 기사 slug로 쓸 수 없는 예약 이름(ART-01) */
+export const VIDEO_LIST_HREF = "/news/video";
+export const PHOTO_LIST_HREF = "/news/photo";
 /** 정책 페이지 묶음(W2-e) — 공개 승인된 정책 페이지(POLICY_LINKS 주소 그대로)만 열린다 (HELP-05) */
 const POLICY_ROOTS = ["/about", "/help"] as const;
 /** 기능 키로 여는 화면 — 유틸 메뉴 화면과 그 아래(HOME-02) · 트래커 상세(01B W3) · 시·도·시·군·구 허브(01B W4). self = 그 주소 자체도 */
@@ -180,6 +186,8 @@ const FEATURE_PREFIXES: ReadonlyArray<{ prefix: string; feature: FeatureKey; sel
   { prefix: "/tax/amendments", feature: "amendments", self: false },
   // `/local`(허브)·`/local?topic=`은 그대로 — `/local/[sido](/[sigungu])`만
   { prefix: "/local", feature: "region_hubs", self: false },
+  // 동영상 목록 (W2-c 4단계 — 동영상 채널 결정 전에는 닫힘)
+  { prefix: VIDEO_LIST_HREF, feature: "video_list", self: true },
 ];
 
 /**
@@ -205,4 +213,6 @@ export const newsHref = (slug: string) => `/news/${encodeURIComponent(slug)}`;
 export const personHref = (slug: string) => `/people/${encodeURIComponent(slug)}`;
 export const situationHref = (slug: string) => `/situations/${encodeURIComponent(slug)}`;
 export const amendmentHref = (slug: string) => `/tax/amendments/${encodeURIComponent(slug)}`;
+/** 제휴사 프로필 (ART-10) — 공개 제휴사 번호 */
+export const partnerHref = (id: number) => `/partners/${id}`;
 export const categoryHref = (section: SectionKey, slug: string) => (section === "local" ? SECTION_INFO.local.href : `${SECTION_INFO[section].href}/${encodeURIComponent(slug)}`);

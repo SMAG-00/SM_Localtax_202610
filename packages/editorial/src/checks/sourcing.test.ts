@@ -76,6 +76,8 @@ describe("NAV-04 사진 권리 — 유형과 상관없이 미확인이면 발행
       caption: "신고 절차",
       rightsStatus: "unconfirmed",
       chart: null,
+      template: "flow",
+      data: { kind: "list", items: ["계약", "잔금", "신고", "납부"] },
     });
     expect(blockers(article)).toEqual(["nav04.image-rights"]);
   });

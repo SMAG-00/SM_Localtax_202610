@@ -103,7 +103,7 @@ describe("열린 화면 판정 isOpenPath (HOME-02 빈 링크 0 · HELP-05 · �
   const features = (on: FeatureKey[] = []): Features => Object.fromEntries(FEATURE_KEYS.map((k) => [k, on.includes(k)])) as Features;
   const off = features();
 
-  test.each(["/", "/tax", "/tax/interpretations", "/tax/amendments", "/tax/columns", "/local", "/local?topic=local_tax", "/news", "/news/some-article", "/news?section=tax", "/situations/car-sold", "/people/kim", "/finance/cases", "/news/popular"])(
+  test.each(["/", "/tax", "/tax/interpretations", "/tax/amendments", "/tax/columns", "/local", "/local?topic=local_tax", "/news", "/news/some-article", "/news?section=tax", "/situations/car-sold", "/people/kim", "/finance/cases", "/news/popular", "/news/photo", "/news/photo?page=2", "/partners/12"])(
     "%s — 기능이 모두 꺼져도 열린 화면",
     (href) => expect(isOpenPath(href, off)).toBe(true),
   );
@@ -117,14 +117,23 @@ describe("열린 화면 판정 isOpenPath (HOME-02 빈 링크 0 · HELP-05 · �
     const line = DESIGN.split("\n").find((l) => l.startsWith("만들지 않는 경로(다른 작업)"));
     if (!line) throw new Error("설계 문서에 '만들지 않는 경로' 줄이 없다");
     const paths = [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1]!.replace(/\(.*\)$/, "").replace(/\/(\*|\[[^\]]+\])/g, "/x"));
-    expect(paths.length).toBeGreaterThanOrEqual(15);
+    expect(paths.length).toBeGreaterThanOrEqual(13);
     for (const href of paths) expect(isOpenPath(href, off), href).toBe(false);
   });
 
-  test.each(["/glossary", "/glossary/abc", "/news/video", "/news/photo", "/my", "/brief", "/local/events", "/about/terms", "/about/advertise", "/help/faq"])(
+  test.each(["/glossary", "/glossary/abc", "/my", "/brief", "/local/events", "/about/terms", "/about/advertise", "/help/faq"])(
     "%s — 아직 없는 화면은 기능을 모두 켜도 닫힘",
     (href) => expect(isOpenPath(href, features([...FEATURE_KEYS]))).toBe(false),
   );
+
+  test("동영상 목록(/news/video)은 기능 키 video_list가 켜졌을 때만 열린다 — 동영상 채널 결정 전에는 링크 0 (PRD-01A 1.3)", () => {
+    for (const href of ["/news/video", "/news/video?page=2"]) {
+      expect(isOpenPath(href, off), href).toBe(false);
+      expect(isOpenPath(href, features(["video_list"])), href).toBe(true);
+    }
+    // 다른 기능을 모두 켜도 video_list가 꺼져 있으면 닫힘
+    expect(isOpenPath("/news/video", features(FEATURE_KEYS.filter((k) => k !== "video_list")))).toBe(false);
+  });
 
   test("기능을 켜면 그 화면만 열린다 — 계산기·편집 원칙·트래커 상세·지자체 허브", () => {
     const on = features(["calc", "page_editorial_policy", "amendments", "region_hubs"]);

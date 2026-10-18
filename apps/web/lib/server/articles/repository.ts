@@ -20,6 +20,9 @@ import type {
   SourceRow,
 } from "./rows";
 
+/** 판정·편집 화면이 읽는 media 칸 (rows.ts MediaRow) */
+export const MEDIA_ROW_COLUMNS = "id, path, alt, rights_status, credit, photographer, license, kind, width, height";
+
 // 기사 저장소 — service_role로 기사 한 판의 연결 기록을 읽는다 (접근 판정은 부르는 쪽이 먼저 한다)
 
 type Db = SupabaseClient;
@@ -75,7 +78,10 @@ export async function loadArticleGraph(db: Db, idOrRow: number | ArticleRow): Pr
   const body = readStoredBody(article.body);
   const mediaIds = new Set<number>();
   if (article.lead_media_id !== null) mediaIds.add(article.lead_media_id);
-  for (const b of body.blocks) if (b.type === "image" || b.type === "infographic") mediaIds.add(Number(b.mediaId));
+  for (const b of body.blocks) {
+    if (b.type === "image" || b.type === "infographic") mediaIds.add(Number(b.mediaId));
+    if (b.type === "video" && b.thumbnailMediaId !== null) mediaIds.add(Number(b.thumbnailMediaId));
+  }
 
   const [author, category, partner, media, allSources, evidence, reviews] = await Promise.all([
     loadPerson(db, article.author_id),
@@ -92,7 +98,7 @@ export async function loadArticleGraph(db: Db, idOrRow: number | ArticleRow): Pr
         ),
     mediaIds.size === 0
       ? Promise.resolve([] as MediaRow[])
-      : rows<MediaRow>(db.from("media").select("id, path, alt, rights_status").in("id", [...mediaIds]), "media 읽기"),
+      : rows<MediaRow>(db.from("media").select(MEDIA_ROW_COLUMNS).in("id", [...mediaIds]), "media 읽기"),
     rows<SourceRow>(
       db
         .from("article_sources")

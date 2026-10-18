@@ -89,6 +89,16 @@ export type SolvedCaseConclusion = (typeof SOLVED_CASE_CONCLUSIONS)[number];
 /** 카드뉴스 장 수 (ART-03 — 5~7장, 4장·8장은 발행 불가) */
 export const CARDNEWS_SLIDES = { min: 5, max: 7 } as const;
 
+/** 인포그래픽 템플릿 (ART-07 '템플릿 3종') — 절차 흐름 · 비교 · 핵심 숫자 */
+export const INFOGRAPHIC_TEMPLATES = ["flow", "compare", "numbers"] as const;
+export type InfographicTemplate = (typeof INFOGRAPHIC_TEMPLATES)[number];
+
+/**
+ * 동영상 썸네일 비율 (ART-08 '썸네일 16:9 원본 비율') — 가로÷세로가 16÷9에서 1% 안이면 16:9로 본다(1920×1080 · 1280×720 · 854×480).
+ * 자르지 않고 원본 비율로 보이므로 그림 자체가 16:9여야 한다 (W2-c 설계 9장)
+ */
+export const VIDEO_THUMBNAIL_RATIO = { width: 16, height: 9, tolerance: 0.01 } as const;
+
 /** 본문 블록 종류 (ART-01) */
 export const BLOCK_TYPES = [
   "paragraph",
@@ -143,6 +153,13 @@ export interface ImageBlock extends BlockBase {
   caption: string;
   /** `media`의 권리 확인 (NAV-04 사진 권리) */
   rightsStatus: RightsStatus;
+  /**
+   * `media`의 출처(credit)·이용 조건(license)·대체 텍스트(alt) — 판정 입력이 media 표에서 채운다(저장하지 않는다).
+   * 포토 기사(ART-09)는 사진마다 셋이 있어야 발행된다. 없으면(undefined·null·빈 글자) 빈 것으로 본다
+   */
+  credit?: string | null;
+  license?: string | null;
+  mediaAlt?: string | null;
 }
 
 export interface QuoteBlock extends BlockBase {
@@ -163,19 +180,53 @@ export interface CalloutBlock extends BlockBase {
   text: string;
 }
 
+/**
+ * 그림과 같은 내용 (ART-07 '같은 내용의 표·목록') — 그림만으로 정보를 전하지 않는다 (PRD-00 8.9).
+ * 표 = 머리 칸(columns) + 내용 행(rows, 행마다 머리 칸 수만큼) · 목록 = 항목 글자들
+ */
+export type InfographicData =
+  | { kind: "table"; columns: readonly string[]; rows: readonly (readonly string[])[] }
+  | { kind: "list"; items: readonly string[] };
+
 export interface InfographicBlock extends BlockBase {
   type: "infographic";
   mediaId: string;
+  /** 대체 텍스트 — 없으면 저장 불가 (ART-07) */
   alt: string;
   caption: string;
   rightsStatus: RightsStatus;
   chart: ChartLabels | null;
+  /** 템플릿 — 절차 흐름 · 비교 · 핵심 숫자 */
+  template: InfographicTemplate;
+  /** 같은 내용의 표·목록 — 없으면(null) 저장 불가, 발행 판정도 막는다 */
+  data: InfographicData | null;
 }
 
+/** 동영상 썸네일의 media 기록 — 판정 입력이 media 표에서 채운다(저장하지 않는다). 크기를 모르면 null */
+export interface ThumbnailFacts {
+  rightsStatus: RightsStatus;
+  width: number | null;
+  height: number | null;
+}
+
+/**
+ * 동영상 블록 (ART-08) — 유튜브 개인정보 보호 주소(youtube-nocookie.com/embed/영상번호)만, 누른 뒤에 플레이어를 불러온다.
+ * 썸네일은 media에 저장한 16:9 이미지, 요약 텍스트(영상 내용을 글로)와 편집자의 '자막 있음' 확인이 있어야 발행된다
+ */
 export interface VideoBlock extends BlockBase {
   type: "video";
   embedUrl: string;
   caption: string;
+  /** 요약 텍스트 — 영상을 보지 않아도 내용을 알 수 있게 (접근성) */
+  summary: string;
+  /** 편집자가 영상에 자막이 있는지 확인했다 */
+  captions: boolean;
+  /** 썸네일 media 번호 */
+  thumbnailMediaId: string | null;
+  /** 재생 시간(초) — 모르면 null (카드에 표기하지 않는다) */
+  durationSeconds: number | null;
+  /** 썸네일 media의 권리·크기 (판정 입력이 채운다) */
+  thumbnail?: ThumbnailFacts | null;
 }
 
 export interface FaqBlock extends BlockBase {

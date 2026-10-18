@@ -13,7 +13,6 @@ import {
   tableView,
   taxLensBoxLinks,
   typeBadgeFor,
-  videoHref,
   type ArticleShape,
 } from "./article-view";
 
@@ -146,11 +145,3 @@ describe("「지방세로 읽기」 박스 링크 · 기자 소개 정책 링크
   });
 });
 
-describe("동영상 블록", () => {
-  test("유튜브 nocookie https 주소만 (ART-08)", () => {
-    expect(videoHref("https://www.youtube-nocookie.com/embed/abc")).toBe("https://www.youtube-nocookie.com/embed/abc");
-    expect(videoHref("https://www.youtube.com/embed/abc")).toBeNull();
-    expect(videoHref("http://www.youtube-nocookie.com/embed/abc")).toBeNull();
-    expect(videoHref("아무 글")).toBeNull();
-  });
-});

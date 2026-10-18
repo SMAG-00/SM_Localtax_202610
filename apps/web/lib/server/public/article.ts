@@ -33,8 +33,9 @@ import {
   type UpdateEntry,
 } from "./article-logic";
 import { regionLabel, sponsorBadgeOf, trackerState, type ArticleListItem, type TrackerState } from "./cards";
-import { CONTENT_TYPE_NAMES, LIMITS, POLICY_LINKS, SECTION_INFO, amendmentHref, categoryHref, isSectionKey, personHref, situationHref, type SectionKey } from "./constants";
+import { CONTENT_TYPE_NAMES, LIMITS, POLICY_LINKS, SECTION_INFO, amendmentHref, categoryHref, isSectionKey, partnerHref, personHref, situationHref, type SectionKey } from "./constants";
 import { publicDb, rowsOf } from "./db";
+import { firstPlayableVideo, type MediaView } from "./media-logic";
 import { readPopularSidebar } from "./rankings";
 import { readArticleList, readCategories, readPublicSettings, readRegions } from "./reads";
 import {
@@ -63,12 +64,8 @@ import {
 // 화면 제목·저자·날짜·대표 이미지·JSON-LD는 편집국 점검과 같은 함수(toArticleView·renderedFacts)에서 나온다 (OPT-02).
 // 이미지 주소는 화면과 JSON-LD가 같은 함수(absolute)로 만든다 — 대표 이미지 주소가 갈라지지 않게.
 
-export interface ArticleMedia {
-  id: number;
-  src: string;
-  alt: string;
-  credit: string | null;
-}
+/** 그림 한 장 — 출처(credit, 없으면 촬영자) · 포토 기사 사진마다 촬영자·이용 조건(ART-09) · 원본 크기(알면 img width·height — 자리 확보, 원본 비율) */
+export type ArticleMedia = MediaView;
 
 export interface ArticleDetail {
   id: number;
@@ -84,6 +81,8 @@ export interface ArticleDetail {
   sponsorBadge: string | null;
   /** 표기 — 목록 카드와 같은 배지 (광고 = 유형 배지 '광고', 공동 기획 = 제휴 배지) */
   sponsor: SponsorMark;
+  /** 제휴사 (ART-10) — 공개 제휴사가 지정된 기사만. 제휴사 프로필 링크·partner_content_viewed(제휴사) 측정에 쓴다 */
+  partner: { id: number; name: string; href: string } | null;
   editorialField: string | null;
   /** 화면 제목 — 표기가 있으면 "[배지] 제목" (ART-10) */
   title: string;
@@ -128,8 +127,17 @@ export interface ArticleDetail {
 const SIMILAR_POOL = 20;
 const TAG_POOL = 30;
 
-function mediaOf(m: PublicMediaRow, site: string | undefined): ArticleMedia {
-  return { id: num(m.id), src: absolute(site, m.path), alt: m.alt ?? "", credit: m.credit ?? m.photographer ?? null };
+export function mediaOf(m: PublicMediaRow, site: string | undefined): ArticleMedia {
+  return {
+    id: num(m.id),
+    src: absolute(site, m.path),
+    alt: m.alt ?? "",
+    credit: m.credit ?? m.photographer ?? null,
+    photographer: m.photographer ?? null,
+    license: m.license ?? null,
+    width: m.width ?? null,
+    height: m.height ?? null,
+  };
 }
 
 export async function getArticleDetail(slug: string, now: Date = new Date()): Promise<ArticleDetail | null> {
@@ -224,6 +232,9 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   const mediaViews = Object.fromEntries(media.map((m) => [num(m.id), mediaOf(m, site)]));
   const lead = a.lead_media_id === null ? null : (mediaViews[num(a.lead_media_id)] ?? null);
   const badge = sponsorBadgeOf(a.label, partnerRow?.name);
+  // 동영상 기사의 공유 이미지는 저장한 썸네일 (SEO-03 '동영상 기사는 저장한 썸네일이 공유 이미지') — 없으면 대표 이미지
+  const video = a.format === "video" ? firstPlayableVideo(rest, readable) : null;
+  const shareImage = (video?.thumbnailMediaId ? mediaViews[num(video.thumbnailMediaId)]?.src : undefined) ?? view.mainImage?.url ?? null;
   const title = facts.title ?? a.title;
 
   return {
@@ -239,6 +250,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     format: a.format !== "general" ? a.format : null,
     sponsorBadge: badge,
     sponsor: sponsorMark(a.label, partnerRow?.name),
+    partner: partnerRow ? { id: num(partnerRow.id), name: partnerRow.name, href: partnerHref(num(partnerRow.id)) } : null,
     editorialField: a.editorial_field,
     title,
     summary: a.summary ?? "",
@@ -275,7 +287,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     product: null,
     popular,
     policyLinks: POLICY_LINKS.filter((p) => settings.features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
-    share: { title, description: shareDescription(a.summary ?? "", slides, badge), image: view.mainImage?.url ?? null, url: view.url },
+    share: { title, description: shareDescription(a.summary ?? "", slides, badge), image: shareImage, url: view.url },
     view,
     facts,
   };

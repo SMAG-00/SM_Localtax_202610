@@ -43,6 +43,22 @@ export const RULES = [
   { id: "art03.slide-alt", ruleRef: "ART-03", level: "block", title: "카드뉴스 장에 대체 텍스트 없음" },
   { id: "art03.slide-text", ruleRef: "ART-03", level: "block", title: "카드뉴스 장에 글자 없음" },
   { id: "art03.slide-outside-cardnews", ruleRef: "ART-03", level: "block", title: "카드뉴스가 아닌 기사에 카드뉴스 장" },
+  // ART-07 인포그래픽
+  { id: "art07.infographic-required", ruleRef: "ART-07", level: "block", title: "인포그래픽 형식 기사에 인포그래픽 블록 없음" },
+  { id: "art07.infographic-alt", ruleRef: "ART-07", level: "block", title: "인포그래픽에 대체 텍스트 없음" },
+  { id: "art07.infographic-data", ruleRef: "ART-07", level: "block", title: "인포그래픽에 같은 내용의 표·목록 없음" },
+  // ART-08 동영상
+  { id: "art08.video-required", ruleRef: "ART-08", level: "block", title: "동영상 형식 기사에 동영상 블록 없음" },
+  { id: "art08.embed-url", ruleRef: "ART-08", level: "block", title: "동영상 주소가 youtube-nocookie 임베드 주소가 아님" },
+  { id: "art08.summary-required", ruleRef: "ART-08", level: "block", title: "동영상 요약 텍스트 없음" },
+  { id: "art08.captions-unconfirmed", ruleRef: "ART-08", level: "block", title: "'자막 있음' 확인 안 함" },
+  { id: "art08.thumbnail-required", ruleRef: "ART-08", level: "block", title: "동영상 썸네일 없음" },
+  { id: "art08.thumbnail-ratio", ruleRef: "ART-08", level: "block", title: "썸네일이 16:9가 아니거나 크기를 모름" },
+  // ART-09 포토
+  { id: "art09.photos-required", ruleRef: "ART-09", level: "block", title: "포토 기사에 사진 없음" },
+  { id: "art09.photo-credit", ruleRef: "ART-09", level: "block", title: "사진 출처(media.credit) 없음" },
+  { id: "art09.photo-license", ruleRef: "ART-09", level: "block", title: "사진 이용 조건(media.license) 없음" },
+  { id: "art09.photo-alt", ruleRef: "ART-09", level: "block", title: "사진 대체 텍스트 없음" },
   // NAV-02 유형 구분
   { id: "nav02.press-release-only", ruleRef: "NAV-02", level: "block", title: "출처가 보도자료뿐인 보도기사" },
   // NAV-03 기록·승인 분리

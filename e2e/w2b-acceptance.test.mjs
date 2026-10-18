@@ -71,7 +71,11 @@ const hitRules = (pathname, rules) => rules.filter((r) => matches(pathname, r)).
  * 꺼진 기능·아직 없는 화면 — 설계 7장 '만들지 않는 경로'(유틸 메뉴·정책 페이지·트래커 상세·지자체 허브·W2-c~e 화면)와 2.3 정책 링크 주소.
  * 시험 동안 feature_flags는 모두 false다 — 이 주소로 가는 사이트 안 링크 0 (HOME-02 · HELP-05 · ART-06)
  */
-const CLOSED = [...ticks(lineOf(DESIGN, "만들지 않는 경로(다른 작업)")), ...ticks(lineOf(DESIGN, "- 정책 링크 주소:"))].filter((p) => p.startsWith("/")).map((p) => routeRule(p));
+const CLOSED = [
+  ...[...ticks(lineOf(DESIGN, "만들지 않는 경로(다른 작업)")), ...ticks(lineOf(DESIGN, "- 정책 링크 주소:"))].filter((p) => p.startsWith("/")).map((p) => routeRule(p)),
+  // 동영상 목록(W2-c 4단계) — 기능 키 video_list가 꺼진 동안 닫힌 화면 (W2-b 설계 2.3 · W2-c 설계 9장)
+  routeRule("/news/video"),
+];
 /** 단계 전 경로·v1.2 경로 — PRD-01A 3장(1단계 라우트 목록에 없는 경로) + PRD-00 8장 'v1.2 경로 대체'의 옛 주소. 옛 주소는 그 자체도 막는다 */
 const STAGED_V12 = (() => {
   const l01a = lineOf(PRD_01A, "1단계 라우트 목록에 없다");
@@ -805,8 +809,9 @@ test("4b) 꺼진 기능·아직 없는 화면·v1.2·단계 전 경로로 가는
   assert.ok(crawl, "4) 전수가 먼저 돈다");
   // 기준 목록이 PRD를 담았는지 — 비어 있으면 검사가 빈 검사가 된다
   for (const p of ["/calc", "/experts", "/store", "/edu", "/search", "/about", "/about/editorial-policy", "/help/report", "/glossary", "/news/video"]) assert.ok(hitRules(p, CLOSED).length, `꺼진 기능 목록에 ${p}`);
-  // 많이 본 기사(/news/popular)는 W2-c 2단계가 만든 열린 화면이다 — 꺼진 목록에 없다
+  // 많이 본 기사(/news/popular — W2-c 2단계)·포토 목록(/news/photo — W2-c 4단계)은 열린 화면이다 — 꺼진 목록에 없다
   assert.equal(hitRules("/news/popular", CLOSED).length, 0);
+  assert.equal(hitRules("/news/photo", CLOSED).length, 0);
   for (const p of ["/region", "/resources", "/authors/1", "/news/cards/x", "/law", "/cases", "/workspace", "/qna", "/library", "/academy", "/pricing", "/ask", "/realestate/trust", "/no-email-collection"]) assert.ok(hitRules(p, STAGED_V12).length, `v1.2·단계 전 목록에 ${p}`);
   const closed = [];
   const old = [];

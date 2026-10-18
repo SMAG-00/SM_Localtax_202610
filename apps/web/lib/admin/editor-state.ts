@@ -5,14 +5,19 @@ import {
   RESERVED_SLUGS,
   ROSE_BOX_TITLE,
   headLengthProblem,
+  infographicSaveProblems,
+  parseYoutubeEmbed,
   type BlockType,
   type CalloutKind,
   type CoreClaim,
+  type InfographicTemplate,
   type SolvedCase,
   type TaxLensLinkKind,
 } from "@ltr/editorial";
 import type { Checklists, StoredBlock, StoredBody, StoredTaxLens } from "@/lib/server/articles/content";
 import { blank, idOrNull, isValidDate, splitLines, splitList, textOrNull, type FieldErrors } from "./form-utils";
+import { INFOGRAPHIC_SKELETONS, durationFromText, infographicDataFromText, infographicDataToText, type InfographicDataKind } from "./media-blocks";
+import { rowsToText, textToRows } from "./table-text";
 
 /** 편집기가 받는 기사 — GET /api/admin/articles/[id]의 article 칸 */
 export interface EditorArticle {
@@ -66,6 +71,15 @@ export interface BlockDraft {
   items: { question: string; answer: string }[];
   linesText: string;
   actionWritten: boolean;
+  /** 인포그래픽 (ART-07) — 템플릿 · 같은 내용의 종류(표·목록)와 칸 글자(표는 첫 줄이 머리 칸, 칸은 | · 목록은 줄마다 한 항목) */
+  template: InfographicTemplate;
+  dataKind: InfographicDataKind;
+  dataText: string;
+  /** 동영상 (ART-08) — 요약 텍스트 · '자막 있음' 확인 · 썸네일 media 번호 · 재생 시간(초 글자) */
+  summary: string;
+  captions: boolean;
+  thumbnailMediaId: string;
+  durationText: string;
 }
 
 export interface ClaimDraft {
@@ -134,19 +148,16 @@ const EMPTY_BLOCK: Omit<BlockDraft, "key" | "type"> = {
   items: [],
   linesText: "",
   actionWritten: false,
+  template: "flow",
+  dataKind: INFOGRAPHIC_SKELETONS.flow.kind,
+  dataText: INFOGRAPHIC_SKELETONS.flow.text,
+  summary: "",
+  captions: false,
+  thumbnailMediaId: "",
+  durationText: "",
 };
 
-/** 표 글자 → 행 목록. 줄마다 한 행, 칸은 | 로 나눈다 (빈 줄 제외) */
-export function textToRows(text: string): string[][] {
-  return text
-    .split(/\r?\n/)
-    .filter((line) => line.trim() !== "")
-    .map((line) => line.split("|").map((cell) => cell.trim()));
-}
-
-export function rowsToText(rows: readonly (readonly string[])[]): string {
-  return rows.map((r) => r.join(" | ")).join("\n");
-}
+export { rowsToText, textToRows };
 
 export function newBlock(type: BlockType, key: string): BlockDraft {
   const block: BlockDraft = { ...EMPTY_BLOCK, key, type, items: [] };
@@ -163,14 +174,35 @@ export function blockFromStored(b: StoredBlock, key: string): BlockDraft {
       return { ...d, caption: b.caption, rowsText: rowsToText(b.rows), axis: b.chart?.axis ?? "", unit: b.chart?.unit ?? "", source: b.chart?.source ?? "" };
     case "image":
       return { ...d, mediaId: b.mediaId, alt: b.alt, caption: b.caption };
-    case "infographic":
-      return { ...d, mediaId: b.mediaId, alt: b.alt, caption: b.caption, axis: b.chart?.axis ?? "", unit: b.chart?.unit ?? "", source: b.chart?.source ?? "" };
+    case "infographic": {
+      const data = infographicDataToText(b.data);
+      return {
+        ...d,
+        mediaId: b.mediaId,
+        alt: b.alt,
+        caption: b.caption,
+        axis: b.chart?.axis ?? "",
+        unit: b.chart?.unit ?? "",
+        source: b.chart?.source ?? "",
+        template: b.template,
+        dataKind: data.kind,
+        dataText: data.text,
+      };
+    }
     case "quote":
       return { ...d, text: b.text, speaker: b.speaker, origin: b.origin, refId: b.refId ?? "" };
     case "callout":
       return { ...d, kind: b.kind, title: b.title, text: b.text };
     case "video":
-      return { ...d, embedUrl: b.embedUrl, caption: b.caption };
+      return {
+        ...d,
+        embedUrl: b.embedUrl,
+        caption: b.caption,
+        summary: b.summary,
+        captions: b.captions,
+        thumbnailMediaId: b.thumbnailMediaId ?? "",
+        durationText: b.durationSeconds === null ? "" : String(b.durationSeconds),
+      };
     case "faq":
       return { ...d, items: b.items.map((i) => ({ question: i.question, answer: i.answer })) };
     case "key_summary":
@@ -195,14 +227,35 @@ export function blockToStored(d: BlockDraft): StoredBlock {
     case "image":
       return { type: "image", mediaId: d.mediaId.trim(), alt: d.alt, caption: d.caption, ...checklist };
     case "infographic":
-      return { type: "infographic", mediaId: d.mediaId.trim(), alt: d.alt, caption: d.caption, chart: chartOf(d), ...checklist };
+      return {
+        type: "infographic",
+        mediaId: d.mediaId.trim(),
+        alt: d.alt,
+        caption: d.caption,
+        chart: chartOf(d),
+        template: d.template,
+        data: infographicDataFromText(d.dataKind, d.dataText),
+        ...checklist,
+      };
     case "quote":
       return { type: "quote", text: d.text, speaker: d.speaker, origin: d.origin, refId: blank(d.refId) ? null : d.refId.trim(), ...checklist };
     case "callout":
       // rose 상자('자주 틀리는 점')는 제목이 고정이다 (UX-03)
       return { type: "callout", kind: d.kind, title: d.kind === "mistake" ? ROSE_BOX_TITLE : d.title, text: d.text, ...checklist };
-    case "video":
-      return { type: "video", embedUrl: d.embedUrl.trim(), caption: d.caption, ...checklist };
+    case "video": {
+      const duration = durationFromText(d.durationText);
+      return {
+        type: "video",
+        embedUrl: d.embedUrl.trim(),
+        caption: d.caption,
+        summary: d.summary,
+        captions: d.captions,
+        thumbnailMediaId: blank(d.thumbnailMediaId) ? null : d.thumbnailMediaId.trim(),
+        // 잘못된 재생 시간은 저장 전 확인(validateEditor)이 막는다 — 여기서는 빈 값으로
+        durationSeconds: duration === null || Number.isNaN(duration) ? null : duration,
+        ...checklist,
+      };
+    }
     case "faq":
       return { type: "faq", items: d.items.map((i) => ({ question: i.question, answer: i.answer })), ...checklist };
     case "key_summary":
@@ -214,7 +267,7 @@ export function blockToStored(d: BlockDraft): StoredBlock {
 
 /** '기한'·'가산세'가 든 블록 — '할 일을 함께 썼다' 확인이 필요하다 (UX-03) */
 export function needsActionCheck(d: BlockDraft): boolean {
-  const text = [d.text, d.caption, d.title, d.linesText, d.rowsText, ...d.items.flatMap((i) => [i.question, i.answer])].join("\n");
+  const text = [d.text, d.caption, d.title, d.linesText, d.rowsText, d.summary, d.dataText, ...d.items.flatMap((i) => [i.question, i.answer])].join("\n");
   return ACTION_TRIGGER_WORDS.some((w) => text.includes(w));
 }
 
@@ -422,6 +475,15 @@ export function validateEditor(s: EditorState, ctx: ValidateContext): FieldError
   if (!blank(s.legalBasisDate) && !isValidDate(s.legalBasisDate.trim())) e["meta-legal-basis-date"] = "법령 기준일은 YYYY-MM-DD 날짜로 적어 주세요";
   for (const b of s.blocks) {
     if ((b.type === "image" || b.type === "infographic") && idOrNull(b.mediaId) === null) e[`block-${b.key}-mediaId`] = "이미지를 골라 주세요";
+    // 저장 불가 조건 (ART-07 · ART-08) — 기사 저장 API(content.ts)와 같은 함수·같은 문장
+    if (b.type === "infographic") {
+      for (const p of infographicSaveProblems({ alt: b.alt, data: infographicDataFromText(b.dataKind, b.dataText) })) e[`block-${b.key}-${p.field}`] = p.message;
+    }
+    if (b.type === "video") {
+      const embed = parseYoutubeEmbed(b.embedUrl);
+      if (!embed.ok) e[`block-${b.key}-embedUrl`] = embed.problem;
+      if (Number.isNaN(durationFromText(b.durationText))) e[`block-${b.key}-durationSeconds`] = "재생 시간은 초 단위 숫자로 적어 주세요 (예: 95 — 비워도 됩니다)";
+    }
   }
   const series = seriesOf(s);
   if (series) {

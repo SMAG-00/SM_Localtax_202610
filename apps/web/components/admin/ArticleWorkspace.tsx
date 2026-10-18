@@ -19,6 +19,7 @@ import {
 } from "@/lib/admin/editor-state";
 import type { FieldErrors } from "@/lib/admin/form-utils";
 import { UPDATE_KIND_LABELS, optionsOf } from "@/lib/admin/labels";
+import type { EditorMedia } from "@/lib/admin/media-blocks";
 import type { EvidenceRowView } from "@/lib/admin/records-form";
 import { CheckPanel } from "./CheckPanel";
 import { EvidencePanel } from "./EvidencePanel";
@@ -38,7 +39,7 @@ import { useHydrated } from "./useHydrated";
 
 type Category = { id: number; section: string; name: string };
 type Partner = { id: number; name: string; contract_to: string | null };
-type Media = { id: number; path: string; alt: string | null; rights_status: string };
+type Media = EditorMedia;
 
 const SECTIONS_NAV: [string, string][] = [
   ["meta", "기본 정보"],

@@ -27,7 +27,7 @@ import {
 import type { AdLabel, ArticleForLint, LintContext, SimilarityStatus } from "@ltr/seo-lint";
 import type { SimilaritySource } from "@ltr/similarity";
 import { displayTitle, sponsorLabelText, type ArticleView, type RenderedFacts, type SponsorLabel } from "@ltr/structured-data";
-import { evidenceRef, readChecklists, readStoredBody, readStoredSolvedCase, readStoredTaxLens, sourceRef } from "./content";
+import { evidenceRef, readChecklists, readStoredBody, readStoredSolvedCase, readStoredTaxLens, sourceRef, type StoredBlock } from "./content";
 import type { ArticleGraph, ArticleRow, MediaRow, PartnerRow, PersonRow, ReviewRow } from "./rows";
 
 export interface ViewOptions {
@@ -84,13 +84,28 @@ export function toTaxLens(json: unknown): TaxLens | null {
   };
 }
 
+/**
+ * 저장한 블록 + media 기록 → 판정 블록. media에서만 읽는 칸(권리 · 출처 · 이용 조건 · media 대체 텍스트 · 썸네일 크기)을 채운다 —
+ * 작성자가 본문에 적어 넣을 수 없다 (NAV-04 · ART-08 · ART-09)
+ */
+export function withMediaFacts(b: StoredBlock, media: ReadonlyMap<string, Pick<MediaRow, "rights_status" | "alt" | "credit" | "license" | "width" | "height">>): ArticleBlock {
+  if (b.type === "image") {
+    const m = media.get(b.mediaId);
+    return { ...b, rightsStatus: rights(m?.rights_status), credit: m?.credit ?? null, license: m?.license ?? null, mediaAlt: m?.alt ?? null };
+  }
+  if (b.type === "infographic") return { ...b, rightsStatus: rights(media.get(b.mediaId)?.rights_status) };
+  if (b.type === "video") {
+    const m = b.thumbnailMediaId === null ? undefined : media.get(b.thumbnailMediaId);
+    return { ...b, thumbnail: m ? { rightsStatus: rights(m.rights_status), width: m.width ?? null, height: m.height ?? null } : null };
+  }
+  return b;
+}
+
 export function toArticleForPublish(graph: ArticleGraph): ArticleForPublish {
   const a = graph.article;
   const media = new Map(graph.media.map((m) => [String(m.id), m]));
   const body = readStoredBody(a.body);
-  const blocks: ArticleBlock[] = body.blocks.map((b) =>
-    b.type === "image" || b.type === "infographic" ? ({ ...b, rightsStatus: rights(media.get(b.mediaId)?.rights_status) } as ArticleBlock) : b,
-  );
+  const blocks: ArticleBlock[] = body.blocks.map((b) => withMediaFacts(b, media));
   const checklists = readChecklists(a.check_log);
   const reportingMethod = pick(REPORTING_METHODS, a.reporting_method);
   const lead = a.lead_media_id === null ? null : (media.get(String(a.lead_media_id)) ?? null);

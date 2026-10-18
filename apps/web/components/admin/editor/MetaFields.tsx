@@ -5,14 +5,15 @@ import { SelectField, TextField } from "@ltr/ui";
 import { withMethodChecklists } from "@/lib/admin/editor-state";
 import { idOrNull } from "@/lib/admin/form-utils";
 import { partnerChoices } from "@/lib/admin/partner-rules";
-import { CONTENT_TYPE_LABELS, EDITORIAL_FIELD_LABELS, EVIDENCE_RIGHTS_LABELS, FORMAT_LABELS, LABEL_LABELS, REPORTING_METHOD_LABELS, SECTION_LABELS, labelOf, optionsOf } from "@/lib/admin/labels";
+import { CONTENT_TYPE_LABELS, EDITORIAL_FIELD_LABELS, FORMAT_LABELS, LABEL_LABELS, REPORTING_METHOD_LABELS, SECTION_LABELS, optionsOf } from "@/lib/admin/labels";
+import { mediaOptionLabel, type EditorMedia } from "@/lib/admin/media-blocks";
 import { FieldGroup, TextAreaField } from "../fields";
 import { TEXT_LINK } from "../ui";
 import type { SectionProps } from "./types";
 
 type Category = { id: number; section: string; name: string };
 type Partner = { id: number; name: string; contract_to: string | null };
-type Media = { id: number; path: string; alt: string | null; rights_status: string };
+type Media = EditorMedia;
 
 /** 기본 정보 — 제목·주소·요약·분야·하위 분야·기사 유형·취재 방식·형식·표기/제휴사·대표 이미지·법령 기준일·지역 태그 (ART-01 · ART-10) */
 export function MetaFields({
@@ -43,7 +44,7 @@ export function MetaFields({
   const partnerPick = partnerChoices(partners, today, idOrNull(state.partnerId));
   const expiredNote =
     partnerPick.expired.length > 0 ? `계약이 끝나 고를 수 없는 제휴사: ${partnerPick.expired.map((p) => `${p.name}(${p.contractTo} 종료)`).join(", ")}` : undefined;
-  const mediaOptions = media.map((m) => ({ value: String(m.id), label: `${m.id} · ${m.alt || m.path} (${labelOf(EVIDENCE_RIGHTS_LABELS, m.rights_status)})` }));
+  const mediaOptions = media.map((m) => ({ value: String(m.id), label: mediaOptionLabel(m) }));
 
   function changeType(contentType: string) {
     const reportingMethod = contentType === "reported_news" ? state.reportingMethod : "";

@@ -1,6 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AssignmentRow } from "@/lib/admin/assignment-form";
+import type { EditorMedia } from "@/lib/admin/media-blocks";
+import { MEDIA_ROW_COLUMNS } from "../articles/repository";
 import { dbError } from "../http";
 
 // 백오피스 화면 데이터 — service_role로 읽는다. 부르는 화면이 접근 판정(lib/server/admin/pages.ts)을 먼저 통과해야 한다.
@@ -162,15 +164,11 @@ export async function listPartners(db: Db): Promise<PartnerOption[]> {
   return rows<PartnerOption>(db.from("partners").select("id, name, contract_to").order("name"), "partners 읽기");
 }
 
-export interface MediaOption {
-  id: number;
-  path: string;
-  alt: string | null;
-  rights_status: string;
-}
+/** 편집기 이미지 고르기 — 권리·출처·이용 조건·크기까지 (포토 사진마다 표기 상태 · 동영상 썸네일 16:9 — ART-08 · ART-09) */
+export type MediaOption = EditorMedia;
 
 export async function listMedia(db: Db): Promise<MediaOption[]> {
-  return rows<MediaOption>(db.from("media").select("id, path, alt, rights_status").order("id", { ascending: false }).limit(LIST_LIMIT), "media 읽기");
+  return rows<MediaOption>(db.from("media").select(MEDIA_ROW_COLUMNS).order("id", { ascending: false }).limit(LIST_LIMIT), "media 읽기");
 }
 
 /** 처리 전 정정·반론 요청 (문의함 '정정·반론') — 정정 결정에서 고른다 */

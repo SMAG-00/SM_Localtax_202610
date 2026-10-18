@@ -1,4 +1,5 @@
 // 기사 상세 규칙 (ART-02 · ART-05 · ART-06 · CORE-01 · CAT-04 · TX-08) — 순수 함수 (시험 article-logic.test.ts)
+import { infographicSaveProblems, parseYoutubeEmbed } from "@ltr/editorial";
 import type { StoredBlock, StoredTaxLens } from "../articles/content";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import type { ArticleListItem } from "./cards";
@@ -182,9 +183,19 @@ export function updateEntries(rows: readonly RevisionRow[]): UpdateEntry[] {
 
 // ── 본문 블록 ────────────────────────────────────────────
 
-/** 이미지·인포그래픽 블록은 읽을 수 있는(권리 확인·공개) media만 — 아니면 블록을 뺀다 (NAV-04 · REG1-09) */
+/**
+ * 공개 화면에 그리는 블록 — 그릴 수 없는 블록은 뺀다(빈 자리·깨진 그림 0):
+ *  · 이미지·인포그래픽은 읽을 수 있는(권리 확인·공개) media만 (NAV-04 · REG1-09)
+ *  · 인포그래픽은 대체 텍스트와 같은 내용의 표·목록이 있을 때만 (ART-07 — 저장 규칙과 같은 조건, DB에 직접 넣은 행 대비)
+ *  · 동영상은 youtube-nocookie 임베드 주소이고 썸네일이 읽힐 때만 (ART-08 — 누르기 전에는 썸네일만 보인다)
+ */
 export function publicBlocks(blocks: readonly StoredBlock[], readableMedia: ReadonlySet<string>): StoredBlock[] {
-  return blocks.filter((b) => (b.type === "image" || b.type === "infographic" ? readableMedia.has(String(b.mediaId)) : true));
+  return blocks.filter((b) => {
+    if (b.type === "image") return readableMedia.has(String(b.mediaId));
+    if (b.type === "infographic") return readableMedia.has(String(b.mediaId)) && infographicSaveProblems(b).length === 0;
+    if (b.type === "video") return b.thumbnailMediaId !== null && readableMedia.has(b.thumbnailMediaId) && parseYoutubeEmbed(b.embedUrl).ok;
+    return true;
+  });
 }
 
 // ── 본문 문단의 사이트 안 링크 (HOME-02 '빈 링크 0' · HELP-05) ──────────
@@ -203,8 +214,17 @@ export function openBlockLinks(blocks: readonly StoredBlock[], features: Feature
   return blocks.map((b) => (b.type === "paragraph" ? { ...b, text: openParagraphLinks(b.text, features) } : b));
 }
 
+/** 본문 블록이 가리키는 media 번호 — 이미지·인포그래픽 · 동영상 썸네일 (DB 계산 칸 body_media_ids와 같은 규칙) */
 export function blockMediaIds(blocks: readonly StoredBlock[]): string[] {
-  return [...new Set(blocks.flatMap((b) => (b.type === "image" || b.type === "infographic" ? [String(b.mediaId)] : [])))];
+  return [
+    ...new Set(
+      blocks.flatMap((b) => {
+        if (b.type === "image" || b.type === "infographic") return [String(b.mediaId)];
+        if (b.type === "video" && b.thumbnailMediaId !== null) return [b.thumbnailMediaId];
+        return [];
+      }),
+    ),
+  ];
 }
 
 // ── 개정 브리핑 갱신 배너 (TX-08) ──────────────────────────

@@ -1,5 +1,5 @@
 // 글 다루기 — 문장 나누기·글자 수·표현 비교용 정리, 기사에서 검사할 글 단위(제목·요약·블록·박스·해결 사례 칸) 뽑기
-import type { ArticleBlock, ArticleForPublish } from "./model";
+import type { ArticleBlock, ArticleForPublish, InfographicData } from "./model";
 
 /** 문장 끝 부호 (반각·전각) */
 const TERMINATORS = new Set([".", "?", "!", "…", "。", "？", "！"]);
@@ -81,6 +81,12 @@ export function josa(word: string, withFinal: string, withoutFinal: string): str
 
 // ── 기사에서 검사할 글 단위 ──────────────────────────────────
 
+/** 인포그래픽의 같은 내용 표·목록 글자 — 표는 머리 칸 다음 행 순서, 목록은 항목 순서 */
+export function infographicTexts(data: InfographicData | null | undefined): string[] {
+  if (!data) return [];
+  return data.kind === "list" ? [...data.items] : [...data.columns, ...data.rows.flat()];
+}
+
 /** 위치가 같은 글 묶음 — 문장 번호(sentenceIndex)는 이 목록의 순번이다 */
 export interface TextUnit {
   field: string;
@@ -103,10 +109,13 @@ export function blockSentences(block: ArticleBlock): string[] {
     case "table":
       return [...splitSentences(block.caption), ...block.rows.flat().flatMap(splitSentences)];
     case "image":
-    case "infographic":
       return [...splitSentences(block.caption), ...splitSentences(block.alt)];
+    case "infographic":
+      // 같은 내용의 표·목록도 화면 글이다 (ART-07) — 캡션 · 대체 텍스트 · 머리 칸 · 칸(행 순서) 또는 항목
+      return [...splitSentences(block.caption), ...splitSentences(block.alt), ...infographicTexts(block.data).flatMap(splitSentences)];
     case "video":
-      return splitSentences(block.caption);
+      // 요약 텍스트도 화면 글이다 (ART-08)
+      return [...splitSentences(block.caption), ...splitSentences(block.summary)];
     case "faq":
       return block.items.flatMap((item) => [...splitSentences(item.question), ...splitSentences(item.answer)]);
     case "key_summary":

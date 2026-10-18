@@ -11,6 +11,8 @@ export { getHotBlock, getPopularList, type HotBlock, type HotEntry, type Popular
 export { getColumnList, COLUMN_SLUG, type ColumnListData } from "./columns";
 export { readPublic, isUnavailable, UNAVAILABLE, type Unavailable } from "./fallback";
 export { getPersonPage, type PersonPage } from "./people";
+export { getPartnerPage, getPhotoList, getVideoList, type ListPage, type PartnerPage } from "./media-lists";
+export type { MediaView, VideoBlockView, VideoListEntry } from "./media-logic";
 export { PublicDataError } from "./db";
 export type { HomeSection, TrackerCard, StoryCard, AmendmentsSection } from "./home-logic";
 export type { ArticleListItem, TrackerState } from "./cards";

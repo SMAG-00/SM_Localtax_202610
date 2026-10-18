@@ -9,9 +9,11 @@ describe("공개 상세 경로", () => {
     ["/news/a.b,c(1)/", { kind: "article", slug: "a.b,c(1)" }],
     ["/situations/car-sold", { kind: "situation", slug: "car-sold" }],
     ["/people/kim-gaon", { kind: "person", slug: "kim-gaon" }],
+    ["/partners/12", { kind: "partner", slug: "12" }],
+    ["/partners/7/", { kind: "partner", slug: "7" }],
   ])("%s → 상세", (path, route) => expect(publicDetailRoute(path)).toEqual(route));
 
-  test.each(["/news", "/news/", "/news/video", "/news/Popular", "/news/a/b", "/news/%E0%A4%A", "/situations/Bad_Slug", "/people/a--b", "/tax/columns", "/admin/articles/1", "/"])(
+  test.each(["/news", "/news/", "/news/video", "/news/Popular", "/news/a/b", "/news/%E0%A4%A", "/situations/Bad_Slug", "/people/a--b", "/partners", "/partners/0", "/partners/012", "/partners/abc", "/partners/1.5", "/partners/-3", "/partners/1/x", "/news/photo", "/tax/columns", "/admin/articles/1", "/"])(
     "%s → 상세 아님 (확인하지 않는다 — 화면이 정한다)",
     (path) => expect(publicDetailRoute(path)).toBeNull(),
   );
@@ -22,6 +24,8 @@ describe("확인 요청", () => {
     expect(probePath({ kind: "article", slug: "a" })).toBe("/rest/v1/article_tombstones?select=slug,removed_at&slug=eq.a&limit=1");
     expect(probePath({ kind: "situation", slug: "car-sold" })).toBe("/rest/v1/situations?select=slug&slug=eq.car-sold&limit=1");
     expect(probePath({ kind: "person", slug: "kim" })).toBe("/rest/v1/public_people?select=slug&slug=eq.kim&limit=1");
+    // 제휴사 (W2-c 4단계) — 공개 제휴사 표(RLS — visible만)의 번호 칸만
+    expect(probePath({ kind: "partner", slug: "12" })).toBe("/rest/v1/partners?select=id&id=eq.12&limit=1");
   });
   test("주소에 쓰는 글자(& # ? 공백 아닌 한글·쉼표)는 인코딩해 값 하나로 — 다른 질의 칸이 생기지 않는다", () => {
     const path = probePath({ kind: "article", slug: "a&select=*#x,취득" });
@@ -38,7 +42,7 @@ describe("응답 정하기", () => {
     expect(gateDecision(article, { ok: true, rows: [{ slug: "other", removed_at: "2026-10-17T15:30:00Z" }] })).toEqual({ kind: "pass" });
   });
   test("읽지 못함·모양이 틀린 응답은 503 — 기사·상황·인물 모두", () => {
-    for (const kind of ["article", "situation", "person"] as const) {
+    for (const kind of ["article", "situation", "person", "partner"] as const) {
       expect(gateDecision({ kind, slug: "x" }, { ok: false })).toEqual({ kind: "unavailable" });
       expect(gateDecision({ kind, slug: "x" }, { ok: true, rows: { code: "PGRST205" } })).toEqual({ kind: "unavailable" });
     }
@@ -46,6 +50,7 @@ describe("응답 정하기", () => {
   test("상황·인물은 읽기만 되면 화면으로 (있는지는 화면이 정한다 — 200·404)", () => {
     expect(gateDecision({ kind: "situation", slug: "x" }, { ok: true, rows: [] })).toEqual({ kind: "pass" });
     expect(gateDecision({ kind: "person", slug: "x" }, { ok: true, rows: [{ slug: "x" }] })).toEqual({ kind: "pass" });
+    expect(gateDecision({ kind: "partner", slug: "9" }, { ok: true, rows: [] })).toEqual({ kind: "pass" });
   });
 });
 

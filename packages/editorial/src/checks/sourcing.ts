@@ -22,7 +22,7 @@ export function checkSourcing(article: ArticleForPublish): Finding[] {
   return out;
 }
 
-/** 사진 권리 — 대표 이미지 · 이미지·인포그래픽 블록 · 사진 출처 (유형과 상관없이) */
+/** 사진 권리 — 대표 이미지 · 이미지·인포그래픽 블록 · 동영상 썸네일(ART-08) · 사진 출처 (유형과 상관없이) */
 function imageRights(article: ArticleForPublish): Finding[] {
   const out: Finding[] = [];
   const lead = article.leadImage;
@@ -38,6 +38,10 @@ function imageRights(article: ArticleForPublish): Finding[] {
           phrase: block.mediaId,
         }),
       );
+    }
+    // 썸네일을 고르지 않은 동영상은 art08.thumbnail-required가 막는다 — 고른 썸네일만 권리를 본다
+    if (block.type === "video" && block.thumbnailMediaId && block.thumbnail?.rightsStatus !== "confirmed") {
+      out.push(finding("nav04.image-rights", "동영상 썸네일 이미지의 이용 권리를 확인하지 않았습니다", { field: "blocks", blockIndex, phrase: block.thumbnailMediaId }));
     }
   });
   for (const source of article.sources) {

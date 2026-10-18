@@ -33,6 +33,8 @@ result.warnings;    // 발행 기록(check_log)에 남긴다
 | `validateTaxLensForSave(lens, ctx)` | 「지방세로 읽기」 저장 검사 — 세목 0개·포인트 0줄/4줄 이상·링크 0개·세액(숫자 + 원)·감면 단정(금지 표현) 거부, 생략 사유만 있으면 저장 | 01B CORE-01 |
 | `validateRevisionForSave({ updateKind, reason })` | 발행 뒤 수정 저장 검사 — 수정 종류·사유 필수 | ART-05 |
 | `validateSolvedCaseForSave(solvedCase)` | 해결 사례 저장 검사 — 개인정보 형식 거부, 실명 표현 경고 (빈 칸은 발행 때 막음) | CAT-05 |
+| `infographicSaveProblems({ alt, data })` | 인포그래픽 저장 불가 사유 — 대체 텍스트·같은 내용의 표·목록 (편집 화면·저장 API 같은 문장) | ART-07 |
+| `parseYoutubeEmbed(url)` · `isSixteenByNine(w, h)` | 동영상 주소 검사·정리(youtube-nocookie 임베드만) · 썸네일 16:9 판정 | ART-08 |
 | `checkScreenCopy(items, ctx)` | 상황 카드·허브 소개·화면 고정 문구 검사 — 금지·공포 표현(차단), 풀이 없는 용어·60자·3문장(경고) | UX-01 · UX-03 |
 | `isTaxLensTarget(section, contentType)` | 박스 요구 대상 — (부동산·개발금융·지자체뉴스) × (보도·해설·가이드·칼럼) | 01B CORE-01 |
 | `taxReviewReasons(article)` · `isApproved(article, kind)` | 세무 감수 대상 이유 · 현재 버전 승인 여부 | NAV-03 · NAV-12 · ART-01 |
@@ -60,6 +62,19 @@ result.warnings;    // 발행 기록(check_log)에 남긴다
 | `art03.slide-alt` | ART-03 | 차단 | 카드뉴스 장에 대체 텍스트 없음 |
 | `art03.slide-text` | ART-03 | 차단 | 카드뉴스 장에 글자 없음 |
 | `art03.slide-outside-cardnews` | ART-03 | 차단 | 카드뉴스가 아닌 기사에 카드뉴스 장 |
+| `art07.infographic-required` | ART-07 | 차단 | 인포그래픽 형식 기사에 인포그래픽 블록 없음 |
+| `art07.infographic-alt` | ART-07 | 차단 | 인포그래픽에 대체 텍스트 없음 |
+| `art07.infographic-data` | ART-07 | 차단 | 인포그래픽에 같은 내용의 표·목록 없음 |
+| `art08.video-required` | ART-08 | 차단 | 동영상 형식 기사에 동영상 블록 없음 |
+| `art08.embed-url` | ART-08 | 차단 | 동영상 주소가 youtube-nocookie 임베드 주소가 아님 |
+| `art08.summary-required` | ART-08 | 차단 | 동영상 요약 텍스트 없음 |
+| `art08.captions-unconfirmed` | ART-08 | 차단 | '자막 있음' 확인 안 함 |
+| `art08.thumbnail-required` | ART-08 | 차단 | 동영상 썸네일 없음 |
+| `art08.thumbnail-ratio` | ART-08 | 차단 | 썸네일이 16:9가 아니거나 크기를 모름 |
+| `art09.photos-required` | ART-09 | 차단 | 포토 기사에 사진 없음 |
+| `art09.photo-credit` | ART-09 | 차단 | 사진 출처(media.credit) 없음 |
+| `art09.photo-license` | ART-09 | 차단 | 사진 이용 조건(media.license) 없음 |
+| `art09.photo-alt` | ART-09 | 차단 | 사진 대체 텍스트 없음 |
 | `nav02.press-release-only` | NAV-02 | 차단 | 출처가 보도자료뿐인 보도기사 |
 | `nav03.author-required` | NAV-03 | 차단 | 작성 기자 없음 |
 | `nav03.desk-edit-required` | NAV-03 | 차단 | 편집 승인 없음 |
@@ -139,6 +154,9 @@ PO 확인이 필요하면 고치고 이 절과 시험을 함께 바꾼다.
 - **UX-03**: '기한'은 '납부기한'처럼 붙여 써도 잡고, '~기하다' 동사 활용(등기한·제기한·포기한·연기한 등)은 뺀다.
 - **CAT-05**: 개인정보 형식 검사는 해결 사례 원고에만 적용한다(일반 기사의 기관 대표 전화 등). 주소는 지번(동·리·가 + 지번)과 시·군·구가 붙은 도로명 + 건물번호를 잡는다. 기업 대표번호(1588 등)는 잡지 않는다. 결과 근거는 번호와 `http(s)://` 링크가 둘 다 있어야 한다. 결과 칸에는 결론 배지(`SOLVED_CASE_CONCLUSIONS` — 인용 `accepted` · 일부 인용 `partial` · 기각 `rejected` · 각하 `dismissed` · 해석 `interpretation`)가 있어야 한다 — PRD-00 8.6 해결 사례 카드 '결과(결론 배지)' (W2-b 4단계, 설계 9장 #36).
 - **ART-03**: 카드뉴스 장은 블록 종류 `slide`(제목·글·대체 텍스트)다. 형식이 카드뉴스(`cardnews`)인 기사는 장이 5~7개(`CARDNEWS_SLIDES`)여야 하고, 장마다 대체 텍스트와 글자(제목 또는 글)가 있어야 한다. 카드뉴스가 아닌 기사에 장 블록이 있으면 막는다(공개 화면이 장을 슬라이드로만 그린다). 한 장의 글은 상자처럼 문장 수를 센다(UX-01 경고).
+- **ART-07 인포그래픽**: 블록은 이미지(media)·대체 텍스트·템플릿(`INFOGRAPHIC_TEMPLATES` — 절차 흐름 `flow` · 비교 `compare` · 핵심 숫자 `numbers`)·같은 내용(`data` — 표 `{ columns, rows }` 또는 목록 `{ items }`)이다. **저장 불가**(`infographicSaveProblems` — 기사 저장 API 422와 편집 화면이 같은 문장): 대체 텍스트 빔, 같은 내용 없음, 표 머리 칸 빔·내용 행 0·행의 칸 수가 머리 칸 수와 다름·빈 행, 목록 항목 0·빈 항목. 발행 판정도 같은 조건을 한 번 더 본다(`art07.infographic-alt`·`art07.infographic-data` — DB에 직접 넣은 행·이관 자료). 형식이 인포그래픽인 기사는 인포그래픽 블록 1개 이상(`art07.infographic-required` — 기사 카드의 '인포그래픽' 배지가 빈 기사에 붙지 않게).
+- **ART-08 동영상**: 주소는 `https://www.youtube-nocookie.com/embed/<영상번호 11자>`(+ `start`·`end`·`cc_load_policy`)만 — `parseYoutubeEmbed`가 http·youtube.com·youtu.be·다른 호스트·끝 점·포트·사용자 정보(@)·역슬래시·`..` 경로·영상번호 없음·덧붙인 경로·모르는 칸·겹친 칸·`#`·빈칸·300자 초과를 거부하고, 통과하면 정리한 주소로 저장한다(**저장 불가**). 발행에는 요약 텍스트(`summary`)·편집자 '자막 있음' 확인(`captions`)·썸네일(media 번호, 권리 확인 — NAV-04)·썸네일 16:9(`VIDEO_THUMBNAIL_RATIO` — 가로÷세로가 16÷9에서 1% 안, 크기를 모르면 막는다)가 필요하다. 형식과 상관없이 모든 동영상 블록에 같은 조건(어느 기사에서나 같은 '누르면 재생' 카드로 그린다). 형식이 동영상인 기사는 동영상 블록 1개 이상(`art08.video-required`).
+- **ART-09 포토**: 형식이 포토인 기사의 사진 = 이미지 블록(사진 묶음). 1장 이상(`art09.photos-required`), 사진마다 media 출처(`credit`)·이용 조건(`license`)·대체 텍스트(블록 또는 media의 대체 텍스트)가 있어야 발행된다. 출처·이용 조건은 판정 입력이 media 표에서 채운다(작성자가 적어 넣을 수 없다). 포토가 아닌 기사의 이미지는 NAV-04 권리 확인만 본다.
 - **ART-10**: 공동 기획에는 제휴사(이름 포함)가, 제휴사를 지정했으면 표기가 있어야 한다. 계약 종료일 당일까지 유효, 첫 발행 전 기사에만 적용. '공동 기획과 광고 함께 지정'은 표기 칸이 하나라 입력에서 생길 수 없다. 배지 글자는 `sponsorBadge(label, partnerName)` — 광고 `광고`, 공동 기획 `공동 기획 ○○`(PRD 글자 그대로, packages/structured-data `sponsorLabelText`·packages/seo-lint `badgeFormats`와 같다). 제휴사 이름이 비면 배지가 없어(null) `art10.co-planned-partner-required`로 막는다.
 - **ART-05**: 이미 발행된 기사(`firstPublishedAt` 있음)를 다시 발행할 때 수정 종류·사유를 요구한다.
 - **OPT-06**: 유사도 `no_sources`·`no_body`는 경고(seo-lint rules.v1과 같은 등급). seo-lint·유사도 결과가 없으면(null) 차단.

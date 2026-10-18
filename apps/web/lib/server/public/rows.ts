@@ -111,8 +111,11 @@ export interface PublicMediaRow {
   license: string | null;
   source_url: string | null;
   kind: string;
+  /** 원본 가로·세로(픽셀) — 화면 자리 확보(원본 비율 그대로, 자르지 않음). 모르면 null (W2-c 4단계) */
+  width: number | null;
+  height: number | null;
 }
-export const MEDIA_COLUMNS = "id, path, alt, credit, photographer, license, source_url, kind";
+export const MEDIA_COLUMNS = "id, path, alt, credit, photographer, license, source_url, kind, width, height";
 
 export interface RegionRow {
   code: string;
