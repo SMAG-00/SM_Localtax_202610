@@ -38,6 +38,7 @@ step "형식·제휴 콘텐츠 E2E (W2-c 4단계 — 인포그래픽 대체 텍�
 step "공개 화면 — DB를 읽지 못할 때 (목록 200 + 안내 · 상세 503 · 500 0)"; node --test --test-concurrency=1 e2e/site-degraded.test.mjs
 step "W2-b 수용 E2E (홈 섹션 순서 · 홈·허브·상황·기사 R1~R3 · 이어 걷기 새로고침 0 · 링크 전수: 숨긴 메뉴·v1.2 경로 0·깨진 링크 0·noindex·360px · 접근성 95)"; node --test --test-concurrency=1 e2e/w2b-acceptance.test.mjs
 step "W2-c 수용 E2E (FND-06 칸 검사·events 0·health 503 / 인포그래픽·동영상·포토 저장·발행 조건·재생 전 유튜브 요청 0 / 제휴사 비공개 뒤 배지 그대로 / 수집 API 봇 100+사람 3 < 사람 5·반복 1회·168/169시간 경계·비공개 제외 / HOT 고정·가중치 → 다음 집계 / 실제 브라우저 29초 0·30초 1·깔때기·측정 거부·GPC·편집자·봇 0·재방문 30/31일 / 요건 미확정·규정 확정·확정 버전 그대로·기준 상수 0 / 권한 표·360px·접근성 95)"; node --test --test-concurrency=1 e2e/w2c-acceptance.test.mjs
+step "W2-d 수용 E2E (정규화 견본 2.2 전체·취득세=취득 세·재건축=재 건축 / 차 팔았→상황(다시 찾기→별칭)·개편안→트래커 / 비공개 0(초안·유료·핫뉴스·권리 미확인·감수 전·숨긴 용어)·명소·맛집·행사 유형 0 / 편집국 발행→검색→삭제 정정 즉시 0 / 지역명 첫 결과·옛 이름 / 탭·거르개(reported_news만)·JS 꺼도 링크 / 결과 없음 추천 3·상황 카드·도우미 0 / 가림 견본 2.8·같은 정규형 한 행·원문 0·동의어 더하기→검색 반영 / 쉬운 풀이 60·61·121자·숫자+단위 2.6·용어 200개 가나다 색인·4대 분야·공개/숨김 / 본문 풀이 한 번·키보드 Tab·Esc / 기사 3,000건 p95 ≤ 800ms / R1~R3·360px·접근성 95)"; node --test --test-concurrency=1 e2e/w2d-acceptance.test.mjs
 step "견본 페이지 브라우저 E2E (70종·가로 스크롤 0)"; node --test --test-concurrency=1 e2e/design-page.test.mjs
 step "화면 규칙 측정 시험 (R1~R3 경계 견본)"; node --test --test-concurrency=1 e2e/screen-rules.test.mjs
 step "화면 규칙 측정 (주요 화면 × 뷰포트 표)"; node e2e/run-screen-rules.mjs
