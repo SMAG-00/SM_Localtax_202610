@@ -1,11 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { ADMIN_PATH_HEADER } from "@/lib/admin/headers";
-import { adminProxyDecision, hasAuthCookie } from "@/lib/admin/proxy-rules";
+import { accountProxyDecision, adminProxyDecision, hasAuthCookie, isAccountPath } from "@/lib/admin/proxy-rules";
 import { authCookieOptions, isHttps } from "@/lib/server/cookie-options";
 import { gateDecision, noticeFor, noticeHeaders, noticeHtml, probePath, publicDetailRoute, type ProbeResult, type PublicDetailRoute } from "@/lib/site/public-gate";
 
-// 백오피스 화면 경로(/admin/…) 막기 — 낙관적 확인 (Next.js 인증 안내 "Optimistic checks with Proxy").
+// 백오피스 화면 경로(/admin/…)·계정 화면 경로(/account/…) 막기 — 낙관적 확인 (Next.js 인증 안내 "Optimistic checks with Proxy").
 //  · 로그인 쿠키가 없으면 로그인 화면으로 (돌아올 주소 next 포함). 로그인 화면은 그대로 둔다.
 //  · 쿠키가 있으면 세션을 읽어 만료된 토큰만 새로 받아 쿠키에 쓴다(DB 조회 없음). 세션을 못 읽으면 로그인 화면으로.
 //  · 실제 로그인 확인·역할 판정은 서버 컴포넌트·라우트 처리기의 DAL(lib/server/dal.ts)과 접근 판정 한 함수(lib/access.ts)가 한다.
@@ -63,12 +63,15 @@ export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const detail = publicDetailRoute(pathname);
   if (detail) return publicGate(detail);
-  if (!pathname.startsWith("/admin")) return NextResponse.next();
-  const decision = adminProxyDecision({ pathname, search, cookieNames: request.cookies.getAll().map((c) => c.name) });
+  // 백오피스(/admin…)와 로그인한 상태의 계정 화면(/account… — 비밀번호 바꾸기, W2-e 4.2)가 같은 낙관적 확인을 한다
+  const admin = pathname.startsWith("/admin");
+  if (!admin && !isAccountPath(pathname)) return NextResponse.next();
+  const decide = admin ? adminProxyDecision : accountProxyDecision;
+  const decision = decide({ pathname, search, cookieNames: request.cookies.getAll().map((c) => c.name) });
   if (decision.kind === "login") return toLogin(request, decision.location);
 
   const forward = new Headers(request.headers);
-  forward.set(ADMIN_PATH_HEADER, `${pathname}${search}`);
+  if (admin) forward.set(ADMIN_PATH_HEADER, `${pathname}${search}`);
   let response = NextResponse.next({ request: { headers: forward } });
   if (decision.kind === "login-page") return noindex(response);
 
@@ -96,7 +99,7 @@ export async function proxy(request: NextRequest) {
   // getSession은 쿠키 속 토큰을 읽고 만료됐을 때만 Auth 서버에 새 토큰을 받는다 — 여기서 사용자 정보는 쓰지 않는다
   const { data } = await supabase.auth.getSession();
   if (!data.session) {
-    const fallback = adminProxyDecision({ pathname, search, cookieNames: [] });
+    const fallback = decide({ pathname, search, cookieNames: [] });
     const redirect = toLogin(request, fallback.kind === "login" ? fallback.location : "/admin/login");
     for (const c of request.cookies.getAll()) if (hasAuthCookie([c.name])) redirect.cookies.set(c.name, "", { path: "/", maxAge: 0 });
     return redirect;
@@ -106,5 +109,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // 공개 상세 경로 — public-gate.ts publicDetailRoute와 같은 목록 (제휴사 /partners/[id]는 W2-c 4단계가 판정만 더하고 여기에 빠져 있던 것을 W2-d 3단계가 더했다)
-  matcher: ["/admin", "/admin/:path*", "/news/:slug", "/situations/:slug", "/people/:slug", "/partners/:id", "/glossary/:id"],
+  matcher: ["/admin", "/admin/:path*", "/account", "/account/:path*", "/news/:slug", "/situations/:slug", "/people/:slug", "/partners/:id", "/glossary/:id"],
 };

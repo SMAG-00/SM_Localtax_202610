@@ -17,6 +17,16 @@ export function isLoginPath(pathname: string): boolean {
 
 export type ProxyDecision = { kind: "pass" } | { kind: "login-page" } | { kind: "login"; location: string };
 
+/** 로그인한 상태의 계정 화면(/account…) — 로그인 쿠키가 없으면 로그인 화면으로 (지금 있는 로그인 화면은 편집국 것 하나다 — 회원 /login은 2단계) */
+export function isAccountPath(pathname: string): boolean {
+  return pathname === "/account" || pathname.startsWith("/account/");
+}
+
+export function accountProxyDecision({ pathname, search, cookieNames }: { pathname: string; search: string; cookieNames: readonly string[] }): ProxyDecision {
+  if (hasAuthCookie(cookieNames)) return { kind: "pass" };
+  return { kind: "login", location: `${LOGIN_PATH}?next=${encodeURIComponent(`${pathname}${search}`)}` };
+}
+
 export function adminProxyDecision({ pathname, search, cookieNames }: { pathname: string; search: string; cookieNames: readonly string[] }): ProxyDecision {
   if (isLoginPath(pathname)) return { kind: "login-page" };
   if (hasAuthCookie(cookieNames)) return { kind: "pass" };

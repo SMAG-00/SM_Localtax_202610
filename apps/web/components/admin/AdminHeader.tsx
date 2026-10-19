@@ -38,6 +38,15 @@ export function AdminHeader({ viewer }: { viewer: Viewer }) {
               </li>
             )}
           </ul>
+          {/* 로그인한 상태의 비밀번호 바꾸기 (W2-e 4.2) — 메일 없이 현재 비밀번호만으로 */}
+          <Link
+            href="/account/password"
+            prefetch={false}
+            data-testid="password-link"
+            className="inline-flex min-h-11 items-center rounded-lg px-2 text-[14px] font-bold text-white underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400"
+          >
+            비밀번호 바꾸기
+          </Link>
           <LogoutButton />
         </div>
       </div>

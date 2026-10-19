@@ -1,4 +1,4 @@
-// 로그인 뒤 돌아갈 주소(next) 시험 — 같은 사이트의 /admin 아래 상대 경로만 받는다 (열린 리디렉션 방지)
+// 로그인 뒤 돌아갈 주소(next) 시험 — 같은 사이트의 /admin · /account 아래 상대 경로만 받는다 (열린 리디렉션 방지)
 import { describe, expect, test } from "vitest";
 import { ADMIN_HOME, safeNextPath } from "./next-path";
 
@@ -10,6 +10,8 @@ describe("safeNextPath", () => {
     ["/admin/articles?status=draft&type=reported_news", "/admin/articles?status=draft&type=reported_news"],
     ["/admin/articles/12#check", "/admin/articles/12#check"],
     ["/admin/reviews?q=a b", "/admin/reviews?q=a%20b"],
+    ["/account/password", "/account/password"],
+    ["/account/password?from=admin", "/account/password?from=admin"],
   ])("받는다: %s", (raw, expected) => {
     expect(safeNextPath(raw)).toBe(expected);
   });
@@ -28,6 +30,11 @@ describe("safeNextPath", () => {
     ["공개 화면", "/news/abc"],
     ["상위 경로로 빠지기", "/admin/../news"],
     ["인코딩한 상위 경로", "/admin/%2e%2e/news"],
+    ["/account로 시작하는 다른 경로", "/accounting"],
+    ["/account 뒤 점", "/account.evil"],
+    ["계정 화면에서 상위 경로로 빠지기", "/account/../news"],
+    ["계정 화면 인코딩한 상위 경로", "/account/%2e%2e/news"],
+    ["다른 사이트 절대 주소 + /account 경로", "https://evil.example/account/password"],
     ["로그인 화면(되돌이)", "/admin/login"],
     ["로그인 화면 + 쿼리", "/admin/login?next=/admin"],
     ["빈 값", ""],

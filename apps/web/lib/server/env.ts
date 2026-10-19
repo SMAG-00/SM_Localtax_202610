@@ -18,6 +18,11 @@ export function cronSecret(): string | undefined {
   return process.env.CRON_SECRET || undefined;
 }
 
+/** 시도 횟수 해시 열쇠 (W2-e 4.1 — HMAC-SHA256). 없으면 시도 제한이 필요한 화면(로그인 등)은 닫힌다 — 안전한 쪽 */
+export function guardSecret(): string | undefined {
+  return process.env.GUARD_SECRET || undefined;
+}
+
 /** 관리자 이메일 화이트리스트 (ACC-04 — 관리자 권한은 DB가 아니라 배포 환경변수). 쉼표로 나누고 대소문자를 가리지 않는다 */
 export function adminEmails(): string[] {
   return (process.env.ADMIN_EMAILS ?? "")

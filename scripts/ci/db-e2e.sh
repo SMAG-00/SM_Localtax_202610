@@ -16,6 +16,7 @@ step "RLS 검증 (anon·authenticated 접근 0)"; node packages/db/scripts/verif
 step "공개 데이터 함수 통합 시험 (anon 키·RLS — 공개 행만)"; pnpm --filter @ltr/web test:integration
 step "개발 서버 3001 고정 E2E";              node e2e/dev-port.mjs
 step "웹 E2E (standalone 빌드)";            node --test --test-concurrency=1 e2e/api-health-jobs.test.mjs
+step "계정 기반 E2E (W2-e 1단계 — 로그인 5번 실패 후 6번째 429+retry-after·다른 IP/계정 영향 0·성공하면 짝/계정 횟수 초기화·없는 계정 같은 429·이메일/IP 한도와 설정 변경 즉시 적용·열쇠 없으면 503·표에 원문 0 / 비밀번호 바꾸기 401·403·틀린 현재 비밀번호 422→6번째 429·규칙 위반 422·바꾸면 다른 기기 세션 끊김·감사 로그 1건에 비밀번호 0 / 실제 브라우저 머리말 링크→칸 오류→완료→재로그인·로그인 전 next 유지·noindex)"; node --test --test-concurrency=1 e2e/account-security.test.mjs
 step "편집국 API E2E (역할별 403·감사 로그·발행 판정)"; node --test --test-concurrency=1 e2e/admin-api.test.mjs
 step "운영 API E2E (분야·사전·설정·제휴사·회원 정지 — 403·422·감사 로그)"; node --test --test-concurrency=1 e2e/admin-settings-api.test.mjs
 step "홈 배치 API E2E (편집 책임자 201·편집국 외 403·7장째 409·끝난 카드 공개 0)"; node --test --test-concurrency=1 e2e/admin-home-api.test.mjs

@@ -63,6 +63,12 @@ export const FEATURE_KEYS = [
   "video_list",
   // W2-d 3단계 — 용어사전 /glossary · /glossary/[번호] (GLO-01 — 공개 승인 전에는 꺼 둔다, W2-d 설계 2.5)
   "glossary",
+  // W2-e 1단계 — 이용약관·이메일무단수집거부·광고·제휴 안내 페이지, 회원(/signup·/login·/my…), 브리핑 사전 알림(/brief…) (W2-e 설계 2.3 — 게시본·메일 설정이 없으면 켜지 못한다, 화면은 2단계 이후)
+  "page_terms",
+  "page_no_email",
+  "page_advertise",
+  "members",
+  "brief",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;

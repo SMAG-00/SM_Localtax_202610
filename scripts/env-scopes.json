@@ -18,6 +18,7 @@
     "ANTHROPIC_API_KEY": "server-secret",
     "RESEND_API_KEY": "server-secret",
     "CRON_SECRET": "server-secret",
+    "GUARD_SECRET": "server-secret",
     "SUPABASE_DB_URL": "ci",
     "SUPABASE_ACCESS_TOKEN": "ci",
     "VERCEL_TOKEN": "ci",

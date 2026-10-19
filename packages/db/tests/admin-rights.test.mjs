@@ -41,6 +41,38 @@ test("감사 로그를 뺀 모든 public 표에서 service_role이 SELECT·INSER
   assert.deepEqual(missing, []);
 });
 
+// W2-e 1단계 새 표 — 위 목록 검사는 표 이름을 따로 짚지 않으므로, 세 표가 있고 실제 서버 경로(service_role)로 추가·읽기·고치기·지우기가 되는지 직접 본다
+test("W2-e 새 표(profiles·consents·request_throttles) — service_role이 실제로 추가·읽기·고치기·지우기를 할 수 있다 (관리자 전권)", async () => {
+  const { rows } = await client.query("select relname from pg_class where relnamespace = 'public'::regnamespace and relname = any($1) order by relname", [
+    ["profiles", "consents", "request_throttles"],
+  ]);
+  assert.deepEqual(rows.map((r) => r.relname), ["consents", "profiles", "request_throttles"]);
+  await client.query("begin");
+  try {
+    const user = (await client.query("insert into auth.users (id, aud, role, email) values (gen_random_uuid(), 'authenticated', 'authenticated', 'admin-rights@example.test') returning id")).rows[0].id;
+    await client.query("set local role service_role");
+    // profiles
+    assert.equal((await client.query("insert into public.profiles (id, display_name) values ($1, '시험') returning id", [user])).rowCount, 1);
+    assert.equal((await client.query("select id from public.profiles where id = $1", [user])).rowCount, 1);
+    assert.equal((await client.query("update public.profiles set tier = 'premium' where id = $1", [user])).rowCount, 1);
+    // consents
+    const consent = await client.query("insert into public.consents (user_id, kind, channel) values ($1, 'signup', 'web_signup') returning id", [user]);
+    assert.equal((await client.query("select id from public.consents where id = $1", [consent.rows[0].id])).rowCount, 1);
+    assert.equal((await client.query("update public.consents set confirmed_at = now() where id = $1", [consent.rows[0].id])).rowCount, 1);
+    // request_throttles
+    const key = "0123456789abcdef0123456789abcdef";
+    assert.equal((await client.query("insert into public.request_throttles (scope, key_hash, window_start, count) values ('login_pair', $1, now(), 1)", [key])).rowCount, 1);
+    assert.equal((await client.query("select 1 from public.request_throttles where key_hash = $1", [key])).rowCount, 1);
+    assert.equal((await client.query("update public.request_throttles set count = 2 where key_hash = $1", [key])).rowCount, 1);
+    // 지우기
+    assert.equal((await client.query("delete from public.request_throttles where key_hash = $1", [key])).rowCount, 1);
+    assert.equal((await client.query("delete from public.consents where id = $1", [consent.rows[0].id])).rowCount, 1);
+    assert.equal((await client.query("delete from public.profiles where id = $1", [user])).rowCount, 1);
+  } finally {
+    await client.query("rollback");
+  }
+});
+
 test("service_role로 실행 기록(agent_runs) 행을 실제로 지울 수 있다", async () => {
   await client.query("begin");
   try {

@@ -1,7 +1,10 @@
-// 로그인 뒤 돌아갈 주소(next) — 같은 사이트의 /admin 아래 상대 경로만 받는다 (열린 리디렉션 방지).
+// 로그인 뒤 돌아갈 주소(next) — 같은 사이트의 /admin · /account 아래 상대 경로만 받는다 (열린 리디렉션 방지).
+// /account는 로그인한 상태의 계정 화면(비밀번호 바꾸기 — W2-e 4.2)이다.
 // 브라우저 주소 해석(WHATWG URL)과 같은 방법으로 풀어 본 뒤, 바깥 주소·상위 경로·로그인 화면 되돌이는 /admin으로 바꾼다.
 
 export const ADMIN_HOME = "/admin";
+/** 로그인 뒤 돌아갈 수 있는 사이트 안 뿌리 — 첫 값이 기본(되돌아갈 곳이 없거나 틀리면 여기로) */
+const ALLOWED_ROOTS = [ADMIN_HOME, "/account"] as const;
 const LOGIN = "/admin/login";
 const BASE = "http://admin-next.invalid";
 const MAX = 2000;
@@ -19,7 +22,7 @@ export function safeNextPath(raw: unknown): string {
   }
   if (url.origin !== BASE) return ADMIN_HOME;
   const path = url.pathname;
-  if (path !== ADMIN_HOME && !path.startsWith(`${ADMIN_HOME}/`)) return ADMIN_HOME;
+  if (!ALLOWED_ROOTS.some((root) => path === root || path.startsWith(`${root}/`))) return ADMIN_HOME;
   if (path === LOGIN || path.startsWith(`${LOGIN}/`)) return ADMIN_HOME;
   return `${path}${url.search}${url.hash}`;
 }

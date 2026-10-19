@@ -553,7 +553,18 @@ PRD 증거는 두 문장이다 — HELP-03 '전 페이지를 크롤링한 서버
 
 (구현하면서 채운다 — 단계마다 끝날 때 이 장에 적는다.)
 
-### 11.1 1단계 — 계정 기반
+### 11.1 1단계 — 계정 기반 (2026-10-20)
+
+- 마이그레이션 `packages/db/supabase/migrations/20261019000023_w2e_accounts.sql` — `request_throttles`(키는 HMAC 해시 32글자뿐 — check) + 함수 `throttle_check`·`throttle_hit`·`throttle_clear`·`throttle_purge`(첫 시도 기준 창), `profiles`(이메일·전화·주소·권한 칸 없음, 관심 분야·지역·상한 트리거), `consents`(user_id·email 중 정확히 하나). 새 표 모두 RLS 기본 거부·service_role 전권. settings 씨앗 `member`·`auth_limits`·`privacy_retention`(2.2), 기능 키 씨앗 `page_terms`·`page_no_email`·`page_advertise`·`members`·`brief` — 모두 꺼짐(2.3, W2-b 설계 기능 키 표에도 더함).
+- DB 시험 `packages/db/tests/w2e-values.test.mjs`(2장 표 = DB 씨앗) · `w2e-throttles.test.mjs`(n번째 허용·n+1번째 차단 경계·창 끝·초기화·해시 아닌 키 거부) · `w2e-profiles-consents.test.mjs`(상한+1 거부·없는 코드 거부·동의 주체 하나) · `w2e-access.test.mjs`(anon·authenticated 직접 접근 0), `admin-rights.test.mjs`에 새 표 3개.
+- 서버 `apps/web/lib/server/auth-guard.ts`(설정·열쇠·DB를 못 쓰면 503으로 닫힘 — 제한 없이 열지 않는다) · 순수 `lib/auth/password.ts`(2.6 견본)·`settings.ts`(설정 모양 검사 — 운영 설정 화면 `settings-rules.ts`가 같은 검사)·`throttle-key.ts`(이메일 정규화·HMAC — IP는 W2-c `clientIp`). 로그인 `POST /api/auth/login`에 세 겹 제한(이메일+IP·이메일·IP) + 429 `retry-after`.
+- 비밀번호 바꾸기 `/account/password`(화면 `app/account/`·`components/account/`) · `POST /api/auth/password` — 쿠키 세션만, 현재 비밀번호 확인(틀리면 횟수 합산), 2.6 규칙, 바꾸면 다른 기기 세션 끊기(`signOut({ scope: "others" })`), 감사 로그 `account.password_changed`(비밀번호·이메일 0). 편집국 머리말에 [비밀번호 바꾸기] 링크, 로그인 안 했으면 로그인 → 돌아오기(`next-path`·`proxy-rules`).
+- 새 환경변수 `GUARD_SECRET`(서버 전용 비밀 — `scripts/env-scopes.json`·`.env.example`·인프라 요청서). **없으면 로그인이 닫힌다(503)** — 시험 서버는 `e2e/lib/local.mjs startServer`가 실행마다 무작위 값을 준다. 로컬 Supabase `config.toml`: `minimum_password_length` 10, `sign_in_sign_ups` 600(시험 서버가 로그인을 많이 하므로 — 실제 제한은 앱이 한다).
+- E2E `e2e/account-security.test.mjs` 17개(`scripts/ci/db-e2e.sh`에 추가) — 로그인 A1~A9(6번째 429·짝 단위 잠금·다른 계정 영향 0·성공 시 초기화·없는 계정 같은 429·한도 설정 즉시 반영·열쇠 없으면 503·표에 원문 0) · 비밀번호 B1~B6(쿠키 없음·Bearer만·다른 사이트 거부·현재 비밀번호 5번 틀리면 429·규칙 422·다른 기기 끊김·편집국 역할만 있는 계정도 가능·서버 기록에 비밀번호·이메일 0) · 화면 C1·C2.
+- 시험 결과 (2026-10-20): DB 시험 523개 · RLS 검증 · 웹 단위 2,150개 · 통합 54개 · 타입·린트 · 새 E2E `account-security` 17개 모두 통과.
+- **배포 순서(중요)**: 이 단계를 main에 올리면 Vercel Production이 바로 새 코드로 바뀐다. 그 전에 ① 마이그레이션 23을 staging·prod에 적용(`auth_limits` 설정 씨앗) ② Vercel Production·Preview에 `GUARD_SECRET` 값을 넣어야 테스트 주소 로그인이 닫히지 않는다.
+- 남긴 것: 원격 Auth 설정(12장 #37 — 최소 비밀번호 길이 10 등)은 가입을 여는 2단계 전에 한다(지금 비밀번호 바꾸기는 앱이 2.6 규칙을 먼저 검사한다). 12장 #40의 나머지 확인은 2단계 첫머리에 한다.
+
 ### 11.2 2단계 — 메일 모듈·가입·인증·재설정·탈퇴
 ### 11.3 3단계 — `/my`·맞춤·회원 관리
 ### 11.4 4단계 — 정책 페이지·바닥글

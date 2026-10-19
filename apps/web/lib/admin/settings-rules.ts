@@ -6,6 +6,7 @@ import { normalizeText } from "@ltr/editorial";
 import { checkDomainCutover } from "@/lib/analytics/metrics";
 import { checkQueryTermsSettings } from "@/lib/analytics/query-terms";
 import { ANALYTICS_SETTING_CHECKS } from "@/lib/analytics/settings";
+import { checkAuthLimitsSetting, checkMemberSetting, checkPrivacyRetentionSetting } from "@/lib/auth/settings";
 import { checkWindowsSetting } from "@/lib/readiness/windows";
 // 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
@@ -258,6 +259,25 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     guide:
       '{ "version": "새 버전", "retention_days": 395, "display_min_count": 2 } — retention_days 기간(한국 날짜) 행 보존 일수(31~1825, 매일 정리) · display_min_count 편집국 검색어 화면에 보이는 최소 합계 횟수(1~100 — 그보다 적게 찾은 검색어는 수만 보입니다). 값을 바꾸면 version도 바꿉니다',
     check: (value, current) => checkQueryTermsSettings(value, current),
+  },
+  // ── W2-e 회원·시도 제한·보존 기한 (docs/dev/W2-e_설계.md 2.2) — 로그인·비밀번호 바꾸기(lib/server/auth-guard.ts)와 프로필 트리거가 같은 값을 읽는다 ──
+  member: {
+    label: "회원 한도 (ACC-01 · ACC-02)",
+    guide:
+      '{ "version": "새 버전", "interest_region_limit": 3, "interest_max": 20, "display_name_chars": 30, "signup_confirm_hours": 24, "password_min_chars": 10, "password_max_bytes": 72 } — 관심 지역 상한(1~20)·관심 분야 상한(1~50)·표시 이름 글자(1~30)·가입 확인 링크 시간(1~168)·비밀번호 최소 글자(8~72)·최대 바이트(10~72, bcrypt 72). 값을 바꾸면 version도 바꿉니다',
+    check: (value, current) => checkMemberSetting(value, current),
+  },
+  auth_limits: {
+    label: "로그인·가입·재설정 시도 제한 (W2-e 4.1)",
+    guide:
+      '{ "version": "새 버전", "login_pair": { "window": 900, "limit": 5 }, … } — 범위마다 window(초, 1~86400) 동안 limit(1~100000)번까지 허용하고 다음 번부터 막습니다. 범위 12개: login_pair 이메일+IP · login_account 이메일 · login_ip IP · password_change · signup_ip · signup_email · reset_ip · reset_email · form_ip · brief_ip · brief_email · confirm_resend. 값을 바꾸면 version도 바꿉니다 — 다음 요청부터 적용',
+    check: (value, current) => checkAuthLimitsSetting(value, current),
+  },
+  privacy_retention: {
+    label: "개인정보 보존 기한 (W2-e 9.3)",
+    guide:
+      '{ "version": "새 버전", "unconfirmed_signup_days": 7, "unconfirmed_consent_days": 7, "revoked_consent_days": 30, "inquiry_contact_days": 365, "inquiry_attachment_days": 365, "throttle_hours": 24 } — 일수(1~365, 문의는 1~3650)·시도 횟수 해시 시간(1~8760). 법률 확인 전 초기값입니다. 값을 바꾸면 version도 바꿉니다',
+    check: (value, current) => checkPrivacyRetentionSetting(value, current),
   },
   // ── W2-c 지표 대시보드 (docs/dev/W2-c_설계.md 2.6) — 대시보드(lib/analytics/metrics.ts readCutover)와 같은 검사 ──
   domain_cutover: {
