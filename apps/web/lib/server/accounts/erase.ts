@@ -10,8 +10,13 @@ import { HttpError } from "../http";
 export async function eraseAccount(db: SupabaseClient, userId: string, label: string, failMessage: string): Promise<void> {
   const consents = await db.from("consents").delete().eq("user_id", userId);
   const profiles = await db.from("profiles").delete().eq("id", userId);
-  if (consents.error || profiles.error) {
-    console.error(`[${label}] 개인정보 행 삭제 실패:`, consents.error?.code, profiles.error?.code);
+  // 이 회원이 낸 문의의 연락처를 비운다(9.3) — 계정을 지우면 submitted_by가 null이 되어 뒤에는 찾을 수 없으므로 먼저 한다. 본문·첨부는 보존 기한 규칙 그대로
+  const inquiries = await db
+    .from("inquiries")
+    .update({ contact_email: null, contact_name: null, organization: null, contact_cleared_at: new Date().toISOString() })
+    .eq("submitted_by", userId);
+  if (consents.error || profiles.error || inquiries.error) {
+    console.error(`[${label}] 개인정보 행 삭제 실패:`, consents.error?.code, profiles.error?.code, inquiries.error?.code);
     throw new HttpError(500, failMessage);
   }
   const removed = await db.auth.admin.deleteUser(userId);
