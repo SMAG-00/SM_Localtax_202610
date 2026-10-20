@@ -131,6 +131,8 @@ const truthy = (v: unknown) => v === true || v === "on" || v === "true";
 
 export function parseHelpInput(slug: HelpSlug, raw: Record<string, unknown>, settings: HelpSettings): HelpParse {
   const spec = HELP_FORMS[slug];
+  // 가리기 전에 원문 길이로 먼저 거른다 — 가림은 글 전체를 훑으므로 한도를 크게 넘는 글은 가림까지 보내지 않는다(가린 길이는 원문보다 길어지지 않게 가림 글자가 짧다)
+  if (charCount(text(raw.body)) > settings.bodyMax * 2) return { ok: false, code: "body", field: "body" };
   const masked = maskBody(text(raw.body));
   const bodyLen = charCount(masked.text);
   if (bodyLen < settings.bodyMin || bodyLen > settings.bodyMax) return { ok: false, code: "body", field: "body" };

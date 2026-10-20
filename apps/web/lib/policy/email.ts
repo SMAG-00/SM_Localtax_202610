@@ -1,7 +1,8 @@
 // 이메일 모양 판정·가림 표기 (W2-e 설계 2.7) — 공개 화면 표기와 크롤링 검사가 같은 정규식을 쓴다. 순수 모듈.
 // 전각 `＠`·`．`은 NFKC로 먼저 바꾸고, HTML 엔티티(`&#64;` `&#x40;` `&commat;` `&period;`)는 풀어서 본다. `mailto:` 링크는 만들지 않는다.
 
-export const EMAIL_SOURCE = "[A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}";
+// 반복 길이를 묶는다(앞부분 64자·도메인 253자·끝 이름 24자 — 이메일 규격의 한도) — '@' 없는 긴 영문에서 글 길이의 제곱만큼 느려지지 않게
+export const EMAIL_SOURCE = "[A-Za-z0-9._%+\\-]{1,64}@[A-Za-z0-9.\\-]{1,253}\\.[A-Za-z]{2,24}";
 const EMAIL_RE = () => new RegExp(EMAIL_SOURCE, "g");
 
 const NAMED: Readonly<Record<string, string>> = { commat: "@", period: ".", amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };

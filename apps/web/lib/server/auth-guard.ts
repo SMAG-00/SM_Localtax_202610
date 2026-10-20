@@ -145,6 +145,15 @@ export async function memberAuthOpen(db: SupabaseClient): Promise<boolean> {
   return parseFeatures(await readSetting(db, "feature_flags")).members === true;
 }
 
+/** 브리핑 사전 알림이 열려 있나 — `brief` 기능 키 + 개인정보처리방침 게시본 + 메일 설정 (설계 2.3 · 7.5) */
+export async function briefOpen(db: SupabaseClient): Promise<boolean> {
+  const mailReady = mailConfigured(mailEnv());
+  if (!mailReady) return false;
+  const raw = parseFeatures(await readSetting(db, "feature_flags"));
+  if (!raw.brief) return false;
+  return effectiveFeatures(raw, await publishedDocKeys(db), mailReady).brief;
+}
+
 /** 가입이 열려 있나 — `members` 기능 키가 켜져 있고 이용약관·개인정보처리방침 게시본과 메일 설정이 있을 때만 (설계 2.3 · 6.3) */
 export async function signupOpen(db: SupabaseClient): Promise<boolean> {
   const mailReady = mailConfigured(mailEnv());

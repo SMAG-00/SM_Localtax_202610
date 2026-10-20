@@ -181,7 +181,7 @@ export function isBlockedPath(href: string): boolean {
  * 그 작업이 화면을 만들 때 이 목록에서 뺀다 (많이 본 기사 /news/popular는 W2-c 2단계, 포토 목록 /news/photo는 W2-c 4단계가 만들어 뺐다 —
  * 동영상 목록 /news/video는 기능 키 video_list로, 용어사전 /glossary는 W2-d 3단계가 만들어 기능 키 glossary로 연다)
  */
-const UNBUILT_PREFIXES = ["/brief", "/local/events"] as const;
+const UNBUILT_PREFIXES = ["/local/events"] as const;
 /** 용어사전 (W2-d 3단계 — GLO-01). 색인 /glossary · 용어 쪽 /glossary/[번호] */
 export const GLOSSARY_HREF = "/glossary";
 /** 형식별 목록 (W2-c 4단계 — ART-08 · ART-09). 기사 slug로 쓸 수 없는 예약 이름(ART-01) */
@@ -205,6 +205,8 @@ const FEATURE_PREFIXES: ReadonlyArray<{ prefix: string; feature: FeatureKey; sel
   // 회원 화면 (W2-e — `members`, 가입·메일·약관·처리방침 게시본이 갖춰져야 열린다 — lib/policy/feature-open.ts)
   ...["/signup", "/login", "/forgot-password", "/reset-password", "/auth/confirm", "/my"].map((prefix) => ({ prefix, feature: "members" as const, self: true })),
   // 정책 문서 중 POLICY_LINKS에 없는 것 (이용약관 · 이메일무단수집거부 · 광고·제휴 안내)
+  // 브리핑 사전 알림 (W2-e 6단계 — /brief · /brief/confirm · /brief/unsubscribe)
+  { prefix: "/brief", feature: "brief" as const, self: true },
   { prefix: "/about/terms", feature: "page_terms", self: true },
   { prefix: "/about/no-email-collection", feature: "page_no_email", self: true },
   { prefix: "/about/advertise", feature: "page_advertise", self: true },

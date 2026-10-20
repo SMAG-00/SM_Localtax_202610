@@ -40,7 +40,8 @@ const PLACE: Record<MaskKind, string> = {
 const PRIVATE_RANGE = `${String.fromCharCode(0xe000)}-${String.fromCharCode(0xf8ff)}`;
 const PRIVATE_USE = new RegExp(`[${PRIVATE_RANGE}]`, "gu");
 /** 이메일 — '@' 앞뒤(띄어쓰기 허용)에 글자·숫자가 붙은 덩어리 (한글 주소 포함) */
-const EMAIL = /[\p{L}\p{N}_.%+-]+\s*@\s*[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*/gu;
+// 반복 길이를 묶는다(앞부분 64자·띄어쓰기 3자·도메인 조각 63자 — 이메일 규격의 한도) — 묶지 않으면 '@' 없는 긴 글에서 자리마다 끝까지 읽고 되돌아와 글 길이의 제곱만큼 느려진다(한글 5천 자 0.4초)
+const EMAIL = /[\p{L}\p{N}_.%+-]{1,64}\s{0,3}@\s{0,3}[\p{L}\p{N}-]{1,63}(?:\.[\p{L}\p{N}-]{1,63})*/gu;
 /** 숫자 줄 — 숫자 사이에 남기는 글자 밖(띄어쓰기·하이픈·점·괄호·슬래시 등)만 낀 숫자들. 가림 자리 표시는 넘지 않는다. 앞의 '+'·'('도 함께 가린다 */
 const CHAIN = new RegExp(`[+(]?[0-9](?:[^${KEEP}${PRIVATE_RANGE}]*[0-9])*`, "gu");
 /** DB check와 같은 모양 — 9자리 이상 숫자 줄 · 이메일 (저장 전 마지막 확인) */

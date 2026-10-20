@@ -167,7 +167,7 @@ PRD-01A 9장 W2-e(회원(관심 분야·지역)·`/my` 맞춤·고객센터·바
 
 ### 2.7 이메일 모양 판정·표기 견본 (공개 화면 표기와 크롤링 검사가 같은 정규식을 쓴다)
 
-이메일 모양 = `[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}` (전각 `＠`·`.`은 NFKC로 먼저 바꾼 뒤 본다).
+이메일 모양 = `[A-Za-z0-9._%+\-]{1,64}@[A-Za-z0-9.\-]{1,253}\.[A-Za-z]{2,24}` (반복 길이는 이메일 규격 한도로 묶는다 — 묶지 않으면 @ 없는 긴 글에서 글 길이의 제곱만큼 느려진다, 2026-10-21. 문의 본문 가림 `maskBody`의 이메일 식도 같은 이유로 앞부분 64자·띄어쓰기 3자·도메인 조각 63자로 묶었다) (전각 `＠`·`.`은 NFKC로 먼저 바꾼 뒤 본다).
 
 | 원문 | 화면 표기 (가림) | 크롤링 검사에서 0이어야 하는 것 |
 |---|---|---|
@@ -634,6 +634,13 @@ PRD 증거는 두 문장이다 — HELP-03 '전 페이지를 크롤링한 서버
 - **설계와 달라진 점**: ① DB의 연락 이메일 필수는 구독·광고·독자 투고만(정정·반론은 공개 폼이 필수로 검사 — 편집국이 문의함에 직접 넣는 W2-a 정정 요청에는 연락처가 없다), `request_type` 필수도 폼이 검사(DB는 "정정·반론에서만" 허용). ② 목록은 API 없이 서버 화면이 `serviceDb`로 읽는다(`GET /api/admin/inquiries` 없음). ③ `Viewer.isAuditAdmin`은 선택 칸. ④ 담당자 고르기는 "역할 · uuid 앞 8자리". ⑤ `/about/advertise`의 문의는 `/help/ad`로 연결(별도 폼 없음).
 - **남은 것**: `inquiry_submitted` 이벤트 전송 · 보존 기한 지난 연락처·첨부 비우기(6단계 배치) · 감사 기록 화면의 PO 전용 [고치기]·[지우기] 버튼 · `/admin/inquiries` 브라우저 화면 E2E(360px·접근성 — 7단계) · 공통 경로(바닥글·`readPublicSettings`·로그인)는 새 표·함수를 읽지 않는다.
 ### 11.6 6단계 — 브리핑 사전 알림·보존 기한 배치
+
+- **파일**: 마이그레이션 `packages/db/supabase/migrations/20261020000029_w2e_retention.sql`(번호는 28까지 쓰여 29) · `apps/web/app/brief/{page,confirm/page,unsubscribe/page}.tsx` · `apps/web/app/api/brief/{route,confirm/route,unsubscribe/route}.ts` · `lib/brief/input.ts`(+시험) · `lib/auth/retention.ts`(+시험) · `lib/server/accounts/retention.ts` · `workflows/src/index.ts`(작업 `privacy-retention`) · `lib/server/jobs.ts` · `apps/web/vercel.json`(`20 18 * * *` = 한국 03:20, 일정 하나 추가) · 메일 템플릿 `brief_confirm` · `briefOpen()`(`auth-guard.ts`) · `isOpenPath`에 `/brief` → `brief` 키 · E2E `e2e/brief-retention.test.mjs`(`scripts/ci/db-e2e.sh`의 `help-inquiries` 줄 바로 뒤).
+- **사전 알림**: 7.5 그대로. 토큰은 43글자 무작위, DB에는 SHA-256 해시만. 확인·철회 링크는 화면(GET)이 버튼만 그리고 POST로 처리(미리 열기에 안전). 확정된 신청은 "이미 신청하셨습니다", 확인 전 재신청은 두 토큰을 새로 만들어 메일을 다시 보낸다(이전 링크 무효). 닫힘 조건: `brief` 키 + 개인정보처리방침 게시본 + 메일 설정.
+- **보존 배치**: `POST|GET /api/jobs/privacy-retention`(CRON_SECRET) → `purgePrivacy(db, now)`: 미확인 가입(`purgeUnconfirmedSignups`) · DB 함수 `privacy_purge_rows(now, 7, 30, 365)`(미확인 사전 알림 삭제 · 철회 동의 삭제 · 완료 문의 연락처 비움) · 첨부(저장소 파일 먼저 지우고 칸 비움, 실패한 행은 다음 실행이 재시도) · `throttle_purge(24)`. 기한은 모두 `privacy_retention` 설정에서 읽고, 모양이 틀리면 아무것도 지우지 않고 실패한다. 실행 결과(`agent_runs.detail`)는 지운 수 8개뿐.
+- **설계와 달라진 점**: ① 문의 '완료 후 365일'의 기준으로 `inquiries.done_at`을 새로 두었다(완료로 바뀔 때 트리거가 채움 — `updated_at`은 메모만 고쳐도 움직인다). ② 연락처를 비우는 UPDATE가 NOT VALID 제약 `inquiries_contact_email_required`에 걸려 `contact_cleared_at`이 있으면 통과하도록 제약을 다시 만들었다. ③ 철회 동의 삭제는 `brief_prereg`만(설계 9.3 표 '철회된 사전 알림 동의') — 회원의 철회된 수신·마케팅 동의는 이력으로 남는다(법률 확인 12장 #6). ④ DB 함수가 첨부 파일까지는 못 지우므로 `privacy_purge`가 아니라 `privacy_purge_rows`(행) + 앱 코드(첨부)로 나눴다. ⑤ 로그인 회원이 같은 폼에서 이메일을 채워 주는 것, `brief_preregistered` 이벤트 전송, 바닥글·기사 하단 [브리핑 알림 받기] 링크는 이 단계에 넣지 않았다. ⑥ 철회 화면도 `brief` 키가 꺼지면 404(설계 2.3).
+- **시험**: 단위 `retention.test.ts`·`input.test.ts`·`constants.test.ts`(`/brief` 기능 키) · E2E 6개(a 키 꺼짐 404·폼·홈 폼 0 / b 동의 없음·형식·봇 / c 확인 전 미확정·해시 저장·구독자·이벤트 이메일 0 / d 중복·재발송 / e 철회 / f 보존 경계 하루 전·당일 전부).
+- **남은 것**: 7단계 수용 E2E(`w2e-acceptance`)에 시나리오 10·13 연결 · 바닥글·기사 하단 신청 링크 · 이벤트 전송 · 원격 마이그레이션 29 적용(PO 승인). 공통 경로(바닥글·`readPublicSettings`·로그인·공통 틀)는 이 마이그레이션의 표·함수를 읽지 않는다 — `brief` 키 판정(`isOpenPath`)은 기존 `feature_flags` 설정만 본다.
 ### 11.7 7단계 — 수용 E2E
 
 수용 E2E `e2e/w2e-acceptance.test.mjs`에서 볼 시나리오(7단계 기준):

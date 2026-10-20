@@ -15,6 +15,8 @@ export interface JobServices {
   purgeAnalytics(now: Date): Promise<Record<string, unknown>>;
   /** W2-d 검색어 집계 보존 기한 정리 — query_terms.retention_days보다 오래된 날 행을 나눠 지운다 (SRCH-03 · W2-d 설계 8.3) */
   purgeQueryTerms(now: Date): Promise<Record<string, unknown>>;
+  /** W2-e 보존 기한 정리 — 미확인 가입·사전 알림, 철회 동의, 문의 연락처·첨부, 시도 기록 (설계 9.3). 지운 수만 돌려준다 */
+  purgePrivacy(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -27,6 +29,8 @@ export const jobs: Record<string, Job> = {
   "popular-hourly": async ({ now, services }) => ({ detail: await services.aggregatePopular(now), revalidatePublic: true }),
   // 측정 원본 보존 기한 정리 (하루 한 번) — 검색어 집계(query_terms)의 오래된 날 행도 같은 실행에서 지운다(detail.queryTerms)
   "analytics-retention": async ({ now, services }) => ({ detail: { ...(await services.purgeAnalytics(now)), queryTerms: await services.purgeQueryTerms(now) } }),
+  // 개인정보 보존 기한 정리 (하루 한 번) — 결과는 지운 수뿐(개인정보 0)
+  "privacy-retention": async ({ now, services }) => ({ detail: await services.purgePrivacy(now) }),
 };
 
 export function findJob(name: string): Job | undefined {

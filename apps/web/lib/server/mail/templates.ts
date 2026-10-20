@@ -1,5 +1,5 @@
 // 메일 본문 (W2-e 설계 8.1) — 순수 함수. 링크와 "요청하지 않았다면 무시하세요" 수준의 짧은 안내문만 둔다(약관·동의 문구는 되풀이하지 않는다).
-export const MAIL_TEMPLATES = ["signup_confirm", "signup_exists_notice", "signup_resend", "password_reset", "inquiry_receipt"] as const;
+export const MAIL_TEMPLATES = ["signup_confirm", "signup_exists_notice", "signup_resend", "password_reset", "inquiry_receipt", "brief_confirm"] as const;
 export type MailTemplate = (typeof MAIL_TEMPLATES)[number];
 export interface MailVars {
   /** 확인 링크 (signup_confirm) */
@@ -9,6 +9,8 @@ export interface MailVars {
   /** 접수 번호·문의 종류 이름 (inquiry_receipt — 본문·연락처는 되풀이하지 않는다) */
   refCode?: string;
   kindLabel?: string;
+  /** 사전 알림 철회 링크 (brief_confirm) */
+  unsubscribeLink?: string;
 }
 
 const SERVICE = "선명 지방세·부동산";
@@ -40,6 +42,11 @@ export function renderMail(template: MailTemplate, vars: MailVars): { subject: s
       return {
         subject: `[${SERVICE}] 문의가 접수되었습니다`,
         text: [`${vars.kindLabel ?? "문의"}가 접수되었습니다.`, `접수 번호: ${vars.refCode ?? ""}`, "", "담당자가 확인한 뒤 회사 메일로 직접 연락드릴 수 있습니다. 이 메일에는 회신하지 않으셔도 됩니다.", "", IGNORE].join("\n"),
+      };
+    case "brief_confirm":
+      return {
+        subject: `[${SERVICE}] 브리핑 알림 신청 확인`,
+        text: ["브리핑 사전 알림 신청을 마치려면 아래 링크를 열고 [신청 확정하기] 버튼을 눌러 주세요.", "", url(vars.link, "link"), "", "신청을 철회하려면 아래 링크를 열어 주세요.", url(vars.unsubscribeLink, "unsubscribeLink"), "", IGNORE].join("\n"),
       };
     case "signup_exists_notice":
       return {
