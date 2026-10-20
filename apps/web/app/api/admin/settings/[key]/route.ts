@@ -1,4 +1,9 @@
 import { isEditableSetting, parseJsonText, sameJson, validateSettingValue } from "@/lib/admin/settings-rules";
+import { featureEnableErrors } from "@/lib/policy/feature-open";
+import { publishedDocKeys } from "@/lib/server/auth-guard";
+import { mailEnv } from "@/lib/server/env";
+import { mailConfigured } from "@/lib/server/mail/config";
+import { parseFeatures } from "@/lib/server/public/settings";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { readSetting, writeSetting } from "@/lib/server/admin/backoffice";
 import { serviceDb } from "@/lib/server/articles/service";
@@ -43,6 +48,11 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   const checked = validateSettingValue(key, value, current.value);
   if (!checked.ok) return errorJson(422, "설정 값이 규칙에 맞지 않습니다", { errors: checked.errors });
   if (sameJson(value, current.value)) return json({ setting: current, unchanged: true });
+  // 기능 키를 새로 켜는 경우: 게시본·메일 설정 의존을 채우지 못하면 거부하고 사유를 보인다 (W2-e 설계 2.3 · 6.3)
+  if (key === "feature_flags") {
+    const depErrors = featureEnableErrors(parseFeatures(current.value), parseFeatures(value), await publishedDocKeys(db), mailConfigured(mailEnv()));
+    if (depErrors.length) return errorJson(422, "기능을 켤 수 없습니다 — 먼저 필요한 것을 갖추세요", { errors: depErrors });
+  }
 
   const saved = await writeSetting(db, current, value, actorOf(viewer));
   if (!saved) return errorJson(409, "다른 사람이 먼저 고쳤습니다 — 새로 불러온 뒤 다시 저장하세요");

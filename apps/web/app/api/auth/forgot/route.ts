@@ -1,6 +1,6 @@
 import { RECOVERY_SENT, parseEmailField } from "@/lib/auth/recovery";
 import { normalizeEmailKey, throttleKey } from "@/lib/auth/throttle-key";
-import { TOO_MANY, readAuthLimits, requestIp, requireGuardSecret, signupOpen, throttleHit } from "@/lib/server/auth-guard";
+import { TOO_MANY, readAuthLimits, requestIp, requireGuardSecret, memberAuthOpen, throttleHit } from "@/lib/server/auth-guard";
 import { HttpError, errorJson, handle, json } from "@/lib/server/http";
 import { readAccountBody, redirect303 } from "@/lib/server/accounts/body";
 import { sendMail } from "@/lib/server/mail";
@@ -18,7 +18,7 @@ export const POST = handle(async (request: Request) => {
   const { isForm } = body;
   const db = adminClient();
   if (!db) throw new HttpError(503, "서버 설정이 끝나지 않았습니다");
-  if (!(await signupOpen(db))) return errorJson(404, "찾을 수 없습니다");
+  if (!(await memberAuthOpen(db))) return errorJson(404, "찾을 수 없습니다");
   const secret = requireGuardSecret();
 
   const email = parseEmailField(body.fields.email);

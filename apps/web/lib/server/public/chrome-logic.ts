@@ -3,6 +3,7 @@
 //    지자체뉴스는 하위 경로(/local/[sido] · /local/events)가 01B 몫이라 하위 분야 대신 기사 있는 편집 분야(/local?topic=…)를 둔다 (설계 9장)
 //  · 유틸 메뉴·정책 링크는 기능 키가 켜진 것만 (꺼지면 링크 요소 0 — 빈 링크 0)
 import type { LocalTopic } from "@ltr/ui";
+import { companyInfoRows } from "@/lib/policy/docs";
 import { LOCAL_TOPICS, POLICY_LINKS, SECTION_INFO, SECTION_KEYS, UTILITY_LINKS, categoryHref, isBlockedPath, localTopicHref, type Features, type SectionKey } from "./constants";
 import type { PublicCategoryRow } from "./rows";
 import { CLOSED_FEATURES } from "./settings";
@@ -22,6 +23,24 @@ export interface SiteChrome {
   sections: SectionMenu[];
   utilities: NavLink[];
   policyLinks: NavLink[];
+  /** 바닥글 링크 — 정책 · 약관 · 측정 거부 · 계정 (W2-e 6.4). 기능 키(실제로 열린 것)가 닫으면 0, 측정 거부만 항상 있다 */
+  footerLinks: NavLink[];
+  /** 바닥글 회사 정보 줄 — 값이 있는 칸만 */
+  company: Array<{ label: string; value: string }>;
+}
+
+/** 바닥글 링크 (6.4) — 순서: 회사 소개 · 편집 원칙 · 윤리강령 · 정정·반론 창구 · 광고 정책 · 고객센터 · 이용약관 · 개인정보처리방침 · 이메일무단수집거부 · 측정 거부 · 내 정보 */
+export function buildFooterLinks(features: Features): NavLink[] {
+  const policy = (key: string) => POLICY_LINKS.filter((p) => p.key === key && features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href }));
+  const links: NavLink[] = [
+    ...["about", "editorial_policy", "ethics", "corrections", "ad_policy", "help"].flatMap(policy),
+    ...(features.page_terms ? [{ key: "terms", label: "이용약관", href: "/about/terms" }] : []),
+    ...policy("privacy"),
+    ...(features.page_no_email ? [{ key: "no_email", label: "이메일무단수집거부", href: "/about/no-email-collection" }] : []),
+    { key: "measurement", label: "측정 거부", href: "/about/measurement" },
+    ...(features.members ? [{ key: "my", label: "내 정보", href: "/my" }] : []),
+  ];
+  return links;
 }
 
 /** 공개 하위 분야 가운데 목록 기사가 있는 것 — 분야 안 순서(sort, 번호) */
@@ -53,6 +72,7 @@ export function buildChrome(
   counts: ReadonlyMap<number, number>,
   features: Features,
   topicCounts: ReadonlyMap<LocalTopic, number> = new Map(),
+  companyInfo: unknown = null,
 ): SiteChrome {
   const sections = SECTION_KEYS.map((key): SectionMenu => {
     const children: NavLink[] = subsectionLinks(key, categories, counts, topicCounts);
@@ -63,6 +83,8 @@ export function buildChrome(
     sections,
     utilities: UTILITY_LINKS.filter((u) => features[u.key]).map((u) => ({ key: u.key, label: u.label, href: u.href })),
     policyLinks: POLICY_LINKS.filter((p) => features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
+    footerLinks: buildFooterLinks(features),
+    company: companyInfoRows(companyInfo),
   };
 }
 

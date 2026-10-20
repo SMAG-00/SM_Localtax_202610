@@ -610,6 +610,18 @@ PRD 증거는 두 문장이다 — HELP-03 '전 페이지를 크롤링한 서버
 - 설계와 달라진 점·한계: (1) 회원 목록은 인증 서버에서 200명씩 최대 10쪽(2,000명)까지 읽고 걸러 쪽을 자른다 — 회원이 그보다 많아지면 DB 함수로 옮긴다. (2) 삭제 거부 코드는 역할 계정 409(403 아님)로 했고 관리자 아닌 사람만 403이다. (3) 정지 감사 대상은 기존대로 `members:<id>`, 삭제는 지시대로 `user:<uuid>`.
 - 시험(2026-10-20): E2E `e2e/admin-members.test.mjs` 7개 통과(회원 탭에 역할 없는 계정만·칸 값=DB / 검색 / 정지 표시 / 삭제 거부 4종 + 화면 사유 안내 / 화면 삭제 → profiles·consents·Auth 0·감사 로그 1건 이메일 0 / 360px / proxy 리다이렉트), 단위 `proxy-rules.test.ts`·`access.test.ts`, 회귀 `account-recovery.test.mjs` 7개 통과(탈퇴 지움 함수 이동 후).
 ### 11.4 4단계 — 정책 페이지·바닥글
+
+- **마이그레이션 `…27_w2e_policy`** (24~26번이 이미 쓰여 27번): `policy_versions`(승인 기록 3칸 없으면 게시 check 거부 · 버전 2부터 개정 사유 · 문서마다 게시본·초안 하나 · 게시본 수정·삭제 트리거 거부) · `policy_publish()`(이전 게시본 내림 + 게시를 한 번에, service_role만) · 공개 뷰 `public_policy_versions` · `company_info` 공개 읽기 정책을 **따로 하나 더함**(기존 `settings_public_read`·`PUBLIC_SETTING_KEYS`는 그대로 — W2-b 설계 대조 시험 보호). 씨앗 0행, 정책 본문 0.
+- **기능 키 판정**: `lib/policy/feature-open.ts`의 `effectiveFeatures`가 키 값 + 게시본 + 메일 설정을 합쳐 '실제로 열린' 값을 만들고, `readPublicSettings`가 이 값을 내보낸다 → 바닥글·기사 하단·`isOpenPath`가 같은 판정. 켜기 거부는 `PATCH /api/admin/settings/feature_flags`가 `featureEnableErrors`로 한다(새로 켜는 키만 검사). `signupOpen`은 `members` + 약관·처리방침 게시본 + 메일 설정.
+- **정한 이름 — `settings.company_info` 칸**: `name`(상호) · `representative`(대표) · `publisher`(발행인) · `editor`(편집인) · `registration_no`(등록번호) · `address`(주소) · `phone`(대표전화) · `directions`(오시는 길). 값이 있는 칸만 바닥글 회사 정보 줄로 나가고 이메일 모양은 가림 표기를 지난다. 씨앗은 두지 않았고 운영 설정 화면의 편집 규칙(`settings-rules`)도 아직 없다.
+- **가림 표기** `maskEmailForDisplay`: 엔티티 풀기·NFKC는 이메일 모양을 **찾는 데에만** 쓰고, 나가는 글은 원문(①②③·㈜·전각 괄호)을 유지한 채 이메일 모양 구간만 바꾼다.
+- **바닥글**: `@ltr/ui` `Footer`가 링크 한 줄만 받아 정책·약관·계정 줄을 한 줄로 이었다(순서는 6.4). `[브리핑 알림 받기]`는 6단계, `page_help`가 만드는 `/help/*` 화면은 5단계 — 그 전에 `page_help`를 켜면 고객센터 링크가 404가 되므로 4단계 E2E는 켜지 않는다.
+- **접근 판정**: `policy.edit`(편집 책임자·광고·협찬 담당·관리자 + 문서별 `canEditPolicy`) · `policy.publish`(관리자만, 거부 감사). 감사 로그 `policy.draft` · `policy.publish`는 문서·버전만(본문 0). 메뉴 `정책 페이지`(`/admin/pages`) 추가.
+- **빈 문서 뼈대**: 설계 6.1에 항목 이름이 적힌 편집 원칙만 넣었다. 나머지 문서의 PRD 3장 항목 이름은 PO 확인 후 `POLICY_SKELETON`에 더한다.
+- **가입과 비밀번호 찾기의 열림 조건을 나눴다**(끝 검증에서): 정책 게시본 조건은 새 가입(`signupOpen`)에만 건다. 비밀번호 찾기·확인 메일 다시 받기·로그인 화면의 [비밀번호를 잊으셨나요?]는 `memberAuthOpen`(= `members` + 메일 설정, 설계 2.3·4.2) — 약관을 내렸다고 기존 회원이 비밀번호를 못 찾으면 안 된다.
+- **시험 쪽 고침**: 가입을 쓰는 E2E(`account-signup`·`account-recovery`·`account-my`)는 `e2e/lib/policy-fixture.mjs publishSignupPolicies`로 가짜 약관·처리방침 게시본(시험 표시 문장 한 줄)을 만들고 끝나면 지운다(트리거를 끈 트랜잭션, 이 실행이 만든 행만, `staff.cleanup()` 전). `w2b-acceptance`의 '꺼진 경로' 목록에서 이미 열린 `/about/measurement`(W2-c)를 뺐다. 이전 판 안내 문장은 한 덩어리 글자로 출력(React 텍스트 구분 표시 때문에 글자 비교가 끊겼다).
+- 시험 결과 (2026-10-20): 타입·린트 · DB 541 · RLS 검증(표 43) · 웹 단위 2,298 · 새 E2E `policy-pages` 7 · 회귀 `account-signup` 9 · `account-recovery` 7 · `account-my` 6 · `w2b-acceptance` 14 모두 통과.
+- **남은 것**: `policy_page_viewed` 이벤트 전송(화면에서 보내기만), 5단계에서 `/help/*`·`/about/corrections` 폼.
 ### 11.5 5단계 — 고객센터·문의함·감사 403
 ### 11.6 6단계 — 브리핑 사전 알림·보존 기한 배치
 ### 11.7 7단계 — 수용 E2E

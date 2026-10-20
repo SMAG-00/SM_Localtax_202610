@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { connection } from "next/server";
 import { Footer } from "@ltr/ui";
+import { maskEmailForDisplay } from "@/lib/policy/email";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteLinkProvider } from "@/components/site/SiteLinkProvider";
 import { closedChrome, getSiteChrome, readPublic, type SiteChrome } from "@/lib/server/public";
@@ -30,7 +31,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
       <main id="main" tabIndex={-1} className="focus:outline-none">
         {children}
       </main>
-      <Footer disclaimer={FOOTER_DISCLAIMER} links={footerLinks(c.policyLinks)} />
+      <Footer disclaimer={FOOTER_DISCLAIMER} links={footerLinks(c.footerLinks)} info={c.company.map((r) => ({ label: r.label, value: maskEmailForDisplay(r.value) }))} />
     </SiteLinkProvider>
   );
 }

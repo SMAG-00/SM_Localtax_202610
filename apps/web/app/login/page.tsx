@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Eyebrow, brand } from "@ltr/ui";
 import { memberNextPath } from "@/lib/auth/member-next";
-import { signupOpen } from "@/lib/server/auth-guard";
+import { memberAuthOpen } from "@/lib/server/auth-guard";
 import { getViewer } from "@/lib/server/dal";
 import { adminClient } from "@/lib/server/supabase";
 
@@ -28,7 +28,7 @@ export default async function MemberLoginPage({ searchParams }: Props) {
   const error = typeof q.e === "string" && Object.hasOwn(MESSAGES, q.e) ? MESSAGES[q.e] : null;
   const notice = q.reset === "1" ? "비밀번호를 바꿨습니다 — 새 비밀번호로 로그인해 주세요" : q.withdrawn === "1" ? "탈퇴가 완료되었습니다" : null;
   const db = adminClient();
-  const canReset = db ? await signupOpen(db).catch(() => false) : false;
+  const canReset = db ? await memberAuthOpen(db).catch(() => false) : false;
   return (
     <main className="mx-auto w-full max-w-md px-4 py-16">
       <p className="text-[17px] font-extrabold tracking-tight text-navy-900">

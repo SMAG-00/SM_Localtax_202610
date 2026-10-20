@@ -1,6 +1,9 @@
 import "server-only";
 import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { effectiveFeatures } from "@/lib/policy/feature-open";
+import { mailEnv } from "../env";
+import { mailConfigured } from "../mail/config";
 import { toListItems, type ArticleListItem, type Lookups } from "./cards";
 import type { LocalTopic } from "@ltr/ui";
 import { LOCAL_TOPICS, PUBLIC_SETTING_KEYS, type SectionKey } from "./constants";
@@ -22,9 +25,26 @@ import { parsePublicSettings, type PublicSettings } from "./settings";
 
 type Db = SupabaseClient;
 
+/** 게시본이 있는 정책 문서 (뷰 public_policy_versions의 published) */
+export const readPublishedDocKeys = cache(async (): Promise<ReadonlySet<string>> => {
+  const rows = await rowsOf<{ doc_key: string }>(publicDb().from("public_policy_versions").select("doc_key").eq("status", "published"), "정책 게시본");
+  return new Set(rows.map((r) => r.doc_key));
+});
+
+/** 바닥글 회사 정보 줄의 원본 (settings.company_info — 없으면 null) */
+export const readCompanyInfo = cache(async (): Promise<unknown> => {
+  const rows = await rowsOf<{ key: string; value: unknown }>(publicDb().from("settings").select("key, value").eq("key", "company_info"), "회사 정보");
+  return rows[0]?.value ?? null;
+});
+
+// 기능 키는 '켜짐'이 아니라 의존(게시본·메일 설정)까지 채운 '실제로 열린' 값으로 내보낸다 (W2-e 6.3) — 링크와 화면이 같은 판정을 쓴다
 export const readPublicSettings = cache(async (): Promise<PublicSettings> => {
-  const rows = await rowsOf<{ key: string; value: unknown }>(publicDb().from("settings").select("key, value").in("key", [...PUBLIC_SETTING_KEYS]), "공개 설정");
-  return parsePublicSettings(rows);
+  const [rows, published] = await Promise.all([
+    rowsOf<{ key: string; value: unknown }>(publicDb().from("settings").select("key, value").in("key", [...PUBLIC_SETTING_KEYS]), "공개 설정"),
+    readPublishedDocKeys(),
+  ]);
+  const s = parsePublicSettings(rows);
+  return { ...s, features: effectiveFeatures(s.features, published, mailConfigured(mailEnv())) };
 });
 
 /** 공개 분야 (RLS — visible만) */

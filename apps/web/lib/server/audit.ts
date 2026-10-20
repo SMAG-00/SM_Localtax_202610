@@ -32,6 +32,7 @@ export const targetOf = {
   homeCuration: (id: number | string) => `home_curations:${id}`,
   situation: (id: number | string) => `situations:${id}`,
   requirement: (id: number | string) => `news_partner_requirements:${id}`,
+  policy: (docKey: string, version: number | string) => `policy_versions:${docKey}:${version}`,
   synonym: (id: number | string) => `search_synonyms:${id}`,
 };
 

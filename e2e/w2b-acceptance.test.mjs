@@ -76,6 +76,8 @@ const CLOSED = [
   // 동영상 목록(W2-c 4단계) — 기능 키 video_list가 꺼진 동안 닫힌 화면 (W2-b 설계 2.3 · W2-c 설계 9장)
   routeRule("/news/video"),
 ];
+/** 정책 주소 묶음(/about/*) 안에서 이미 열린 화면 — 측정 거부 안내(W2-c 1단계 /about/measurement). W2-e 4단계부터 바닥글에 항상 있다(W2-e 설계 6.4) */
+const OPENED_IN_CLOSED = new Set(["/about/measurement"]);
 /** 단계 전 경로·v1.2 경로 — PRD-01A 3장(1단계 라우트 목록에 없는 경로) + PRD-00 8장 'v1.2 경로 대체'의 옛 주소. 옛 주소는 그 자체도 막는다 */
 const STAGED_V12 = (() => {
   const l01a = lineOf(PRD_01A, "1단계 라우트 목록에 없다");
@@ -818,7 +820,7 @@ test("4b) 꺼진 기능·아직 없는 화면·v1.2·단계 전 경로로 가는
   for (const [url, p] of crawl.pages) {
     for (const l of p.links) {
       if (l.origin !== new URL(base).origin || l.inPage) continue;
-      const c = hitRules(l.path, CLOSED);
+      const c = OPENED_IN_CLOSED.has(l.path) ? [] : hitRules(l.path, CLOSED);
       const o = hitRules(l.path, STAGED_V12);
       if (c.length) closed.push(`${url} → ${l.raw} (${c.join(", ")}) '${l.text}'`);
       if (o.length) old.push(`${url} → ${l.raw} (${o.join(", ")}) '${l.text}'`);

@@ -294,7 +294,11 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     related,
     product: null,
     popular,
-    policyLinks: POLICY_LINKS.filter((p) => settings.features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
+    // 정책 링크 7종 + [광고·제휴 문의](page_advertise) — 모두 실제로 열린 기능일 때만 (W2-e 6.4)
+    policyLinks: [
+      ...POLICY_LINKS.filter((p) => settings.features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
+      ...(settings.features.page_advertise ? [{ key: "advertise", label: "광고·제휴 문의", href: "/about/advertise" }] : []),
+    ],
     glossary,
     share: { title, description: shareDescription(a.summary ?? "", slides, badge), image: shareImage, url: view.url },
     view,

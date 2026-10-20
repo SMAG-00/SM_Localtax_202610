@@ -12,6 +12,10 @@ import { chromium } from "playwright";
 import { buildWeb, freePort, localSupabase, startServer } from "./lib/local.mjs";
 import { waitForMail } from "./lib/mail.mjs";
 import { StaffFixture } from "./lib/staff.mjs";
+import { publishSignupPolicies } from "./lib/policy-fixture.mjs";
+
+/** 가입이 열리려면 이용약관·개인정보처리방침 게시본이 있어야 한다(W2-e 6.3) — 시험용 가짜 게시본을 지우는 함수 */
+let removePolicies;
 import { A11Y_MIN, accessibility } from "./lib/a11y.mjs";
 import { measurePage } from "./lib/screen-rules.mjs";
 
@@ -45,6 +49,7 @@ before(async () => {
   buildWeb();
   staff = new StaffFixture(sb);
   await staff.connect();
+  removePolicies = await publishSignupPolicies(staff.db, staff.run);
   db = staff.db;
   await staff.snapshotOperations();
   t0 = (await db.query("select now() as t")).rows[0].t;
@@ -82,6 +87,7 @@ after(async () => {
     await db.query("delete from public.request_throttles where window_start >= $1", [t0]);
     await db.query("delete from public.analytics_events where occurred_at >= $1 and name = 'signup_completed'", [t0]);
   }
+  await removePolicies?.(); // cleanup()이 DB 연결을 닫기 전에
   await staff?.cleanup();
   // staff.cleanup()은 끝에 DB 연결을 닫는다 — 그 뒤의 지우기는 새 연결로 한다(예전에는 닫힌 연결로 지우다 조용히 실패해 지역 행이 남았다)
   if (createdRegion) {

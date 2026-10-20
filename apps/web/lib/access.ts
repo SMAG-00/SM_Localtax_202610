@@ -67,6 +67,8 @@ export const ACTIONS = {
   "readiness.read": "기사 생산·제휴 준비 대시보드 열람 (NAV-13·14)",
   "readiness.requirements": "제휴 규정 버전 등록·고치기·확정 (NAV-13)",
   "query_terms.read": "검색어 집계 열람 (SRCH-03 — 편집 기획 참고)",
+  "policy.edit": "정책 문서 초안 편집 (문서별 고치는 사람 — lib/policy/docs.ts)",
+  "policy.publish": "정책 문서 게시 승인 (법률 검토 승인 기록 필수)",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
@@ -88,6 +90,7 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "settings.edit",
   "situation.publish",
   "readiness.requirements",
+  "policy.publish",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -210,6 +213,12 @@ export function check(viewer: Viewer, action: Action, resource?: Resource): Deci
     // 같게 편집 책임자·관리자만. 가린 값·정규형 합계만 읽는 일이라 거부는 감사 대상이 아니다 (W2-d 설계 8.3 · 12장)
     case "query_terms.read":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("검색어 집계는 편집 책임자와 관리자만 봅니다");
+
+    // 정책 문서 — 편집은 편집 책임자·광고·협찬 담당·관리자(문서별 세부는 canEditPolicy), 게시 승인은 관리자만 (W2-e 10.1)
+    case "policy.edit":
+      return viewer.isAdmin || has(viewer, "editor", "ad_ops") ? ALLOW : deny("정책 문서는 편집 책임자·광고·협찬 담당·관리자가 고칩니다");
+    case "policy.publish":
+      return viewer.isAdmin ? ALLOW : deny(ADMIN_ONLY);
 
     case "partner.read":
       // 편집 책임자는 공동 기획 표기 확인을 위해 읽기만 한다 — 등록·수정은 sponsored.manage

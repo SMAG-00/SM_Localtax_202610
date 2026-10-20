@@ -69,6 +69,8 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "category.edit":          [X, O, X, X, X, X, X, O, X],
   "dictionary.edit":        [X, O, X, X, X, X, X, O, X],
   "settings.edit":          [X, X, X, X, X, X, X, O, X],
+  "policy.edit":            [X, O, X, O, X, X, X, O, X], // 문서별 세부는 canEditPolicy (lib/policy/docs.ts)
+  "policy.publish":         [X, X, X, X, X, X, X, O, X], // 게시 승인은 관리자만
   "partner.read":           [X, O, X, O, X, X, X, O, X], // 편집 책임자는 읽기만 (등록·수정은 sponsored.manage)
   "member.read":            [X, X, X, X, X, X, X, O, X],
   "member.suspend":         [X, X, X, X, X, X, X, O, X],

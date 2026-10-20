@@ -137,7 +137,18 @@ describe("열린 화면 판정 isOpenPath (HOME-02 빈 링크 0 · HELP-05 · �
     for (const href of paths) expect(isOpenPath(href, off), href).toBe(false);
   });
 
-  test.each(["/my", "/brief", "/local/events", "/about/terms", "/about/advertise", "/help/faq"])(
+  test.each([
+    ["/my", "members"],
+    ["/signup", "members"],
+    ["/about/terms", "page_terms"],
+    ["/about/no-email-collection", "page_no_email"],
+    ["/about/advertise", "page_advertise"],
+  ] as const)("%s — 기능 키 %s가 켜져야만 열림 (W2-e 4단계)", (href, key) => {
+    expect(isOpenPath(href, features([key]))).toBe(true);
+    expect(isOpenPath(href, features(FEATURE_KEYS.filter((k) => k !== key)))).toBe(false);
+  });
+
+  test.each(["/brief", "/local/events", "/help/faq"])(
     "%s — 아직 없는 화면은 기능을 모두 켜도 닫힘",
     (href) => expect(isOpenPath(href, features([...FEATURE_KEYS]))).toBe(false),
   );

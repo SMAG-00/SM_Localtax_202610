@@ -1,6 +1,6 @@
 import { parseEmailField } from "@/lib/auth/recovery";
 import { CODE_MESSAGES } from "@/lib/auth/signup-input";
-import { readAuthLimits, requireGuardSecret, signupOpen } from "@/lib/server/auth-guard";
+import { readAuthLimits, requireGuardSecret, memberAuthOpen } from "@/lib/server/auth-guard";
 import { HttpError, errorJson, handle, json } from "@/lib/server/http";
 import { readAccountBody, redirect303 } from "@/lib/server/accounts/body";
 import { resendConfirmMail } from "@/lib/server/accounts/confirm-mail";
@@ -16,7 +16,7 @@ export const POST = handle(async (request: Request) => {
   const { isForm } = body;
   const db = adminClient();
   if (!db) throw new HttpError(503, "서버 설정이 끝나지 않았습니다");
-  if (!(await signupOpen(db))) return errorJson(404, "찾을 수 없습니다");
+  if (!(await memberAuthOpen(db))) return errorJson(404, "찾을 수 없습니다");
   const secret = requireGuardSecret();
   const email = parseEmailField(body.fields.email);
   if (!email) return isForm ? redirect303("/auth/confirm?error=expired&type=signup&e=email") : errorJson(422, CODE_MESSAGES.email, { field: "email" });

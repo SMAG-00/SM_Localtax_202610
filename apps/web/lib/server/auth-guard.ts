@@ -4,6 +4,7 @@ import { clientIp } from "@/lib/analytics/request";
 import { parseAuthLimits, parseMemberSettings, type AuthLimits, type MemberSettings, type ThrottleScope, type ThrottleLimit } from "@/lib/auth/settings";
 import { unconfirmedSignupDays } from "@/lib/auth/recovery";
 import { loginKeys, throttleKey, type LoginKeys } from "@/lib/auth/throttle-key";
+import { effectiveFeatures } from "@/lib/policy/feature-open";
 import { parseFeatures } from "@/lib/server/public/settings";
 import { guardSecret, mailEnv } from "./env";
 import { HttpError } from "./http";
@@ -127,8 +128,28 @@ export async function readUnconfirmedSignupDays(db: SupabaseClient): Promise<num
   return days;
 }
 
-/** 가입이 열려 있나 — `members` 기능 키가 켜져 있고 메일 설정이 있을 때만 (2단계. 정책 게시본 조건은 4단계에서 더한다) */
-export async function signupOpen(db: SupabaseClient): Promise<boolean> {
+/** 게시본이 있는 정책 문서 (service 클라이언트로 읽는다 — 가입 같은 서버 판정용) */
+export async function publishedDocKeys(db: SupabaseClient): Promise<ReadonlySet<string>> {
+  const { data, error } = await db.from("policy_versions").select("doc_key").eq("status", "published");
+  if (error) {
+    console.error("[auth] 정책 게시본 읽기 실패:", error.code, error.message);
+    throw new HttpError(503, UNAVAILABLE);
+  }
+  return new Set((data ?? []).map((r: { doc_key: string }) => r.doc_key));
+}
+
+/** 기존 회원의 메일 기능(비밀번호 찾기·확인 메일 다시 받기)이 열려 있나 — `members` 기능 키 + 메일 설정만 본다 (설계 2.3 · 4.2).
+ *  정책 게시본 조건은 새 가입에만 건다 — 약관을 내렸다고 이미 가입한 회원이 비밀번호를 못 찾으면 안 된다 */
+export async function memberAuthOpen(db: SupabaseClient): Promise<boolean> {
   if (!mailConfigured(mailEnv())) return false;
   return parseFeatures(await readSetting(db, "feature_flags")).members === true;
+}
+
+/** 가입이 열려 있나 — `members` 기능 키가 켜져 있고 이용약관·개인정보처리방침 게시본과 메일 설정이 있을 때만 (설계 2.3 · 6.3) */
+export async function signupOpen(db: SupabaseClient): Promise<boolean> {
+  const mailReady = mailConfigured(mailEnv());
+  if (!mailReady) return false;
+  const raw = parseFeatures(await readSetting(db, "feature_flags"));
+  if (!raw.members) return false;
+  return effectiveFeatures(raw, await publishedDocKeys(db), mailReady).members;
 }

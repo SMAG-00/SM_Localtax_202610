@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Eyebrow, brand } from "@ltr/ui";
 import { RECOVERY_SENT } from "@/lib/auth/recovery";
 import { CODE_MESSAGES } from "@/lib/auth/signup-input";
-import { signupOpen } from "@/lib/server/auth-guard";
+import { memberAuthOpen } from "@/lib/server/auth-guard";
 import { adminClient } from "@/lib/server/supabase";
 
 // 비밀번호 찾기 (/forgot-password, W2-e 설계 4.2) — 일반 HTML 폼. 닫혀 있으면(가입과 같은 열림 조건) 404. 응답 문장은 계정 유무와 상관없이 같다.
@@ -17,7 +17,7 @@ const label = "block text-[15px] font-bold text-navy-900";
 
 export default async function ForgotPasswordPage({ searchParams }: Props) {
   const db = adminClient();
-  if (!db || !(await signupOpen(db).catch(() => false))) notFound();
+  if (!db || !(await memberAuthOpen(db).catch(() => false))) notFound();
   const q = await searchParams;
   const sent = q.sent === "1";
   const error = q.e === "email" ? CODE_MESSAGES.email : q.e === "too_many" ? CODE_MESSAGES.too_many : null;

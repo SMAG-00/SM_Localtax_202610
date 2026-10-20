@@ -12,6 +12,10 @@ import { chromium } from "playwright";
 import { buildWeb, localSupabase, startServer } from "./lib/local.mjs";
 import { mailEnv, waitForMail, inboxFor } from "./lib/mail.mjs";
 import { StaffFixture } from "./lib/staff.mjs";
+import { publishSignupPolicies } from "./lib/policy-fixture.mjs";
+
+/** 가입이 열리려면 이용약관·개인정보처리방침 게시본이 있어야 한다(W2-e 6.3) — 시험용 가짜 게시본을 지우는 함수 */
+let removePolicies;
 
 const SITE = "https://e2e.example.test";
 const SENT = "확인 메일을 보냈습니다 — 메일함을 확인해 주세요";
@@ -60,6 +64,7 @@ before(async () => {
   buildWeb();
   staff = new StaffFixture(sb);
   await staff.connect();
+  removePolicies = await publishSignupPolicies(staff.db, staff.run);
   db = staff.db;
   await staff.snapshotOperations();
   t0 = (await db.query("select now() as t")).rows[0].t;
@@ -70,6 +75,7 @@ after(async () => {
   for (const s of servers) s.stop();
   await browser?.close();
   if (db && t0) await db.query("delete from public.request_throttles where window_start >= $1", [t0]);
+  await removePolicies?.(); // cleanup()이 DB 연결을 닫기 전에
   await staff?.cleanup();
 });
 
