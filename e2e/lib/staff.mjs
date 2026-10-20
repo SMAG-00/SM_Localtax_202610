@@ -206,6 +206,7 @@ export class StaffFixture {
         articleIds,
         amendmentIds,
       ]);
+      await q("delete from public.article_amendments where article_id = any($1::bigint[]) or amendment_id = any($2::bigint[])", [articleIds, amendmentIds]);
       if (amendmentIds.length) {
         const { rows: amSnaps } = await q("select snapshot_id from public.amendment_events where amendment_id = any($1::bigint[]) and snapshot_id is not null", [amendmentIds]);
         await q("delete from public.amendment_events where amendment_id = any($1::bigint[])", [amendmentIds]);

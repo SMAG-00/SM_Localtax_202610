@@ -112,7 +112,7 @@ async function blockerRules(page) {
 
 test("a) 역할별 메뉴 — 편집 책임자 분야·사전(제휴사 편집 메뉴 0), 관리자 설정·회원·역할, 광고 담당 제휴사 / 화면 403", async () => {
   const editor = await login(u.editor);
-  assert.deepEqual(await menuLabels(editor), ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "상황 카드", "분야", "사전", "검색어", "제휴 준비", "문의함", "정책 페이지"]);
+  assert.deepEqual(await menuLabels(editor), ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "상황 카드", "분야", "사전", "검색어", "제휴 준비", "문의함", "정책 페이지"]);
   for (const path of ["/admin/settings", "/admin/members"]) {
     assert.equal((await open(editor, path)).status(), 403, `편집자 ${path}`);
     await editor.getByRole("heading", { name: "이 화면을 쓸 권한이 없습니다" }).waitFor();
@@ -140,7 +140,7 @@ test("a) 역할별 메뉴 — 편집 책임자 분야·사전(제휴사 편집 �
   const admin = await login(u.admin);
   const adminMenu = await menuLabels(admin);
   for (const label of ["분야", "사전", "제휴사", "설정", "회원·역할"]) assert.ok(adminMenu.includes(label), `관리자 메뉴 ${label}: ${adminMenu}`);
-  for (const label of ["검토·발행", "기사 배치", "홈 배치"]) assert.ok(!adminMenu.includes(label), "editor 없는 관리자에게 편집 행위 메뉴 0");
+  for (const label of ["검토·발행", "기사 배치", "홈 배치", "개정 트래커"]) assert.ok(!adminMenu.includes(label), "editor 없는 관리자에게 편집 행위 메뉴 0");
   for (const path of ["/admin/settings", "/admin/members", "/admin/categories", "/admin/dictionaries", "/admin/partners"]) assert.equal((await open(admin, path)).status(), 200, `관리자 ${path}`);
 });
 

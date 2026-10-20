@@ -17,7 +17,7 @@ const SITE = "https://e2e.example.test";
 const ADMIN_EMAIL = "admin-ui-e2e@example.test";
 const NON_NEWSROOM = ["ad_ops", "store_ops", "brand_ops", "expert_ops"];
 const OWN_MENU = { ad_ops: "광고·협찬 콘텐츠", store_ops: "스토어·구독", brand_ops: "브랜드 관리", expert_ops: "전문가 등재" };
-const APPROVE_SORT_PUBLISH_MENUS = ["검토·발행", "기사 배치", "홈 배치"];
+const APPROVE_SORT_PUBLISH_MENUS = ["검토·발행", "기사 배치", "홈 배치", "개정 트래커"];
 // 편집자 화면에 없어야 하는 운영 메뉴 — 편집국 외 역할 4종의 자기 메뉴 + 제휴사 관리(광고 편집 메뉴, 4-2)
 const OPERATIONS_MENUS = [...Object.values(OWN_MENU), "제휴사"];
 const STATUS_LABEL = { idea: "아이디어", assigned: "배정", reporting: "취재 중", fact_check: "사실 확인", review: "검토", published: "발행", held: "보류" };
@@ -606,7 +606,7 @@ test("d) 편집국 외 역할 4종 — 승인·정렬·발행 메뉴 0, 검토·
 
   const editor = await login(u.editor);
   const menu = await menuLabels(editor);
-  assert.deepEqual(menu, ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "상황 카드", "분야", "사전", "검색어", "제휴 준비", "문의함", "정책 페이지"]);
+  assert.deepEqual(menu, ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "상황 카드", "분야", "사전", "검색어", "제휴 준비", "문의함", "정책 페이지"]);
   assert.equal((await open(editor, "/admin/home")).status(), 200, "편집자 홈 배치 화면");
   for (const label of OPERATIONS_MENUS) assert.ok(!menu.includes(label));
   for (const path of ["/admin/store", "/admin/brand", "/admin/experts"]) assert.equal((await open(editor, path)).status(), 403, `편집자 ${path}`);

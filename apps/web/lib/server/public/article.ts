@@ -35,14 +35,13 @@ import {
 import { regionLabel, sponsorBadgeOf, trackerState, type ArticleListItem, type TrackerState } from "./cards";
 import { CONTENT_TYPE_NAMES, LIMITS, POLICY_LINKS, SECTION_INFO, amendmentHref, categoryHref, isSectionKey, partnerHref, personHref, situationHref, type SectionKey } from "./constants";
 import { publicDb, rowsOf } from "./db";
+import { linkedAmendments } from "./amendments";
 import { readTipTerms } from "./glossary";
 import type { TipTerm } from "@/lib/site/glossary-tips";
 import { firstPlayableVideo, type MediaView } from "./media-logic";
 import { readPopularSidebar } from "./rankings";
 import { readArticleList, readCategories, readPublicSettings, readRegions } from "./reads";
 import {
-  AMENDMENT_COLUMNS,
-  AMENDMENT_EVENT_COLUMNS,
   ARTICLE_DETAIL_COLUMNS,
   CORRECTION_COLUMNS,
   MEDIA_COLUMNS,
@@ -51,8 +50,6 @@ import {
   REVISION_COLUMNS,
   SOURCE_COLUMNS,
   num,
-  type AmendmentEventRow,
-  type AmendmentRow,
   type CorrectionRow,
   type PublicArticleRow,
   type PublicMediaRow,
@@ -191,16 +188,14 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     for (const o of overlaps) shared.set(num(o.article_id), (shared.get(num(o.article_id)) ?? 0) + 1);
   }
   const topTagged = [...shared.entries()].sort((x, y) => y[1] - x[1] || y[0] - x[0]).slice(0, TAG_POOL).map(([k]) => k);
-  const [tagged, sameSection, solvedCases, sameAmendment, sameCategory, amendmentRows, eventRows] = await Promise.all([
+  const [tagged, sameSection, solvedCases, sameAmendment, sameCategory, amendmentRows] = await Promise.all([
     readArticleList(db, { ids: topTagged, limit: TAG_POOL }),
     readArticleList(db, { section, limit: SIMILAR_POOL }),
     readArticleList(db, { section, subtype: "solved_case", limit: SIMILAR_POOL }),
     a.amendment_id === null ? Promise.resolve({ items: [], total: 0 }) : readArticleList(db, { amendmentId: num(a.amendment_id), limit: LIMITS.related + 1 }),
     a.category_id === null ? Promise.resolve({ items: [], total: 0 }) : readArticleList(db, { categoryId: num(a.category_id), limit: LIMITS.related + 4 }),
-    a.amendment_id === null ? Promise.resolve([]) : rowsOf<AmendmentRow>(db.from("amendments").select(AMENDMENT_COLUMNS).eq("id", a.amendment_id), "개정 트래커"),
-    a.amendment_id === null
-      ? Promise.resolve([])
-      : rowsOf<AmendmentEventRow>(db.from("amendment_events").select(AMENDMENT_EVENT_COLUMNS).eq("amendment_id", a.amendment_id), "개정 단계 기록"),
+    // 연결된 개정안 — 기사 머리의 단일 지정(amendment_id) + 연결 표 article_amendments (W3 4단계). 공개 개정안만 읽힌다(RLS)
+    linkedAmendments(db, id, a.amendment_id === null ? null : num(a.amendment_id)),
   ]);
 
   const similarCases = selectSimilarCases({ id, section }, [...solvedCases.items, ...tagged.items, ...sameSection.items], shared);
@@ -221,8 +216,14 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     self_calculator: { href: "/calc" },
   };
 
-  const amendment = amendmentRows[0];
-  const stage = amendment ? trackerState(eventRows, settings.confirmStage, today) : null;
+  // 여러 개정안에 연결되면 배너가 뜨는 것 중 가장 최근에 바뀐 하나(없으면 첫째)를 보인다
+  const states = amendmentRows.map((m) => ({ m, s: trackerState(m.events, settings.confirmStage, today) }));
+  const withBanner = states
+    .filter((x) => stageBanner(x.s, { firstPublishedAt: a.first_published_at, substantiveUpdatedAt: a.substantive_updated_at }))
+    .sort((x, y) => Date.parse(y.s.recordedAt ?? "") - Date.parse(x.s.recordedAt ?? ""));
+  const picked = withBanner[0] ?? states[0];
+  const amendment = picked?.m;
+  const stage = picked?.s ?? null;
 
   // 공동 기획 배지·JSON-LD 표기 제목의 제휴사 이름 = 기사가 들고 있는 배지 이름 — 제휴사가 비공개·계약 종료로 바뀌어도 그대로 (ART-10).
   // 제휴사 프로필 링크·제휴 콘텐츠 측정은 공개 제휴사(partnerRow)만

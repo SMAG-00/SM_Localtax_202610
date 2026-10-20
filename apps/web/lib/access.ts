@@ -75,6 +75,8 @@ export const ACTIONS = {
   "inquiry.update": "문의 상태·담당자·메모 변경",
   "inquiry.contact_view": "문의 연락처 보기 (누를 때마다 감사 로그)",
   "audit.amend": "감사 기록 수정·삭제 — 감사 기록 관리자(PO)만",
+  "amendment.record_event": "개정 트래커 — 개정안 만들기·단계 기록·기사 연결 (편집 책임자)",
+  "amendment.correct_event": "개정 트래커 — 단계 기록 정정 (편집 책임자, 사유 필수)",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
@@ -214,6 +216,8 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     case "article.sort":
     case "article.hot":
     case "article.home":
+    case "amendment.record_event":
+    case "amendment.correct_event":
     case "correction.decide":
       return editorOnly(viewer);
 
