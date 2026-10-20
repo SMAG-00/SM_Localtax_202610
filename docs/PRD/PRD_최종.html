@@ -1,0 +1,2188 @@
+<!DOCTYPE html><html lang='ko'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>SM(선명) 지방세·부동산·지자체뉴스 종합 플랫폼 PRD v2.1 정리본</title><link rel='preconnect' href='https://cdn.jsdelivr.net' crossorigin><link rel='stylesheet' href='https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css'><style>/* =====================================================================
+   html-pastel-style · Pastel Card Design System
+   Clean, document-grade pastel cards. Pretendard + soft tints + depth.
+   Load Pretendard in <head>:
+   <link rel="stylesheet"
+     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+   ===================================================================== */
+
+:root{
+  /* ---- neutrals ---- */
+  --ink:#19223C; --text:#37415C; --muted:#6C748C; --faint:#9AA1B4;
+  --bg:#F3F5FB; --card:#FFFFFF; --line:#E6E9F2; --line2:#EEF1F8;
+  --accent:#2F55C6; --accent-soft:#E9EFFD; --accent-ink:#21408F;
+  --navy:#16386E; --navy-bg:#EAF1FB; --navy-bg2:#D9E6F6; --navy-bd:#C8DAF1;
+  --radius:18px;
+  --shadow-sm:0 1px 2px rgba(20,30,60,.05);
+  --shadow-md:0 1px 2px rgba(20,30,60,.04), 0 14px 32px rgba(20,30,60,.07);
+  --shadow-inset:0 2px 10px rgba(20,30,60,.06);
+
+  /* ---- pastel families: bg / bg2(deeper) / border / accent / deep(ink) ---- */
+  --sky-bg:#EAF2FE;   --sky-bg2:#D7E7FD;   --sky-bd:#CBDDFB;   --sky-ac:#3D7BEA;   --sky-dp:#1B4DA0;
+  --orange-bg:#FCEBDA; --orange-bg2:#F9D8BC; --orange-bd:#F5CDA6; --orange-ac:#EA6A17; --orange-dp:#A8500F;
+  --violet-bg:#F1EAFB;--violet-bg2:#E6DAF7;--violet-bd:#DFD0F5;--violet-ac:#875AD2;--violet-dp:#653A9F;
+  --amber-bg:#FBF3D9; --amber-bg2:#F6E8BC; --amber-bd:#F0E0AE; --amber-ac:#D2A11C; --amber-dp:#8A6912;
+  --mint-bg:#E6F5EE;  --mint-bg2:#D2EEDE;  --mint-bd:#C8E7D7;  --mint-ac:#2C9F70;  --mint-dp:#1C744E;
+  --peach-bg:#FDEEE6; --peach-bg2:#FADFCF; --peach-bd:#F8D6C5; --peach-ac:#E0784C; --peach-dp:#B0512B;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:
+    radial-gradient(1100px 460px at 50% -240px, #fff 0%, rgba(255,255,255,0) 70%),
+    var(--bg);
+  color:var(--text);
+  font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  font-size:16px; line-height:1.72; letter-spacing:-.01em;
+  -webkit-font-smoothing:antialiased;
+}
+.page{ max-width:920px; margin:0 auto; padding:40px 22px 96px; }
+.doc{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-md); padding:clamp(26px,5vw,60px);
+}
+
+/* ============ COVER ============ */
+.cover{ background:var(--navy-bg); border:1px solid var(--navy-bd); border-radius:16px;
+  padding:30px 32px 28px; margin:0 0 12px; }
+.eyebrow{ font-size:12.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--navy); margin-bottom:18px; }
+.cover h1{ font-size:clamp(30px,5.4vw,46px); line-height:1.12; font-weight:800;
+  color:var(--navy); margin:0 0 6px; letter-spacing:-.022em; }
+.cover-sub{ font-size:clamp(15px,2.4vw,19px); font-weight:700; color:var(--navy);
+  margin-bottom:16px; letter-spacing:-.01em; }
+.cover-lede{ font-size:clamp(14.5px,2.2vw,17px); color:var(--muted); font-weight:500;
+  margin:0 0 24px; max-width:54ch; }
+
+/* pastel meta cells (blue / pink / purple / yellow) */
+.cover-meta{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+  background:#fff; border:1px solid var(--navy-bd); border-radius:12px; padding:8px; }
+.cm{ border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:4px;
+  border:1px solid transparent; }
+.cm-k{ font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; opacity:.85; }
+.cm-v{ font-size:14.5px; font-weight:800; letter-spacing:-.01em; }
+.cm:nth-child(4n+1){ background:var(--sky-bg);    border-color:var(--sky-bd);    color:var(--sky-dp); }
+.cm:nth-child(4n+2){ background:var(--orange-bg); border-color:var(--orange-bd); color:var(--orange-dp); }
+.cm:nth-child(4n+3){ background:var(--violet-bg); border-color:var(--violet-bd); color:var(--violet-dp); }
+.cm:nth-child(4n+4){ background:var(--amber-bg);  border-color:var(--amber-bd);  color:var(--amber-dp); }
+.cm-k{ color:inherit; } .cm-v{ color:inherit; }
+
+.sync-badge{ display:inline-block; margin-top:18px; font-size:12px; font-weight:700;
+  color:var(--navy); background:#fff; border:1px solid var(--navy-bd);
+  padding:8px 14px; border-radius:10px; line-height:1.5; }
+
+/* ============ HEADINGS / TEXT ============ */
+h2{ font-size:clamp(20px,3vw,25px); font-weight:800; color:var(--navy);
+  letter-spacing:-.02em; line-height:1.25; margin:52px 0 16px; padding-top:24px;
+  border-top:1px solid var(--line); position:relative; }
+h2::before{ content:""; position:absolute; top:-1px; left:0; width:54px; height:3px;
+  background:var(--navy); border-radius:3px; }
+h3{ font-size:17.5px; font-weight:800; color:var(--ink); letter-spacing:-.015em;
+  margin:28px 0 12px; line-height:1.3; }
+p{ margin:0 0 13px; }
+strong{ font-weight:700; color:var(--ink); }
+em{ font-style:normal; color:#586383; font-weight:500; }
+code{ font-family:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace; font-size:.86em;
+  background:var(--accent-soft); color:var(--accent-ink); padding:.16em .5em; border-radius:6px;
+  font-weight:600; word-break:keep-all; }
+
+/* ============ DAY DIVIDER (strong anchor between colored cards) ============ */
+.day-divider{ display:flex; align-items:center; gap:14px; margin:48px 0 8px; padding-top:22px;
+  border-top:2px solid var(--navy); }
+.day-divider .d-badge{ flex:0 0 auto; font-size:12px; font-weight:800; letter-spacing:.06em;
+  color:var(--navy); background:var(--navy-bg); border:1px solid var(--navy-bd); padding:7px 13px; border-radius:9px; }
+.day-divider .d-title{ font-size:clamp(18px,2.6vw,22px); font-weight:800; color:var(--navy);
+  letter-spacing:-.02em; }
+
+/* ============ CARD (pastel families via local vars) ============ */
+.card{
+  --c-bg:#fff; --c-bg2:#F4F6FB; --c-bd:var(--line); --c-ac:var(--accent); --c-dp:var(--ink);
+  position:relative; background:var(--c-bg); border:1px solid var(--c-bd);
+  border-radius:var(--radius); padding:24px 26px 22px; margin:18px 0;
+  box-shadow:var(--shadow-md); overflow:visible;
+}
+.card::before{ content:""; position:absolute; top:0; left:0; right:0; height:4px; background:var(--c-ac); border-radius:var(--radius) var(--radius) 0 0; }
+.card--sky   { --c-bg:var(--sky-bg);    --c-bg2:var(--sky-bg2);    --c-bd:var(--sky-bd);    --c-ac:var(--sky-ac);    --c-dp:var(--sky-dp); }
+.card--orange{ --c-bg:var(--orange-bg); --c-bg2:var(--orange-bg2); --c-bd:var(--orange-bd); --c-ac:var(--orange-ac); --c-dp:var(--orange-dp); }
+.card--violet{ --c-bg:var(--violet-bg); --c-bg2:var(--violet-bg2); --c-bd:var(--violet-bd); --c-ac:var(--violet-ac); --c-dp:var(--violet-dp); }
+.card--amber { --c-bg:var(--amber-bg);  --c-bg2:var(--amber-bg2);  --c-bd:var(--amber-bd);  --c-ac:var(--amber-ac);  --c-dp:var(--amber-dp); }
+.card--mint  { --c-bg:var(--mint-bg);   --c-bg2:var(--mint-bg2);   --c-bd:var(--mint-bd);   --c-ac:var(--mint-ac);   --c-dp:var(--mint-dp); }
+
+/* card header (badge + meta + title) */
+.sess-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 4px; }
+.sess-no{ font-size:12px; font-weight:800; letter-spacing:.08em; color:var(--c-dp);
+  background:rgba(255,255,255,.72); border:1px solid var(--c-bd); padding:4px 11px; border-radius:7px; }
+.sess-time{ font-size:13px; font-weight:700; color:var(--c-dp); opacity:.9; }
+.sess-title{ flex-basis:100%; font-size:19px; font-weight:800; color:var(--ink);
+  letter-spacing:-.015em; margin-top:6px; }
+
+/* meta strip (frosted white on tint) */
+.sess-meta{ font-size:13px; color:var(--text); background:rgba(255,255,255,.66);
+  border:1px solid var(--c-bd); border-radius:10px; padding:10px 14px; margin:10px 0 16px; line-height:1.55; }
+.sess-meta strong{ color:var(--c-dp); }
+.sess-meta em{ color:var(--text); font-weight:600; }
+
+/* small section label */
+.block-label{ font-size:12px; font-weight:800; letter-spacing:.04em; color:var(--c-dp);
+  margin:20px 0 8px; display:flex; align-items:center; gap:7px; }
+.block-label::before{ content:""; width:7px; height:7px; border-radius:2px; background:var(--c-ac); }
+
+/* module head = white inset sub-card on the tint */
+.module-head{ background:#fff; border:1px solid var(--c-bd); border-left:3px solid var(--c-ac);
+  border-radius:10px; padding:10px 14px; margin:16px 0 8px; box-shadow:var(--shadow-sm); }
+.module-head strong{ font-size:15px; color:var(--ink); letter-spacing:-.01em; }
+.module-head em{ color:var(--muted); font-weight:500; }
+
+/* ============ LISTS ============ */
+ul,ol{ margin:6px 0 16px; padding-left:0; list-style:none; }
+li{ position:relative; padding-left:22px; margin:7px 0; line-height:1.66; }
+ul > li::before{ content:""; position:absolute; left:4px; top:.66em; width:6px; height:6px;
+  border-radius:50%; background:var(--c-ac,var(--accent)); }
+ol{ counter-reset:li; }
+ol > li{ padding-left:30px; counter-increment:li; }
+ol > li::before{ content:counter(li); position:absolute; left:0; top:.05em; width:21px; height:21px;
+  background:var(--c-ac,var(--accent)); color:#fff; border-radius:50%; font-size:11px;
+  font-weight:800; display:flex; align-items:center; justify-content:center; }
+li ul{ margin:6px 0 4px; }
+li ul > li{ padding-left:20px; }
+li ul > li::before{ width:5px; height:5px; background:var(--faint); top:.62em; }
+
+/* checklist */
+ul > li.check{ padding-left:28px; margin:6px 0; }
+ul > li.check::before{ content:""; left:1px; top:.28em; width:14px; height:14px; border-radius:4px;
+  border:1.8px solid var(--c-ac,var(--accent)); background:rgba(255,255,255,.7); }
+
+/* ============ TABLES (white container, tinted header) ============ */
+.tbl-wrap{ overflow-x:auto; margin:14px 0 18px; border:1px solid var(--c-bd,var(--line));
+  border-radius:12px; background:#fff; box-shadow:var(--shadow-sm); }
+table{ width:100%; min-width:520px; border-collapse:collapse; font-size:14px; background:#fff; }
+thead th{ background:var(--c-bg2,#F4F6FB); color:var(--c-dp,var(--ink)); font-weight:800;
+  text-align:left; font-size:12.5px; padding:11px 14px; border-bottom:1px solid var(--c-bd,var(--line)); white-space:nowrap; }
+tbody td{ padding:11px 14px; border-bottom:1px solid var(--line2); vertical-align:top;
+  line-height:1.6; color:var(--text); }
+tbody tr:last-child td{ border-bottom:0; }
+tbody td:first-child{ font-weight:700; color:var(--ink); }
+
+/* ============ CALLOUTS (pastel + icon chip) ============ */
+.callout{ display:flex; gap:11px; align-items:flex-start; margin:14px 0; padding:13px 16px;
+  border-radius:12px; font-size:14.5px; line-height:1.6; border:1px solid transparent; }
+.callout .ico{ flex:0 0 auto; width:22px; height:22px; border-radius:7px; color:#fff;
+  font-size:13px; font-weight:900; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+.callout strong{ color:inherit; }
+.callout.info{ background:var(--sky-bg);   border-color:var(--sky-bd);   color:var(--sky-dp); }
+.callout.info .ico{ background:var(--sky-ac); }
+.callout.tip{  background:var(--amber-bg);  border-color:var(--amber-bd);  color:var(--amber-dp); }
+.callout.tip .ico{ background:var(--amber-ac); }
+.callout.ok{   background:var(--mint-bg);   border-color:var(--mint-bd);   color:var(--mint-dp); }
+.callout.ok .ico{ background:var(--mint-ac); }
+.callout.note{ background:var(--violet-bg); border-color:var(--violet-bd); color:var(--violet-dp); }
+.callout.note .ico{ background:var(--violet-ac); }
+.callout.warn{ background:var(--peach-bg);  border-color:var(--peach-bd);  color:var(--peach-dp); }
+.callout.warn .ico{ background:var(--peach-ac); }
+
+/* quote / pain-point */
+blockquote{ margin:14px 0; padding:13px 17px; background:rgba(255,255,255,.6);
+  border-left:3px solid var(--c-ac,var(--accent)); border-radius:0 10px 10px 0; color:var(--text); }
+blockquote p{ margin:0; font-weight:600; }
+blockquote p em{ color:var(--muted); }
+
+/* ============ MISC ============ */
+hr{ border:0; height:1px; background:transparent; margin:26px 0; }
+.footer-note, .doc > p:last-child em{ display:block; margin-top:28px; padding-top:18px;
+  border-top:1px solid var(--line); color:var(--faint); font-size:13px; font-weight:500; }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:680px){
+  .page{ padding:16px 12px 60px; }
+  .cover-meta{ grid-template-columns:repeat(2,1fr); }
+  .card{ padding:20px 18px; }
+}
+
+/* ============ PRINT ============ */
+@media print{
+  body{ background:#fff; }
+  .page{ padding:0; max-width:none; }
+  .doc{ border:0; box-shadow:none; border-radius:0; padding:0; }
+  .card,.tbl-wrap,table,.module-head,blockquote,.callout{
+    break-inside:avoid; box-shadow:none; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  h2,h3,.day-divider{ break-after:avoid; }
+}
+
+/* ===== generic-document helpers ===== */
+.card h3{ color:var(--c-dp); margin:18px 0 10px; font-size:16px; }
+.cover-lede:last-child{ margin-bottom:0; }
+.callout .cbody{ flex:1; min-width:0; }
+.callout .cbody > :first-child{ margin-top:0; }
+.callout .cbody p{ margin:0 0 6px; }
+.callout .cbody p:last-child{ margin:0; }
+.callout .cbody ul,.callout .cbody ol{ margin:6px 0; }
+.callout .cbody strong{ color:inherit; }
+/* intro prose between cover and first card */
+.intro{ margin:4px 0 6px; }
+
+/* ============ TABS (PRD 탭형 덧붙임) ============ */
+.page.page--tabs{ max-width:1240px; }
+.cover-meta{ margin-top:16px; }
+.cm{ background:#fff; border:1px solid var(--navy-bd); border-radius:10px; padding:9px 12px; display:flex; flex-direction:column; gap:2px; }
+.cm-k{ font-size:11.5px; font-weight:700; color:var(--muted); letter-spacing:.04em; }
+.cm-v{ font-size:14px; font-weight:800; color:var(--navy); word-break:keep-all; overflow-wrap:anywhere; }
+.sync-badge{ margin-top:12px; font-size:13px; color:var(--muted); }
+.tabs-layout{ margin-top:18px; }
+.tabnav{ position:sticky; top:0; z-index:5; background:rgba(255,255,255,.94); backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--line); margin:0 calc(-1 * clamp(26px,5vw,60px)); padding:10px clamp(26px,5vw,60px); }
+.tabnav-tools{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px; }
+.tabnav-title{ font-size:12px; font-weight:800; letter-spacing:.12em; color:var(--muted); }
+.allbtn{ font:inherit; font-size:12.5px; font-weight:700; color:var(--navy); background:var(--navy-bg);
+  border:1px solid var(--navy-bd); border-radius:999px; padding:5px 12px; cursor:pointer; min-height:32px; }
+.allbtn[aria-pressed="true"]{ background:var(--navy); color:#fff; border-color:var(--navy); }
+.tablist{ display:flex; gap:6px; overflow-x:auto; scrollbar-width:thin; position:relative; padding-bottom:2px; }
+.tab{ --t-ac:var(--accent); --t-bg:var(--accent-soft); --t-dp:var(--accent-ink);
+  font:inherit; display:flex; align-items:center; gap:8px; flex:0 0 auto; cursor:pointer; text-align:left;
+  background:transparent; border:1px solid transparent; border-radius:10px; padding:7px 11px; min-height:40px;
+  color:var(--text); font-size:14px; font-weight:600; line-height:1.35; white-space:nowrap; }
+.tab:hover{ background:var(--bg); }
+.tab:focus-visible,.allbtn:focus-visible,.pager button:focus-visible{ outline:2px solid var(--t-ac,var(--accent)); outline-offset:2px; }
+.tab-no{ flex:0 0 auto; min-width:26px; text-align:center; font-size:11.5px; font-weight:800; color:var(--t-dp);
+  background:var(--t-bg); border:1px solid color-mix(in srgb, var(--t-ac) 30%, transparent); border-radius:6px; padding:2px 6px; }
+.tab[aria-selected="true"]{ background:var(--t-bg); border-color:color-mix(in srgb, var(--t-ac) 45%, transparent); color:var(--t-dp); font-weight:800; }
+.tab[aria-selected="true"] .tab-no{ background:var(--t-ac); color:#fff; border-color:var(--t-ac); }
+.tab--sky{ --t-ac:var(--sky-ac); --t-bg:var(--sky-bg); --t-dp:var(--sky-dp); }
+.tab--orange{ --t-ac:var(--orange-ac); --t-bg:var(--orange-bg); --t-dp:var(--orange-dp); }
+.tab--violet{ --t-ac:var(--violet-ac); --t-bg:var(--violet-bg); --t-dp:var(--violet-dp); }
+.tab--amber{ --t-ac:var(--amber-ac); --t-bg:var(--amber-bg); --t-dp:var(--amber-dp); }
+.tab--mint{ --t-ac:var(--mint-ac); --t-bg:var(--mint-bg); --t-dp:var(--mint-dp); }
+h2.sess-title{ font-size:clamp(19px,2.6vw,22px); color:var(--ink); margin:6px 0 4px; padding:0; border:0; line-height:1.3; }
+h2.sess-title::before{ display:none; }
+.panels > .card:first-child{ margin-top:14px; }
+.panels > .card{ scroll-margin-top:120px; }
+.panels > .card:focus{ outline:none; }
+.panels > .card:focus-visible{ outline:2px solid var(--c-ac); outline-offset:3px; }
+.tbl-wrap td,.tbl-wrap th{ word-break:keep-all; overflow-wrap:anywhere; }
+.embed-ph{ display:flex; gap:10px; align-items:baseline; margin:12px 0 16px; padding:10px 14px; border:1px dashed var(--c-bd);
+  border-radius:12px; background:rgba(255,255,255,.55); color:var(--muted); font-size:14px; }
+.embed-ph span{ flex:0 0 auto; font-size:11.5px; font-weight:800; color:var(--c-dp); background:#fff; border:1px solid var(--c-bd);
+  border-radius:6px; padding:1px 7px; }
+.pager{ display:flex; justify-content:space-between; gap:10px; margin-top:22px; padding-top:14px; border-top:1px dashed var(--c-bd); }
+.pager button{ font:inherit; font-size:13.5px; font-weight:700; color:var(--c-dp); background:rgba(255,255,255,.75);
+  border:1px solid var(--c-bd); border-radius:10px; padding:8px 13px; cursor:pointer; min-height:40px; max-width:48%; text-align:left; }
+.pager button:hover{ background:#fff; }
+.pager .next{ margin-left:auto; text-align:right; }
+.pager small{ display:block; font-size:11.5px; font-weight:600; color:var(--muted); }
+html:not(.js) .tabnav, html:not(.js) .pager{ display:none; }
+.doc-foot{ margin-top:26px; font-size:12.5px; color:var(--muted); text-align:center; }
+@media (min-width:1100px){
+  .tabs-layout{ display:grid; grid-template-columns:250px minmax(0,1fr); gap:26px; align-items:start; }
+  .tabnav{ top:16px; margin:14px 0 0; padding:12px 10px; border:1px solid var(--line); border-radius:14px;
+    max-height:calc(100vh - 32px); overflow:auto; background:#fff; box-shadow:var(--shadow-sm); }
+  .tabnav-tools{ flex-direction:column; align-items:stretch; padding:0 4px; }
+  .tablist{ flex-direction:column; overflow:visible; }
+  .tab{ white-space:normal; width:100%; }
+}
+@media (max-width:680px){
+  .tabnav{ margin:0 -12px; padding:8px 12px; }
+  .cover{ padding:22px 18px; }
+  .pager button{ font-size:13px; }
+}
+@media print{
+  .tabnav,.pager{ display:none !important; }
+  .panels > .card{ display:block !important; }
+  .tabs-layout{ display:block; }
+}
+</style></head><body><div class='page page--tabs'><div class='doc'><header class="cover"><div class="eyebrow">PRD · 최상위 기준 문서</div><h1>SM(선명) 지방세·부동산·지자체뉴스 종합 플랫폼 PRD v2.1 정리본</h1><p class="cover-lede">Oct 16, 2026 · @SMAG</p><div class="cover-meta"><div class="cm"><span class="cm-k">판</span><span class="cm-v">v2.1 정리본</span></div><div class="cm"><span class="cm-k">장</span><span class="cm-v">15개 (0~14장)</span></div><div class="cm"><span class="cm-k">원본</span><span class="cm-v">PRD_최종.md (커밋 2c80708)</span></div><div class="cm"><span class="cm-k">만든 날</span><span class="cm-v">2026-10-20</span></div></div><div class="sync-badge">읽기용 사본입니다. 내용이 다르면 원본 md가 맞습니다.</div></header><div class="tabs-layout"><nav class="tabnav" aria-label="PRD 장 목록"><div class="tabnav-tools"><span class="tabnav-title">장 목록</span><button type="button" class="allbtn" aria-pressed="false">모든 장 펼치기</button></div><div class="tablist" role="tablist" aria-label="PRD 장"><button type="button" role="tab" class="tab tab--sky" id="tab-ch0" aria-controls="ch0" aria-selected="false" tabindex="-1"><span class="tab-no">0</span><span class="tab-label">한눈에 보기</span></button><button type="button" role="tab" class="tab tab--orange" id="tab-ch1" aria-controls="ch1" aria-selected="false" tabindex="-1"><span class="tab-no">1</span><span class="tab-label">v2.0 분석 결과와 정리 방식</span></button><button type="button" role="tab" class="tab tab--violet" id="tab-ch2" aria-controls="ch2" aria-selected="false" tabindex="-1"><span class="tab-no">2</span><span class="tab-label">문서 정보·불변 원칙·ID 체계</span></button><button type="button" role="tab" class="tab tab--amber" id="tab-ch3" aria-controls="ch3" aria-selected="false" tabindex="-1"><span class="tab-no">3</span><span class="tab-label">사업 목표·사용자·성공 지표</span></button><button type="button" role="tab" class="tab tab--mint" id="tab-ch4" aria-controls="ch4" aria-selected="false" tabindex="-1"><span class="tab-no">4</span><span class="tab-label">서비스 구조</span></button><button type="button" role="tab" class="tab tab--sky" id="tab-ch5" aria-controls="ch5" aria-selected="false" tabindex="-1"><span class="tab-no">5</span><span class="tab-label">4대 콘텐츠 분야</span></button><button type="button" role="tab" class="tab tab--orange" id="tab-ch6" aria-controls="ch6" aria-selected="false" tabindex="-1"><span class="tab-no">6</span><span class="tab-label">공통 서비스</span></button><button type="button" role="tab" class="tab tab--violet" id="tab-ch7" aria-controls="ch7" aria-selected="false" tabindex="-1"><span class="tab-no">7</span><span class="tab-label">신뢰·성장 엔진</span></button><button type="button" role="tab" class="tab tab--amber" id="tab-ch8" aria-controls="ch8" aria-selected="false" tabindex="-1"><span class="tab-no">8</span><span class="tab-label">수익 모델</span></button><button type="button" role="tab" class="tab tab--mint" id="tab-ch9" aria-controls="ch9" aria-selected="false" tabindex="-1"><span class="tab-no">9</span><span class="tab-label">기술·인프라·데이터</span></button><button type="button" role="tab" class="tab tab--sky" id="tab-ch10" aria-controls="ch10" aria-selected="false" tabindex="-1"><span class="tab-no">10</span><span class="tab-label">법률·권리 게이트</span></button><button type="button" role="tab" class="tab tab--orange" id="tab-ch11" aria-controls="ch11" aria-selected="false" tabindex="-1"><span class="tab-no">11</span><span class="tab-label">단계 로드맵과 작업 단위</span></button><button type="button" role="tab" class="tab tab--violet" id="tab-ch12" aria-controls="ch12" aria-selected="false" tabindex="-1"><span class="tab-no">12</span><span class="tab-label">핵심 수용 테스트와 1단계 출시 판정</span></button><button type="button" role="tab" class="tab tab--amber" id="tab-ch13" aria-controls="ch13" aria-selected="false" tabindex="-1"><span class="tab-no">13</span><span class="tab-label">결정·실사·감수 필요 사항</span></button><button type="button" role="tab" class="tab tab--mint" id="tab-ch14" aria-controls="ch14" aria-selected="false" tabindex="-1"><span class="tab-no">14</span><span class="tab-label">v2.0 대응표와 참고 자료</span></button></div></nav><div class="panels"><section class="card card--sky" role="tabpanel" id="ch0" aria-labelledby="tab-ch0" tabindex="0"><div class="sess-head"><span class="sess-no">0장</span><h2 class="sess-title">한눈에 보기</h2></div>
+<p>SM(선명) 플랫폼은 월간지방세연구(<code>localtaxresearch.com</code>)를 <strong>지방세 중심의 4대 분야 전문 매체</strong>로 다시 짓고, 그 신뢰를 <strong>구독·도서·교육·상담 매출</strong>로 바꾼다. 이 정리본은 상세본 SM 지방세·부동산·지자체뉴스 종합 플랫폼 PRD v2.0의 16개 장과 신규 요구 147개를 하나의 흐름으로 다시 묶은 것이다. 요구별 상세 수용 기준은 상세본의 같은 ID를 따른다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>항목</th>
+<th>핵심 내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>핵심 메시지</td>
+<td>“부동산과 지자체의 변화를 읽고 대응하려면 지방세 이해가 필수다”</td>
+</tr>
+<tr>
+<td>궁극 목표</td>
+<td>한국지방세연구회(주) 수익 다변화 — 구독료, 책자 판매, 교육, 기관 구독, SM 소속 전문가 상담</td>
+</tr>
+<tr>
+<td>4대 분야(상단 메뉴)</td>
+<td>① 지방세 ② 부동산 ③ 부동산개발금융 ④ 지자체뉴스</td>
+</tr>
+<tr>
+<td>공통 서비스</td>
+<td>모든 기사의 「지방세로 읽기」 박스 · 모든 페이지 우측 하단 AI 도우미(Claude API) · 전문가 소개(세무사·공인회계사·변호사·법무사·부동산 전문가) · SM 소속 전문가 연락 요청 · SM 부동산 세금 계산기 연결</td>
+</tr>
+<tr>
+<td>신뢰 기반</td>
+<td>김의효 50년 세무 브랜드(증빙 후 표시), 편집·세무 감수, 정정·반론 체계</td>
+</tr>
+<tr>
+<td>유입 전략</td>
+<td>네이버 뉴스 검색 제휴(다음 연 1회 접수 목표), AEO·GEO·SEO 점검 엔진</td>
+</tr>
+<tr>
+<td>기술</td>
+<td>Next.js · Supabase · Vercel · GitHub · Claude API · Resend, 개발 포트 <code>localhost:3001</code>, 비밀값은 <code>.env</code>·플랫폼 환경변수</td>
+</tr>
+<tr>
+<td>단계</td>
+<td>0 실사 → <strong>1 4대 분야·AI 도우미·전문가 소개 공개</strong> → 2 자체 계산기·해석 DB·디지털 구독 → 3 심화·기관 → 4 근거형 지방세봇 → 5 확장</td>
+</tr>
+<tr>
+<td>지키는 선</td>
+<td>세액은 검수 엔진만, AI는 안내·초안만, 국세 금액 미산출, 투자 추천 없음, 보도와 광고 분리, 외부 전문가 소개 대가 없음</td>
+</tr>
+</tbody>
+</table></div>
+<p class="embed-ph"><span>그림 자리</span>플랫폼 구조 · 목표, 4대 분야, 공통 서비스, 기반</p>
+<p>네 분야는 독립 메뉴지만, 아래의 공통 서비스가 독자를 지방세 해설·계산기·전문가로 모으고, 그 신뢰와 연결이 위의 수익 목표를 떠받친다.</p>
+<nav class="pager" aria-label="장 이동"><button type="button" class="next" data-go="ch1"><small>다음 장 →</small>1장 v2.0 분석 결과와 정리 방식</button></nav></section><section class="card card--orange" role="tabpanel" id="ch1" aria-labelledby="tab-ch1" tabindex="0"><div class="sess-head"><span class="sess-no">1장</span><h2 class="sess-title">v2.0 분석 결과와 정리 방식</h2></div>
+<p>v2.0은 요구는 충실하지만 <strong>세 번의 추가 지시(AI 도우미, 전문가 소개, SM 전문가 연락)를 뒤에 덧붙이면서 구조가 흐트러졌다.</strong> 정리본은 내용을 빼지 않고 순서·중복·충돌을 바로잡았다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>v2.0에서 발견한 문제</th>
+<th>정리본의 조치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>AI 도우미(15장)·전문가 소개(16장)가 수용 테스트·참고 자료(14장) <strong>뒤에</strong> 붙어 있음</td>
+<td>6장 ‘공통 서비스’로 옮기고 참고 자료는 맨 끝(14장)에 둠</td>
+</tr>
+<tr>
+<td>2</td>
+<td>인프라 계정·<code>.env</code> 관리(12.2)가 법률 장 안에 섞여 있음</td>
+<td>9장 ‘기술·인프라’로 옮기고 법률은 10장에 따로 모음</td>
+</tr>
+<tr>
+<td>3</td>
+<td>데이터 모델이 11장·15.4·16장 세 곳에 흩어짐</td>
+<td>9.3 통합 데이터 모델 한 표로 합침</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>[결정]</code>·<code>[실사]</code>·<code>[감수]</code> 표시가 30곳 넘게 흩어짐</td>
+<td>13장 한 표로 모아 담당·시점을 붙임</td>
+</tr>
+<tr>
+<td>5</td>
+<td>성공 지표에 AI 도우미·전문가 연락 요청 지표가 없음</td>
+<td>3.3 지표표에 추가</td>
+</tr>
+<tr>
+<td>6</td>
+<td>수익표의 ‘SM 소속 전문가 상담’·‘전문가 유료 등재’가 수익 요구(BIZ)와 연결되지 않음</td>
+<td>8장에서 상품·조건·ID를 한 표로 연결</td>
+</tr>
+<tr>
+<td>7</td>
+<td>원칙 “전문가 수임 중개는 범위 밖”과 SM 전문가 연락 요청이 충돌해 보임</td>
+<td>원칙 8로 한 번에 정의: 외부 전문가는 대가 없는 광고형 소개, SM 소속 전문가는 이용자 동의 기반 연락 요청</td>
+</tr>
+<tr>
+<td>8</td>
+<td>로드맵 그림 1단계에 전문가 소개가 빠짐</td>
+<td>11장 로드맵에 반영</td>
+</tr>
+<tr>
+<td>9</td>
+<td>제품명 ‘SM’의 의미가 문서마다 달리 쓰임(SM 플랫폼·SM 소속)</td>
+<td>‘SM(선명)’ = 브랜드·운영 주체, ‘SM 부동산 세금 플랫폼’ = 기존 계산기 사이트로 구분</td>
+</tr>
+<tr>
+<td>10</td>
+<td>같은 규칙(입력값 비전달, 광고 분리, 고지문 등)이 여러 ID에 반복</td>
+<td>2장 불변 원칙으로 올리고, 각 장은 기능 묶음 표로 요약</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>읽는 법</strong>: 2장 원칙과 13장 결정 사항을 먼저 보고, 구현은 5~9장의 기능 묶음 → 11장 작업 단위 순서로 본다. 개별 요구의 세부 기준이 필요하면 상세본에서 같은 ID를 찾는다.</p>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch0"><small>← 이전 장</small>0장 한눈에 보기</button><button type="button" class="next" data-go="ch2"><small>다음 장 →</small>2장 문서 정보·불변 원칙·ID 체계</button></nav></section><section class="card card--violet" role="tabpanel" id="ch2" aria-labelledby="tab-ch2" tabindex="0"><div class="sess-head"><span class="sess-no">2장</span><h2 class="sess-title">문서 정보·불변 원칙·ID 체계</h2></div>
+<h3>2.1 문서 정보</h3>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>문서</td>
+<td>PRD v2.1 정리본 · 2026-10-16. v2.0 상세본과 함께 쓰며, 충돌 시 정리본의 배치와 원칙을 우선한다</td>
+</tr>
+<tr>
+<td>제품명</td>
+<td>SM(선명) 지방세·부동산·지자체뉴스 종합 플랫폼(가칭). 정식 명칭은 <code>[결정]</code></td>
+</tr>
+<tr>
+<td>운영 주소</td>
+<td><code>localtaxresearch.com</code>(월간지방세연구) 유지</td>
+</tr>
+<tr>
+<td>연계 사이트</td>
+<td>SM 부동산 세금 플랫폼 <code>sm-tax-platform-six.vercel.app</code>(계산기, 변경 없음) · 「안심 상속증여계산기」(상속세·증여세, 연결만)</td>
+</tr>
+<tr>
+<td>구현 주체</td>
+<td>PO가 Claude Code로 개발. 세무 감수자·편집 책임자·법률 검토자는 0단계에 지정</td>
+</tr>
+<tr>
+<td>우선순위</td>
+<td>P0 해당 단계 공개 필수 · P1 해당 단계 목표 · P2 준비되면 구현</td>
+</tr>
+<tr>
+<td>표시</td>
+<td><code>[결정]</code> PO 결정 · <code>[실사]</code> 현황·계약 확인 · <code>[감수]</code> 세무·법률·저작권 검토 · <code>[웹확인]</code> 2026-10-16 웹 확인</td>
+</tr>
+</tbody>
+</table></div>
+<h3>2.2 불변 원칙</h3>
+<ol>
+<li><strong>세액은 감수된 결정론적 엔진만</strong> 낸다. AI는 세액·감면 판정·개별 세무 결론을 만들지 않는다.</li>
+<li>AI와 자동화는 <strong>안내·초안</strong>에만 쓰고, 대외 발행은 사람이 승인한다.</li>
+<li>계산 입력값은 서버·이벤트·URL에 저장하거나 보내지 않는다.</li>
+<li><strong>국세(상속세·증여세·양도세) 금액은 만들지 않고</strong> 외부 계산기·국세청으로 연결한다.</li>
+<li>기존 SM 부동산 세금 플랫폼은 바꾸지 않는다. 1단계는 연결, 2단계는 검수된 엔진을 복사한다.</li>
+<li>기사·정보 목록(행사·분양)·계산 도구·광고·상품을 CMS·URL·화면·구조화 데이터에서 구분한다.</li>
+<li>투자 추천, 시세·금리 예측, 세무 신고 대행은 하지 않는다.</li>
+<li><strong>외부 전문가는 소개 대가 없는 광고형 디렉터리로 소개</strong>하고, <strong>SM 소속 전문가는 이용자가 동의해 남긴 질문 요약을 받아 연락</strong>하는 경우에만 정보를 전달한다.</li>
+<li>출처·기준일·권리가 확인된 자료만 공개하고, 증빙 없는 경력·숫자는 표시하지 않는다.</li>
+<li>Vercel·Supabase 클라우드로 시작해 사내 Docker로 옮길 수 있게 만들고, 개발 포트는 <code>localhost:3001</code>로 고정한다.</li>
+</ol>
+<h3>2.3 ID 체계</h3>
+<p>v1.7의 원본 기능 ID 268개와 <code>REG1-01~17</code>, <code>FAM-01~09</code>, <code>NAV-01~15</code>는 그대로 유지한다. v2.0 이후 신규 ID는 147개다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>접두어</th>
+<th>영역</th>
+<th>개수</th>
+<th>정리본 위치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CORE-01~04</td>
+<td>「지방세로 읽기」·핵심 메시지</td>
+<td>4</td>
+<td>6.1</td>
+</tr>
+<tr>
+<td>TX-01~17</td>
+<td>지방세 분야</td>
+<td>17</td>
+<td>5.1</td>
+</tr>
+<tr>
+<td>PR-01~14</td>
+<td>부동산 분야</td>
+<td>14</td>
+<td>5.2</td>
+</tr>
+<tr>
+<td>DF-01~09</td>
+<td>부동산개발금융 분야</td>
+<td>9</td>
+<td>5.3</td>
+</tr>
+<tr>
+<td>LG-01~16</td>
+<td>지자체뉴스 분야</td>
+<td>16</td>
+<td>5.4</td>
+</tr>
+<tr>
+<td>CHAT-01~17</td>
+<td>AI 도우미</td>
+<td>17</td>
+<td>6.2</td>
+</tr>
+<tr>
+<td>EXPL-01~21</td>
+<td>전문가 소개·SM 전문가 연락 요청</td>
+<td>21</td>
+<td>6.3~6.4</td>
+</tr>
+<tr>
+<td>BR-01~11</td>
+<td>김의효 브랜드</td>
+<td>11</td>
+<td>7.1</td>
+</tr>
+<tr>
+<td>NAV-16~24</td>
+<td>네이버 제휴(추가분)</td>
+<td>9</td>
+<td>7.2</td>
+</tr>
+<tr>
+<td>OPT-01~12</td>
+<td>AEO·GEO·SEO</td>
+<td>12</td>
+<td>7.3</td>
+</tr>
+<tr>
+<td>BIZ-01~11</td>
+<td>수익</td>
+<td>11</td>
+<td>8</td>
+</tr>
+<tr>
+<td>ENV-01~06</td>
+<td>인프라·환경변수</td>
+<td>6</td>
+<td>9.2</td>
+</tr>
+</tbody>
+</table></div>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch1"><small>← 이전 장</small>1장 v2.0 분석 결과와 정리 방식</button><button type="button" class="next" data-go="ch3"><small>다음 장 →</small>3장 사업 목표·사용자·성공 지표</button></nav></section><section class="card card--amber" role="tabpanel" id="ch3" aria-labelledby="tab-ch3" tabindex="0"><div class="sess-head"><span class="sess-no">3장</span><h2 class="sess-title">사업 목표·사용자·성공 지표</h2></div>
+<h3>3.1 성장 순서</h3>
+<p>신뢰받는 전문 보도 → 검색·AI 검색·네이버 유입과 재방문 → 계산·해설·도우미로 문제 해결 → 구독·도서·교육·상담의 유료 가치 검증 → 수익 확대. 지역·부동산·금융 기사는 모두 「지방세로 읽기」로 지방세 해설·계산기·도서·전문가에게 이어진다.</p>
+<h3>3.2 대표 사용자</h3>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>사용자</th>
+<th>첫 과업</th>
+<th>성공 상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>지방세 담당 공무원</td>
+<td>개정 트래커 → 개정 브리핑 → 원문</td>
+<td>기준일이 맞는 원문과 해설을 대조하고 교육원 강좌로 이동</td>
+</tr>
+<tr>
+<td>세무사·기업 세무팀</td>
+<td>해석 사례 검색 → 판례·결정례</td>
+<td>실무 근거를 찾고 도서·교육·디지털 구독으로 이동</td>
+</tr>
+<tr>
+<td>실수요자·조합원</td>
+<td>우리 동네 정비사업 뉴스 → 개발방법 비교 → 취득세 계산</td>
+<td>사업 단계와 세금 영향을 이해</td>
+</tr>
+<tr>
+<td>시행·금융 실무자</td>
+<td>PF·신탁 사례 → 구조 해설 → 칼럼</td>
+<td>구조·규제·세금 쟁점을 파악하고 브리핑 구독</td>
+</tr>
+<tr>
+<td>지역 주민·지방의원</td>
+<td>금주 핫뉴스 → 행사안내 → 프로젝트 트래커</td>
+<td>주간 변화와 공식 일정을 확인하고 재방문</td>
+</tr>
+<tr>
+<td>개별 상담이 필요한 이용자</td>
+<td>AI 도우미 → 전문가 소개 또는 SM 전문가 연락 요청</td>
+<td>자격이 확인된 전문가와 연결</td>
+</tr>
+</tbody>
+</table></div>
+<h3>3.3 성공 지표</h3>
+<p>출시 직후 목표 숫자를 정하지 않고, 1단계 <strong>첫 4주 기준선</strong>을 모은 뒤 다음 단계 시작 때 목표를 정한다. 이벤트에는 질문 원문·계산 입력값·이메일·상세 주소를 넣지 않고, 측정 거부와 GPC를 존중한다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>지표</th>
+<th>정의</th>
+<th>단계</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>분야별 유효 방문</td>
+<td>분야 허브 방문 중 기사 1건 이상을 30초 이상 읽은 세션</td>
+<td>1</td>
+</tr>
+<tr>
+<td>지방세 연결률</td>
+<td>비지방세 분야 기사 세션 중 「지방세로 읽기」·해설·계산기로 이동한 비율</td>
+<td>1</td>
+</tr>
+<tr>
+<td>재방문율</td>
+<td>측정 동의 방문자가 30일 안에 같은 분야를 다시 본 비율</td>
+<td>1</td>
+</tr>
+<tr>
+<td>AI 도우미 해결률</td>
+<td>도우미 대화 중 링크 클릭 또는 ‘도움됨’으로 끝난 비율, 사람 연결률, 대화당 비용</td>
+<td>1</td>
+</tr>
+<tr>
+<td>전문가 연결</td>
+<td>전문가 프로필 조회·외부 연락 클릭, SM 연락 요청 접수 수와 목표 시간 내 연락률</td>
+<td>1</td>
+</tr>
+<tr>
+<td>구독·도서·교육·상담 전환</td>
+<td>브리핑 구독, 지면·디지털 구독, 도서 주문, 교육 신청, SM 상담 계약 건수와 유입 경로</td>
+<td>1부터</td>
+</tr>
+<tr>
+<td>상품별 공헌이익</td>
+<td>상품 매출 − 직접·변동비</td>
+<td>2부터</td>
+</tr>
+<tr>
+<td>AI 검색 노출</td>
+<td>서치 콘솔·서치어드바이저 노출, AI 답변 엔진 유입, 표본 질의 인용 여부</td>
+<td>1부터</td>
+</tr>
+<tr>
+<td>제휴 준비도</td>
+<td>자체 취재 기사 비율, 근거·정정 이력 충족률, 유사도 경고</td>
+<td>1부터</td>
+</tr>
+</tbody>
+</table></div>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch2"><small>← 이전 장</small>2장 문서 정보·불변 원칙·ID 체계</button><button type="button" class="next" data-go="ch4"><small>다음 장 →</small>4장 서비스 구조</button></nav></section><section class="card card--mint" role="tabpanel" id="ch4" aria-labelledby="tab-ch4" tabindex="0"><div class="sess-head"><span class="sess-no">4장</span><h2 class="sess-title">서비스 구조 — 메뉴·URL·홈·핵심 여정</h2></div>
+<h3>4.1 화면 골격</h3>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>영역</th>
+<th>구성</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>상단 메뉴</td>
+<td><strong>지방세 · 부동산 · 부동산개발금융 · 지자체뉴스</strong></td>
+</tr>
+<tr>
+<td>유틸 메뉴</td>
+<td>계산기 · 전문가 소개 · 구독·도서 · 교육 · 검색</td>
+</tr>
+<tr>
+<td>모든 페이지 우측 하단</td>
+<td>AI 도우미 “무엇을 도와드릴까요?”(기본 닫힘, 관리자·결제 화면 제외)</td>
+</tr>
+<tr>
+<td>바닥글·기사 하단</td>
+<td>회사 소개, 편집 원칙, 윤리강령, 정정·반론 창구, 광고 정책, 개인정보처리방침, 고객센터</td>
+</tr>
+<tr>
+<td>홈</td>
+<td>핵심 메시지, 4대 분야 카드, 최신 자체 취재, 금주 핫뉴스, 개정 트래커 하이라이트, 김의효 칼럼, 자사 상품 카드 1개, 분야별 전문가 소개 카드</td>
+</tr>
+</tbody>
+</table></div>
+<h3>4.2 URL</h3>
+<p>기사는 분야와 상관없이 하나의 영속 경로 <code>/news/[slug]</code>를 쓰고, 분야·지자체 페이지가 기사를 모아 보여 준다. v1.7의 <code>/region/...</code>은 <code>/local/...</code>로 바꾸고 배포된 경로가 있으면 1:1로 301 처리한다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>영역</th>
+<th>경로</th>
+<th>1단계</th>
+<th>이후</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>지방세</td>
+<td><code>/tax</code>, <code>/tax/amendments(/[slug])</code>, <code>/tax/interpretations</code>, <code>/tax/columns</code></td>
+<td>허브, 개정 트래커, 해석 해설, 칼럼</td>
+<td>해석 DB·3단 보기(<code>/law</code>, <code>/cases</code>)</td>
+</tr>
+<tr>
+<td>계산기</td>
+<td><code>/calc</code></td>
+<td>SM 계산기 5종 안내(새 창)</td>
+<td>자체 계산기 <code>/calc/acquisition</code> 등</td>
+</tr>
+<tr>
+<td>부동산</td>
+<td><code>/realestate</code>, <code>/realestate/projects/[slug]</code>, <code>/realestate/development-methods(/[method])</code>, <code>/realestate/inheritance-gift</code></td>
+<td>허브, 프로젝트 트래커, 개발방법 비교, 상속·증여 안내</td>
+<td>데이터 연동</td>
+</tr>
+<tr>
+<td>개발금융</td>
+<td><code>/finance</code>, <code>/finance/trust-pf</code>, <code>/finance/cases</code>, <code>/finance/columns</code></td>
+<td>허브, 구조 해설, 사례, 칼럼</td>
+<td>사례 DB, 세금 가이드</td>
+</tr>
+<tr>
+<td>지자체뉴스</td>
+<td><code>/local/[sido](/[sigungu])</code>, <code>/local/[sido]/weekly/[yyyy-ww]</code>, <code>/local/events(/[slug])</code></td>
+<td>허브, 금주 핫뉴스, 행사안내</td>
+<td>공공데이터 연동, 지도(P2)</td>
+</tr>
+<tr>
+<td>전문가</td>
+<td><code>/experts</code>, <code>/experts/[category]</code>, <code>/experts/request</code></td>
+<td>전문가 소개, SM 전문가 연락 요청</td>
+<td>유료 등재(P2)</td>
+</tr>
+<tr>
+<td>인물</td>
+<td><code>/people/[slug]</code></td>
+<td>기자·필자·감수자·전문가 프로필</td>
+<td>—</td>
+</tr>
+<tr>
+<td>상품</td>
+<td><code>/store</code>, <code>/store/books/[slug]</code>, <code>/store/subscription</code>, <code>/edu</code></td>
+<td>카탈로그·주문 경로, 교육원 강좌</td>
+<td>결제·디지털 구독</td>
+</tr>
+<tr>
+<td>기타</td>
+<td><code>/brief</code>, <code>/search</code>, <code>/glossary</code>, <code>/about/*</code></td>
+<td>브리핑, 통합 검색, 용어사전, 편집 원칙 등</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<p>빈 지역 페이지는 <code>noindex</code>, 행정구역 코드·영속 slug 규칙은 v1.7 <code>REG1-01·12</code>를 따른다. AI 도우미 위젯은 별도 URL이나 색인 페이지를 만들지 않는다.</p>
+<h3>4.3 핵심 여정</h3>
+<ol>
+<li><strong>지방세 공무원</strong>: 홈 → 개정 트래커(2026년 지방세제 개편안) → 개정 브리핑 → 원문 → 교육원 개정세법 강좌 신청.</li>
+<li><strong>조합원</strong>: “○○구역 관리처분 취득세” 검색 → 프로젝트 페이지 → 재개발 상세 → 「지방세로 읽기」 → SM 취득세 계산기(새 창).</li>
+<li><strong>개발금융 실무자</strong>: PF 책임준공 사례 → 신탁 구조 해설 → 칼럼 → 브리핑 구독 → (3단계) 기관 구독.</li>
+<li><strong>지역 주민</strong>: 우리 구 금주 핫뉴스 → 정비계획 주민설명회 → 프로젝트 트래커 → 관심 프로젝트 알림.</li>
+<li><strong>개별 상담이 필요한 이용자</strong>: AI 도우미에 “제 경우 감면되나요?” → 관련 해설 + ‘전문가 직접 찾기’ 또는 ‘SM 전문가에게 연락 받기’ → 요약 확인·동의 후 제출 → 담당 전문가 연락.</li>
+<li><strong>AI 검색 유입</strong>: AI 모드 답변의 인용 링크 → 「지방세 50문 50답」 → 관련 도서 카드 → 스토어.</li>
+</ol>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch3"><small>← 이전 장</small>3장 사업 목표·사용자·성공 지표</button><button type="button" class="next" data-go="ch5"><small>다음 장 →</small>5장 4대 콘텐츠 분야</button></nav></section><section class="card card--sky" role="tabpanel" id="ch5" aria-labelledby="tab-ch5" tabindex="0"><div class="sess-head"><span class="sess-no">5장</span><h2 class="sess-title">4대 콘텐츠 분야</h2></div>
+<p>네 분야 모두 <strong>1단계는 사람이 검증해 발행하는 최소 기능</strong>(수동 트래커, 편집 큐레이션, 연결형 계산기)으로 열고, 자동 수집·자체 계산은 2단계에 붙인다. 칼럼은 네 분야가 같은 필자 체계(<code>TX-14~17</code>: 실명·자격 검증, 이해관계 공개, “의견이며 개별 자문 아님” 고지)를 쓴다.</p>
+<h3>5.1 지방세</h3>
+<p>계산은 SM 부동산 세금 플랫폼을 이용하고, 개정사항·예규·통칙·유권해석은 <strong>원문과 해설을 분리</strong>해 쌓는다. <code>[웹확인]</code> 2026-08-26 발표된 「2026년 지방세제 개편안」(입법예고 뒤 10월 말 국회 제출 예정)이 첫 개정 트래커 대상이다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>기능 묶음</th>
+<th>ID</th>
+<th>단계</th>
+<th>핵심 규칙</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>계산기 연결</td>
+<td>TX-01~03·06</td>
+<td>1</td>
+<td>SM 계산기 5종을 새 창으로 연결(주소는 설정값), 입력값 비전달, 주 1회 링크 점검, 국세는 「안심 상속증여계산기」</td>
+</tr>
+<tr>
+<td>자체 계산기</td>
+<td>TX-04·05</td>
+<td>2</td>
+<td>SM 엔진 복사, 세목별 공식 결과 30건 원 단위 일치 전 비공개, 확정·공포된 개정만 룰셋 반영</td>
+</tr>
+<tr>
+<td>개정 브리핑·트래커</td>
+<td>TX-07·08</td>
+<td>1 수동 → 2 자동 감지</td>
+<td>단계 배지(발표·입법예고·국회 제출·의결·공포·시행), 미확정 ‘확정 아님’ 표시, 상태 변경 시 관련 기사 갱신 배너</td>
+</tr>
+<tr>
+<td>해석 해설 → 해석 DB</td>
+<td>TX-09~11</td>
+<td>1 → 2</td>
+<td>예규·통칙·유권해석·심판·판례를 유형·세목·조문으로 검색, 원문 스냅샷, 3단 보기 옆 관련 해석</td>
+</tr>
+<tr>
+<td>알림·조례</td>
+<td>TX-12·13</td>
+<td>2·3</td>
+<td>관심 세목·개정안 알림, 시·군·구 감면·세율 조례 연결</td>
+</tr>
+<tr>
+<td>전문가 칼럼</td>
+<td>TX-14~17</td>
+<td>1</td>
+<td>필자 검증, 의견 고지, 기고 계약에 재수록·AI 색인 범위 명시</td>
+</tr>
+</tbody>
+</table></div>
+<h3>5.2 부동산</h3>
+<p>지자체별로 무엇이 지어지고(분양·인허가) 무엇이 바뀌는지(개발·정비)를 보도한다. ‘랜드마크’는 관광 명소가 아니라 지역을 대표하는 <strong>대형 개발 프로젝트</strong>다. <code>[웹확인]</code> 서울시 신속통합기획은 2026년 6월 기준 309곳이 선정됐고 ‘신속통합기획 2.0’이 예고됐다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>기능 묶음</th>
+<th>ID</th>
+<th>단계</th>
+<th>핵심 규칙</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>지자체별 부동산 허브</td>
+<td>PR-01</td>
+<td>1</td>
+<td>지역 코드·사업 단계·출처·기준일 표시, 기사 없는 지역 <code>noindex</code></td>
+</tr>
+<tr>
+<td>랜드마크 프로젝트 트래커</td>
+<td>PR-02·03·05·08</td>
+<td>1</td>
+<td>표준 단계(구역지정→…→준공), 단계마다 고시 번호·원문 필수, 가격·분담금·수익률 필드 없음, 단계별 「지방세로 읽기」</td>
+</tr>
+<tr>
+<td>분양 정보</td>
+<td>PR-04</td>
+<td>1</td>
+<td>기사와 분리한 정보 목록, 분양 홍보 원고는 <code>sponsored</code>로만</td>
+</tr>
+<tr>
+<td>데이터 연동·권리</td>
+<td>PR-06·07</td>
+<td>2</td>
+<td>청약홈·건축HUB·정비사업 정보 → 검수 큐, 공공누리 유형 기록(제4유형은 전재 금지)</td>
+</tr>
+<tr>
+<td>개발방법 비교</td>
+<td>PR-09~13</td>
+<td>1</td>
+<td>재개발·재건축·신속통합기획(사업 유형이 아닌 계획 지원 절차)·소규모정비·공공·신탁방식·재정비를 비교, 숫자 요건은 기준일과 함께 DB에서, <strong>추천·판정 기능 없음</strong>, 특례법 제정 여부 확인 후 반영</td>
+</tr>
+<tr>
+<td>전문가 칼럼</td>
+<td>PR-14</td>
+<td>1</td>
+<td>조합·시공사·신탁사 자문 등 이해관계 공개 필수</td>
+</tr>
+</tbody>
+</table></div>
+<h3>5.3 부동산개발금융</h3>
+<p>신탁·PF가 <strong>어떻게 돈을 모으고 위험을 나누는지</strong>와 그 구조가 낳는 지방세 쟁점(신탁재산 납세의무자, 공매·대물변제 취득)을 연결한다. <code>[웹확인]</code> PF 자기자본비율 요건은 2027년부터 5→10→15→20%로 단계 시행 예정이고, 「부동산개발사업 관리 등에 관한 법률 시행령」 개정안이 2026년 7~8월 입법예고됐다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>기능 묶음</th>
+<th>ID</th>
+<th>단계</th>
+<th>핵심 규칙</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>하위 메뉴·구조 해설</td>
+<td>DF-01·02</td>
+<td>1</td>
+<td>신탁 유형·책임준공·PF 단계·리츠를 구조도+표로, 감수 후 공개</td>
+</tr>
+<tr>
+<td>금융사례 기사</td>
+<td>DF-03·07</td>
+<td>1 → 2 사례 DB</td>
+<td>공개 자료 범위에서만 구조 서술, 미공개 조건 추정 금지, 실명 기업 반론 기록</td>
+</tr>
+<tr>
+<td>규제·통계 트래커</td>
+<td>DF-04</td>
+<td>1</td>
+<td>익스포저·연체율 등 원자료·기준일 보존, 정량형 기사 템플릿</td>
+</tr>
+<tr>
+<td>금지 범위</td>
+<td>DF-05</td>
+<td>1</td>
+<td>투자 권유·수익률 순위·가입 링크·제휴 수수료 없음, 자본시장법 검토</td>
+</tr>
+<tr>
+<td>데이터 연동</td>
+<td>DF-06</td>
+<td>2</td>
+<td>금융당국 발표·공시·판결문·PF 통합정보 공개분</td>
+</tr>
+<tr>
+<td>금융 구조별 세금 가이드</td>
+<td>DF-08</td>
+<td>3</td>
+<td>신탁·현물출자·공매의 지방세, 국세는 해설·공식 링크만</td>
+</tr>
+<tr>
+<td>전문가 칼럼</td>
+<td>DF-09</td>
+<td>1</td>
+<td>소속 금융사·신탁사 이해관계 공개, 자사 상품 홍보 반려</td>
+</tr>
+</tbody>
+</table></div>
+<h3>5.4 지자체뉴스</h3>
+<p><strong>2층 구조</strong>다. 아래층은 편집국의 주간 큐레이션(금주 핫뉴스), 위층은 세금·재정·개발에 닿는 사안의 자체 취재다. 행사안내는 뉴스가 아닌 <strong>정보 목록</strong>이다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>기능 묶음</th>
+<th>ID</th>
+<th>단계</th>
+<th>핵심 규칙</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>금주 핫뉴스</td>
+<td>LG-01~05</td>
+<td>1</td>
+<td>시·도(시·군·구) 주간 페이지, 편집자 요약+원문 링크, 보도자료 문장 복제는 유사도 검사로 차단, <code>digest</code> 유형으로 자체 기사 집계에서 제외, 후보 정렬에 조회수 미사용</td>
+</tr>
+<tr>
+<td>자체 취재 후속·구독</td>
+<td>LG-06·07</td>
+<td>1</td>
+<td>취재 가치 항목을 기획으로 전환, 관심 지자체 주간 메일</td>
+</tr>
+<tr>
+<td>지자체 허브 순서</td>
+<td>LG-08</td>
+<td>1</td>
+<td>금주 핫뉴스 → 지방세·지방재정 → 부동산·개발 → 행사안내</td>
+</tr>
+<tr>
+<td>행사안내</td>
+<td>LG-09~14·16</td>
+<td>1</td>
+<td>세무·재정 행사와 개발·정비 행사(주민설명회 등) 우선, 축제는 지자체 허브 안에서만, 필수 필드·공식 URL·상태·확인일, 상업 행사는 <code>sponsored</code>, 행사↔프로젝트·개정 브리핑 연결, <code>Event</code> 구조화 데이터</td>
+</tr>
+<tr>
+<td>공공데이터 연동</td>
+<td>LG-15</td>
+<td>2</td>
+<td>축제·행사 표준데이터 등, 약관·이미지 권리 확인</td>
+</tr>
+</tbody>
+</table></div>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch4"><small>← 이전 장</small>4장 서비스 구조</button><button type="button" class="next" data-go="ch6"><small>다음 장 →</small>6장 공통 서비스</button></nav></section><section class="card card--orange" role="tabpanel" id="ch6" aria-labelledby="tab-ch6" tabindex="0"><div class="sess-head"><span class="sess-no">6장</span><h2 class="sess-title">공통 서비스</h2></div>
+<p>네 분야를 가로지르는 서비스는 넷이다. 기사마다 붙는 「지방세로 읽기」, 모든 페이지의 AI 도우미, 전문가 소개, SM 소속 전문가 연락 요청. 앞의 둘은 독자를 지방세 해설·계산기로, 뒤의 둘은 개별 상담이 필요한 독자를 자격 있는 전문가로 보낸다.</p>
+<h3>6.1 「지방세로 읽기」(CORE-01~04)</h3>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단계</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CORE-01</td>
+<td>1</td>
+<td>부동산·개발금융·지자체 기사 끝에 관련 세목, 핵심 포인트 3줄 이하, 해설·계산기·도서·전문가 링크. 생략하려면 편집자가 사유를 남긴다</td>
+</tr>
+<tr>
+<td>CORE-02</td>
+<td>1</td>
+<td>홈 핵심 메시지와 4대 분야 카드, 분야 허브 상단의 “이 분야의 지방세 포인트”</td>
+</tr>
+<tr>
+<td>CORE-03</td>
+<td>1</td>
+<td>박스 클릭과 이후 계산기·도서·구독·전문가 이동을 측정</td>
+</tr>
+<tr>
+<td>CORE-04</td>
+<td>1</td>
+<td>같은 사건을 여러 분야로 묶는 이슈 묶음 페이지(편집자 승인 관계만)</td>
+</tr>
+</tbody>
+</table></div>
+<h3>6.2 AI 도우미 — “무엇을 도와드릴까요?”(CHAT-01~17)</h3>
+<p>모든 공개 페이지 우측 하단의 Claude API 도우미다. 1단계는 <strong>사이트 안내·검색형</strong>으로 자사 공개 콘텐츠를 찾아 인용 링크와 함께 안내하고, <strong>하지 않는 일은 전문가 소개로 넘긴다</strong>. 4단계 평가(300문항)를 통과하면 같은 창에서 근거형 지방세봇 모드를 연다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>요청</th>
+<th>도우미의 동작</th>
+<th>전문가 연결</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>길찾기·기사·용어·“이 글 요약”</td>
+<td>관련 페이지 링크, 짧은 설명과 인용, ‘AI 요약’ 표시</td>
+<td>—</td>
+</tr>
+<tr>
+<td>트래커·프로젝트·행사 상태</td>
+<td>DB 조회 결과를 그대로</td>
+<td>—</td>
+</tr>
+<tr>
+<td>구독·도서·교육, 정정·제보</td>
+<td>안내 페이지·접수 양식으로</td>
+<td>—</td>
+</tr>
+<tr>
+<td>하지 않음 — 세액 계산</td>
+<td>금액을 만들지 않고 SM 계산기로</td>
+<td>지방세 전문 세무사</td>
+</tr>
+<tr>
+<td>하지 않음 — 상속세·증여세</td>
+<td>외부 계산기·국세청 안내로</td>
+<td>상속·증여 세무 전문가</td>
+</tr>
+<tr>
+<td>하지 않음 — 감면 등 개별 판단</td>
+<td>판단 없이 관련 해설·원문</td>
+<td>해당 세목 세무사</td>
+</tr>
+<tr>
+<td>하지 않음 — 조합·신탁 법률 분쟁</td>
+<td>판단 없이 해설·사례</td>
+<td>정비·신탁 전문 변호사</td>
+</tr>
+<tr>
+<td>하지 않음 — 분양·투자 추천, 시세 전망</td>
+<td>추천·전망 없음</td>
+<td>감정평가사·변호사(투자자문 소개 없음)</td>
+</tr>
+</tbody>
+</table></div>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>기능 묶음</th>
+<th>ID</th>
+<th>핵심 규칙</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>위젯·성능</td>
+<td>CHAT-01·02</td>
+<td>기본 닫힘, 모바일 전체 화면, 키보드·<code>aria-live</code>, 지연 로드로 Core Web Vitals 기준 유지, <code>data-nosnippet</code></td>
+</tr>
+<tr>
+<td>범위·근거·금지</td>
+<td>CHAT-03~05</td>
+<td>공개·권리 확인 콘텐츠만 <code>search_result</code> 블록으로 인용, 검색 결과·<code>official_links</code> 밖 URL 제거, 금액·세무 결론·투자 추천·인물 사칭 차단</td>
+</tr>
+<tr>
+<td>맥락·사람 연결</td>
+<td>CHAT-06·07·17</td>
+<td>페이지 URL·제목·분야만 전달, 고객센터·정정·제보·SM 연락 요청 양식으로 연결, ‘전문가 직접 찾기’와 ‘SM 전문가에게 연락 받기’ 두 버튼</td>
+</tr>
+<tr>
+<td>개인정보·기록</td>
+<td>CHAT-08·09</td>
+<td>첫 사용 고지, 전송 전 마스킹, 계산 입력·결제 정보 미수집, 마스킹본만 30일(설정값) 보관</td>
+</tr>
+<tr>
+<td>비용·보안</td>
+<td>CHAT-10~12</td>
+<td>속도 제한, 일일 토큰 예산 초과 시 ‘검색 결과만’ 모드, 프롬프트 주입 방어, 읽기 전용 도구, 모델·프롬프트 버전 관리</td>
+</tr>
+<tr>
+<td>측정·게이트·표시</td>
+<td>CHAT-13~16</td>
+<td>해결률·비용 측정과 미해결 질문의 질의 지도 연계, 1단계 100문항 평가 통과 전 비공개, 4단계 지방세봇 모드, ‘AI 답변’ 표시</td>
+</tr>
+</tbody>
+</table></div>
+<p class="embed-ph"><span>그림 자리</span>AI 도우미 요청 흐름 · 위젯→가드→Claude API↔도구→검증기</p>
+<p>가드가 마스킹한 질문만 Claude API로 가고, 답의 근거는 읽기 전용 도구가 Supabase 공개 뷰에서 가져온 것뿐이며, 검증기를 통과한 답만 인용 링크·전문가 버튼과 함께 돌아간다.</p>
+<p><strong>모델</strong> <code>[웹확인]</code>: 답변 <code>claude-sonnet-5-5</code>, 의도 분류 <code>claude-haiku-5-5</code>를 권고하고 환경변수로 바꾼다. Claude API는 대화 내용을 기본적으로 보관하지 않고 명시적 허락 없이 학습에 쓰지 않는다고 안내하므로, 30일 보관이 필요한 모델(Fable·Mythos 계열)은 도우미에 쓰지 않는다.</p>
+<h3>6.3 전문가 소개(EXPL-01~12)</h3>
+<p>유틸 메뉴·바닥글·홈 카드와 <code>/experts</code>에 두는 <strong>광고형 디렉터리</strong>다. 이용자가 여러 전문가의 검증된 프로필을 비교해 직접 연락하며, 플랫폼은 예약·수임·보수·결제에 관여하지 않고 <strong>소개 대가를 받지 않는다</strong>.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>분류</th>
+<th>주로 연결되는 요청</th>
+<th>자격 확인</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>세무사</td>
+<td>지방세·국세 신고·불복, 감면 판단, 상속·증여 세무</td>
+<td>한국세무사회 등록</td>
+</tr>
+<tr>
+<td>공인회계사</td>
+<td>법인 세무·회계, 개발사업·PF 회계</td>
+<td>한국공인회계사회 등록(세무대리 등록 별도 확인)</td>
+</tr>
+<tr>
+<td>변호사</td>
+<td>정비사업 조합 분쟁, 신탁·책임준공·PF 소송, 조세 소송</td>
+<td>대한변호사협회 등록</td>
+</tr>
+<tr>
+<td>법무사</td>
+<td>상속·증여·신탁 등기</td>
+<td>대한법무사협회 등록</td>
+</tr>
+<tr>
+<td>부동산 전문가</td>
+<td>감정평가사(가치·보상 평가), 공인중개사(거래 절차, 매물 광고 없음), 정비사업 전문관리업자·도시계획 전문가</td>
+<td>각 협회·시·도 등록</td>
+</tr>
+</tbody>
+</table></div>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>기능 묶음</th>
+<th>ID</th>
+<th>핵심 규칙</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>진입·필터</td>
+<td>EXPL-01·06</td>
+<td>분류·전문 분야·지역 필터, <code>?field=</code> 분야 코드, 도우미·「지방세로 읽기」·칼럼에서 연결</td>
+</tr>
+<tr>
+<td>프로필·검증</td>
+<td>EXPL-02·03·12</td>
+<td>실명·자격·등록번호·소속·분야·연락 링크·이해관계·확인일, 등재 전·연 1회 검증, <code>ProfilePage</code> 구조화 데이터, 별점·후기 없음</td>
+</tr>
+<tr>
+<td>광고형 원칙·고지</td>
+<td>EXPL-04·05</td>
+<td>여러 전문가를 함께 노출, 정렬 기준 공개, 결제로 순위 변경 없음, “세무대리·법률 사무를 하지 않으며 수임에 관여하지 않음” 고지</td>
+</tr>
+<tr>
+<td>등재·독립</td>
+<td>EXPL-07·08</td>
+<td>1단계는 필진·감수위원 등 관계 확인 전문가 무료 등재, 자사 관계 표시, 등재와 편집 권한 분리</td>
+</tr>
+<tr>
+<td>측정·신고·유료</td>
+<td>EXPL-09~11</td>
+<td>조회·연락 클릭만 집계, 허위 경력 신고 처리, 유료 등재는 P2·법률 검토 후</td>
+</tr>
+</tbody>
+</table></div>
+<h3>6.4 SM(선명) 소속 전문가 연락 요청(EXPL-13~21)</h3>
+<p>이용자가 궁금한 점을 요약해 남기면 <strong>SM 소속 전문가가 먼저 연락</strong>한다. 이 경로에서만 이용자가 확인·동의한 요약과 연락처를 전달하고, 상담·업무는 자격 있는 수행 주체(세무사 사무소·세무법인·법률사무소 등) 명의로 이뤄진다.</p>
+<ol>
+<li><strong>진입</strong> — 도우미의 ‘하지 않음’ 응답, <code>/experts</code> 상단, 기사·칼럼 하단.</li>
+<li><strong>요약</strong> — 도우미에서 오면 마스킹된 대화로 AI 초안을 양식에 채우고, 직접 오면 이용자가 쓴다.</li>
+<li><strong>확인·동의</strong> — 이용자가 요약을 고치고 분야·연락처·희망 시간을 넣은 뒤 필수 동의 후 직접 제출한다. 연락처는 Claude API로 보내지 않는다.</li>
+<li><strong>배정</strong> — 분야별 당번표로 배정하고, 담당자에게는 개인정보 없는 보안 화면 링크만 알린다.</li>
+<li><strong>연락</strong> — 목표 시간(예: 1영업일) 안에 연락해 업무 범위·비용·수행 주체를 먼저 안내한다.</li>
+<li><strong>종결</strong> — 계약은 이용자와 전문가(사무소)가 직접 맺고, 플랫폼은 상태만 기록한 뒤 보관 기간(기본 1년)이 지나면 파기한다.</li>
+</ol>
+<p>접수와 첫 연락은 무료이며, 요청 데이터는 담당자·운영 책임자만 열람(RLS·감사 로그)하고 기사·AI 학습·마케팅에 쓰지 않는다. 주민등록번호·계좌번호 입력은 막고, 기한이 임박한 사안은 직접 연락을 권한다.</p>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch5"><small>← 이전 장</small>5장 4대 콘텐츠 분야</button><button type="button" class="next" data-go="ch7"><small>다음 장 →</small>7장 신뢰·성장 엔진</button></nav></section><section class="card card--violet" role="tabpanel" id="ch7" aria-labelledby="tab-ch7" tabindex="0"><div class="sess-head"><span class="sess-no">7장</span><h2 class="sess-title">신뢰·성장 엔진</h2></div>
+<p>신뢰(브랜드·편집 품질)가 유입(네이버·검색·AI 검색)을 만들고, 유입이 수익으로 이어진다. 세 엔진 모두 <strong>실제 증빙과 원문 근거</strong>가 있어야 작동하므로 숫자·경력·기사 수를 꾸며 채우지 않는다.</p>
+<h3>7.1 김의효 50년 세무 브랜드(BR-01~11)</h3>
+<p>2026-10-16 웹 확인에서 김의효의 경력을 확인할 공개 자료를 찾지 못했고 회사 인사말 페이지에도 이름이 없다. 반면 회사가 밝힌 출판 이력(「지방세 실무」 1982년 초판·38판, 「지방세 편람」 27판, 월간 「지방세 연구」 327호 등)은 강력한 증거다. 그래서 <strong>증빙 먼저, 표시는 그 뒤</strong>로 설계한다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>기능 묶음</th>
+<th>ID</th>
+<th>핵심 규칙</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>브랜드 실사·동의</td>
+<td>BR-01·07</td>
+<td>경력·자격·직함·‘50년’ 산정 기준 증빙, 이름·초상 사용 동의서, 증빙 없는 숫자·직함 미표시</td>
+</tr>
+<tr>
+<td>인물 페이지·감수 표시</td>
+<td>BR-02·03</td>
+<td>검증된 약력·저서·칼럼, <code>Person</code> 구조화 데이터, ‘감수 김의효’는 실제 서명 기록이 있을 때만</td>
+</tr>
+<tr>
+<td>시그니처 콘텐츠</td>
+<td>BR-04~06</td>
+<td>「김의효의 지방세 50년」 칼럼, 「그때와 지금」, 개정 브리핑 한 줄 평, 「지방세 50문 50답」, 영상·낭독, 권리 확인된 과거 칼럼 아카이브</td>
+</tr>
+<tr>
+<td>편집 독립·사칭 금지</td>
+<td>BR-08·09</td>
+<td>기사 승인은 편집국 권한, AI가 김의효의 이름·말투로 답하지 않음</td>
+</tr>
+<tr>
+<td>외부 일관화·수익 연결</td>
+<td>BR-10·11</td>
+<td>표준 약력문으로 외부 프로필 통일, 칼럼 하단 저서·강좌를 ‘자사 상품’ 표기로 연결</td>
+</tr>
+</tbody>
+</table></div>
+<h3>7.2 네이버 뉴스 제휴(NAV-01~24)</h3>
+<p>첫 목표는 <strong>뉴스 검색 제휴</strong>이며, 콘텐츠 제휴는 검색 제휴사만 신청할 수 있어 그다음이다. 선정은 외부 결정이므로 PRD는 보장하지 않는다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>2026년 규정 요점 <code>[웹확인]</code></th>
+<th>제품이 대응하는 방식</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-02 새 규정 발표, 3월 접수, 이후 매년 1회 심사, 뉴스스탠드 제외</td>
+<td>다음 접수 공고를 목표로 1단계부터 실적을 쌓음(NAV-16)</td>
+</tr>
+<tr>
+<td>정량 50점 + 정성 50점, 검색 제휴 80점·콘텐츠 제휴 90점 합격선</td>
+<td>규정 값을 코드에 고정하지 않고 버전 등록</td>
+</tr>
+<tr>
+<td>자체 생산 비율·월 송출량·기획·탐사 실적·기자 1인당 생산량 중 하나라도 0점이면 탈락</td>
+<td>월별 준비도 대시보드로 어느 지표도 0에 가깝지 않게 관리(NAV-17)</td>
+</tr>
+<tr>
+<td>평가 대상은 과거 1년 중 <strong>임의의 3개월</strong></td>
+<td>임의 3개월 조합 모의 점검 후 신청(NAV-24)</td>
+</tr>
+<tr>
+<td>문장 단위 90% 유사 문장이 60% 넘으면 유사 기사</td>
+<td>발행 전 유사도 검사, 핫뉴스는 편집자 요약+링크(NAV-18, LG-02)</td>
+</tr>
+<tr>
+<td>외부 기고자는 1명으로 합산</td>
+<td>기자·기고자 등록부로 칼럼 비중 관리(NAV-19)</td>
+</tr>
+<tr>
+<td>부정평가 2년 누적 10점이면 해지 권고</td>
+<td>광고성 기사·광고 강요 금지, 영업·기자 권한 분리(NAV-20)</td>
+</tr>
+</tbody>
+</table></div>
+<p>v1.7의 <code>NAV-01~15</code>(등록·제휴 실사, 콘텐츠 유형 구분, 취재 증거·정정·광고 분리, 정량형·정성형 기사 템플릿)는 그대로 쓰고, 분기별 기획·탐사 캘린더(NAV-21), 카카오 뉴스 제휴 병행 검토(NAV-22), 지역 매체 실적 집계(NAV-23)를 더한다. 핫뉴스·행사·분양 정보·칼럼은 자체 취재 기사로 세지 않는다.</p>
+<h3>7.3 AEO·GEO·SEO 최적화 알고리즘(OPT-01~12)</h3>
+<p><strong>SEO</strong>는 색인·순위의 기본기, <strong>AEO</strong>는 질문에 대한 직접 답으로 채택되는 구조, <strong>GEO</strong>는 생성형 AI가 우리 페이지를 근거로 인용하고 인물·브랜드를 정확히 인식하게 하는 신뢰 신호다. <code>[웹확인]</code> 구글은 AI 개요·AI 모드에 추가 요건이나 별도 AI 파일·특수 schema가 필요 없다고 안내하므로, 트릭이 아니라 기본기·답 먼저 구조·근거로 대응한다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>점검 축</th>
+<th>발행 전 점검 항목(차단 항목은 굵게)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SEO</td>
+<td>고유 제목·메타 설명·제목 위계·내부 링크 2개 이상·공식 출처·이미지 대체 텍스트, <strong>canonical·중복</strong></td>
+</tr>
+<tr>
+<td>AEO</td>
+<td>리드 1~2문장에 직접 답, 질문형 소제목, 정의문, 조건·절차는 목록·표, 3줄 요약, FAQ 2~5개(화면 노출)</td>
+</tr>
+<tr>
+<td>GEO</td>
+<td>정식 명칭·엔티티 링크, 고유 데이터, 인용하기 좋은 핵심 문장, <strong>핵심 주장마다 근거·저자·발행/수정일·법령 기준일</strong></td>
+</tr>
+<tr>
+<td>공통</td>
+<td><strong>구조화 데이터와 화면 일치, 유사도, 광고 표기 일치</strong></td>
+</tr>
+</tbody>
+</table></div>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>기능 묶음</th>
+<th>ID</th>
+<th>핵심 규칙</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기술 기반·구조화 데이터</td>
+<td>OPT-01·02</td>
+<td>서버 렌더링, 일반·뉴스·이미지 사이트맵, RSS, 서치어드바이저·서치 콘솔 등록, 유형별 JSON-LD(<code>NewsArticle</code>·<code>NewsMediaOrganization</code>·<code>Person</code>·<code>Event</code>·<code>Book</code>·<code>Course</code>·<code>Dataset</code>)</td>
+</tr>
+<tr>
+<td>점검 엔진</td>
+<td>OPT-03</td>
+<td>편집기 실시간 패널, 축별 0~100점, 차단 항목 게이트. 점수는 내부 품질 지표일 뿐 순위 예측이 아님</td>
+</tr>
+<tr>
+<td>질의 지도·엔티티 그래프</td>
+<td>OPT-04·05·11</td>
+<td>검색어·도우미 미해결 질문·독자 문의를 클러스터로 묶어 담당 페이지에 매핑하고 공백은 기획 큐로, 질문 하나에 페이지 하나</td>
+</tr>
+<tr>
+<td>유사도·신선도</td>
+<td>OPT-06·07</td>
+<td>문장 단위 유사도 검사, 법령 개정 시 영향 페이지 검수 큐, 실질 수정 때만 <code>dateModified</code> 변경</td>
+</tr>
+<tr>
+<td>크롤러 정책·측정</td>
+<td>OPT-08·09</td>
+<td>일반 검색 크롤러 허용, AI 학습 크롤러 허용 여부는 <code>[결정]</code>, 유료 본문 비노출, AI 답변 엔진 유입 세그먼트, 월 1회 핵심 질문 50개 인용 표본</td>
+</tr>
+<tr>
+<td>금지·페이지 경험</td>
+<td>OPT-10·12</td>
+<td>키워드 반복·지역명만 바꾼 대량 페이지·숨긴 텍스트·가짜 FAQ·날짜 조작 금지, 전면 팝업 금지</td>
+</tr>
+</tbody>
+</table></div>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch6"><small>← 이전 장</small>6장 공통 서비스</button><button type="button" class="next" data-go="ch8"><small>다음 장 →</small>8장 수익 모델</button></nav></section><section class="card card--amber" role="tabpanel" id="ch8" aria-labelledby="tab-ch8" tabindex="0"><div class="sess-head"><span class="sess-no">8장</span><h2 class="sess-title">수익 모델</h2></div>
+<p>신뢰와 유입은 <strong>무료 영역</strong>(뉴스, 핫뉴스, 기본 해설, 개정 트래커, 계산기 연결, 기본 원문 검색, AI 도우미, 전문가 소개)에서 만들고, 유료는 <strong>깊이·시간 절약·아카이브·전문가 상담</strong>으로 판다. 1단계는 이미 팔고 있는 것(지면 구독·도서·교육)을 쉽게 사게 하는 데서 시작하고, 모든 상품의 공헌이익을 따로 잰다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>상품</th>
+<th>플랫폼의 역할</th>
+<th>단계</th>
+<th>ID</th>
+<th>확인할 조건</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>월간지방세연구 지면 구독</td>
+<td>온라인 신청·갱신 알림 → 정기결제</td>
+<td>1→2</td>
+<td>BIZ-01·05</td>
+<td>정기간행물 등록, 구독료 부가세 <code>[감수]</code></td>
+</tr>
+<tr>
+<td>도서(지방세 실무·편람·용어사전 등)</td>
+<td>판차·목차 상품 페이지, 주문, 기관 대량 구매 견적, 개정 보충자료</td>
+<td>1</td>
+<td>BIZ-01·02·10</td>
+<td>도서정가제 할인 한도, 통신판매업 신고</td>
+</tr>
+<tr>
+<td>한국지방세교육원 강좌</td>
+<td>일정·신청 → 결제·수료증, 지자체 위탁교육 견적</td>
+<td>1→2</td>
+<td>BIZ-06</td>
+<td>교육원 사이트 통합 또는 연결 <code>[결정]</code></td>
+</tr>
+<tr>
+<td>SM 소속 전문가 상담</td>
+<td>연락 요청 접수·무료 첫 연락 → 유료 상담·대리는 전문가 사무소가 직접 계약·청구</td>
+<td>1</td>
+<td>EXPL-13~21</td>
+<td>소속 형태·수행 주체 자격·매출 귀속 <code>[감수]</code></td>
+</tr>
+<tr>
+<td>디지털 구독</td>
+<td>월간지 디지털판, 50년 아카이브, 해석 DB 심화, 프리미엄 브리핑</td>
+<td>2</td>
+<td>BIZ-04</td>
+<td>유료 본문 서버 차단, 자동갱신 사전 고지</td>
+</tr>
+<tr>
+<td>세미나·웨비나</td>
+<td>개정세법·개발금융 주제 유료 참가</td>
+<td>2</td>
+<td>—</td>
+<td>협찬 표기, 연사 이해관계 공개</td>
+</tr>
+<tr>
+<td>기관 구독·프리미엄 리포트</td>
+<td>지자체·세무법인·금융기관 좌석, 분기 PF·신탁 리포트</td>
+<td>3</td>
+<td>BIZ-07</td>
+<td>보안·개인정보 요구</td>
+</tr>
+<tr>
+<td>광고·협찬</td>
+<td>디스플레이·네이티브(<code>sponsored</code>)</td>
+<td>1</td>
+<td>BIZ-08</td>
+<td>표기 일치, 전면 팝업 금지, 광고주의 기사 영향 차단</td>
+</tr>
+<tr>
+<td>전문가 유료 등재(광고)</td>
+<td>정액 광고 등재만, 소개 대가·건별 수수료 없음</td>
+<td>P2</td>
+<td>EXPL-11</td>
+<td>각 자격법·단체 광고 규정 <code>[감수]</code></td>
+</tr>
+<tr>
+<td>네이버 유료 연재·데이터 라이선스</td>
+<td>제휴·계약 뒤</td>
+<td>P2</td>
+<td>BIZ-11</td>
+<td>계약·권리</td>
+</tr>
+</tbody>
+</table></div>
+<p>공통 요구: 기사 하단 ‘자사 상품’ 카드는 1개 이하이며 상품 담당자는 기사 승인 권한이 없다(BIZ-03). 결제는 PG 계약 전에는 기존 주문 경로를 안내하고, 계약 뒤 웹훅 서명·멱등·카드번호 미저장을 지킨다(BIZ-02). 수익 대시보드는 상품별 공헌이익과 유입 경로(기사·칼럼·브리핑·검색·AI 검색·네이버·도우미·전문가 소개) 기여를 집계로만 보여 준다(BIZ-09).</p>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch7"><small>← 이전 장</small>7장 신뢰·성장 엔진</button><button type="button" class="next" data-go="ch9"><small>다음 장 →</small>9장 기술·인프라·데이터</button></nav></section><section class="card card--mint" role="tabpanel" id="ch9" aria-labelledby="tab-ch9" tabindex="0"><div class="sess-head"><span class="sess-no">9장</span><h2 class="sess-title">기술·인프라·데이터</h2></div>
+<h3>9.1 기술 구조</h3>
+<p>Next.js App Router + TypeScript + Tailwind, Supabase(Postgres·Auth·Storage·RLS 기본 거부), PGroonga 검색, 후속 pgvector. GitHub CI → Vercel(Production·Preview), Supabase prod·staging, Resend 메일, Claude API(AI 도우미). DB 변경은 SQL 마이그레이션으로만 하고, 배치는 Vercel Cron과 사내 스케줄러가 같은 함수를 부른다. 사내 Docker Compose 이전 시 SSE 버퍼링을 끈다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>패키지</th>
+<th>역할</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apps/web</code>, <code>packages/ui</code>, <code>packages/db</code>, <code>packages/tax-engine</code></td>
+<td>웹, 디자인 토큰·컴포넌트, DB 접근, (2단계) 복사한 세액 엔진</td>
+</tr>
+<tr>
+<td><code>packages/seo-lint</code>, <code>packages/similarity</code>, <code>packages/structured-data</code></td>
+<td>AEO·GEO·SEO 점검 엔진, 문장 유사도, 화면과 같은 소스에서 만드는 JSON-LD</td>
+</tr>
+<tr>
+<td><code>packages/assistant</code></td>
+<td>AI 도우미 서버 라우트 <code>/api/assistant</code>·읽기 전용 도구·가드·응답 검증기. 브라우저에는 위젯 UI만</td>
+</tr>
+<tr>
+<td><code>workflows/*</code></td>
+<td>핫뉴스 후보 수집, 행사 재확인, 링크 점검(SM·위택스·외부 계산기), 개정 감지, 서치 콘솔 수집</td>
+</tr>
+</tbody>
+</table></div>
+<p>권한은 편집국(기자·편집자·감수자) · 광고·협찬 · 스토어·구독 · 브랜드 관리 · 전문가 등재·연락 요청 담당으로 나누고, 편집국 외 역할은 기사 승인·정렬 권한이 없다.</p>
+<h3>9.2 인프라 계정·<code>.env</code>(ENV-01~06)</h3>
+<p>앱이 실행에 쓰는 <strong>API 키·토큰만</strong> 환경변수로 다룬다. GitHub·Vercel·Supabase·Anthropic의 <strong>로그인 ID·비밀번호는 <code>.env</code>에 넣지 않고</strong> 비밀번호 관리자에 둔다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>규칙</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>계정</td>
+<td>회사 명의, 2단계 인증, 관리자 2명 이상. Supabase prod·staging, Vercel 환경 3종, Anthropic 운영·개발 워크스페이스와 키 분리</td>
+</tr>
+<tr>
+<td>파일</td>
+<td>저장소에는 키 이름만 적은 <code>.env.example</code>, 로컬은 <code>.env.local</code>(커밋 금지), 운영·미리보기는 Vercel 환경변수, CI는 GitHub Actions Secrets</td>
+</tr>
+<tr>
+<td>노출 차단</td>
+<td>비밀값에 <code>NEXT_PUBLIC_</code> 금지, CI가 번들·로그의 키 패턴 검사, 비밀값 스캔·push protection, Preview가 prod DB를 가리키면 실패</td>
+</tr>
+<tr>
+<td>유출 대응·버전</td>
+<td>노출 즉시 폐기·재발급·감사 기록, Node·패키지·모델 버전은 <code>.nvmrc</code>·lockfile·환경변수로 고정</td>
+</tr>
+</tbody>
+</table></div>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>변수</th>
+<th>범위</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NEXT_PUBLIC_SITE_URL</code>, <code>NEXT_PUBLIC_SUPABASE_URL</code>, <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td>
+<td>브라우저 공개 가능(RLS 보호)</td>
+</tr>
+<tr>
+<td><code>SITE_INDEXING</code>, <code>ANTHROPIC_MODEL_ANSWER</code>, <code>ANTHROPIC_MODEL_ROUTER</code>, <code>ASSISTANT_*</code>(기능 플래그·예산·속도·보관 기간)</td>
+<td>서버</td>
+</tr>
+<tr>
+<td><code>SUPABASE_SERVICE_ROLE_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>RESEND_API_KEY</code></td>
+<td><strong>서버 전용</strong>(도우미는 service role 키를 쓰지 않음)</td>
+</tr>
+<tr>
+<td><code>SUPABASE_DB_URL</code>, <code>SUPABASE_ACCESS_TOKEN</code>, <code>VERCEL_TOKEN</code></td>
+<td>CI 전용</td>
+</tr>
+</tbody>
+</table></div>
+<h3>9.3 통합 데이터 모델</h3>
+<p>v1.7 테이블과 원칙(버전 추가형 수정, 출처·확인일·권리 상태 필수)을 그대로 쓰고, 아래를 더한다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>영역</th>
+<th>테이블</th>
+<th>핵심</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>콘텐츠</td>
+<td><code>articles</code>(확장)</td>
+<td><code>section</code>, <code>content_type</code>에 <code>digest</code> 추가, <code>tax_lens</code></td>
+</tr>
+<tr>
+<td>지방세</td>
+<td><code>amendments</code>, <code>amendment_events</code>, <code>legal_docs</code></td>
+<td>개정 단계·날짜·원문 스냅샷, 예규·통칙·해석·심판·판례</td>
+</tr>
+<tr>
+<td>부동산</td>
+<td><code>projects</code>, <code>project_events</code>, <code>dev_methods</code>, <code>dev_method_facts</code></td>
+<td>표준 단계·고시 원문, 가격·수익률 필드 없음, 요건 값의 기준일·감수자</td>
+</tr>
+<tr>
+<td>개발금융</td>
+<td><code>finance_cases</code></td>
+<td>구조 유형·쟁점·결과·반론 기록</td>
+</tr>
+<tr>
+<td>지자체</td>
+<td><code>weekly_digests</code>, <code>digest_items</code>, <code>events</code>, <code>event_status_history</code></td>
+<td>주차·요약·원문·공공누리 유형·유사도, 행사 분류·상태·확인일</td>
+</tr>
+<tr>
+<td>인물·전문가</td>
+<td><code>people</code>, <code>expert_categories</code>, <code>expert_profiles</code></td>
+<td>역할·검증 약력·자격·등록번호·재검증일·이해관계·노출 상태</td>
+</tr>
+<tr>
+<td>전문가 연락</td>
+<td><code>expert_requests</code>, <code>expert_request_events</code></td>
+<td>분야, 이용자 확인 요약, 연락처, 동의 버전, 담당자, 상태·시각, 파기 예정일(RLS·감사 로그, 결제 필드 없음)</td>
+</tr>
+<tr>
+<td>AI 도우미</td>
+<td><code>assistant_sessions</code>, <code>assistant_messages</code>, <code>assistant_feedback</code>, <code>assistant_usage_daily</code>, <code>prompt_versions</code>, <code>assistant_eval_*</code></td>
+<td>마스킹본·만료일, 모델·프롬프트 버전, 비용 집계</td>
+</tr>
+<tr>
+<td>수익</td>
+<td><code>products</code>, <code>product_links</code>, <code>orders</code>(v1.7 <code>PAY</code> 확장)</td>
+<td>판차·구독·교육, 콘텐츠→상품 연결 승인 기록</td>
+</tr>
+<tr>
+<td>최적화·제휴</td>
+<td><code>seo_checks</code>, <code>query_clusters</code>, <code>query_terms</code>, <code>entities</code>, <code>entity_links</code>, <code>ai_citation_samples</code>, <code>partner_readiness_monthly</code>, <code>news_partner_requirements</code></td>
+<td>점수 이력, 질의 지도, 엔티티, 인용 표본, 월별 제휴 지표, 규정 버전</td>
+</tr>
+<tr>
+<td>링크</td>
+<td><code>official_links</code>(확장)</td>
+<td><code>sm_calculator</code>·<code>external_calculator</code> 등 외부 링크와 점검 상태</td>
+</tr>
+</tbody>
+</table></div>
+<h3>9.4 외부 데이터 <code>[실사]</code></h3>
+<p>1단계는 지자체 보도자료·고시(허용된 RSS·게시판)와 행정표준코드만 쓴다. 2단계에 법제처 국가법령정보 Open API(법령·행정규칙·자치법규·판례·해석례), 행정안전부 법령해석 API, 한국지방세연구원 지방세법령정보시스템, 국민참여입법센터, 청약홈 분양정보, 건축HUB 인허가, 서울시 정비사업 정보, 축제·행사 데이터, 금융당국 발표·DART·판결문·PF 통합정보 공개분을 붙인다. 모두 공식 API 또는 약관·robots가 허용한 방식으로만 수집하고 원본 스냅샷을 보관한다.</p>
+<h3>9.5 품질 기준</h3>
+<p>모바일 LCP ≤2.5초·INP ≤200ms·CLS ≤0.1, 검색 p95 ≤800ms, WCAG 2.2 AA와 접근성 점수 95 이상, 360px 이상 가로 스크롤 0, JS가 꺼져도 공개 페이지 본문 존재(v1.7 유지). AI 도우미 추가 뒤에도 같은 기준을 지킨다.</p>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch8"><small>← 이전 장</small>8장 수익 모델</button><button type="button" class="next" data-go="ch10"><small>다음 장 →</small>10장 법률·권리 게이트</button></nav></section><section class="card card--sky" role="tabpanel" id="ch10" aria-labelledby="tab-ch10" tabindex="0"><div class="sess-head"><span class="sess-no">10장</span><h2 class="sess-title">법률·권리 게이트</h2></div>
+<p>각 기능은 코드 완료와 별개로 <strong>공개 승인 상태</strong>를 갖고, 검토가 끝나기 전에는 기능 플래그로 숨긴다(빈 링크 금지).</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>영역</th>
+<th>공개 전 확인</th>
+<th>관련 ID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>언론</td>
+<td>매체 등록 유형·유효성, 발행인·편집인 분리, 정정·반론보도 청구 대응</td>
+<td>NAV-01, BR-08</td>
+</tr>
+<tr>
+<td>저작권·공공누리</td>
+<td>보도자료·고시의 공공누리 유형(제4유형 전재 금지), 사진·영상 권리, 판결문 비실명, 기고 계약의 재수록·AI 색인 범위</td>
+<td>PR-07, LG-05, TX-17</td>
+</tr>
+<tr>
+<td>세무</td>
+<td>세무 감수 서명, 국세 금액 미산출, 플랫폼 기능으로 개별 세무상담·신고 대리를 하지 않음(SM 소속 전문가 상담은 자격 있는 수행 주체 명의로만), 기존 사이트 ‘세무상담’ 제공 주체 실사</td>
+<td>TX-04~06, EXPL-17</td>
+</tr>
+<tr>
+<td>전문가 소개·연락 요청</td>
+<td>세무사법 제2조의2(소개·알선 대가 금지), 2025년 개정 세무사법의 오인 광고 금지·광고 기준, 공인회계사법·변호사법·법무사법·감정평가법·공인중개사법과 단체 광고 규정, 개인정보 제3자 제공 여부</td>
+<td>EXPL-04·05·11·17·18</td>
+</tr>
+<tr>
+<td>금융</td>
+<td>자본시장법상 투자권유·유사투자자문 해당 여부, 금융상품 광고 기준</td>
+<td>DF-05, BIZ-08</td>
+</tr>
+<tr>
+<td>부동산·광고</td>
+<td>분양 광고 표시 기준, 협찬 표기, 광고주의 기사 영향 차단</td>
+<td>PR-04, BIZ-08</td>
+</tr>
+<tr>
+<td>브랜드</td>
+<td>‘50년’ 등 경력 표시 근거(표시광고법), 세무사 광고 규정 적용 여부, 이름·초상 사용 동의</td>
+<td>BR-01·07</td>
+</tr>
+<tr>
+<td>전자상거래</td>
+<td>통신판매업 신고, 청약철회, 자동갱신·가격 변경 사전 고지, 도서정가제, 구독료·도서 부가세</td>
+<td>BIZ-01~05</td>
+</tr>
+<tr>
+<td>개인정보</td>
+<td>구독·주문·수강·연락 요청 정보의 목적·보존·파기, 클라우드·Claude API 국외 처리 고지, 광고성 메일 수신 동의·‘(광고)’ 표기</td>
+<td>CHAT-08·09, EXPL-19, LG-07</td>
+</tr>
+<tr>
+<td>AI</td>
+<td>생성형 AI 산출물 고지(인공지능 기본법 적용 여부), 인물 사칭 금지, Claude API 데이터 처리 조건의 처리방침 반영</td>
+<td>CHAT-16, BR-09</td>
+</tr>
+</tbody>
+</table></div>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch9"><small>← 이전 장</small>9장 기술·인프라·데이터</button><button type="button" class="next" data-go="ch11"><small>다음 장 →</small>11장 단계 로드맵과 작업 단위</button></nav></section><section class="card card--orange" role="tabpanel" id="ch11" aria-labelledby="tab-ch11" tabindex="0"><div class="sess-head"><span class="sess-no">11장</span><h2 class="sess-title">단계 로드맵과 작업 단위</h2></div>
+<p>1단계에 4대 분야·AI 도우미·전문가 소개를 함께 열고, 자동화·자체 계산기·결제는 2단계부터 붙인다. 네이버 제휴는 단계와 별개인 상시 트랙이다. 총기간은 W0 실사(편집 인력·데이터 계약·결제 준비) 뒤 다시 산정한다.</p>
+<p class="embed-ph"><span>그림 자리</span>단계 로드맵 · 6단계, 5개 게이트, 네이버 제휴 상시 트랙</p>
+<p>강조한 1단계가 이번 구현의 중심이다. 각 게이트를 통과해야 다음 단계를 공개하며, 두께는 기간이 아닌 순서만 나타낸다.</p>
+<h3>11.1 Claude Code 작업 단위</h3>
+<p>각 작업은 <code>설계·마이그레이션 → 최소 기능 → 실패 경계 테스트 → E2E → 편집·감수 확인 → 배포</code>로 닫고, 권리·감수가 필요한 작업은 코드 완료와 공개 승인을 따로 둔다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>순서</th>
+<th>작업</th>
+<th>주요 ID</th>
+<th>완료 증거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>W0</td>
+<td>실사: 브랜드 증빙, 판매·결제 현황, 네이버 규정 원문, 외부 데이터 조건, 편집 인력, SM 소속 전문가 범위</td>
+<td>BR-01, NAV-16, BIZ-02, EXPL-17</td>
+<td>실사표·결정 기록(13장)</td>
+</tr>
+<tr>
+<td>W1</td>
+<td>모노레포·계정·환경 분리(<code>.env</code> 규칙·비밀값 스캔)·3001 포트·RLS·감사 로그, 점검·유사도·구조화 데이터 패키지 골격</td>
+<td>ENV-01~06, OPT-03</td>
+<td>prod/staging 오연결 차단, 번들 비밀값 0</td>
+</tr>
+<tr>
+<td>W2</td>
+<td>CMS: 콘텐츠 유형·「지방세로 읽기」·취재 증거·정정·역할 분리</td>
+<td>CORE-01, NAV-02~06</td>
+<td>정량형·정성형 기사 발행·정정 재현</td>
+</tr>
+<tr>
+<td>W3</td>
+<td>지방세: 개정 브리핑·트래커(수동)·해석 해설·칼럼·인물 페이지·SM 계산기 연결</td>
+<td>TX-01~03·07~09·14~17, BR-02~04</td>
+<td>2026 개편안 트래커 단계별 재현</td>
+</tr>
+<tr>
+<td>W4</td>
+<td>부동산: <code>/local</code> 허브·프로젝트 트래커·개발방법 비교·분양 정보 분리</td>
+<td>PR-01~05·07·09~11·14</td>
+<td>단계 원문 100% 연결, 추천 기능 0</td>
+</tr>
+<tr>
+<td>W5</td>
+<td>개발금융: 구조 해설·사례 템플릿·통계 트래커·칼럼</td>
+<td>DF-01~05·09</td>
+<td>반론 기록, 투자 권유 0</td>
+</tr>
+<tr>
+<td>W6</td>
+<td>지자체뉴스: 핫뉴스 수집→선정→발행, 행사 목록·달력</td>
+<td>LG-01~14·16</td>
+<td>4주 연속 발행, 유사도 통과</td>
+</tr>
+<tr>
+<td>W7</td>
+<td>최적화·제휴 준비: 점검 엔진, 구조화 데이터, 사이트맵·RSS, 측정, 제휴 대시보드</td>
+<td>OPT-01~03·06~10, NAV-16~20</td>
+<td>구조화 데이터 오류 0, 게이트 동작</td>
+</tr>
+<tr>
+<td>W7b</td>
+<td>AI 도우미(안내·검색형): 위젯, <code>/api/assistant</code>, 도구, 마스킹·예산, 검증기, 100문항 평가</td>
+<td>CHAT-01~16</td>
+<td>평가 통과, Core Web Vitals 유지</td>
+</tr>
+<tr>
+<td>W7c</td>
+<td>전문가 소개·SM 전문가 연락 요청: 분류·프로필 검증·고지문, 양식·배정·알림·보관</td>
+<td>EXPL-01~21, CHAT-17</td>
+<td>미검증 노출 0, 동의 없는 전달 0</td>
+</tr>
+<tr>
+<td>W8</td>
+<td>스토어·주문 경로·광고 정책·수익 대시보드</td>
+<td>BIZ-01~03·08·09</td>
+<td>기사→상품→주문 E2E</td>
+</tr>
+<tr>
+<td>W9</td>
+<td>기존 기사 이관, URL 1:1 매핑, 리허설 2회, 도메인 전환 게이트</td>
+<td>v1.7 MIG</td>
+<td>301 표본 200건, 롤백 리허설</td>
+</tr>
+<tr>
+<td>W10</td>
+<td><strong>2단계</strong>: SM 엔진 복사·자체 계산기, 해석 DB·3단 보기, 개정 자동 감지, 데이터 연동, 디지털 구독·결제·세미나, 브리핑</td>
+<td>TX-04·05·10~12, PR-06, LG-15, DF-06, BIZ-04~06</td>
+<td>공식 결과 대조, 결제 멱등 시험</td>
+</tr>
+<tr>
+<td>W11</td>
+<td><strong>3단계</strong>: 상속·증여 후 주택 수 연결, 정비·신탁 세금 판정, 개발금융 세금 가이드, 조례, 기관 구독·리포트</td>
+<td>FAM-05, PR-12, DF-08, TX-13, BIZ-07</td>
+<td>판정표 감수, 기관 계약 시험</td>
+</tr>
+<tr>
+<td>W12</td>
+<td><strong>4단계</strong>: 근거형 지방세봇을 도우미 창의 별도 모드로 공개</td>
+<td>v1.7 RAG·ASK·EVAL, CHAT-15, BR-09</td>
+<td>300문항 평가 통과</td>
+</tr>
+<tr>
+<td>W13</td>
+<td><strong>5단계</strong>: 출판물 지식창고, 워크스페이스, 전문가 Q&amp;A, 유료 등재·네이버 유료 연재</td>
+<td>v1.7 LIB·WS·QNA, EXPL-11, BIZ-11</td>
+<td>권리·결제·법률 시험</td>
+</tr>
+</tbody>
+</table></div>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch10"><small>← 이전 장</small>10장 법률·권리 게이트</button><button type="button" class="next" data-go="ch12"><small>다음 장 →</small>12장 핵심 수용 테스트와 1단계 출시 판정</button></nav></section><section class="card card--violet" role="tabpanel" id="ch12" aria-labelledby="tab-ch12" tabindex="0"><div class="sess-head"><span class="sess-no">12장</span><h2 class="sess-title">핵심 수용 테스트와 1단계 출시 판정</h2></div>
+<p>v1.7 10장의 수용 테스트는 모두 유지한다. 아래는 v2.0 이후 기능의 핵심 시나리오이며, 전체 목록은 상세본 14.1에 있다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>영역</th>
+<th>시나리오</th>
+<th>기대 결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>지방세</td>
+<td>개정안이 <code>입법예고</code>→<code>국회 제출</code>로 바뀜</td>
+<td>트래커 단계·원문 추가, 관련 기사 갱신 배너, 계산기 룰셋 반영 0</td>
+</tr>
+<tr>
+<td>지방세</td>
+<td>SM 계산기 카드 클릭</td>
+<td>새 창, URL·쿼리·쿠키에 입력값 0, 링크 장애 시 위택스 안내</td>
+</tr>
+<tr>
+<td>부동산</td>
+<td>프로젝트 단계를 고시 원문 없이 추가</td>
+<td>저장 차단, 가격·수익률 필드 0</td>
+</tr>
+<tr>
+<td>부동산</td>
+<td>분양 홍보 원고를 보도로 발행 시도</td>
+<td>차단, <code>sponsored</code>로만 가능</td>
+</tr>
+<tr>
+<td>개발금융</td>
+<td>특정 상품 매수·가입 권유 문구</td>
+<td>점검 경고, 편집 승인에서 반려</td>
+</tr>
+<tr>
+<td>지자체</td>
+<td>보도자료 문장을 대부분 옮긴 핫뉴스 항목</td>
+<td>유사도 검사에서 발행 차단</td>
+</tr>
+<tr>
+<td>지자체</td>
+<td>행사 필수 필드 누락·상태 <code>취소</code></td>
+<td>누락 시 비공개, 취소는 화면과 <code>Event</code> 데이터에 동시 반영</td>
+</tr>
+<tr>
+<td>공통</td>
+<td>「지방세로 읽기」 없이 발행</td>
+<td>생략 사유 입력 전 발행 불가</td>
+</tr>
+<tr>
+<td>AI 도우미</td>
+<td>모든 공개 페이지 열기</td>
+<td>우측 하단 런처, 기본 닫힘, 관리자·결제 화면 0, Core Web Vitals 기준 유지</td>
+</tr>
+<tr>
+<td>AI 도우미</td>
+<td>“이 아파트 취득세 얼마예요?”</td>
+<td>금액 0, SM 계산기 링크와 세무사 소개 버튼</td>
+</tr>
+<tr>
+<td>AI 도우미</td>
+<td>전화번호·주민등록번호 입력, 숨은 지시문</td>
+<td>전송 전 마스킹, 주입 지시 미이행, 쓰기 도구 호출 0</td>
+</tr>
+<tr>
+<td>AI 도우미</td>
+<td>일일 예산 초과·API 장애</td>
+<td>오류 없이 ‘검색 결과만’ 모드</td>
+</tr>
+<tr>
+<td>전문가</td>
+<td>목록·프로필 열기</td>
+<td>미검증 노출 0, 결제에 따른 정렬 0, 고지문 표시, 별점·후기 0</td>
+</tr>
+<tr>
+<td>전문가</td>
+<td>SM 전문가 연락 요청 제출</td>
+<td>필수 동의 없으면 제출 불가, AI 초안은 이용자 확인 후에만 제출, 연락처의 Claude API 전송 0, 담당자 메일에 개인정보 0</td>
+</tr>
+<tr>
+<td>브랜드</td>
+<td>“감수 김의효” 표시</td>
+<td>실제 서명 기록이 있는 기사에만, 증빙 없는 ‘50년’ 문구 0</td>
+</tr>
+<tr>
+<td>최적화</td>
+<td>근거·저자·날짜·기준일 누락, 구조화 데이터와 화면 불일치</td>
+<td>발행 차단, 오탈자 수정만으로 <code>dateModified</code> 변경 0</td>
+</tr>
+<tr>
+<td>제휴</td>
+<td>규정 원문 미등록</td>
+<td>대시보드 <code>요건 미확정</code>, 임의 3개월 조합별 지표 계산</td>
+</tr>
+<tr>
+<td>인프라</td>
+<td>빌드 산출물·저장소 검사</td>
+<td>번들·로그에 API 키·service role 키 0, 커밋된 <code>.env.local</code> 0</td>
+</tr>
+<tr>
+<td>수익</td>
+<td>비구독자의 유료 본문 접근</td>
+<td>HTML·API에 본문 0, 유료 콘텐츠 구조화 데이터 적용</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>1단계 완료 판정</strong>: 모든 P0 통과, 이관 리허설, 10장 법률 게이트 통과, AI 도우미 100문항 평가 통과에 더해 분야별 최소 샘플(템플릿 검증용)을 갖춘다 — 지방세 개정 트래커 1건(2026년 지방세제 개편안)과 개정 브리핑·해석 해설·칼럼 각 3건 이상, 서로 다른 시·도 시범 지역의 프로젝트 3건 이상과 감수된 개발방법 비교, 개발금융 구조 해설과 사례 3건 이상, 시범 지역 금주 핫뉴스 4주 연속, 자격이 검증된 전문가 분류별 등재. 운영 도메인 전환은 별도 승인 게이트이며, 네이버 제휴 선정은 1단계 완료 조건이 아니다.</p>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch11"><small>← 이전 장</small>11장 단계 로드맵과 작업 단위</button><button type="button" class="next" data-go="ch13"><small>다음 장 →</small>13장 결정·실사·감수 필요 사항</button></nav></section><section class="card card--amber" role="tabpanel" id="ch13" aria-labelledby="tab-ch13" tabindex="0"><div class="sess-head"><span class="sess-no">13장</span><h2 class="sess-title">결정·실사·감수 필요 사항</h2></div>
+<p>v2.0 곳곳에 흩어져 있던 미결 사항을 한 표로 모았다. <strong>W0 실사 항목(11~15)이 끝나야 1단계 공개 범위가 확정</strong>되며, 특히 SM 소속 전문가의 소속 형태(12)는 연락 요청 기능의 적법한 운영 방식과 개인정보 동의 방식을 좌우한다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>구분</th>
+<th>항목</th>
+<th>필요한 시점</th>
+<th>관련 ID</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>결정</td>
+<td>정식 제품명·브랜드 표기(SM(선명) 가칭)</td>
+<td>도메인 전환 전</td>
+<td>2.1</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>2</td>
+<td>결정</td>
+<td>SM 소속 전문가 범위(분야별 인원·당번표), 연락 목표 시간, 무료 안내 범위, 상담 매출 귀속</td>
+<td>1단계 공개 전</td>
+<td>EXPL-16~18</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>3</td>
+<td>결정</td>
+<td>AI 학습 크롤러 허용 여부</td>
+<td>1단계 공개 전</td>
+<td>OPT-08</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>4</td>
+<td>결정</td>
+<td>「안심 상속증여계산기」와의 운영 주체 관계 표기</td>
+<td>1단계 공개 전</td>
+<td>FAM-08</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>5</td>
+<td>결정</td>
+<td>교육원 사이트 통합 또는 연결</td>
+<td>W8 전</td>
+<td>BIZ-06</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>6</td>
+<td>결정</td>
+<td>PG 계약·통신판매업 신고 시점(그 전엔 기존 주문 경로)</td>
+<td>W8 전</td>
+<td>BIZ-02</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>7</td>
+<td>결정</td>
+<td>금주 핫뉴스 시작 범위(최소 시·도 2곳)</td>
+<td>W6 전</td>
+<td>LG-01</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>8</td>
+<td>결정</td>
+<td>김의효 칼럼 발행 주기</td>
+<td>W3 전</td>
+<td>BR-04</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>9</td>
+<td>결정</td>
+<td>AI 도우미 봇 방지 도구 도입</td>
+<td>W7b</td>
+<td>CHAT-10</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>10</td>
+<td>결정</td>
+<td>전문가 유료 등재 여부</td>
+<td>5단계 전</td>
+<td>EXPL-11</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>11</td>
+<td>실사</td>
+<td>김의효 경력 증빙, 정식 직함(세무사 등록·발행인 여부), ‘50년’ 산정 기준</td>
+<td>W0</td>
+<td>BR-01</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>12</td>
+<td>실사</td>
+<td>SM 소속 전문가의 소속 형태(고용·제휴)와 업무 수행 주체(사무소·법인)</td>
+<td>W0</td>
+<td>EXPL-17</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>13</td>
+<td>실사</td>
+<td>매체 등록 유형, 네이버 기존 제휴, 2026 규정 원문</td>
+<td>W0</td>
+<td>NAV-01·16</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>14</td>
+<td>실사</td>
+<td>현 사이트 CMS·URL·회원·콘텐츠·사진 권리</td>
+<td>W0</td>
+<td>v1.7 MIG</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>15</td>
+<td>실사</td>
+<td>도서·구독·교육 판매 현황, 기존 ‘세무상담’ 서비스 제공 주체</td>
+<td>W0</td>
+<td>BIZ, 10장</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>16</td>
+<td>실사</td>
+<td>외부 데이터 이용 조건(법령 API, 지방세법령정보시스템, 청약홈, 건축HUB, 정비사업 정보, 행사 데이터, PF 통합정보)</td>
+<td>W10 전</td>
+<td>9.4</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>17</td>
+<td>실사</td>
+<td>「재건축·재개발사업 촉진에 관한 특례법」 제정 여부</td>
+<td>W4</td>
+<td>PR-13</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>18</td>
+<td>실사</td>
+<td>카카오 뉴스 제휴 현행 기준, IndexNow 지원 범위, 네이버 AI 브리핑 출처 기준</td>
+<td>W7</td>
+<td>NAV-22, OPT-01</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>19</td>
+<td>감수</td>
+<td>세무: 개정 브리핑·해석 해설·개발방법 비교 요건 값·「지방세로 읽기」·금융 구조 세금</td>
+<td>각 발행 전</td>
+<td>TX, PR-09, DF-08</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>20</td>
+<td>감수</td>
+<td>전문가 소개·연락 요청: 세무사법 제2조의2·오인 광고 금지, 각 자격법·단체 광고 규정, 개인정보 제3자 제공</td>
+<td>W7c 공개 전</td>
+<td>EXPL</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>21</td>
+<td>감수</td>
+<td>자본시장법(개발금융 기사·광고)</td>
+<td>W5 공개 전</td>
+<td>DF-05</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>22</td>
+<td>감수</td>
+<td>표시광고법·세무사 광고 규정(브랜드 표시)</td>
+<td>W3 공개 전</td>
+<td>BR-07</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>23</td>
+<td>감수</td>
+<td>전자상거래법·도서정가제·구독료·도서 부가세</td>
+<td>W8 공개 전</td>
+<td>BIZ</td>
+<td>미정</td>
+</tr>
+<tr>
+<td>24</td>
+<td>감수</td>
+<td>인공지능 기본법 고지, Claude API 데이터 처리의 개인정보처리방침 반영</td>
+<td>W7b 공개 전</td>
+<td>CHAT-16</td>
+<td>미정</td>
+</tr>
+</tbody>
+</table></div>
+<nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch12"><small>← 이전 장</small>12장 핵심 수용 테스트와 1단계 출시 판정</button><button type="button" class="next" data-go="ch14"><small>다음 장 →</small>14장 v2.0 대응표와 참고 자료</button></nav></section><section class="card card--mint" role="tabpanel" id="ch14" aria-labelledby="tab-ch14" tabindex="0"><div class="sess-head"><span class="sess-no">14장</span><h2 class="sess-title">v2.0 대응표와 참고 자료</h2></div>
+<h3>14.1 v2.0 → 정리본 위치</h3>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>v2.0 상세본</th>
+<th>정리본</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 문서 개요·v1.7 대비 변경</td>
+<td>1(분석), 2(문서 정보·원칙)</td>
+</tr>
+<tr>
+<td>1 비전·핵심 메시지·지표</td>
+<td>0(요약), 3(목표·사용자·지표), 6.1(「지방세로 읽기」)</td>
+</tr>
+<tr>
+<td>2~5 지방세·부동산·개발금융·지자체뉴스</td>
+<td>5.1~5.4</td>
+</tr>
+<tr>
+<td>6 김의효 브랜드</td>
+<td>7.1</td>
+</tr>
+<tr>
+<td>7 수익 다변화</td>
+<td>8</td>
+</tr>
+<tr>
+<td>8 네이버 뉴스 제휴</td>
+<td>7.2</td>
+</tr>
+<tr>
+<td>9 AEO·GEO·SEO</td>
+<td>7.3</td>
+</tr>
+<tr>
+<td>10 정보구조·URL</td>
+<td>4</td>
+</tr>
+<tr>
+<td>11 데이터 모델·외부 데이터</td>
+<td>9.3·9.4</td>
+</tr>
+<tr>
+<td>12 기술·법률 / 12.2 인프라·<code>.env</code></td>
+<td>9.1·9.2(기술), 10(법률)</td>
+</tr>
+<tr>
+<td>13 로드맵·작업 단위</td>
+<td>11</td>
+</tr>
+<tr>
+<td>14 수용 테스트·추적표·참고 자료</td>
+<td>12, 2.3, 14.2</td>
+</tr>
+<tr>
+<td>15 AI 도우미</td>
+<td>6.2</td>
+</tr>
+<tr>
+<td>16 전문가 소개·SM 전문가 연락 요청</td>
+<td>6.3·6.4</td>
+</tr>
+</tbody>
+</table></div>
+<h3>14.2 참고 자료(2026-10-16 확인)</h3>
+<ul>
+<li>회사·자산: <a href="https://www.localtaxresearch.com/com/com-1.html">월간지방세연구 인사말·연혁·발행도서</a></li>
+<li>지방세: <a href="https://eiec.kdi.re.kr/policy/materialView.do?num=285829">KDI 경제정보센터 — 2026년 지방세제 개편안</a> · <a href="https://www.bkl.co.kr/law/insight/newsletter/6718">법무법인 태평양 — 개편안 주요 내용</a> · <a href="https://taxtimes.co.kr/news/article.html?no=274646">세정신문 — 지방세법령정보시스템 고도화</a> · <a href="https://data.go.kr/biz/dcat/metadata/15140311.do">공공데이터포털 — 행정안전부 법령해석 API</a></li>
+<li>부동산: <a href="https://news.seoul.go.kr/citybuild/plan-progress">서울시 — 신속통합기획 추진 현황</a> · <a href="https://dealsite.co.kr/articles/162990">딜사이트 — 신속통합기획 2.0</a> · <a href="https://www.fnnews.com/news/202412311547240181">파이낸셜뉴스 — 도시정비법 개정안 국회 통과</a> · <a href="https://www.housingherald.co.kr/news/articleView.html?idxno=49454">하우징헤럴드 — 특례법 계류</a></li>
+<li>개발금융: <a href="https://www.molit.go.kr/mta/USR/law/m_37141/dtl.jsp?r_id=9946">국토교통부 — 부동산개발사업 관리법 시행령 입법예고</a> · <a href="https://www.heraldk.com/article/2025122218160459653">헤럴드경제 — PF 자기자본비율 단계 시행</a> · <a href="https://news.mtn.co.kr/news-detail/2026040316481672131">MTN — PF 익스포저 174.3조</a> · <a href="https://news.mtn.co.kr/news-detail/2025060216404539549">MTN — 책임준공 전액배상 판결</a> · <a href="https://www.newsis.com/view/NISX20241113_0002958111">뉴시스 — PF 제도 개선방안</a></li>
+<li>네이버 제휴: <a href="https://www.hankyung.com/amp/202602203779g">한국경제 — 규정 발표</a> · <a href="https://kidd.co.kr/news/245035">키뉴스 — 정량평가·유사도 기준</a> · <a href="https://www.kukinews.com/article/view/kuk202602200072">쿠키뉴스 — 심사 일정</a> · <a href="https://www.journalist.or.kr/ezview/article_main.html?no=60400">기자협회보 — 인신협 의견서</a></li>
+<li>검색·AI: <a href="https://developers.google.com/search/docs/appearance/ai-features">Google Search Central — AI features and your website</a> · <a href="https://blog.google/intl/ko-kr/products/explore-get-answers/ai-mode-in-korean">Google 코리아 — AI 모드 한국어 출시</a></li>
+<li>Claude API: <a href="https://platform.claude.com/docs/en/models/overview">Models overview</a> · <a href="https://platform.claude.com/docs/en/manage-claude/api-and-data-retention">API and data retention</a> · <a href="https://platform.claude.com/docs/en/build-with-claude/search-results">Search results(인용)</a></li>
+<li>전문가 소개: <a href="https://www.taxtimes.co.kr/news/article.html?no=271679">세정신문 — 세무사법 개정안</a> · <a href="https://www.tfmedia.co.kr/news/article.html?no=199396">조세금융신문 — 세무사법 개정 공포</a> · <a href="https://blog.3o3.co.kr/250703-news/">삼쩜삼 — TA 서비스 불송치</a> · <a href="https://economist.co.kr/article/view/ecn202205260086">이코노미스트 — 변호사 광고 규정 헌재 결정</a></li>
+</ul>
+<p>법령·세율·규정 수치와 API 제공 범위는 구현·공개 시점에 원문으로 다시 확인한다.</p><nav class="pager" aria-label="장 이동"><button type="button" class="prev" data-go="ch13"><small>← 이전 장</small>13장 결정·실사·감수 필요 사항</button></nav></section></div></div><p class="doc-foot">원본 PRD_최종.md (커밋 2c80708) · 2026-10-20 변환 (html-pastel-style 탭형)</p></div></div><script>
+(function(){
+  var root=document.documentElement; root.classList.add('js');
+  var tabs=[].slice.call(document.querySelectorAll('.tab')), panels=[].slice.call(document.querySelectorAll('.panels > .card'));
+  var list=document.querySelector('.tablist'), allBtn=document.querySelector('.allbtn'), layout=document.querySelector('.tabs-layout');
+  var showAll=false;
+  function idx(id){ for(var i=0;i<panels.length;i++){ if(panels[i].id===id) return i; } return -1; }
+  function keepTabVisible(t){
+    if(list.scrollWidth>list.clientWidth){ list.scrollTo({left:t.offsetLeft-list.clientWidth/2+t.offsetWidth/2}); }
+    else if(t.offsetParent){ var n=t.closest('.tabnav'); if(n.scrollHeight>n.clientHeight){ n.scrollTop=t.offsetTop-n.clientHeight/2; } }
+  }
+  function toTop(){ var top=layout.getBoundingClientRect().top+window.scrollY-8; if(window.scrollY>top) window.scrollTo(0,top); }
+  function select(i,opts){
+    opts=opts||{};
+    tabs.forEach(function(t,k){ var on=k===i; t.setAttribute('aria-selected',on?'true':'false'); t.tabIndex=on?0:-1; });
+    keepTabVisible(tabs[i]); if(opts.focus) tabs[i].focus();
+    if(showAll){ panels[i].scrollIntoView({block:'start'}); }
+    else { panels.forEach(function(p,k){ p.hidden=k!==i; }); if(opts.scroll!==false) toTop(); }
+    if(opts.hash!==false && location.hash!=='#'+panels[i].id) history.replaceState(null,'','#'+panels[i].id);
+  }
+  function setAll(on){
+    showAll=on; allBtn.setAttribute('aria-pressed',on?'true':'false');
+    allBtn.textContent=on?'한 장씩 보기':'모든 장 펼치기';
+    var cur=tabs.findIndex(function(t){return t.getAttribute('aria-selected')==='true';});
+    if(on){ panels.forEach(function(p){ p.hidden=false; }); }
+    else { select(cur<0?0:cur); }
+  }
+  tabs.forEach(function(t,i){
+    t.addEventListener('click',function(){ select(i); });
+    t.addEventListener('keydown',function(e){
+      var n=null;
+      if(e.key==='ArrowRight'||e.key==='ArrowDown') n=(i+1)%tabs.length;
+      else if(e.key==='ArrowLeft'||e.key==='ArrowUp') n=(i-1+tabs.length)%tabs.length;
+      else if(e.key==='Home') n=0; else if(e.key==='End') n=tabs.length-1;
+      if(n!==null){ e.preventDefault(); select(n,{focus:true}); }
+    });
+  });
+  document.querySelectorAll('.pager button').forEach(function(b){
+    b.addEventListener('click',function(){ var i=idx(b.getAttribute('data-go')); if(showAll) setAll(false); select(i,{focus:true}); });
+  });
+  allBtn.addEventListener('click',function(){ setAll(!showAll); });
+  window.addEventListener('hashchange',function(){ var i=idx(location.hash.slice(1)); if(i>=0) select(i); });
+  window.addEventListener('beforeprint',function(){ panels.forEach(function(p){ p.dataset.wasHidden=p.hidden?'1':''; p.hidden=false; }); });
+  window.addEventListener('afterprint',function(){ if(!showAll) panels.forEach(function(p){ p.hidden=p.dataset.wasHidden==='1'; }); });
+  var start=idx(location.hash.slice(1)); select(start<0?0:start,{scroll:false,hash:false});
+})();
+</script></body></html>
