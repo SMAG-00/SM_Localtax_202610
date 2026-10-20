@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Eyebrow, brand } from "@ltr/ui";
 import { getViewer } from "@/lib/server/dal";
@@ -28,6 +29,11 @@ export default async function MyPage({ searchParams }: Props) {
         )}
         <p className="mt-4 text-[15px] text-navy-600">
           로그인한 계정: <span data-testid="my-email" className="[overflow-wrap:anywhere]">{viewer.email ?? "이메일 없음"}</span>
+        </p>
+        <p className="mt-4 text-[15px]">
+          <Link href="/my/withdraw" prefetch={false} className="inline-flex min-h-11 items-center font-bold text-navy-700 underline underline-offset-4">
+            탈퇴
+          </Link>
         </p>
       </div>
     </main>

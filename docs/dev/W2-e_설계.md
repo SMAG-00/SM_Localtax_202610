@@ -578,6 +578,16 @@ PRD 증거는 두 문장이다 — HELP-03 '전 페이지를 크롤링한 서버
 - 시험 결과 (2026-10-20): DB 523 · RLS 검증(표 42) · 웹 단위 2,196 · 통합 54 · 타입·린트 · 환경변수 검사 · 정적 검사 전체 · 새 E2E `account-signup` 9(세 번) · 회귀 `account-security` 17 · `admin-ui` 7 모두 통과.
 - 2-B로 넘김: 비밀번호 찾기·재설정(`recovery`) · 탈퇴 `/my/withdraw` · 확인 안 된 가입 정리 함수 · 확인 메일 다시 받기(`confirm_resend` — 미확인 계정이 같은 주소로 다시 가입하면 지금은 '이미 가입' 안내 메일이 간다. 기본값: 2-B에서 미확인 계정이면 확인 메일을 다시 보내게 바꾼다, 응답 문장은 같게) · `signup_completed` 이벤트 · 가입 화면 관심 지역 칸 · 선택 동의(수신·마케팅) · `proxy.ts`의 `/my`·`/account` 매처(3단계).
 - **원격 적용**: 테스트 주소에는 메일 설정이 없어 가입이 닫혀 있고(404), 닫혀 있으면 `auth_email_state`를 부르지 않는다 → 마이그레이션 24가 원격에 없어도 영향 없다. 2단계 끝에 2-B 마이그레이션과 함께 적용한다(PO 승인). 메일 환경변수는 Resend 계정을 만든 뒤.
+**2-B 비밀번호 찾기·확인 메일 다시 받기·탈퇴·미확인 정리 (2026-10-20)**
+
+- 순수 규칙 `apps/web/lib/auth/recovery.ts`(재설정 확인 쿠키 서명·15분, 이메일 칸, 정리 기준 시각, 탈퇴 제한) · 서버 `lib/server/accounts/`(`body.ts` 공통 본문·출처, `confirm-mail.ts` 확인 메일 다시 보내기, `purge.ts purgeUnconfirmedSignups(db, now)`) · 마이그레이션 `20261020000025_w2e_account_recovery.sql`(`unconfirmed_account_ids(p_before)` — 미확인·가입 시각 ≤ 기준·역할 없음, service_role만) · 메일 템플릿 `signup_resend`·`password_reset`.
+- API: `POST /api/auth/forgot`(응답은 계정 유무와 무관한 같은 문장, 메일은 확인된 계정에만, `reset_ip`·`reset_email`) · `POST /api/auth/resend-confirm`(`confirm_resend`) · `POST /api/auth/confirm`이 `recovery`·`magiclink`도 받음 · `POST /api/auth/reset`(모든 세션 끊기 + 감사 로그 `account.password_reset`) · `POST /api/auth/withdraw`(현재 비밀번호 재확인 → 동의·프로필·Auth 계정 삭제 → 감사 로그 `account.withdrawn`, 역할·관리자는 403). `signup`은 미확인 계정이면 확인 메일을 다시 보냄(응답 문장 같음). 화면 `/forgot-password`·`/reset-password`·`/my/withdraw`, `/auth/confirm`(재설정 문구·만료 화면 [확인 메일 다시 받기])·`/login`(안내 문구·비밀번호 찾기 링크)·`/my`(탈퇴 링크).
+- 설계와 달라진 점: (1) 확인 메일 다시 받기는 `generateLink({type:"signup"})`가 비밀번호를 받아 남이 미확인 계정의 비밀번호를 덮어쓸 수 있어 `magiclink`를 쓴다. 로컬 Auth 확인 결과 미확인 계정의 magiclink 토큰은 `magiclink` 유형으로만 확인되고(`signup`은 403), 링크도 `type=magiclink`다. (2) 재설정 링크를 확인한 세션만 새 비밀번호를 정하도록 서명 쿠키 `ltr_reset`(15분, httpOnly)을 둔다 — 로그인만 한 세션이 현재 비밀번호 없이 바꾸는 것을 막는다. (3) 탈퇴 비밀번호 틀림 횟수는 `password_change` 범위를 탈퇴 전용 키로 쓴다. (4) 정리 함수의 실제 삭제(`purgeUnconfirmedSignups`)는 서버 전용 모듈이라 E2E에서 부르지 않았다 — DB 함수 경계만 E2E로 확인하고 삭제 연결은 6단계 배치에서 확인한다.
+- 시험(2026-10-20): 단위 `recovery.test.ts` · E2E `e2e/account-recovery.test.mjs` 7개(두 번 연속 통과) — 흐름·같은 응답·횟수 429·재가입 메일·탈퇴 행 0·역할 탈퇴 거부·정리 경계·기록 0. 회귀 `account-signup` 9 · DB 523 · RLS 42 · 웹 단위 2,228 · 타입 검사 통과.
+- 끝 검증에서 고친 것: `/reset-password` 화면이 그리는 도중 `Date.now()`를 읽어 린트(react-hooks/purity) 오류 → 확인을 서버 함수 `lib/server/accounts/reset-mark.ts hasValidResetMark()`로 옮겼다.
+- 끝 검증 (2026-10-20): 정적 검사 전체(웹 단위 2,228) · DB 523 · RLS 검증(표 42) · 통합 54 · E2E `account-recovery` 7(세 번) · 회귀 `account-signup` 9 · `account-security` 17 · `admin-ui` 7 · `admin-api` 18 모두 통과.
+- 남은 것: 정리 배치 연결(6단계), 원격 마이그레이션 24·25 적용(PO 승인 — 테스트 주소는 가입이 닫혀 있어 새 경로가 404라 적용 전에도 영향 없음).
+
 ### 11.3 3단계 — `/my`·맞춤·회원 관리
 ### 11.4 4단계 — 정책 페이지·바닥글
 ### 11.5 5단계 — 고객센터·문의함·감사 403

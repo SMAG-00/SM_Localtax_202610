@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { clientIp } from "@/lib/analytics/request";
 import { parseAuthLimits, parseMemberSettings, type AuthLimits, type MemberSettings, type ThrottleScope, type ThrottleLimit } from "@/lib/auth/settings";
+import { unconfirmedSignupDays } from "@/lib/auth/recovery";
 import { loginKeys, throttleKey, type LoginKeys } from "@/lib/auth/throttle-key";
 import { parseFeatures } from "@/lib/server/public/settings";
 import { guardSecret, mailEnv } from "./env";
@@ -118,6 +119,13 @@ export async function loginSucceeded(db: SupabaseClient, keys: LoginKeys): Promi
 
 /** 비밀번호 바꾸기 시도 키 — 계정(번호) 기준 */
 export const passwordChangeKey = (userId: string): string => throttleKey(requireGuardSecret(), "password_change", userId);
+
+/** 설정 privacy_retention의 미확인 가입 보존 일수 — 없거나 모양이 틀리면 예외(아무것도 지우지 않는다) */
+export async function readUnconfirmedSignupDays(db: SupabaseClient): Promise<number> {
+  const days = unconfirmedSignupDays(await readSetting(db, "privacy_retention"));
+  if (days === null) throw new Error("설정 privacy_retention이 없거나 모양이 틀립니다 — 미확인 가입을 정리하지 않습니다");
+  return days;
+}
 
 /** 가입이 열려 있나 — `members` 기능 키가 켜져 있고 메일 설정이 있을 때만 (2단계. 정책 게시본 조건은 4단계에서 더한다) */
 export async function signupOpen(db: SupabaseClient): Promise<boolean> {

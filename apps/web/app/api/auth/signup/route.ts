@@ -3,6 +3,7 @@ import { normalizeEmailKey, throttleKey } from "@/lib/auth/throttle-key";
 import { readAuthLimits, readMemberSettings, requestIp, requireGuardSecret, signupOpen, throttleHit } from "@/lib/server/auth-guard";
 import { isSameSiteRequest } from "@/lib/server/dal";
 import { HttpError, errorJson, handle, json } from "@/lib/server/http";
+import { resendConfirmMail } from "@/lib/server/accounts/confirm-mail";
 import { sendMail } from "@/lib/server/mail";
 import { siteBase } from "@/lib/server/site-base";
 import { adminClient } from "@/lib/server/supabase";
@@ -97,6 +98,11 @@ export const POST = handle(async (request: Request) => {
   if (state.error || typeof state.data !== "string") {
     console.error("[signup] 계정 상태 확인 실패:", state.error?.code);
     return reply("mail_down");
+  }
+  // 미확인 계정이면 확인 메일을 다시 보낸다(confirm_resend 횟수 제한 — 걸려도 응답 문장은 같다)
+  if (state.data === "unconfirmed") {
+    await resendConfirmMail(db, { email, base, request, secret, limits }).catch((e: unknown) => console.error("[signup] 확인 메일 다시 보내기 실패:", e instanceof Error ? e.message : "unknown"));
+    return reply("sent");
   }
   if (state.data !== "none") {
     const sent = await sendMail({ to: email, template: "signup_exists_notice", vars: { loginUrl: `${base}/login` } });
