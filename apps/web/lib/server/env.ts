@@ -23,6 +23,18 @@ export function guardSecret(): string | undefined {
   return process.env.GUARD_SECRET || undefined;
 }
 
+/** 메일 설정 (W2-e 8.1) — 이름을 하나씩 읽어 환경변수 검사(check-env)가 읽는 곳을 찾게 한다. 모양 검사는 mail/config.ts readMailConfig */
+export function mailEnv(): Record<string, string | undefined> {
+  return {
+    MAIL_FROM: process.env.MAIL_FROM,
+    MAIL_SMTP_HOST: process.env.MAIL_SMTP_HOST,
+    MAIL_SMTP_PORT: process.env.MAIL_SMTP_PORT,
+    MAIL_SMTP_USER: process.env.MAIL_SMTP_USER,
+    MAIL_SMTP_PASSWORD: process.env.MAIL_SMTP_PASSWORD,
+    MAIL_SMTP_SECURE: process.env.MAIL_SMTP_SECURE,
+  };
+}
+
 /** 관리자 이메일 화이트리스트 (ACC-04 — 관리자 권한은 DB가 아니라 배포 환경변수). 쉼표로 나누고 대소문자를 가리지 않는다 */
 export function adminEmails(): string[] {
   return (process.env.ADMIN_EMAILS ?? "")

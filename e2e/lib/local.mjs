@@ -7,6 +7,7 @@ import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { mailEnv } from "./mail.mjs";
 
 export const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const WEB = path.join(ROOT, "apps", "web");
@@ -72,7 +73,7 @@ const forContainer = (value) => value.replace(/\/\/(127\.0\.0\.1|localhost)(?=[:
 /** 웹 서버를 주어진 환경변수로 띄운다. 부모 환경변수는 넘기지 않는다 (시험마다 설정을 정확히 고정) */
 export async function startServer(givenEnv) {
   // 시도 횟수 해시 열쇠(W2-e 4.1) — 로그인이 필요한 시험 서버마다 이 실행만의 무작위 값을 준다(없으면 로그인이 닫힌다). 시험이 GUARD_SECRET을 직접 넘기면 그 값이 우선(빈 값 = 열쇠 없음 시험)
-  const env = { GUARD_SECRET: crypto.randomBytes(24).toString("hex"), ...givenEnv };
+  const env = { GUARD_SECRET: crypto.randomBytes(24).toString("hex"), ...mailEnv(), ...givenEnv };
   const port = await freePort();
   const base = `http://127.0.0.1:${port}`;
   if (TARGET === "docker") {

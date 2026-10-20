@@ -3,8 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { clientIp } from "@/lib/analytics/request";
 import { parseAuthLimits, parseMemberSettings, type AuthLimits, type MemberSettings, type ThrottleScope, type ThrottleLimit } from "@/lib/auth/settings";
 import { loginKeys, throttleKey, type LoginKeys } from "@/lib/auth/throttle-key";
-import { guardSecret } from "./env";
+import { parseFeatures } from "@/lib/server/public/settings";
+import { guardSecret, mailEnv } from "./env";
 import { HttpError } from "./http";
+import { mailConfigured } from "./mail/config";
 
 // 시도 제한과 계정 설정 읽기 (W2-e 설계 4.1) — 시도 횟수는 DB 표(request_throttles)로 센다(서버가 여러 대여도 우회되지 않는다).
 //  · 열쇠(GUARD_SECRET)가 없거나 설정·DB를 읽지 못하면 로그인 같은 제한이 필요한 곳은 닫힌다(503) — 제한 없이 여는 쪽으로 실패하지 않는다
@@ -116,3 +118,9 @@ export async function loginSucceeded(db: SupabaseClient, keys: LoginKeys): Promi
 
 /** 비밀번호 바꾸기 시도 키 — 계정(번호) 기준 */
 export const passwordChangeKey = (userId: string): string => throttleKey(requireGuardSecret(), "password_change", userId);
+
+/** 가입이 열려 있나 — `members` 기능 키가 켜져 있고 메일 설정이 있을 때만 (2단계. 정책 게시본 조건은 4단계에서 더한다) */
+export async function signupOpen(db: SupabaseClient): Promise<boolean> {
+  if (!mailConfigured(mailEnv())) return false;
+  return parseFeatures(await readSetting(db, "feature_flags")).members === true;
+}
