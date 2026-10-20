@@ -589,6 +589,18 @@ PRD 증거는 두 문장이다 — HELP-03 '전 페이지를 크롤링한 서버
 - 남은 것: 정리 배치 연결(6단계), 원격 마이그레이션 24·25 적용(PO 승인 — 테스트 주소는 가입이 닫혀 있어 새 경로가 404라 적용 전에도 영향 없음).
 
 ### 11.3 3단계 — `/my`·맞춤·회원 관리
+
+**3-A `/my`·맞춤 새 글·가입 화면 관심 분야/지역 (2026-10-20)**
+
+- DB: 마이그레이션 `20261020000026_w2e_member_feed.sql` — `member_feed(p_interests, p_region_codes, p_days=14, p_limit=6)`(5.2 조건 그대로, `security invoker`, service_role만 실행, 일수 1~365·건수 1~50 밖은 22023, 관심이 둘 다 비면 0건). 반환 칸: 번호·slug·제목·요약·분야·최초 발행·지역 태그·하위 분야 slug.
+- 서버: `lib/server/public/member-feed.ts getMemberFeed(관심 분야, 관심 지역)`(캐시 없는 service_role 요청) · `member-feed-logic.ts`(14일·6건 상수, 화면 값 변환, `checkInterestInput` 상한·모양 검사) · `lib/server/accounts/my-data.ts`(선택지 읽기 — 오늘 한국 날짜 유효한 지역·공개 하위 분야, 프로필 읽기·저장, 수신 동의 켜기·끄기) · `adminClient({ fetch })`.
+- API `POST /api/my/profile`(폼 303·JSON, Origin 필수, `viewer.userId`로만): `intent=profile`(표시 이름·관심 분야·지역 — 동의 행 안 만듦, 상한+1·목록 밖 422, 없는·폐지 코드는 DB 트리거가 막아 `codes` 422) · `intent=consent`(`receive`·`marketing`·`brief_prereg` 켜기=행 생성·끄기=`revoked_at`, 행 보존).
+- 화면: `/my`(새 글 블록·프로필·관심 분야/지역·수신 동의 3개 + "지금은 보내는 메일이 없습니다" · 비밀번호 바꾸기 · 탈퇴 — `force-dynamic`·noindex) · `/signup`(관심 분야 4분야+하위 분야·관심 지역·선택 동의 수신/마케팅 기본 해제, 가입 API가 체크했을 때만 행 생성) · 공용 `components/account/interest-fields.tsx`.
+- 측정: `signup_completed`는 `/my?welcome=1` 도착 때 화면(`signup-completed-beacon.tsx`)이 한 번만 보낸다(분야 수·지역 수뿐, 보낸 뒤 주소의 welcome 표시를 지워 새로고침 재전송 0). `tier`: 수집 판정(`ingest.ts`)에 선택 의존 `isMember`를 더해 로그인 회원이면 `basic`, 아니면 `guest`.
+- 설계와 달라진 점: (1) `getMemberFeed`는 `viewer` 대신 관심 값 배열을 받는다(`/my` 서버 화면이 본인 프로필을 읽어 넘긴다). (2) 저장 API는 한 경로 `POST /api/my/profile`에 `intent`로 나눈다(JS 없이 폼으로 동작). (3) 선택 동의 행은 가입 요청 때(확인 전) 만든다 — 미확인 정리·탈퇴는 `consents.user_id`의 `on delete cascade`와 명시 삭제로 함께 지워진다(확인함). (4) `local`(지자체)은 하위 분야가 없어 선택지에서 뺀다.
+- 시험(2026-10-20): DB `w2e-member-feed.test.mjs` 9개(분야·하위 분야·시·도→시·군·구·광고/핫뉴스 제외·14일 경계·6건·초안/유료 0·권한·함수 정의에 행동 기록 표 0) · 전체 DB 532 · RLS 42 · 웹 단위 2,234(새 `member-feed-logic.test.ts` 6) · 타입·린트 통과 · E2E `account-my` 6개(두 번 연속 통과) · 회귀 `account-signup` 9.
+- 한계: `/my`는 로그인이 필요해서 R1~R3·접근성 측정기(로그인 없이 연다)를 가입 화면에 적용했다(R2·R3·접근성 100). `/my` 화면 R1(글자 수 150)은 선택지가 많아 측정하지 않았다. 수집 판정의 `tier` 단위 시험은 아직 없다.
+- 3-B 몫: 백오피스 회원 탭·삭제 API·`proxy.ts` 매처(`/my`·`/account`).
 ### 11.4 4단계 — 정책 페이지·바닥글
 ### 11.5 5단계 — 고객센터·문의함·감사 403
 ### 11.6 6단계 — 브리핑 사전 알림·보존 기한 배치

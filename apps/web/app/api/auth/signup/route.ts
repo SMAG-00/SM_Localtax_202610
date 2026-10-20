@@ -31,6 +31,8 @@ async function readBody(request: Request, isForm: boolean): Promise<Record<strin
       agreePrivacy: params.get("agreePrivacy") ?? "",
       interests: params.getAll("interests"),
       regionCodes: params.getAll("regionCodes"),
+      optReceive: params.get("optReceive") ?? "",
+      optMarketing: params.get("optMarketing") ?? "",
       website: params.get("website") ?? "",
       fill: params.get("fill") ?? "",
     };
@@ -124,7 +126,12 @@ export const POST = handle(async (request: Request) => {
     console.error("[signup] 프로필 저장 실패:", profile.error.code);
     return reply(["22023", "23514", "P0001"].includes(profile.error.code) ? "interests" : "mail_down");
   }
-  const consent = await db.from("consents").insert({ user_id: userId, kind: "signup", channel: "web_signup" });
+  // 필수 동의(signup)와 선택 동의(수신·마케팅)는 따로 — 선택 동의는 체크했을 때만 행이 생긴다 (ACC-02)
+  const isOn = (v: unknown) => v === true || v === "on" || v === "true";
+  const rows = [{ user_id: userId, kind: "signup", channel: "web_signup" }];
+  if (isOn(raw.optReceive)) rows.push({ user_id: userId, kind: "receive", channel: "web_signup" });
+  if (isOn(raw.optMarketing)) rows.push({ user_id: userId, kind: "marketing", channel: "web_signup" });
+  const consent = await db.from("consents").insert(rows);
   if (consent.error) {
     await undo();
     console.error("[signup] 동의 기록 실패:", consent.error.code);

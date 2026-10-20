@@ -3,9 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Eyebrow, brand } from "@ltr/ui";
 import { CODE_MESSAGES, isSignupCode, signFillToken } from "@/lib/auth/signup-input";
-import { signupOpen } from "@/lib/server/auth-guard";
+import { InterestFields } from "@/components/account/interest-fields";
+import { loadPickerOptions } from "@/lib/server/accounts/my-data";
+import { readMemberSettings, signupOpen } from "@/lib/server/auth-guard";
 import { guardSecret } from "@/lib/server/env";
-import { NEWS_TAB_LABELS, SECTION_KEYS } from "@/lib/server/public/constants";
 import { adminClient } from "@/lib/server/supabase";
 
 // 회원 가입 (/signup, W2-e 설계 4.3 · 5.1) — 일반 HTML 폼(JS 없이 동작). 가입이 닫혀 있으면 404(링크도 어디에도 두지 않는다).
@@ -27,6 +28,7 @@ export default async function SignupPage({ searchParams }: Props) {
   const sent = q.sent === "1";
   const code = typeof q.e === "string" && isSignupCode(q.e) && q.e !== "sent" ? q.e : null;
   const fill = openFillToken(secret);
+  const [options, member] = await Promise.all([loadPickerOptions(db), readMemberSettings(db)]);
   return (
     <main className="mx-auto w-full max-w-md px-4 py-16">
       <p className="text-[17px] font-extrabold tracking-tight text-navy-900">
@@ -59,13 +61,16 @@ export default async function SignupPage({ searchParams }: Props) {
               <label htmlFor="signup-name" className={label}>표시 이름 (선택)</label>
               <input id="signup-name" name="displayName" type="text" autoComplete="nickname" maxLength={60} className={input} />
             </div>
+            <InterestFields categories={options.categories} regions={options.regions} interests={[]} regionCodes={[]} interestMax={member.interestMax} regionLimit={member.interestRegionLimit} idPrefix="signup" />
             <fieldset>
-              <legend className={label}>관심 분야 (선택)</legend>
-              {SECTION_KEYS.map((key) => (
-                <label key={key} className="mt-1 flex min-h-11 items-center gap-2 text-[15px] text-navy-900">
-                  <input type="checkbox" name="interests" value={key} className="size-5" /> {NEWS_TAB_LABELS[key]}
-                </label>
-              ))}
+              <legend className={label}>선택 동의 (가입 동의와 별개입니다)</legend>
+              <label className="mt-1 flex min-h-11 items-center gap-2 text-[15px] text-navy-900">
+                <input type="checkbox" name="optReceive" className="size-5" /> 소식 수신에 동의합니다
+              </label>
+              <label className="flex min-h-11 items-center gap-2 text-[15px] text-navy-900">
+                <input type="checkbox" name="optMarketing" className="size-5" /> 마케팅 정보 수신에 동의합니다
+              </label>
+              <p className="text-[14px] text-navy-600">지금은 보내는 메일이 없습니다. 발행이 시작되면 보내 드립니다.</p>
             </fieldset>
             <fieldset>
               <legend className={label}>필수 동의</legend>

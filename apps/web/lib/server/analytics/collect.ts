@@ -68,6 +68,7 @@ export function collectDeps(request: Request): IngestDeps {
     ipKey: (ip) => ipKey(ip, salt),
     // 편집국·관리자 — 역할이 하나라도 있거나 관리자(ADMIN_EMAILS). 회원 ID는 쓰지 않는다
     isStaff: async () => isStaffViewer(await getViewer(request)),
+    isMember: async () => (await getViewer(request)) !== null,
     store: storeEvent,
   };
 }

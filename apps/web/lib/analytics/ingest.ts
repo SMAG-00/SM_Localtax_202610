@@ -47,6 +47,8 @@ export interface IngestDeps {
   ipKey: (ip: string) => string;
   /** 로그인 쿠키가 있을 때만 부른다 — 편집국·관리자면 true. 확인하지 못하면 던진다(→ 503) */
   isStaff: () => Promise<boolean>;
+  /** 로그인 회원인가 — 로그인 쿠키가 있을 때만 부른다. 없으면 모두 비회원(guest)으로 저장 */
+  isMember?: () => Promise<boolean>;
   /** 저장 — 실패하면 false */
   store: (row: EventRow) => Promise<boolean>;
 }
@@ -66,8 +68,9 @@ const reply = (status: IngestResult["status"], body: IngestResult["body"], cooki
 });
 const tooMany = (t: Extract<Take, { ok: false }>) => reply(429, { error: "요청이 너무 잦습니다 — 잠시 뒤 다시 보내 주세요" }, [], { "retry-after": String(t.retryAfterSeconds) });
 
-/** 1단계 회원 등급 — 회원 기능(W2-e) 전에는 모두 비회원. 로그인 회원의 등급은 그때 서버가 정한다 */
+/** 비로그인 등급, 로그인 회원 등급 (W2-e 3단계 — 프리미엄·기관 등급은 이후 단계) */
 const TIER: Tier = "guest";
+const MEMBER_TIER: Tier = "basic";
 
 export async function ingest(req: IngestRequest, deps: IngestDeps): Promise<IngestResult> {
   // 1 같은 사이트 · 2 본문 형식
@@ -121,9 +124,12 @@ export async function ingest(req: IngestRequest, deps: IngestDeps): Promise<Inge
   // 10 봇 · 편집국
   const isBot = isBotUserAgent(req.headers.get("user-agent"), settings.bots.patterns);
   let isStaff = false;
+  let tier: Tier = TIER;
   if (hasAuthCookie([...cookies.keys()]) || req.headers.get("authorization") !== null) {
     try {
       isStaff = await deps.isStaff();
+      // 로그인한 회원은 basic (W2-c #12 · W2-e 12장 #31) — 확인하지 못하면 던져 503. 회원 ID는 쓰지 않는다
+      if (deps.isMember && (await deps.isMember())) tier = MEMBER_TIER;
     } catch {
       return reply(503, { error: "로그인 정보를 확인하지 못했습니다 — 잠시 뒤 다시 보내 주세요" });
     }
@@ -138,7 +144,7 @@ export async function ingest(req: IngestRequest, deps: IngestDeps): Promise<Inge
     first_visit: visit.session.firstVisit,
     stage: analytics.stage,
     mode: event.mode,
-    tier: TIER,
+    tier,
     entry: event.entry ?? visit.session.entry,
     section: event.section,
     props: event.props,
