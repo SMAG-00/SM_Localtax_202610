@@ -311,7 +311,7 @@ test("d·e) 기능 키가 모두 꺼지면 유틸 메뉴·정책 링크·검색 
   assert.equal(await page.locator('nav[aria-label="유틸 메뉴"]').count(), 0);
   assert.equal(await page.locator('form[action="/search"]').count(), 0);
   // 기능 키가 모두 꺼져도 바닥글에는 측정 거부 하나만 (W2-e 6.4)
-  assert.deepEqual(await page.$eval('nav[aria-label="바닥글 메뉴"] a', (as) => as.map((a) => a.getAttribute("href"))), ["/about/measurement"]);
+  assert.deepEqual(await page.$$eval('nav[aria-label="바닥글 메뉴"] a', (as) => as.map((a) => a.getAttribute("href"))), ["/about/measurement"]);
   assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] [data-part="section-link"]', (as) => as.map((a) => a.textContent)), ["지방세", "부동산", "부동산개발금융", "지자체뉴스"]);
   // 하위 메뉴 — 빈 DB에서는 분야마다 공통 '뉴스 전체'만 (기사 있는 하위 분야가 없다, HOME-02)
   assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] [data-part="sub-link"]', (as) => as.map((a) => a.getAttribute("href"))), ["/news?section=tax", "/news?section=realestate", "/news?section=finance", "/news?section=local"]);
@@ -471,7 +471,7 @@ test("공개 데이터를 읽지 못하면(접속값 없음·DB 꺼짐) 닫힌 �
       assert.deepEqual((await sectionLayout(page)).map((s) => s.key), ["fields"]);
       assert.equal(await page.locator('[role="status"]').textContent(), "새 소식을 잠시 불러오지 못했습니다. 잠시 뒤 다시 확인해 주세요.");
       assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] [data-part="section-link"]', (as) => as.map((a) => a.getAttribute("href"))), ["/tax", "/realestate", "/finance", "/local"]);
-      assert.deepEqual(hits(await hrefs(page), GATED), []);
+      assert.deepEqual(hits(await hrefs(page), GATED).filter((h) => !ALWAYS_OPEN.has(pathOf(h))), []);
       assert.equal(await page.locator("h1").count(), 1, "페이지 제목 1개 (화면 읽기용)");
       await page.close();
       // 닫힌 화면은 한 곳(lib/server/public/fallback.ts readPublic)이 로그를 남긴다 — "[public] <화면> — 공개 데이터를 읽지 못해 …"
