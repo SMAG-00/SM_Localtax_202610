@@ -26,6 +26,8 @@ export interface Viewer {
   email: string | null;
   isAdmin: boolean;
   roles: readonly StaffRole[];
+  /** 감사 기록 관리자(PO) — AUDIT_ADMIN_EMAILS에 있고 이메일 확인된 계정. 관리자 목록에 있어도 여기 없으면 감사 기록을 고치거나 지울 수 없다 (W2-e 10.1) */
+  isAuditAdmin?: boolean;
 }
 
 /** 작업 목록 — 값은 PRD-00 6장 표의 행 이름 */
@@ -69,6 +71,10 @@ export const ACTIONS = {
   "query_terms.read": "검색어 집계 열람 (SRCH-03 — 편집 기획 참고)",
   "policy.edit": "정책 문서 초안 편집 (문서별 고치는 사람 — lib/policy/docs.ts)",
   "policy.publish": "정책 문서 게시 승인 (법률 검토 승인 기록 필수)",
+  "inquiry.read": "문의 열람 (문의 종류별 역할 — INQUIRY_READERS)",
+  "inquiry.update": "문의 상태·담당자·메모 변경",
+  "inquiry.contact_view": "문의 연락처 보기 (누를 때마다 감사 로그)",
+  "audit.amend": "감사 기록 수정·삭제 — 감사 기록 관리자(PO)만",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
@@ -91,6 +97,9 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "situation.publish",
   "readiness.requirements",
   "policy.publish",
+  "inquiry.update",
+  "inquiry.contact_view",
+  "audit.amend",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -103,7 +112,32 @@ export interface ArticleResource {
   published: boolean;
 }
 
-export type Resource = ArticleResource;
+/** 문의 종류 7개 (inquiries.kind — DB check와 같은 값) */
+export const INQUIRY_KINDS = ["tip", "subscription", "advertising", "reader_submission", "correction", "product", "assistant_report"] as const;
+export type InquiryKind = (typeof INQUIRY_KINDS)[number];
+
+/** 종류별 열람 역할 (W2-e 7.3) — 관리자는 전 종류 */
+export const INQUIRY_READERS: Readonly<Record<InquiryKind, readonly StaffRole[]>> = {
+  tip: ["reporter", "editor"],
+  reader_submission: ["reporter", "editor"],
+  correction: ["editor"],
+  assistant_report: ["editor"],
+  advertising: ["ad_ops"],
+  subscription: ["store_ops"],
+  product: ["store_ops"],
+};
+
+export interface InquiryResource {
+  kind: "inquiry";
+  inquiryKind: InquiryKind;
+}
+
+export type Resource = ArticleResource | InquiryResource;
+
+/** 이 사람이 열람할 수 있는 문의 종류 */
+export function readableInquiryKinds(viewer: Viewer): InquiryKind[] {
+  return INQUIRY_KINDS.filter((k) => viewer.isAdmin || INQUIRY_READERS[k].some((r) => viewer.roles.includes(r)));
+}
 
 export type Decision = { allowed: true } | { allowed: false; reason: string };
 
@@ -122,7 +156,7 @@ function editorOnly(viewer: Viewer): Decision {
 }
 
 /** 기사 작성·수정·검토 요청 — 유형(sponsored 여부)과 발행 여부에 따라 다르다 */
-function writeArticle(viewer: Viewer, resource: Resource | undefined, action: "article.create" | "article.edit" | "article.submit"): Decision {
+function writeArticle(viewer: Viewer, resource: ArticleResource | undefined, action: "article.create" | "article.edit" | "article.submit"): Decision {
   if (!resource) {
     // 어떤 기사든 쓸 수 있는 사람인가 — 기사별 판정은 대상과 함께 다시 한다
     return has(viewer, "reporter", "editor", "ad_ops") || viewer.isAdmin ? ALLOW : deny(NEWSROOM_WRITER);
@@ -140,8 +174,19 @@ function writeArticle(viewer: Viewer, resource: Resource | undefined, action: "a
  * 접근 판정 한 함수 — 허용이면 { allowed: true }, 거부면 사유(편집자에게 보일 한국어 문장).
  * resource를 주면 기사별 조건(작성자 본인 승인 금지·sponsored·발행 뒤 수정)까지 본다.
  */
-export function check(viewer: Viewer, action: Action, resource?: Resource): Decision {
+export function check(viewer: Viewer, action: Action, anyResource?: Resource): Decision {
+  const resource = anyResource?.kind === "article" ? anyResource : undefined;
   switch (action) {
+    case "inquiry.read":
+    case "inquiry.update":
+    case "inquiry.contact_view": {
+      const kinds = anyResource?.kind === "inquiry" ? [anyResource.inquiryKind] : readableInquiryKinds(viewer);
+      const ok = anyResource?.kind === "inquiry" ? readableInquiryKinds(viewer).includes(anyResource.inquiryKind) : kinds.length > 0;
+      return ok ? ALLOW : deny("이 종류의 문의는 담당 역할(기사 제보·독자 투고=기자·편집 책임자 / 정정·반론=편집 책임자 / 광고=광고·협찬 담당 / 구독·상품=스토어·구독 담당)과 관리자만 봅니다");
+    }
+    case "audit.amend":
+      return viewer.isAuditAdmin === true ? ALLOW : deny("감사 기록은 감사 기록 관리자(PO)만 고치거나 지울 수 있습니다 — 관리자도 할 수 없습니다");
+
     case "article.read":
       if (has(viewer, ...NEWSROOM_ROLES) || viewer.isAdmin) return ALLOW;
       if (has(viewer, "ad_ops") && resource?.contentType === "sponsored") return ALLOW;

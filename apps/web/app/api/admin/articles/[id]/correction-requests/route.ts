@@ -28,7 +28,7 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   if (article.status === "deleted") return errorJson(409, "삭제된 기사입니다");
   const { data, error } = await db
     .from("inquiries")
-    .insert({ kind: "correction", body: reason, related_article_id: id, memo: `편집국 요청 — ${actorOf(viewer)}` })
+    .insert({ kind: "correction", request_type: "correction", body: reason, related_article_id: id, memo: `편집국 요청 — ${actorOf(viewer)}` })
     .select("id, status")
     .single();
   if (error || !data) throw dbError(error ?? {}, "inquiries 추가");

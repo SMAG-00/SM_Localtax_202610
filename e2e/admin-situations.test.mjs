@@ -399,7 +399,7 @@ test("화면 — 허브가 찬 분야의 [허브에 넣기]는 꺼지고 사유�
   assert.match(await editor.getByTestId(`hub-full-${fx.hub[0]}`).textContent(), /4장 있습니다 — 5번째는 넣을 수 없습니다/);
 
   const reporter = await login(u.reporter);
-  assert.deepEqual(await menuLabels(reporter), ["첫 화면", "기사 기획", "기사", "상황 카드"]);
+  assert.deepEqual(await menuLabels(reporter), ["첫 화면", "기사 기획", "기사", "상황 카드", "문의함"]);
   await open(reporter, "/admin/situations");
   assert.equal(await reporter.getByRole("button", { name: /공개하기|허브에 넣기|내리기/ }).count(), 0, "기자에게 공개·허브 단추 0");
   assert.equal(await reporter.getByRole("link", { name: "상황 카드 만들기" }).count(), 1);

@@ -131,7 +131,7 @@ test("2.1 동의 종류 4개·받은 곳 3개 — 표의 값은 받고 표 밖 �
     }
   }));
 
-for (const key of ["member", "auth_limits", "privacy_retention"]) {
+for (const key of ["member", "auth_limits", "privacy_retention", "help"]) {
   test(`2.2 설정 씨앗 ${key} — DB 값이 설계 문서의 JSON 블록과 같다`, async () => {
     const { rows } = await client.query("select value, updated_by from public.settings where key = $1", [key]);
     assert.equal(rows.length, 1, `${key} 씨앗이 없다`);

@@ -43,6 +43,14 @@ export function adminEmails(): string[] {
     .filter((e) => e.length > 0);
 }
 
+/** 감사 기록 관리자(PO) 이메일 — 감사 기록 수정·삭제는 이 목록의 이메일만 (ADM-04). 관리자 목록(ADMIN_EMAILS)과 별개다 */
+export function auditAdminEmails(): string[] {
+  return (process.env.AUDIT_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter((e) => e.length > 0);
+}
+
 /** 사이트 절대 주소 (canonical·구조화 데이터). 없으면 canonical을 만들지 않는다 — 발행 점검이 막는다 (OPT-11) */
 export function siteUrl(): string | undefined {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();

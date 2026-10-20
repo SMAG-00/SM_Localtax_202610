@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 import { queryValue } from "@/lib/site/hub-view";
 import { policyDoc, type PolicyDocKey } from "@/lib/policy/docs";
 import { getPolicyView } from "@/lib/server/public/policy";
+import { HelpForm, openHelpToken } from "@/components/help/HelpForm";
+import { parseHelpSettings } from "@/lib/help/forms";
+import { guardSecret } from "@/lib/server/env";
+import { adminClient } from "@/lib/server/supabase";
 import { PolicyPage } from "./PolicyPage";
 
 // 정책 주소 공통 처리 — 기능 키가 닫혔거나 게시본이 없으면 404 (준비 중 쪽 0, W2-e 6.1). ?v=번호는 이전 판(noindex)
@@ -24,5 +28,29 @@ export async function PolicyRoute({ docKey, searchParams }: { docKey: PolicyDocK
   if (v === -1) notFound();
   const view = await getPolicyView(docKey, policyDoc(docKey).feature, v);
   if (!view) notFound();
-  return <PolicyPage view={view} />;
+  const form = docKey === "corrections" && v === null && view.features.page_help ? await correctionForm(sp) : null;
+  return (
+    <>
+      <PolicyPage view={view} />
+      {form}
+    </>
+  );
+}
+
+/** 정정·반론 요청 폼 (W2-e 7.1) — 정책 페이지 아래. page_help가 꺼지면 폼 0 */
+async function correctionForm(sp: Sp) {
+  const db = adminClient();
+  const secret = guardSecret();
+  if (!db || !secret) return null;
+  const row = await db.from("settings").select("value").eq("key", "help").maybeSingle();
+  const help = parseHelpSettings(row.data?.value);
+  if (!help) return null;
+  const one = (x: string | string[] | undefined) => (typeof x === "string" ? x : null);
+  const sent = one(sp.sent);
+  return (
+    <section id="correction-form" className="mx-auto w-full max-w-2xl px-4 pb-12">
+      <h2 className="mb-4 text-[20px] font-extrabold text-navy-900">정정·반론 요청하기</h2>
+      <HelpForm slug="corrections" fill={openHelpToken(secret)} sent={sent && /^[A-HJ-NP-Z2-9]{8}$/.test(sent) ? sent : null} errorCode={one(sp.e)} maxFiles={help.maxFiles} extensions={help.allowedExtensions} />
+    </section>
+  );
 }

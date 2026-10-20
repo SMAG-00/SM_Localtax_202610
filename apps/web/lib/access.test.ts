@@ -86,6 +86,10 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "readiness.read":         [X, O, X, X, X, X, X, O, X], // NAV-13·14 기사 생산·제휴 준비 대시보드 — PRD-01A 3장 '편집 책임자·관리자만'
   "readiness.requirements": [X, O, X, X, X, X, X, O, X], // NAV-13 규정 버전 등록·확정 — 같은 화면의 담당자(편집 책임자·관리자)
   "query_terms.read":       [X, O, X, X, X, X, X, O, X], // SRCH-03 검색어 집계 — 동의어 사전을 고치는 사람(편집 책임자·관리자)과 같다 (W2-d 설계 8.3)
+  "inquiry.read": [O, O, X, O, O, X, X, O, X], // 문의 — 대상 없이는 하나라도 다룰 종류가 있는 역할 (종류별은 아래 표)
+  "inquiry.update": [O, O, X, O, O, X, X, O, X], // 문의 — 대상 없이는 하나라도 다룰 종류가 있는 역할 (종류별은 아래 표)
+  "inquiry.contact_view": [O, O, X, O, O, X, X, O, X], // 문의 — 대상 없이는 하나라도 다룰 종류가 있는 역할 (종류별은 아래 표)
+  "audit.amend": [X, X, X, X, X, X, X, X, X], // 감사 기록 수정·삭제 — 역할과 관계없이 isAuditAdmin(PO)만 (관리자도 거부)
 };
 
 describe("역할 × 작업 표 (대상 없음) — PRD-00 6장", () => {
@@ -100,6 +104,32 @@ describe("역할 × 작업 표 (대상 없음) — PRD-00 6장", () => {
       });
     });
   }
+});
+
+describe("문의 종류별 열람 역할 (W2-e 7.3) · 감사 기록 수정은 PO만 (10.1)", () => {
+  const roleKinds: Array<[StaffRole | "admin", string[]]> = [
+    ["reporter", ["tip", "reader_submission"]],
+    ["editor", ["tip", "reader_submission", "correction", "assistant_report"]],
+    ["ad_ops", ["advertising"]],
+    ["store_ops", ["subscription", "product"]],
+    ["reviewer", []],
+    ["admin", ["tip", "subscription", "advertising", "reader_submission", "correction", "product", "assistant_report"]],
+  ];
+  for (const [role, kinds] of roleKinds) {
+    for (const k of ["tip", "subscription", "advertising", "reader_submission", "correction", "product", "assistant_report"] as const) {
+      test(`${role} → ${k} 문의 열람 = ${kinds.includes(k) ? "허용" : "거부"}`, () => {
+        const v = role === "admin" ? viewer([], true) : viewer([role]);
+        expect(can(v, "inquiry.read", { kind: "inquiry", inquiryKind: k })).toBe(kinds.includes(k));
+        expect(can(v, "inquiry.contact_view", { kind: "inquiry", inquiryKind: k })).toBe(kinds.includes(k));
+      });
+    }
+  }
+  test("관리자(isAdmin)여도 isAuditAdmin이 없으면 감사 기록 수정 거부 + 감사 대상, PO(isAuditAdmin)는 허용", () => {
+    expect(check({ ...viewer([], true), isAuditAdmin: false }, "audit.amend").allowed).toBe(false);
+    expect(check({ ...viewer([], false), isAuditAdmin: true }, "audit.amend").allowed).toBe(true);
+    expect(AUDITED_DENIALS.has("audit.amend")).toBe(true);
+    expect(AUDITED_DENIALS.has("inquiry.update")).toBe(true);
+  });
 });
 
 describe("편집국 외 역할 4종은 기사 승인·정렬·발행 거부 (ACC-04 · NAV-06)", () => {

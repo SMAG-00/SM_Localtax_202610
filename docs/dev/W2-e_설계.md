@@ -623,6 +623,16 @@ PRD 증거는 두 문장이다 — HELP-03 '전 페이지를 크롤링한 서버
 - 시험 결과 (2026-10-20): 타입·린트 · DB 541 · RLS 검증(표 43) · 웹 단위 2,298 · 새 E2E `policy-pages` 7 · 회귀 `account-signup` 9 · `account-recovery` 7 · `account-my` 6 · `w2b-acceptance` 14 모두 통과.
 - **남은 것**: `policy_page_viewed` 이벤트 전송(화면에서 보내기만), 5단계에서 `/help/*`·`/about/corrections` 폼.
 ### 11.5 5단계 — 고객센터·문의함·감사 403
+(2026-10-20)
+
+- **마이그레이션 `20261020000028_w2e_inquiries.sql`**: `inquiries`에 `ref_code`(혼동 글자 뺀 8글자·unique·기본값 함수 `inquiry_new_ref`)·`title`·`contact_name`·`organization`·`contact_email`·`request_type`·`submitted_by`·`privacy_version_id`·`mail_status`·`contact_cleared_at`·`attachments_cleared_at`. 새 제약은 모두 NOT VALID(기존 행 불변). 본문에 이메일 모양·9자리 이상 숫자 줄 거부(W2-d 같은 모양) · 연락 이메일 모양 · 구독·광고·독자 투고는 이메일 필수 · 연락 이메일이 있으면 처리방침 버전 필수 · `request_type`은 정정·반론에서만. 설정 씨앗 `help`(2.2 블록 그대로) · 비공개 버킷 `inquiry-attachments`(저장소가 있는 환경에서만, 정책 0).
+- **폼 5종**: `POST /api/help/[kind]`(report·subscribe·ad·contribute·corrections) + 화면 `/help/{report,subscribe,ad,contribute}`(`page_help` 꺼지면 404) + 정정·반론 폼은 `/about/corrections` 정책 페이지 아래. 순서 = Origin 필수 → 기능 키+처리방침 게시본 → 숨은 칸·열림 토큰(`help_fill:` 접두, 최소 작성 시간·유효 시간은 설정 `help`) → `form_ip` 횟수 → 입력 검사 → 본문 가림(`maskBody`, W2-d 규칙) → 첨부 검사(확장자·개수·합계·파일 앞부분 시그니처) → 저장 → 비공개 저장소 → 접수 확인 메일(`inquiry_receipt`: 접수 번호·종류만). 거부 문장은 봇 검사 한 문장(`bot`). 메일 설정 없음 `skipped` · 이메일 없음 `none` · 실패 `failed`(접수 유지).
+- **접근 판정**: `inquiry.read|update|contact_view`(종류별 `INQUIRY_READERS`, 관리자 전 종류) · `audit.amend`(`Viewer.isAuditAdmin` — `AUDIT_ADMIN_EMAILS`, 관리자 목록과 별개). 거부 감사 대상에 `inquiry.update`·`inquiry.contact_view`·`audit.amend` 추가. 새 환경변수 `AUDIT_ADMIN_EMAILS`(`env.ts`·`env-scopes.json` server·`.env.example`).
+- **백오피스**: `/admin/inquiries`(종류·상태·내 담당 거르개, 접수 최신순, 상세에서 상태·담당자·메모·정정 처리 결과/사유, [연락처 보기], 첨부 내려받기) + 메뉴 "문의함"(`inquiry.read`가 되는 역할만). API `PATCH /api/admin/inquiries/[id]`(`inquiry.update` 감사 로그 — 전후 상태·담당자 uuid·메모 길이만) · `POST …/contact`(누를 때마다 `inquiry.contact_view` 1건, 값 0) · `GET …/attachments/[n]`(5분 서명 주소, 내려받기 형태 302).
+- **ADM-04**: `PATCH|DELETE /api/admin/audit/[id]`(이유 필수) — PO가 아니면 `authorize()`가 403 + `audit.amend.denied` 정확히 1건, PO는 `audit_log_amend`·`audit_log_delete`(actor `admin:<이메일>`)로 성공하고 `audit_log_changes`에 남는다.
+- **시험**: 단위 `lib/help/forms.test.ts`(가림 견본 2.8·폼 검사·첨부·열림 토큰) · `access.test.ts` 접근 표 · DB `w2e-inquiries.test.mjs`(+`w2e-values`에 `help` 씨앗) · E2E `e2e/help-inquiries.test.mjs` 10개(폼 5종→문의함·.exe/위장 실행 파일/개수/합계 상한·숨은 칸/토큰/IP 빈도·본문 가림·정정 완료 422·연락처 보기 감사·종류별 열람 403·PO 아닌 관리자 감사 수정/삭제 403+로그 1건·PO 성공). 메뉴 정확 비교 목록(`admin-ui`·`admin-settings-ui`·`admin-situations`)에 "문의함" 반영.
+- **설계와 달라진 점**: ① DB의 연락 이메일 필수는 구독·광고·독자 투고만(정정·반론은 공개 폼이 필수로 검사 — 편집국이 문의함에 직접 넣는 W2-a 정정 요청에는 연락처가 없다), `request_type` 필수도 폼이 검사(DB는 "정정·반론에서만" 허용). ② 목록은 API 없이 서버 화면이 `serviceDb`로 읽는다(`GET /api/admin/inquiries` 없음). ③ `Viewer.isAuditAdmin`은 선택 칸. ④ 담당자 고르기는 "역할 · uuid 앞 8자리". ⑤ `/about/advertise`의 문의는 `/help/ad`로 연결(별도 폼 없음).
+- **남은 것**: `inquiry_submitted` 이벤트 전송 · 보존 기한 지난 연락처·첨부 비우기(6단계 배치) · 감사 기록 화면의 PO 전용 [고치기]·[지우기] 버튼 · `/admin/inquiries` 브라우저 화면 E2E(360px·접근성 — 7단계) · 공통 경로(바닥글·`readPublicSettings`·로그인)는 새 표·함수를 읽지 않는다.
 ### 11.6 6단계 — 브리핑 사전 알림·보존 기한 배치
 ### 11.7 7단계 — 수용 E2E
 

@@ -285,3 +285,20 @@ export function checkQueryTermsSettings(value: unknown, current?: unknown): stri
 export function readQueryTermsSettings(value: unknown): QueryTermsSettings | null {
   return checkQueryTermsSettings(value).length === 0 ? (value as QueryTermsSettings) : null;
 }
+
+// ── 문의 본문 가림 (W2-e 설계 2.8 · 7.4) — 검색어와 같은 가림 규칙을 쓰되 길이를 자르지 않고 줄바꿈을 지킨다 ──
+
+/** 긴 글(문의 본문)의 이메일·주민등록번호·전화번호·9자리 이상 숫자 줄을 가림 글자로 바꾼다. NFKC로 정규화하고 사용 영역 글자는 지운다 */
+export function maskBody(raw: string): { text: string; masked: MaskKind[] } {
+  let s = raw.normalize("NFKC").replace(PRIVATE_USE, "");
+  s = s.replace(EMAIL, PLACE.email);
+  s = s.replace(CHAIN, (m) => (digitCount(m) >= QUERY_TERMS.digitRun ? PLACE[classify(m)] : m));
+  const masked = Array.from(s).flatMap((ch) => KIND_OF.get(ch) ?? []);
+  const text = Array.from(s)
+    .map((ch) => {
+      const kind = KIND_OF.get(ch);
+      return kind ? MASK_LABELS[kind] : ch;
+    })
+    .join("");
+  return { text: text.trim(), masked };
+}

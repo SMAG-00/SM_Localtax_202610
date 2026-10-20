@@ -6,6 +6,7 @@
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "public",
     "SITE_INDEXING": "server",
     "ADMIN_EMAILS": "server",
+    "AUDIT_ADMIN_EMAILS": "server",
     "MAIL_FROM": "server",
     "MAIL_SMTP_HOST": "server",
     "MAIL_SMTP_PORT": "server",

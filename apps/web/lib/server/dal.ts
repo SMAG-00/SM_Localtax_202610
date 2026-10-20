@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { AUDITED_DENIALS, check, isStaffRole, type Action, type Resource, type Viewer } from "@/lib/access";
 import { isSuspended } from "@/lib/admin/member-rules";
 import { actorOf, writeAudit } from "./audit";
-import { adminEmails, siteUrl, supabaseAnonKey, supabaseUrl } from "./env";
+import { adminEmails, auditAdminEmails, siteUrl, supabaseAnonKey, supabaseUrl } from "./env";
 import { HttpError, errorJson } from "./http";
 import { cookieSessionClient } from "./session";
 import { adminClient } from "./supabase";
@@ -69,7 +69,8 @@ export const getViewer = cache(async (request?: Request): Promise<Viewer | null>
   const roles = [...new Set((data ?? []).map((r: { role: unknown }) => r.role).filter(isStaffRole))].sort();
   const email = user.email?.trim().toLowerCase() || null;
   const isAdmin = email !== null && Boolean(user.email_confirmed_at) && adminEmails().includes(email);
-  return { userId: user.id, email, isAdmin, roles };
+  const isAuditAdmin = email !== null && Boolean(user.email_confirmed_at) && auditAdminEmails().includes(email);
+  return { userId: user.id, email, isAdmin, roles, isAuditAdmin };
 });
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);

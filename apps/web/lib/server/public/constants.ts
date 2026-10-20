@@ -188,6 +188,8 @@ export const GLOSSARY_HREF = "/glossary";
 export const VIDEO_LIST_HREF = "/news/video";
 export const PHOTO_LIST_HREF = "/news/photo";
 /** 정책 페이지 묶음(W2-e) — 공개 승인된 정책 페이지(POLICY_LINKS 주소 그대로)만 열린다 (HELP-05) */
+/** 고객센터 폼 화면 (W2-e 5단계 — 기사 제보 /help/report는 POLICY_LINKS가 먼저 판정한다) */
+const HELP_FORM_PATHS = ["/help/report", "/help/subscribe", "/help/ad", "/help/contribute"] as const;
 const POLICY_ROOTS = ["/about", "/help"] as const;
 /** 기능 키로 여는 화면 — 유틸 메뉴 화면과 그 아래(HOME-02) · 트래커 상세(01B W3) · 시·도·시·군·구 허브(01B W4). self = 그 주소 자체도 */
 const FEATURE_PREFIXES: ReadonlyArray<{ prefix: string; feature: FeatureKey; self: boolean }> = [
@@ -221,6 +223,7 @@ export function isOpenPath(href: string, features: Features): boolean {
   if (policy) return features[policy.feature];
   const aboutPage = FEATURE_PREFIXES.find((g) => g.prefix.startsWith("/about/") && g.prefix === path);
   if (aboutPage) return features[aboutPage.feature];
+  if ((HELP_FORM_PATHS as readonly string[]).includes(path)) return features.page_help;
   if (POLICY_ROOTS.some((r) => path === r || isUnder(path, r))) return false;
   const gate = FEATURE_PREFIXES.find((g) => (g.self && path === g.prefix) || isUnder(path, g.prefix));
   return gate ? features[gate.feature] : true;
