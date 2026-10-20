@@ -6,11 +6,16 @@
 
 const FAKE_BODY = [{ heading: "시험", blocks: [{ type: "paragraph", text: "시험용 가짜 게시본 — 실제 문구가 아니다" }] }];
 
-/** @param {import("pg").Client} db  @param {string} run 실행 표시(StaffFixture.run) @returns {Promise<() => Promise<void>>} 지우기 함수 */
-export async function publishSignupPolicies(db, run) {
+/** 가입에 필요한 두 문서(이용약관·개인정보처리방침) — @returns 지우기 함수 */
+export const publishSignupPolicies = (db, run) => publishPolicies(db, run, ["terms", "privacy"]);
+
+/** 정책 기능 키를 켜는 시험용 — 고른 문서마다 게시본이 없으면 가짜 게시본을 만든다 (게시본이 있어야 키를 켤 수 있다, W2-e 6.3)
+ *  @param {import("pg").Client} db  @param {string} run 실행 표시(StaffFixture.run)  @param {string[]} docs 문서 키
+ *  @returns {Promise<() => Promise<void>>} 지우기 함수 */
+export async function publishPolicies(db, run, docs) {
   const mark = Number((await db.query("select coalesce(max(id), 0) m from public.policy_versions")).rows[0].m);
   const by = `e2e-signup-policy-${run}`;
-  for (const doc of ["terms", "privacy"]) {
+  for (const doc of docs) {
     if ((await db.query("select 1 from public.policy_versions where doc_key = $1 and status = 'published'", [doc])).rowCount) continue;
     const v = Number((await db.query("select coalesce(max(version), 0) + 1 v from public.policy_versions where doc_key = $1", [doc])).rows[0].v);
     await db.query(

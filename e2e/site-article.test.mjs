@@ -20,6 +20,7 @@ import { chromium } from "playwright";
 import { buildWeb, localSupabase, startServer, ROOT } from "./lib/local.mjs";
 import { measurePage } from "./lib/screen-rules.mjs";
 import { StaffFixture } from "./lib/staff.mjs";
+import { publishPolicies } from "./lib/policy-fixture.mjs";
 import { importSource } from "./lib/ts-source.mjs";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
@@ -28,6 +29,8 @@ const ADMIN_EMAIL = "site-article-e2e@example.test";
 const SITE = "https://e2e.example.test";
 
 let sb, server, staff, db, browser, base, compareRendered;
+/** 정책 키는 게시본이 있어야 켜진다(W2-e 6.3) — j)가 켜는 회사 소개·정정 창구의 가짜 게시본을 지우는 함수 */
+let removePolicies;
 const u = {};
 const fx = {};
 
@@ -133,6 +136,7 @@ before(async () => {
   base = server.base;
   staff = new StaffFixture(sb);
   await staff.connect();
+  removePolicies = await publishPolicies(staff.db, staff.run, ["about", "corrections"]);
   db = staff.db;
   await staff.removeLeftover(ADMIN_EMAIL);
   await staff.snapshotOperations();
@@ -332,6 +336,7 @@ before(async () => {
 after(async () => {
   try {
     await browser?.close();
+    await removePolicies?.(); // cleanup()이 DB 연결을 닫기 전에
     await staff?.cleanup();
   } finally {
     server?.stop();

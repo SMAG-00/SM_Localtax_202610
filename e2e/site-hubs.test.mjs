@@ -31,6 +31,8 @@ const NEVER = ["/calc/", "/law", "/cases", "/workspace", "/qna", "/library", "/r
 const SEOUL = "1100000000";
 
 let sb, server, staff, db, browser, base;
+/** 기능 키와 상관없이 늘 열린 화면 — 측정 거부 안내(W2-c). W2-e 4단계부터 바닥글에 항상 있다(W2-e 설계 6.4) */
+const ALWAYS_OPEN = new Set(["/about/measurement"]);
 const u = {};
 const fx = { articles: {}, situations: {} };
 
@@ -463,7 +465,7 @@ test("h) 허브·하위 분야·뉴스 전체·상황 페이지 — 꺼진 기�
   for (const path of [...HUBS.map((h) => h.path), "/tax/interpretations", "/news", fx.situations["car-sold"].href, fx.situations["home-bought"].href]) {
     const { page } = await open(path);
     const links = await hrefs(page);
-    assert.deepEqual(hits(links, GATED), [], `${path}: 꺼진 기능으로 가는 링크`);
+    assert.deepEqual(hits(links, GATED).filter((h) => !ALWAYS_OPEN.has(pathOf(h))), [], `${path}: 꺼진 기능으로 가는 링크`);
     assert.deepEqual(hits(links, NEVER), [], `${path}: v1.2·단계 전 경로 링크`);
     for (const h of links) if (h.startsWith("/") && !h.startsWith("/news/") && !h.startsWith("//")) internal.add(h);
     await page.close();

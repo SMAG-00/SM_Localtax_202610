@@ -18,6 +18,7 @@ import { chromium } from "playwright";
 import { ROOT, buildWeb, localSupabase, startServer } from "./lib/local.mjs";
 import { measurePage } from "./lib/screen-rules.mjs";
 import { StaffFixture } from "./lib/staff.mjs";
+import { publishPolicies } from "./lib/policy-fixture.mjs";
 
 const ADMIN_EMAIL = "site-home-e2e@example.test";
 const SITE = "https://e2e.example.test";
@@ -31,6 +32,10 @@ const GATED = ["/calc", "/experts", "/store", "/edu", "/search", "/about", "/hel
 const NEVER = ["/calc/", "/law", "/cases", "/workspace", "/qna", "/library", "/region", "/resources", "/authors", "/news/cards", "/editorial-policy", "/corrections", "/advertise", "/terms", "/privacy", "/no-email-collection"];
 
 let sb, server, staff, db, browser, base;
+/** 정책 키는 게시본이 있어야 켜진다(W2-e 6.3) — 개인정보처리방침을 켜는 시험이 쓰는 가짜 게시본을 지우는 함수 */
+let removePolicies;
+/** 기능 키와 상관없이 늘 열린 화면 — 측정 거부 안내(W2-c). W2-e 4단계부터 바닥글에 항상 있다(W2-e 설계 6.4) */
+const ALWAYS_OPEN = new Set(["/about/measurement"]);
 const u = {};
 const fx = { reports: [], stories: [] };
 
@@ -157,6 +162,7 @@ before(async () => {
   db = staff.db;
   await staff.removeLeftover(ADMIN_EMAIL);
   await staff.snapshotOperations();
+  removePolicies = await publishPolicies(db, staff.run, ["terms", "privacy", "about"]);
   u.editor = await staff.createUser({ label: "site-editor", roles: ["editor"], person: { name: "홈 시험 편집자", roles: ["editor"] } });
   u.reporter = await staff.createUser({ label: "site-reporter", roles: ["reporter"], person: { name: "김가온", roles: ["reporter"] } });
   u.admin = await staff.createUser({ label: "site-admin", email: ADMIN_EMAIL });
@@ -166,6 +172,7 @@ before(async () => {
 after(async () => {
   try {
     await browser?.close();
+    await removePolicies?.(); // cleanup()이 DB 연결을 닫기 전에
     await staff?.cleanup();
   } finally {
     server?.stop();
@@ -299,11 +306,12 @@ test("d·e) 기능 키가 모두 꺼지면 유틸 메뉴·정책 링크·검색 
   assert.ok(Object.values(flags).every((v) => v === false), "시험 전 기능 공개 목록이 모두 꺼져 있어야 한다");
   let page = await openHome({ width: 1280, height: 800 });
   let links = await hrefs(page);
-  assert.deepEqual(hits(links, GATED), [], "꺼진 기능으로 가는 링크 0");
+  assert.deepEqual(hits(links, GATED).filter((h) => !ALWAYS_OPEN.has(pathOf(h))), [], "꺼진 기능으로 가는 링크 0");
   assert.deepEqual(hits(links, NEVER), [], "v1.2·단계 전 경로 링크 0");
   assert.equal(await page.locator('nav[aria-label="유틸 메뉴"]').count(), 0);
   assert.equal(await page.locator('form[action="/search"]').count(), 0);
-  assert.equal(await page.locator('nav[aria-label="바닥글 메뉴"]').count(), 0);
+  // 기능 키가 모두 꺼져도 바닥글에는 측정 거부 하나만 (W2-e 6.4)
+  assert.deepEqual(await page.$eval('nav[aria-label="바닥글 메뉴"] a', (as) => as.map((a) => a.getAttribute("href"))), ["/about/measurement"]);
   assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] [data-part="section-link"]', (as) => as.map((a) => a.textContent)), ["지방세", "부동산", "부동산개발금융", "지자체뉴스"]);
   // 하위 메뉴 — 빈 DB에서는 분야마다 공통 '뉴스 전체'만 (기사 있는 하위 분야가 없다, HOME-02)
   assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] [data-part="sub-link"]', (as) => as.map((a) => a.getAttribute("href"))), ["/news?section=tax", "/news?section=realestate", "/news?section=finance", "/news?section=local"]);
@@ -337,7 +345,7 @@ test("d·e) 기능 키가 모두 꺼지면 유틸 메뉴·정책 링크·검색 
   await setFeatures([]);
   await setSetting("home_search_chips", []);
   page = await openHome({ width: 1280, height: 800 });
-  assert.deepEqual(hits(await hrefs(page), GATED), []);
+  assert.deepEqual(hits(await hrefs(page), GATED).filter((h) => !ALWAYS_OPEN.has(pathOf(h))), []);
   assert.equal(await page.locator('form[action="/search"]').count(), 0);
   await page.close();
 });
