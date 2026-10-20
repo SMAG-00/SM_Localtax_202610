@@ -55,6 +55,7 @@ export const ACTIONS = {
   "partner.read": "제휴사 목록 열람",
   "member.read": "회원·편집국 계정 조회",
   "member.suspend": "계정 정지·정지 해제",
+  "member.delete": "회원 계정 삭제",
   "role.grant": "서비스 역할 부여",
   "role.revoke": "서비스 역할 회수",
   "audit.read": "감사 기록 조회",
@@ -83,6 +84,7 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "role.grant",
   "role.revoke",
   "member.suspend",
+  "member.delete",
   "settings.edit",
   "situation.publish",
   "readiness.requirements",
@@ -191,6 +193,7 @@ export function check(viewer: Viewer, action: Action, resource?: Resource): Deci
     case "audit.read":
     case "member.read":
     case "member.suspend":
+    case "member.delete":
     // 측정 지표 대시보드(/admin/metrics) — PRD-00 6장 표에 행이 없어 관리자 전권만(같은 표의 수익 대시보드도 관리자만).
     // 집계 숫자를 읽는 일이라 거부는 감사 대상(AUDITED_DENIALS)이 아니다 (W2-c 설계 9장)
     case "metrics.read":

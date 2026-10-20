@@ -155,3 +155,43 @@ export function MemberSuspension({ userId, email, suspended, blockedReason }: { 
     </form>
   );
 }
+
+/** 회원 계정 삭제 (W2-e 5.3) — 사유 필수. 동의·프로필·계정을 지운다(되돌릴 수 없음). 감사 기록에는 사유와 계정 번호만 남는다 */
+export function MemberDelete({ userId, email }: { userId: string; email: string }) {
+  const hydrated = useHydrated();
+  const router = useRouter();
+  const base = `member-${userId}-delete`;
+  const [reason, setReason] = useState("");
+  const [fieldError, setFieldError] = useState("");
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!reason.trim()) {
+      setFieldError("삭제하는 이유를 적어 주세요");
+      document.getElementById(`${base}-reason`)?.focus();
+      return;
+    }
+    setFieldError("");
+    setPending(true);
+    const r = await adminApi("DELETE", `/api/admin/members/${userId}`, { reason: reason.trim() });
+    setPending(false);
+    if (r.status === 200) {
+      router.refresh();
+      return;
+    }
+    setError(apiErrorMessage(r));
+  }
+
+  return (
+    <form onSubmit={submit} noValidate className="space-y-3" aria-label={`${email} 삭제`}>
+      <TextField id={`${base}-reason`} label="삭제하는 이유" hint="동의·프로필·계정이 지워지며 되돌릴 수 없습니다" required value={reason} onChange={(e) => setReason(e.target.value)} error={fieldError || undefined} />
+      {error && <ErrorSummary title={error} messages={[]} />}
+      <button type="submit" className={OUTLINE_BUTTON} disabled={pending || !hydrated}>
+        {pending ? "처리하는 중" : "삭제"}
+      </button>
+    </form>
+  );
+}

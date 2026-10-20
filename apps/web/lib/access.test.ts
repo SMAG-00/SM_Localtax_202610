@@ -72,6 +72,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "partner.read":           [X, O, X, O, X, X, X, O, X], // 편집 책임자는 읽기만 (등록·수정은 sponsored.manage)
   "member.read":            [X, X, X, X, X, X, X, O, X],
   "member.suspend":         [X, X, X, X, X, X, X, O, X],
+  "member.delete":          [X, X, X, X, X, X, X, O, X],
   "role.grant":             [X, X, X, X, X, X, X, O, X],
   "role.revoke":            [X, X, X, X, X, X, X, O, X],
   "audit.read":             [X, X, X, X, X, X, X, O, X],

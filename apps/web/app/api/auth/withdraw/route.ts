@@ -8,6 +8,7 @@ import { TOO_MANY, readAuthLimits, requireGuardSecret, throttleCheck, throttleCl
 import { getViewer } from "@/lib/server/dal";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/server/env";
 import { HttpError, errorJson, handle, json } from "@/lib/server/http";
+import { eraseAccount } from "@/lib/server/accounts/erase";
 import { readAccountBody, redirect303 } from "@/lib/server/accounts/body";
 import { cookieSessionClient } from "@/lib/server/session";
 import { adminClient } from "@/lib/server/supabase";
@@ -52,18 +53,7 @@ export const POST = handle(async (request: Request) => {
     return isForm ? redirect303("/my/withdraw?e=wrong") : errorJson(422, WRONG, { field: "currentPassword" });
   }
 
-  // 동의·프로필을 먼저 지우고 계정을 지운다(계정 삭제가 실패해도 개인정보 행은 남지 않는다)
-  const consents = await db.from("consents").delete().eq("user_id", viewer.userId);
-  const profiles = await db.from("profiles").delete().eq("id", viewer.userId);
-  if (consents.error || profiles.error) {
-    console.error("[withdraw] 개인정보 행 삭제 실패:", consents.error?.code, profiles.error?.code);
-    throw new HttpError(500, "탈퇴를 처리하지 못했습니다 — 잠시 뒤 다시 시도하세요");
-  }
-  const removed = await db.auth.admin.deleteUser(viewer.userId);
-  if (removed.error) {
-    console.error("[withdraw] 계정 삭제 실패:", removed.error.code, removed.error.status);
-    throw new HttpError(500, "탈퇴를 처리하지 못했습니다 — 잠시 뒤 다시 시도하세요");
-  }
+  await eraseAccount(db, viewer.userId, "withdraw", "탈퇴를 처리하지 못했습니다 — 잠시 뒤 다시 시도하세요");
   await throttleClear(db, "password_change", key).catch(() => undefined);
   await writeAudit(db, { actor: actorOf(viewer), action: "account.withdrawn", target: `user:${viewer.userId}`, before: null, after: { consentsDeleted: true, profileDeleted: true }, reason: "회원 탈퇴" }).catch((e: unknown) => console.error("[withdraw] 감사 로그 쓰기 실패:", e instanceof Error ? e.message : "unknown"));
 

@@ -600,7 +600,15 @@ PRD 증거는 두 문장이다 — HELP-03 '전 페이지를 크롤링한 서버
 - 설계와 달라진 점: (1) `getMemberFeed`는 `viewer` 대신 관심 값 배열을 받는다(`/my` 서버 화면이 본인 프로필을 읽어 넘긴다). (2) 저장 API는 한 경로 `POST /api/my/profile`에 `intent`로 나눈다(JS 없이 폼으로 동작). (3) 선택 동의 행은 가입 요청 때(확인 전) 만든다 — 미확인 정리·탈퇴는 `consents.user_id`의 `on delete cascade`와 명시 삭제로 함께 지워진다(확인함). (4) `local`(지자체)은 하위 분야가 없어 선택지에서 뺀다.
 - 시험(2026-10-20): DB `w2e-member-feed.test.mjs` 9개(분야·하위 분야·시·도→시·군·구·광고/핫뉴스 제외·14일 경계·6건·초안/유료 0·권한·함수 정의에 행동 기록 표 0) · 전체 DB 532 · RLS 42 · 웹 단위 2,234(새 `member-feed-logic.test.ts` 6) · 타입·린트 통과 · E2E `account-my` 6개(두 번 연속 통과) · 회귀 `account-signup` 9.
 - 한계: `/my`는 로그인이 필요해서 R1~R3·접근성 측정기(로그인 없이 연다)를 가입 화면에 적용했다(R2·R3·접근성 100). `/my` 화면 R1(글자 수 150)은 선택지가 많아 측정하지 않았다. 수집 판정의 `tier` 단위 시험은 아직 없다.
-- 3-B 몫: 백오피스 회원 탭·삭제 API·`proxy.ts` 매처(`/my`·`/account`).
+- 3-B 몫이던 백오피스 회원 탭·삭제 API·`proxy.ts` 매처는 아래 3-B에서 했다.
+
+**3-B 백오피스 회원 탭·회원 삭제 API·proxy 매처 (2026-10-20)**
+
+- 화면: `/admin/members`에 탭 두 개(`?tab=member`) — `편집국 계정`(그대로) · `회원`(역할·인물 없는 계정, 가입 최신순 50명 쪽수 `&page=`, 칸: 이메일·가입일·마지막 로그인·이메일 확인·정지·관심 분야 수·관심 지역 수·수신 동의 요약(철회 안 된 receive·marketing). 이메일 복사·내보내기 0). 이메일 일부 검색은 기존 규칙(`memberSearchQuery`), 회원 탭 검색은 역할 있는 계정을 뺀다. 정지는 기존 `MemberSuspension`·정지 API 그대로, [삭제] 폼(사유 필수)은 `MemberDelete`.
+- API `DELETE /api/admin/members/[id]`(본문 `{reason}`): 새 동작 `member.delete`(관리자만, 거부는 감사 대상 → `member.delete.denied` + 403). 사유 없음·500자 초과·모르는 칸 422, 편집국 역할·연결 인물·관리자 목록·자기 계정은 409, 없는 계정 404. 지움은 탈퇴와 같은 공용 함수 `lib/server/accounts/erase.ts eraseAccount`(동의 → 프로필 → Auth 계정). 감사 로그 `member.delete`(대상 `user:<uuid>`, 이메일 0).
+- `proxy.ts`: 매처에 `/my`·`/my/:path*` 추가, 로그인 쿠키가 없으면 `/login?next=…`(`/account`는 기존대로 `/admin/login`) — `lib/admin/proxy-rules.ts isMemberPath·memberProxyDecision`.
+- 설계와 달라진 점·한계: (1) 회원 목록은 인증 서버에서 200명씩 최대 10쪽(2,000명)까지 읽고 걸러 쪽을 자른다 — 회원이 그보다 많아지면 DB 함수로 옮긴다. (2) 삭제 거부 코드는 역할 계정 409(403 아님)로 했고 관리자 아닌 사람만 403이다. (3) 정지 감사 대상은 기존대로 `members:<id>`, 삭제는 지시대로 `user:<uuid>`.
+- 시험(2026-10-20): E2E `e2e/admin-members.test.mjs` 7개 통과(회원 탭에 역할 없는 계정만·칸 값=DB / 검색 / 정지 표시 / 삭제 거부 4종 + 화면 사유 안내 / 화면 삭제 → profiles·consents·Auth 0·감사 로그 1건 이메일 0 / 360px / proxy 리다이렉트), 단위 `proxy-rules.test.ts`·`access.test.ts`, 회귀 `account-recovery.test.mjs` 7개 통과(탈퇴 지움 함수 이동 후).
 ### 11.4 4단계 — 정책 페이지·바닥글
 ### 11.5 5단계 — 고객센터·문의함·감사 403
 ### 11.6 6단계 — 브리핑 사전 알림·보존 기한 배치

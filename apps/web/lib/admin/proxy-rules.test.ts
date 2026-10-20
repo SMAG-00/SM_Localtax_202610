@@ -1,7 +1,7 @@
 // 화면 경로 막기 규칙 시험 (proxy.ts) — 로그인 쿠키가 없으면 로그인 화면으로, 로그인 화면은 그대로.
 // 이 판정은 낙관적 확인(쿠키 존재)일 뿐이다 — 실제 확인은 서버 컴포넌트·라우트 처리기의 DAL이 한다 (PRD-00 6장 두 곳에서 막기).
 import { describe, expect, test } from "vitest";
-import { accountProxyDecision, adminProxyDecision, hasAuthCookie, isAccountPath, isLoginPath } from "./proxy-rules";
+import { accountProxyDecision, adminProxyDecision, hasAuthCookie, isAccountPath, isLoginPath, isMemberPath, memberProxyDecision } from "./proxy-rules";
 
 describe("Supabase 로그인 쿠키 알아보기", () => {
   test.each([
@@ -70,5 +70,29 @@ describe("계정 화면(/account…) 판정 — W2-e 4.2", () => {
   test("쿠키가 있으면 통과(실제 확인은 서버가 한다), 로그인과 관계없는 쿠키만 있으면 로그인 화면", () => {
     expect(accountProxyDecision({ pathname: "/account/password", search: "", cookieNames: ["sb-127-auth-token"] })).toEqual({ kind: "pass" });
     expect(accountProxyDecision({ pathname: "/account/password", search: "", cookieNames: ["theme", "ltr_vid"] }).kind).toBe("login");
+  });
+});
+
+describe("회원 화면 /my 막기 (W2-e 4.4)", () => {
+  test.each([
+    ["/my", true],
+    ["/my/withdraw", true],
+    ["/mypage", false],
+    ["/my-news", false],
+    ["/admin/my", false],
+  ])("%s → %s", (path, expected) => {
+    expect(isMemberPath(path)).toBe(expected);
+  });
+
+  test("쿠키 없이 /my/withdraw?e=wrong → 회원 로그인(/login), 돌아갈 주소에 쿼리 포함", () => {
+    expect(memberProxyDecision({ pathname: "/my/withdraw", search: "?e=wrong", cookieNames: [] })).toEqual({
+      kind: "login",
+      location: "/login?next=%2Fmy%2Fwithdraw%3Fe%3Dwrong",
+    });
+  });
+
+  test("로그인 쿠키가 있으면 통과, 무관한 쿠키만 있으면 로그인", () => {
+    expect(memberProxyDecision({ pathname: "/my", search: "", cookieNames: ["sb-127-auth-token.0"] })).toEqual({ kind: "pass" });
+    expect(memberProxyDecision({ pathname: "/my", search: "", cookieNames: ["theme"] }).kind).toBe("login");
   });
 });

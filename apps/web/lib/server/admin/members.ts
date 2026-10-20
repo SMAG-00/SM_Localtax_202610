@@ -141,3 +141,94 @@ export async function setSuspended(db: Db, userId: string, suspend: boolean): Pr
   if (!after) throw new HttpError(404, "그런 계정이 없습니다");
   return after;
 }
+
+// ── 회원 탭 (W2-e 3-B) — 역할·인물이 없는 계정 ──────────────────────────────
+export const MEMBER_PAGE_SIZE = 50;
+/** 목록은 인증 서버에서 200명씩 이 쪽수까지만 읽는다(회원 규모가 커지면 DB 함수로 옮긴다) */
+const MEMBER_SCAN_PAGES = 10;
+const SCAN_PER_PAGE = 200;
+
+export interface RegularMemberView {
+  userId: string;
+  email: string | null;
+  createdAt: string | null;
+  lastSignInAt: string | null;
+  emailConfirmed: boolean;
+  suspended: boolean;
+  isAdmin: boolean;
+  interestCount: number;
+  regionCount: number;
+  /** 철회되지 않은 수신 동의 종류 (receive·marketing) */
+  consents: string[];
+}
+
+export interface RegularMemberPage {
+  members: RegularMemberView[];
+  page: number;
+  hasNext: boolean;
+}
+
+type ListedUser = AuthUser;
+
+async function scanUsers(page: number): Promise<ListedUser[]> {
+  const url = supabaseUrl();
+  const key = supabaseServiceRoleKey();
+  if (!url || !key) throw new HttpError(503, "서버 설정이 끝나지 않았습니다");
+  const params = new URLSearchParams({ page: String(page), per_page: String(SCAN_PER_PAGE) });
+  const res = await fetch(`${url.replace(/\/+$/, "")}/auth/v1/admin/users?${params}`, { headers: { apikey: key, authorization: `Bearer ${key}` }, cache: "no-store" });
+  if (!res.ok) {
+    console.error("[members] 회원 목록 읽기 실패:", res.status);
+    throw new HttpError(503, "회원 목록을 읽지 못했습니다 — 잠시 뒤 다시 시도하세요");
+  }
+  return ((await res.json()) as { users?: ListedUser[] }).users ?? [];
+}
+
+/** 역할·인물이 없는 계정 한 쪽(50명, 가입일 최신순). q가 있으면 이메일 일부 검색(최대 50명, 쪽 1만) */
+export async function listRegularMembers(db: Db, q: string | null, page: number): Promise<RegularMemberPage> {
+  const links = await staffLinks(db);
+  const isStaffId = (id: string) => links.roles.has(id) || links.people.has(id);
+  let pool: ListedUser[] = [];
+  if (q) {
+    pool = (await searchUsers(q)).filter((u) => !isStaffId(u.id));
+  } else {
+    const need = page * MEMBER_PAGE_SIZE + 1;
+    for (let p = 1; p <= MEMBER_SCAN_PAGES && pool.length < need; p += 1) {
+      const batch = await scanUsers(p);
+      pool.push(...batch.filter((u) => !isStaffId(u.id)));
+      if (batch.length < SCAN_PER_PAGE) break;
+    }
+  }
+  pool.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? "") || b.id.localeCompare(a.id));
+  const start = q ? 0 : (page - 1) * MEMBER_PAGE_SIZE;
+  const slice = pool.slice(start, start + MEMBER_PAGE_SIZE);
+  const ids = slice.map((u) => u.id);
+  const [pr, cs] = ids.length
+    ? await Promise.all([
+        db.from("profiles").select("id, interests, interest_region_codes").in("id", ids),
+        db.from("consents").select("user_id, kind").in("user_id", ids).is("revoked_at", null).in("kind", ["receive", "marketing"]),
+      ])
+    : [{ data: [], error: null }, { data: [], error: null }];
+  if (pr.error) throw dbError(pr.error, "profiles 읽기");
+  if (cs.error) throw dbError(cs.error, "consents 읽기");
+  const profile = new Map((pr.data as { id: string; interests: string[]; interest_region_codes: string[] }[]).map((r) => [r.id, r]));
+  const consent = new Map<string, string[]>();
+  for (const r of cs.data as { user_id: string; kind: string }[]) consent.set(r.user_id, [...(consent.get(r.user_id) ?? []), r.kind].sort());
+  const now = Date.now();
+  const members = slice.map((u): RegularMemberView => {
+    const email = u.email?.trim().toLowerCase() || null;
+    const p = profile.get(u.id);
+    return {
+      userId: u.id,
+      email,
+      createdAt: u.created_at ?? null,
+      lastSignInAt: u.last_sign_in_at ?? null,
+      emailConfirmed: Boolean(u.email_confirmed_at),
+      suspended: isSuspended(u.banned_until, now),
+      isAdmin: email !== null && Boolean(u.email_confirmed_at) && adminEmails().includes(email),
+      interestCount: p?.interests.length ?? 0,
+      regionCount: p?.interest_region_codes.length ?? 0,
+      consents: consent.get(u.id) ?? [],
+    };
+  });
+  return { members, page, hasNext: !q && pool.length > start + MEMBER_PAGE_SIZE };
+}

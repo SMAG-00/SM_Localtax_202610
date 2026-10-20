@@ -32,3 +32,15 @@ export function adminProxyDecision({ pathname, search, cookieNames }: { pathname
   if (hasAuthCookie(cookieNames)) return { kind: "pass" };
   return { kind: "login", location: `${LOGIN_PATH}?next=${encodeURIComponent(`${pathname}${search}`)}` };
 }
+
+/** 회원 화면(/my…, W2-e 4.4) — 로그인 쿠키가 없으면 회원 로그인(/login)으로. 화면(DAL)도 같은 곳으로 보낸다 */
+export const MEMBER_LOGIN_PATH = "/login";
+
+export function isMemberPath(pathname: string): boolean {
+  return pathname === "/my" || pathname.startsWith("/my/");
+}
+
+export function memberProxyDecision({ pathname, search, cookieNames }: { pathname: string; search: string; cookieNames: readonly string[] }): ProxyDecision {
+  if (hasAuthCookie(cookieNames)) return { kind: "pass" };
+  return { kind: "login", location: `${MEMBER_LOGIN_PATH}?next=${encodeURIComponent(`${pathname}${search}`)}` };
+}

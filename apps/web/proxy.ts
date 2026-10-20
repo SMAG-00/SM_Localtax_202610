@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { ADMIN_PATH_HEADER } from "@/lib/admin/headers";
-import { accountProxyDecision, adminProxyDecision, hasAuthCookie, isAccountPath } from "@/lib/admin/proxy-rules";
+import { accountProxyDecision, adminProxyDecision, hasAuthCookie, isAccountPath, isMemberPath, memberProxyDecision } from "@/lib/admin/proxy-rules";
 import { authCookieOptions, isHttps } from "@/lib/server/cookie-options";
 import { gateDecision, noticeFor, noticeHeaders, noticeHtml, probePath, publicDetailRoute, type ProbeResult, type PublicDetailRoute } from "@/lib/site/public-gate";
 
@@ -65,8 +65,9 @@ export async function proxy(request: NextRequest) {
   if (detail) return publicGate(detail);
   // 백오피스(/admin…)와 로그인한 상태의 계정 화면(/account… — 비밀번호 바꾸기, W2-e 4.2)가 같은 낙관적 확인을 한다
   const admin = pathname.startsWith("/admin");
-  if (!admin && !isAccountPath(pathname)) return NextResponse.next();
-  const decide = admin ? adminProxyDecision : accountProxyDecision;
+  const member = isMemberPath(pathname);
+  if (!admin && !member && !isAccountPath(pathname)) return NextResponse.next();
+  const decide = admin ? adminProxyDecision : member ? memberProxyDecision : accountProxyDecision;
   const decision = decide({ pathname, search, cookieNames: request.cookies.getAll().map((c) => c.name) });
   if (decision.kind === "login") return toLogin(request, decision.location);
 
@@ -100,7 +101,7 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getSession();
   if (!data.session) {
     const fallback = decide({ pathname, search, cookieNames: [] });
-    const redirect = toLogin(request, fallback.kind === "login" ? fallback.location : "/admin/login");
+    const redirect = toLogin(request, fallback.kind === "login" ? fallback.location : admin ? "/admin/login" : member ? "/login" : "/admin/login");
     for (const c of request.cookies.getAll()) if (hasAuthCookie([c.name])) redirect.cookies.set(c.name, "", { path: "/", maxAge: 0 });
     return redirect;
   }
@@ -109,5 +110,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // 공개 상세 경로 — public-gate.ts publicDetailRoute와 같은 목록 (제휴사 /partners/[id]는 W2-c 4단계가 판정만 더하고 여기에 빠져 있던 것을 W2-d 3단계가 더했다)
-  matcher: ["/admin", "/admin/:path*", "/account", "/account/:path*", "/news/:slug", "/situations/:slug", "/people/:slug", "/partners/:id", "/glossary/:id"],
+  matcher: ["/admin", "/admin/:path*", "/account", "/account/:path*", "/my", "/my/:path*", "/news/:slug", "/situations/:slug", "/people/:slug", "/partners/:id", "/glossary/:id"],
 };
