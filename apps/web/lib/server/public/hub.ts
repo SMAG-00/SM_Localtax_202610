@@ -6,12 +6,13 @@ import { publicDb, rowsOf } from "./db";
 import { termChip } from "./glossary-logic";
 import { ALL_TAB, hubTabs, localBlocks, newsTabs, pageNumber, type HubData, type HubTab } from "./hub-logic";
 import { getHotBlock, type HotBlock } from "./rankings";
+import { getHubTaxPoint } from "./hub-points";
 import { readArticleList, readCategories, readCategoryCounts, readPublicSettings, readTopicCounts } from "./reads";
 import { GLOSSARY_COLUMNS, SITUATION_COLUMNS, num, type GlossaryRow, type SituationRow } from "./rows";
 import { hubSituationCards } from "./situation-logic";
 
 // 4대 분야 허브 공통 골격 (CAT-02 · UX-05) · 하위 분야 목록 · 뉴스 전체 — 네 허브가 같은 모양의 값을 받는다 (규칙은 hub-logic.ts).
-// 분야 지방세 포인트(01B CORE-02 — W3)·지방세·부동산·개발금융 허브의 분야 고유 블록(01B)은 그 작업에서 더한다.
+// 분야 지방세 포인트(01B CORE-02 — W3 9단계)는 감수 서명이 있는 분야만(hub-points.ts). 지방세·부동산·개발금융 허브의 분야 고유 블록(01B)은 그 작업에서 더한다.
 // 상담 사례 HOT(HOME-05 — W2-c 2단계)은 지방세 허브와 상담 사례 분야 목록(HOT_CATEGORY)의 첫 쪽에 둔다 (rankings.ts).
 // 지자체뉴스 허브는 분야 고유 블록 자리에 LG-08 순서의 지자체 허브 블록 중 데이터가 있는 ② 지방세·지방재정 ③ 부동산·개발을 둔다.
 
@@ -20,7 +21,7 @@ export type { HubData, HubTab } from "./hub-logic";
 export async function getHubData(section: SectionKey, opts: { topic?: string | null } = {}): Promise<HubData> {
   const db = publicDb();
   const topic: LocalTopic | null = section === "local" && isLocalTopic(opts.topic) ? opts.topic : null;
-  const [settings, categories, counts, topicCounts, latest, situations, terms, blockTax, blockRealEstate, hot] = await Promise.all([
+  const [settings, categories, counts, topicCounts, latest, situations, terms, blockTax, blockRealEstate, hot, taxPoint] = await Promise.all([
     readPublicSettings(),
     readCategories(),
     readCategoryCounts(),
@@ -32,6 +33,7 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     section === "local" && !topic ? readArticleList(db, { section, editorialFields: LOCAL_BLOCK_TOPICS.localTax, limit: LIMITS.localBlock }) : null,
     section === "local" && !topic ? readArticleList(db, { section, editorialFields: LOCAL_BLOCK_TOPICS.realEstate, limit: LIMITS.localBlock }) : null,
     section === HOT_CATEGORY.section ? getHotBlock() : null,
+    getHubTaxPoint(section),
   ]);
   return {
     section,
@@ -47,7 +49,7 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     hot,
     situations: hubSituationCards(situations, section, settings.hubSituationLimit),
     terms: terms.map((t) => termChip(t, settings.features)),
-    taxPoint: null,
+    taxPoint,
     noindex: topic !== null && latest.items.length === 0,
   };
 }

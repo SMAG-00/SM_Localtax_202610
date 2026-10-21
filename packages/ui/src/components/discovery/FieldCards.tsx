@@ -8,13 +8,14 @@ export type FieldCardsProps = {
 };
 
 /**
- * 4대 분야 카드 — 링크 카드 4장, 같은 크기·같은 비중 (PRD-00 8.6, HOME-01). 모바일 2×2, 1024px 이상 4열
+ * 4대 분야 카드 — 링크 카드 4장, 같은 크기·같은 비중 (PRD-00 8.6, HOME-01). 모바일 2×2, 1024px 이상 4열.
+ * 줄 높이를 모두 같게(auto-rows-fr) — 포인트 한 줄이 있는 카드와 없는 카드도 크기가 같다 (CORE-02)
  * 카드 수·순서·경로는 고정이다(지방세 /tax · 부동산 /realestate · 부동산개발금융 /finance · 지자체뉴스 /local). 주 버튼이 아니다(R2)
  */
 export function FieldCards({ points = {} }: FieldCardsProps) {
   return (
     <nav aria-label="4대 분야" data-ui="field-cards">
-      <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <ul className="grid auto-rows-fr grid-cols-2 gap-4 lg:grid-cols-4">
         {FIELD_ORDER.map((key) => {
           const field = FIELDS[key];
           const point = points[key];

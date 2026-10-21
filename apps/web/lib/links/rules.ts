@@ -6,6 +6,16 @@ export const LINK_KINDS = ["sm_calculator", "external_calculator", "fallback"] a
 export type LinkKind = (typeof LINK_KINDS)[number];
 export type LinkStatus = "ok" | "broken" | "unchecked";
 
+/**
+ * 국세로 가는 연결인가 (TX-06 · FAM-08 · W3 9단계) — 상속·증여 세목의 외부 계산기, SM의 양도세 메뉴('팔 때'), 국세청 대체 안내.
+ * 화면은 이 카드에 '국세' 배지와 미계산 안내를 붙인다(금액 입력·결과 요소 0). 나머지(SM 지방세 계산기·위택스)는 지방세 연결
+ */
+export function isNationalTaxLink(link: { kind: LinkKind; key: string }): boolean {
+  if (link.kind === "external_calculator") return true;
+  if (link.kind === "sm_calculator") return link.key === "transfer";
+  return link.kind === "fallback" && link.key === "nts";
+}
+
 /** 마지막 점검이 이 일수보다 오래되면 경고 — 7일 전 점검은 0건, 8일 전은 1건 (KST 날짜 차이) */
 export const STALE_AFTER_DAYS = 7;
 

@@ -6,7 +6,7 @@ import { uniqueIds } from "../../fixtures/helpers";
 import { QUANTITATIVE_NEWS } from "../../fixtures/quantitative";
 import { evaluatePublish } from "../evaluate";
 import { CONTENT_TYPES, SECTIONS, type ArticleForPublish, type ContentType, type Section, type TaxLens } from "../model";
-import { isTaxLensTarget, validateTaxLensForSave } from "./tax-lens";
+import { isTaxLensTarget, pointLineProblems, validateTaxLensForSave } from "./tax-lens";
 
 const q = QUANTITATIVE_NEWS;
 const lens = q.taxLens!;
@@ -145,5 +145,19 @@ describe("CORE-01 저장 규칙 validateTaxLensForSave", () => {
 
   it("내용도 생략 사유도 없는 빈 박스는 세목·포인트·링크 모두 거부", () => {
     expect(saveIds({ topics: [], points: [], links: [] })).toEqual(["core01.topics-required", "core01.points-count", "core01.links-required"]);
+  });
+});
+
+describe("화면 포인트 줄 검사 (CORE-01 박스와 CORE-02 허브 포인트 공용)", () => {
+  const forbidden = ["무조건 감면"];
+  it("세액 표현(숫자 + 원)은 그 줄 번호로 막는다 — 원칙·원문 등은 금액이 아니다", () => {
+    expect(pointLineProblems(["시험용 첫 줄", "시험용 1,200만 원 예시"], forbidden)).toEqual([{ index: 1, message: expect.stringContaining("1,200만 원") }]);
+    expect(pointLineProblems(["3원칙을 확인합니다", "2개 원문을 봅니다"], forbidden)).toEqual([]);
+  });
+  it("금지 표현 사전의 표현은 띄어쓰기가 달라도 막는다", () => {
+    expect(pointLineProblems(["시험용 줄", "시험용 줄", "이 경우 무조건  감면됩니다"], forbidden)).toEqual([{ index: 2, message: expect.stringContaining("무조건 감면") }]);
+  });
+  it("문제없는 줄은 빈 목록", () => {
+    expect(pointLineProblems(["시험용 포인트 한 줄"], forbidden)).toEqual([]);
   });
 });

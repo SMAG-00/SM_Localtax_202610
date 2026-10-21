@@ -1,7 +1,7 @@
 // 01B CORE-01 「지방세로 읽기」 — 대상 기사 판정, 발행 차단(박스·생략 사유·감수), 저장 규칙(세목·포인트·링크·세액·감면 단정)
 import { finding, toSaveValidation, type Finding, type SaveValidation } from "../findings";
 import type { ArticleForPublish, ContentType, PublishContext, Section, TaxLens } from "../model";
-import { findPhrases, isBlank, taxLensUnit, unitLocation } from "../text";
+import { findPhrases, isBlank, taxLensUnit, unitLocation, type TextUnit } from "../text";
 
 /** 박스 요구 분야 — 부동산 · 부동산개발금융 · 지자체뉴스 (tax는 대상 아님) */
 const TARGET_SECTIONS: ReadonlySet<Section> = new Set(["realestate", "finance", "local"]);
@@ -54,6 +54,20 @@ function contentFindings(lens: TaxLens, ctx: PublishContext, includeDictionary: 
     }
   }
   return out;
+}
+
+/**
+ * 화면 포인트 줄 검사 — 「지방세로 읽기」 박스(CORE-01)와 같은 세액 표현(숫자 + 원)·금지 표현 규칙을 허브 "이 분야의 지방세 포인트"(CORE-02)에도 쓴다.
+ * 줄 번호(0부터)와 고칠 문장. 줄 수·글자 수는 부르는 쪽이 본다
+ */
+export function pointLineProblems(lines: readonly string[], forbiddenPhrases: readonly string[]): { index: number; message: string }[] {
+  const out: { index: number; message: string }[] = [];
+  lines.forEach((line, index) => {
+    for (const m of line.normalize("NFC").matchAll(TAX_AMOUNT)) out.push({ index, message: `세액을 쓰지 않습니다 — ‘${m[0]}’을 빼 주세요` });
+  });
+  const unit: TextUnit = { field: "points", sentences: lines.map((l) => l.normalize("NFC")) };
+  for (const hit of findPhrases([unit], forbiddenPhrases)) out.push({ index: hit.sentenceIndex, message: `금지 표현 ‘${hit.phrase}’ — 감면 해당 여부를 단정하지 않습니다` });
+  return out.sort((a, b) => a.index - b.index);
 }
 
 /** CORE-01 저장 규칙 — 생략 사유만 있는 박스는 저장, 내용이 있으면 세목 1+·포인트 1~3·링크 1+·세액 0·금지 표현 0 */

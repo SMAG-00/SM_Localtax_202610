@@ -32,6 +32,8 @@ const RULES: readonly MenuRule[] = [
   { id: "home", label: "홈 배치", href: "/admin/home", when: (a) => a.has("article.home"), paths: ["/admin/home"] },
   { id: "amendments", label: "개정 트래커", href: "/admin/amendments", when: (a) => a.has("amendment.record_event"), paths: ["/admin/amendments"] },
   { id: "links", label: "바깥 연결", href: "/admin/links", when: (a) => a.has("link.manage"), paths: ["/admin/links"] },
+  // 허브 지방세 포인트 (CORE-02 — W3 9단계) — 초안은 편집 책임자, 감수 서명은 세무 감수위원
+  { id: "hub-points", label: "허브 지방세 포인트", href: "/admin/hub-points", when: (a) => a.has("hub_point.edit") || a.has("review.tax_review"), paths: ["/admin/hub-points"] },
   {
     id: "situations",
     label: "상황 카드",

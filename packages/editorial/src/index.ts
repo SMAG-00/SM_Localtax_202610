@@ -7,7 +7,7 @@ export { BUILT_IN_CHECKS, evaluatePublish } from "./evaluate";
 export type { PublishCheck, PublishEvaluation, PublishOptions } from "./evaluate";
 
 // 저장 검사
-export { isTaxLensTarget, hasTaxLensContent, validateTaxLensForSave } from "./checks/tax-lens";
+export { isTaxLensTarget, hasTaxLensContent, pointLineProblems, validateTaxLensForSave } from "./checks/tax-lens";
 export { changesDateModified, validateRevisionForSave } from "./checks/revision";
 export type { RevisionInput } from "./checks/revision";
 export { validateSolvedCaseForSave } from "./checks/solved-case";

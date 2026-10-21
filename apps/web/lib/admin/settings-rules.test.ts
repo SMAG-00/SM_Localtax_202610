@@ -123,6 +123,15 @@ describe("W2-b 공개 설정 — 관리자 화면이 고치는 값과 공개 데
     expect(validateSettingValue("home_core_message", 3, null).ok).toBe(false);
   });
 
+  test("핵심 메시지 — 경력 연수 표기('50년' 변형)는 승인과 상관없이 늘 거부, 연도·연대는 통과 (W3 9단계 · 설계 2.6 · 12장 #26)", () => {
+    for (const claim of ["지방세 50년의 시험용 메시지", "시험용 50 년", "시험용 ５０년", "시험용 오십 년", "시험용 반세기", "Fifty Years 시험용"]) {
+      expect(errorsOf(validateSettingValue("home_core_message", claim, null)), claim).toEqual([expect.stringMatching(/^값: .*경력 연수 표기/)]);
+    }
+    for (const ok of ["1950년 이후 시험용 메시지", "50년대 시험용 메시지", "부동산과 지자체의 변화를 읽고 대응하려면 지방세 이해가 필수다"]) {
+      expect(validateSettingValue("home_core_message", ok, null).ok, ok).toBe(true);
+    }
+  });
+
   test("추천 검색어 — 0개·3개·6개 통과, 2개·7개·중복·빈 글자·21자 거부 (HOME-01)", () => {
     for (const ok of [[], ["취득세", "개편안", "책임준공"], ["a", "b", "c", "d", "e", "f"]]) expect(validateSettingValue("home_search_chips", ok, null).ok).toBe(true);
     for (const bad of [["취득세", "개편안"], ["a", "b", "c", "d", "e", "f", "g"], ["취득세", "취득세 ", "개편안"], ["취득세", "", "개편안"], ["가".repeat(21), "b", "c"], "취득세"]) {

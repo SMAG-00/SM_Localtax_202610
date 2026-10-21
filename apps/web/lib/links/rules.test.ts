@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysSince, isoWeekKey, isStale, parseLinkUpdate, parseManualCheck, resultOf } from "./rules";
+import { daysSince, isNationalTaxLink, isoWeekKey, isStale, parseLinkUpdate, parseManualCheck, resultOf } from "./rules";
 
 const NOW = new Date("2026-10-21T03:00:00Z"); // KST 2026-10-21 12:00
 
@@ -60,5 +60,15 @@ describe("편집 입력 검사", () => {
   it("수동 점검은 ok|broken만", () => {
     expect(parseManualCheck({ id: 2, result: "ok" })).toEqual({ ok: true, value: { id: 2, result: "ok" } });
     expect(parseManualCheck({ id: 2, result: "unchecked" }).ok).toBe(false);
+  });
+});
+
+describe("국세 연결 — '국세' 배지를 붙이는 카드 (TX-06 · W3 9단계)", () => {
+  it("외부 계산기(상속·증여)·SM 양도세 메뉴·국세청 대체 안내만 국세", () => {
+    expect(isNationalTaxLink({ kind: "external_calculator", key: "inheritance_gift" })).toBe(true);
+    expect(isNationalTaxLink({ kind: "sm_calculator", key: "transfer" })).toBe(true);
+    expect(isNationalTaxLink({ kind: "fallback", key: "nts" })).toBe(true);
+    for (const key of ["acquisition", "property_tax", "registration", "comprehensive"]) expect(isNationalTaxLink({ kind: "sm_calculator", key })).toBe(false);
+    expect(isNationalTaxLink({ kind: "fallback", key: "wetax" })).toBe(false);
   });
 });

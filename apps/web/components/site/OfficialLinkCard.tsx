@@ -1,8 +1,18 @@
+import { TaxKindBadge } from "@ltr/ui";
+import { isNationalTaxLink, type LinkKind } from "@/lib/links/rules";
 import type { CalcView, OfficialLinkCard as Card } from "@/lib/server/public/calc";
 
 // 바깥 연결 카드 (TX-01·FAM-08 · W3 1단계) — /calc가 쓰고, 「지방세로 읽기」·상황 페이지가 같은 컴포넌트를 재사용한다.
 // 이동은 새 창이고 noreferrer라 Referer도 없다. 주소에는 쿼리·조각을 더하지 않는다(입력값·표식 값 비전달) — 저장 주소 그대로.
 // 끊김(broken)으로 확인된 연결은 이동 링크 대신 안내 문구와 대체 안내로 바꾼다.
+// 국세로 가는 연결(상속·증여 외부 계산기·SM 양도세 메뉴·국세청 안내 — isNationalTaxLink)에는 '국세' 배지와 미계산 안내를 붙인다 (TX-06 · W3 9단계).
+
+/** 카드의 사이트 표시 — 연결 종류별 */
+export function linkSiteLabel(kind: LinkKind): string {
+  if (kind === "sm_calculator") return "SM 부동산 세금 플랫폼(별도 사이트) · 새 창";
+  if (kind === "external_calculator") return "외부 사이트 · 새 창 · 이 사이트의 결과와 합산하지 않습니다";
+  return "공식 안내 · 새 창";
+}
 
 function Checked({ card }: { card: Card }) {
   return (
@@ -14,10 +24,21 @@ function Checked({ card }: { card: Card }) {
 
 export function OfficialLinkCard({ card, site, fallbacks }: { card: Card; site: string; fallbacks: Card[] }) {
   const broken = card.status === "broken";
+  const national = isNationalTaxLink(card);
   return (
-    <li data-link-card={card.key} data-link-status={card.status} className="rounded-2xl border border-navy-100 bg-white p-6">
+    <li data-link-card={card.key} data-link-status={card.status} data-tax-kind={national ? "national" : "local"} className="rounded-2xl border border-navy-100 bg-white p-6">
+      {national && (
+        <p className="mb-2">
+          <TaxKindBadge kind="national" />
+        </p>
+      )}
       <h2 className="text-[19px] font-black text-navy-900">{card.label}</h2>
       <p className="mt-1 text-[13px] text-navy-500">{site}</p>
+      {national && (
+        <p data-part="national-note" className="mt-2 text-[14px] leading-6 text-navy-700">
+          이 사이트는 국세 금액을 계산하지 않습니다 — 별도 사이트로 연결만 합니다.
+        </p>
+      )}
       {card.termsNote && (
         <p data-part="terms-note" className="mt-2 text-[14px] leading-6 text-navy-700">
           {card.termsNote}
@@ -58,7 +79,7 @@ export function CalcCards({ view }: { view: CalcView }) {
       {view.sm.length > 0 && (
         <ul data-part="sm-cards" className="mt-8 grid gap-4 sm:grid-cols-2">
           {view.sm.map((c) => (
-            <OfficialLinkCard key={c.id} card={c} site="SM 부동산 세금 플랫폼(별도 사이트) · 새 창" fallbacks={view.fallbacks} />
+            <OfficialLinkCard key={c.id} card={c} site={linkSiteLabel(c.kind)} fallbacks={view.fallbacks} />
           ))}
         </ul>
       )}
@@ -69,7 +90,7 @@ export function CalcCards({ view }: { view: CalcView }) {
           </h2>
           <ul data-part="external-cards" className="mt-3 grid gap-4 sm:grid-cols-2">
             {view.external.map((c) => (
-              <OfficialLinkCard key={c.id} card={c} site="외부 사이트 · 새 창 · 이 사이트의 결과와 합산하지 않습니다" fallbacks={view.fallbacks} />
+              <OfficialLinkCard key={c.id} card={c} site={linkSiteLabel(c.kind)} fallbacks={view.fallbacks} />
             ))}
           </ul>
         </section>

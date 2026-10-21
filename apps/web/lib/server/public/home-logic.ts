@@ -132,6 +132,8 @@ export interface FieldsSection {
   key: "fields";
   /** 4대 분야 카드 정확히 4장 — 이 순서 (HOME-01) */
   cards: { section: SectionKey; name: string; href: string }[];
+  /** 카드마다 '이 분야의 지방세 포인트' 한 줄 (CORE-02 — 감수 서명이 있는 분야의 첫 줄만, W3 9단계) */
+  points: Partial<Record<SectionKey, string>>;
 }
 export interface LatestReportsSection {
   key: "latest_reports";
@@ -170,6 +172,8 @@ export type HomeSection = HeroSection | FieldsSection | LatestReportsSection | W
 
 export interface HomeInput {
   coreMessage: string | null;
+  /** 4대 분야 카드의 포인트 한 줄 (감수된 분야만) — 없으면 줄 없음 */
+  fieldPoints?: Partial<Record<SectionKey, string>>;
   /** 검색 화면 공개 여부 (기능 키 search) */
   searchEnabled: boolean;
   searchChips: string[];
@@ -198,7 +202,7 @@ export function homeSections(input: HomeInput): HomeSection[] {
       input.coreMessage || input.searchEnabled
         ? { key: "hero", coreMessage: input.coreMessage, search: input.searchEnabled ? { action: "/search", chips: input.searchChips } : null }
         : null,
-    fields: { key: "fields", cards: SECTION_KEYS.map((s) => ({ section: s, name: SECTION_INFO[s].name, href: SECTION_INFO[s].href })) },
+    fields: { key: "fields", cards: SECTION_KEYS.map((s) => ({ section: s, name: SECTION_INFO[s].name, href: SECTION_INFO[s].href })), points: { ...(input.fieldPoints ?? {}) } },
     latest_reports: input.latestReports.length ? { key: "latest_reports", items: input.latestReports.slice(0, LIMITS.homeLatestReports) } : null,
     weekly_hot: input.weeklyHot && input.weeklyHot.items.length ? input.weeklyHot : null,
     // 공개 트래커가 없으면 섹션째 숨긴다 — 스토리 카드만 남기지 않는다 (HOME-03)

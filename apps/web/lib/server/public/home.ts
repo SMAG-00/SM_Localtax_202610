@@ -6,6 +6,8 @@ import { LIMITS } from "./constants";
 import { publicDb, rowsOf } from "./db";
 import { activeCurations, closedHomeSections, homeSections, latestReports, pickStories, pickTrackers, type AmendmentsSection, type HomeSection } from "./home-logic";
 import { getSignatureHome } from "./signature";
+import { readHubTaxPoints } from "./hub-points";
+import { fieldCardPoints } from "./hub-point-logic";
 import { readArticleList, readPublicSettings } from "./reads";
 import { AMENDMENT_COLUMNS, AMENDMENT_EVENT_COLUMNS, CURATION_COLUMNS, num, type AmendmentEventRow, type AmendmentRow, type CurationRow } from "./rows";
 import type { ProgressStageKey } from "@ltr/ui";
@@ -71,15 +73,18 @@ export async function getHomeAmendments(now: Date = new Date()): Promise<{ today
 
 export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
   const db = publicDb();
-  const [settings, latest, amendments, signature] = await Promise.all([
+  const [settings, latest, amendments, signature, hubPoints] = await Promise.all([
     readPublicSettings(),
     readArticleList(db, { contentType: "reported_news", reportedApproved: true, limit: LIMITS.homeLatestReports }),
     getHomeAmendments(now),
     // 김의효 칼럼 영역 (BR-04 — W3 8단계): 기능 키 tax_columns + 공개 회차가 있을 때만, 아니면 빈 목록 → 섹션째 숨김
     getSignatureHome(),
+    // 4대 분야 카드의 '이 분야의 지방세 포인트' 한 줄 (CORE-02 — W3 9단계): 감수 서명이 있는 분야만
+    readHubTaxPoints(),
   ]);
   const sections = homeSections({
     coreMessage: settings.coreMessage,
+    fieldPoints: fieldCardPoints(hubPoints),
     searchEnabled: settings.features.search,
     searchChips: settings.searchChips,
     latestReports: latestReports(latest.items),

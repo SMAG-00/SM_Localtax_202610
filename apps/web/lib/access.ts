@@ -82,6 +82,7 @@ export const ACTIONS = {
   "column.manage": "칼럼 필자 체계 — 필자 검증·기고 계약·이해관계 기록 (편집 책임자)",
   "column.signature": "시그니처 연재 — 회차 지정·순서·「그때와 지금」 비교 항목·연재 제목·발행 주기 (편집 책임자 — 칼럼 정렬과 같은 편집 행위, BR-08)",
   "link.manage": "바깥 연결 — 주소·이용 조건 편집, 수동 점검 기록 (편집 책임자)",
+  "hub_point.edit": "허브 지방세 포인트 — 초안(문구 1~3줄·기준일·해설 링크) 저장·지우기 (편집 책임자 — 감수 서명은 review.tax_review)",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
@@ -111,6 +112,8 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   // W3 8단계 — 칼럼 필자 체계·시그니처 연재(회차·순서) 편집 행위. 편집국 외 역할(brand_ops 등)의 시도는 거부 + 감사 (BR-08)
   "column.manage",
   "column.signature",
+  // W3 9단계 — 허브 지방세 포인트 초안(홈·허브 공개 문구). 편집국 외 역할의 시도는 거부 + 감사
+  "hub_point.edit",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -236,6 +239,7 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     case "amendment.record_event":
     case "amendment.correct_event":
     case "link.manage":
+    case "hub_point.edit":
     case "legal_doc.manage":
     case "column.manage":
     case "column.signature":

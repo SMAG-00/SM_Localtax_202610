@@ -118,10 +118,10 @@ function ColumnBody({ section }: { section: ColumnSection }) {
 function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: string): ReactNode | null {
   switch (section.key) {
     case "fields":
-      // 분야마다 '이 분야의 지방세 포인트' 한 줄은 01B W3(CORE-02)이 채운다
+      // 분야마다 '이 분야의 지방세 포인트' 한 줄 (CORE-02 — 세무 감수 서명이 있는 분야의 첫 줄만, W3 9단계)
       return (
         <div className="mt-8">
-          <FieldCards />
+          <FieldCards points={section.points} />
           {/* 측정 (W2-c — 카드를 누르면 home_entry_clicked). 그리는 것 0 */}
           <MeasureHomeEntry />
         </div>

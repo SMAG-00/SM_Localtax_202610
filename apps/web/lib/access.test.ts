@@ -62,6 +62,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "amendment.record_event":  [X, O, X, X, X, X, X, X, X],
   "amendment.correct_event": [X, O, X, X, X, X, X, X, X],
   "link.manage":             [X, O, X, X, X, X, X, X, X],
+  "hub_point.edit":          [X, O, X, X, X, X, X, X, X], // W3 9단계 — 허브 지방세 포인트 초안은 편집 책임자, 감수 서명은 review.tax_review(감수위원)
   "legal_doc.manage":        [X, O, X, X, X, X, X, X, X],
   "column.manage":           [X, O, X, X, X, X, X, X, X],
   "column.signature":        [X, O, X, X, X, X, X, X, X], // W3 8단계 — 시그니처 연재 회차·순서는 칼럼 정렬과 같은 편집 행위 (BR-08)

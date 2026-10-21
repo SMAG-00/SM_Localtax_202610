@@ -55,6 +55,24 @@ export function toLinkCard(r: Row): OfficialLinkCard | null {
   };
 }
 
+/**
+ * 상황 페이지 등에 붙는 바깥 연결 카드 하나 (FAM-08 · TX-06 — W3 9단계). 주소가 빈 행·꺼진 행은 공개 읽기에서 0행 → null(카드 숨김).
+ * SM 계산기 행은 기능 키 sm_calculator가 켜졌을 때만. 끊김이면 같은 자리에 대체 안내(위택스·국세청)
+ */
+export async function getOfficialLinkCard(id: number, features: { sm_calculator: boolean }): Promise<{ card: OfficialLinkCard; fallbacks: OfficialLinkCard[] } | null> {
+  const rows = await rowsOf<Row>(
+    publicDb().from("official_links").select(OFFICIAL_LINK_COLUMNS).not("url", "is", null).or(`id.eq.${Math.trunc(id)},kind.eq.fallback`).order("sort").order("id"),
+    "바깥 연결 카드",
+  );
+  const cards = rows.flatMap((r) => {
+    const c = toLinkCard(r);
+    return c ? [c] : [];
+  });
+  const card = cards.find((c) => c.id === Math.trunc(id));
+  if (!card || (card.kind === "sm_calculator" && !features.sm_calculator)) return null;
+  return { card, fallbacks: cards.filter((c) => c.kind === "fallback" && c.id !== card.id) };
+}
+
 export async function getCalcView(): Promise<CalcView | null> {
   const settings = await readPublicSettings();
   if (!settings.features.calc) return null;

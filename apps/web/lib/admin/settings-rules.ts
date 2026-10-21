@@ -8,6 +8,7 @@ import { checkQueryTermsSettings } from "@/lib/analytics/query-terms";
 import { ANALYTICS_SETTING_CHECKS } from "@/lib/analytics/settings";
 import { checkAuthLimitsSetting, checkMemberSetting, checkPrivacyRetentionSetting } from "@/lib/auth/settings";
 import { checkWindowsSetting } from "@/lib/readiness/windows";
+import { hasClaimToken } from "@/lib/brand/claim";
 // 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
 import { SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings";
@@ -112,6 +113,16 @@ function screenSentence(value: unknown): string[] {
   return chars(value.trim()) > SCREEN_SENTENCE_MAX ? [`값: ${SCREEN_SENTENCE_MAX}자 이하여야 합니다 (R8 — 지금 ${chars(value.trim())}자)`] : [];
 }
 
+/**
+ * 홈 핵심 메시지 (HOME-01 · CORE-02 · W3 9단계) — 화면 안내 문장(60자) + 경력 연수 표기('50년' 등) 늘 거부.
+ * '50년'은 근거 링크를 붙일 수 있는 연재 제목에만 쓴다(설계 12장 #26) — 홈 히어로 제목에는 근거 링크 자리가 없다. DB 트리거(…37)도 같은 규칙
+ */
+export function coreMessageErrors(value: unknown): string[] {
+  const errors = screenSentence(value);
+  if (errors.length === 0 && hasClaimToken(value)) errors.push("값: 홈 핵심 메시지에는 경력 연수 표기('50년' 등)를 쓰지 않습니다 — 근거 링크를 붙일 수 있는 연재 제목에만 (설계 12장 #26)");
+  return errors;
+}
+
 function searchChips(value: unknown): string[] {
   if (!Array.isArray(value)) return ["값: 글자 목록이어야 합니다 — 비우면 []"];
   const errors: string[] = [];
@@ -198,8 +209,8 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
   },
   home_core_message: {
     label: "홈 핵심 메시지 (HOME-01 · CORE-02)",
-    guide: `따옴표로 감싼 문구 한 줄 — ${SCREEN_SENTENCE_MAX}자 이하. 바꾸면 배포 없이 다음 요청부터 홈 히어로에 보입니다`,
-    check: (value) => screenSentence(value),
+    guide: `따옴표로 감싼 문구 한 줄 — ${SCREEN_SENTENCE_MAX}자 이하, 경력 연수 표기('50년' 등) 0. 바꾸면 배포 없이 다음 요청부터 홈 히어로에 보입니다`,
+    check: (value) => coreMessageErrors(value),
   },
   home_search_chips: {
     label: "홈 추천 검색어 칩 (HOME-01)",

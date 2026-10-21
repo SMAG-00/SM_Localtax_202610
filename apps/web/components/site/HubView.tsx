@@ -30,13 +30,19 @@ export function HubView({ hub }: { hub: HubData }) {
           case "head":
             return (
               <SiteSection key={key} id="hub-head" tone={tone} first data={{ "data-hub-part": "head" }}>
-                <FieldHubHead
-                  field={hub.section}
-                  eyebrow={hub.eyebrow}
-                  title={hub.name}
-                  intro={hub.intro}
-                  tabs={{ items: hub.tabs, current: hub.currentTab, label: hub.section === "local" ? "분야" : "하위 분야" }}
-                />
+                {hub.section === "tax" ? (
+                  <FieldHubHead field="tax" eyebrow={hub.eyebrow} title={hub.name} intro={hub.intro} tabs={{ items: hub.tabs, current: hub.currentTab, label: "하위 분야" }} />
+                ) : (
+                  // 이 분야의 지방세 포인트 (CORE-02) — 세무 감수 서명이 있는 분야만 데이터에 있다. 없으면 블록째 없다
+                  <FieldHubHead
+                    field={hub.section}
+                    eyebrow={hub.eyebrow}
+                    title={hub.name}
+                    intro={hub.intro}
+                    taxPoint={hub.taxPoint ?? undefined}
+                    tabs={{ items: hub.tabs, current: hub.currentTab, label: hub.section === "local" ? "분야" : "하위 분야" }}
+                  />
+                )}
                 {hub.unavailable && <UnavailableNotice />}
               </SiteSection>
             );

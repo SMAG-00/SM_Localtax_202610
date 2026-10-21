@@ -6,13 +6,14 @@ import { regionHref, reviewedLine, situationSteps } from "@/lib/site/hub-view";
 import { ArticleGrid, ArticleItem } from "./ArticleItem";
 import { TermChipList } from "./GlossaryView";
 import { MeasureNextActions } from "./Measure";
+import { OfficialLinkCard, linkSiteLabel } from "./OfficialLinkCard";
 import { SiteSection } from "./SiteSection";
 
 // 상황 페이지 (UX-05 · FAM-02 · CAT-03 · PRD-01A 3장) — 아이브로 · 픽토그램 + 상황 제목 · 먼저 확인할 것 3가지(단계 타임라인) ·
-// (상속·증여 상황) 일반적 체크리스트와 고지 · 지역 선택 칩(이 상황만) · 자주 틀리는 점(상태 상자, 있을 때만) · 해결 사례 · 기사 · 용어 칩 · 다음 행동 띠.
+// (상속·증여 상황) 일반적 체크리스트와 고지 · 바깥 연결 카드(FAM-08 — 주소가 있을 때만, 국세 연결은 '국세' 배지) · 지역 선택 칩(이 상황만) · 자주 틀리는 점(상태 상자, 있을 때만) · 해결 사례 · 기사 · 용어 칩 · 다음 행동 띠.
 // 내용 0건인 부분은 빠진다. 부분마다 data-situation-part. 해결 사례는 해결 사례 카드(4칸·결론 배지·근거 — CAT-05)로, 카드 값이 모자란 사례만 기사 카드로 보인다.
 
-type Part = "head" | "checks" | "checklist" | "region" | "mistakes" | "solved" | "articles" | "terms" | "next";
+type Part = "head" | "checks" | "checklist" | "external" | "region" | "mistakes" | "solved" | "articles" | "terms" | "next";
 
 const CHIP_LINK =
   "inline-flex min-h-11 items-center rounded-md border px-3 text-[14px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500";
@@ -42,6 +43,7 @@ function RegionChips({ label, items, selected, base }: { label: string; items: r
 export function SituationView({ page }: { page: SituationPage }) {
   const present: Part[] = ["head", "checks"];
   if (page.checklist) present.push("checklist");
+  if (page.externalCalculator) present.push("external");
   if (page.regionSelect) present.push("region");
   if (page.mistakes.length) present.push("mistakes");
   if (page.solvedCases.length) present.push("solved");
@@ -80,6 +82,14 @@ export function SituationView({ page }: { page: SituationPage }) {
             ))}
           </ul>
           <Callout className="mt-4">{page.checklist.notice}</Callout>
+        </SiteSection>
+      )}
+
+      {page.externalCalculator && (
+        <SiteSection id="situation-external" tone={tone("external")} heading={{ eyebrow: "LINK", title: "별도 사이트에서 확인하기" }} data={{ "data-situation-part": "external" }}>
+          <ul data-part="external-link" className="mt-8 grid gap-4 sm:grid-cols-2">
+            <OfficialLinkCard card={page.externalCalculator.card} site={linkSiteLabel(page.externalCalculator.card.kind)} fallbacks={page.externalCalculator.fallbacks} />
+          </ul>
         </SiteSection>
       )}
 

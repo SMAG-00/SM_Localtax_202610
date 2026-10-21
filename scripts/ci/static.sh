@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CI 1단계 — 정적 검사 (FND-03). 로컬에서 돌려도 CI와 같은 판정이 나온다.
-# 타입·린트 · 환경변수 규칙(ENV-02·03·05) · 의존성(FND-08·01) · 커밋 작성자(FND-01) · SM 식별자(FND-05) · 마이그레이션 RLS(FND-04) · 검사 스크립트 단위 시험
+# 타입·린트 · 환경변수 규칙(ENV-02·03·05) · 의존성(FND-08·01) · 커밋 작성자(FND-01) · SM 식별자(FND-05) · 국세 미산출(TX-06) · 마이그레이션 RLS(FND-04) · 검사 스크립트 단위 시험
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -16,6 +16,7 @@ step "의존성 규칙";          node scripts/check-deps.mjs
 step "버전 고정";            node scripts/check-pins.mjs
 step "커밋 작성자";          node scripts/check-commit-authors.mjs
 step "SM 플랫폼 식별자";      node scripts/check-forbidden-ids.mjs
+step "국세 미산출 (TX-06 — 세율표·계산 함수·rulesets 국세 세목·계산 경로·공개 입력 칸 0)"; node scripts/check-national-tax.mjs
 step "마이그레이션 RLS";      node packages/db/scripts/lint-migrations.mjs packages/db/supabase/migrations
 step "디자인 린트";           node scripts/check-design.mjs
 step "디자인 토큰·명칭 시험";   pnpm --filter @ltr/ui test

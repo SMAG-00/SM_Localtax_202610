@@ -9,6 +9,7 @@ import { LIMITS, LOCAL_BLOCK_TOPICS, NEWS_TAB_LABELS, SECTION_INFO, SECTION_KEYS
 import type { TermChip } from "./glossary-logic";
 import type { PublicCategoryRow } from "./rows";
 import type { HotBlock } from "./rankings";
+import type { HubTaxPoint } from "./hub-point-logic";
 import type { SituationCard } from "./situation-logic";
 
 export interface HubTab {
@@ -78,8 +79,8 @@ export interface HubData {
   situations: SituationCard[];
   /** 관련 용어 칩 — 공개 용어만(RLS), 용어사전이 열렸으면 용어 쪽 링크 (W2-d 3단계) */
   terms: TermChip[];
-  /** 분야 지방세 포인트 (01B CORE-02) — W3 전에는 null */
-  taxPoint: null;
+  /** 분야 지방세 포인트 (01B CORE-02 — W3 9단계) — 세무 감수 서명이 있는 분야만, 지방세 허브·감수 전은 null (블록째 숨김) */
+  taxPoint: HubTaxPoint | null;
   /** 고른 편집 분야에 기사가 0건 — 허브 안내 + noindex (CAT-02 '빈 목록 색인 0') */
   noindex: boolean;
   /** 공개 데이터를 읽지 못해 닫힌 허브(머리만)를 보이는 중 */

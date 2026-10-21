@@ -1,4 +1,5 @@
 import "server-only";
+import { getOfficialLinkCard, type OfficialLinkCard } from "./calc";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { readStoredSolvedCase } from "../articles/content";
 import { selectNextActions, solvedCaseView, type ActionTargets, type NextAction, type SolvedCaseView } from "./article-logic";
@@ -25,7 +26,7 @@ import {
 } from "./situation-logic";
 
 // 상황 페이지 (UX-05 · FAM-02 · CAT-03) — 공개 상황만. 연결한 기사·해결 사례·용어는 읽히는(공개) 것만 지정 순서로.
-// 외부 계산기 연결 카드(01B FAM-08 — official_links W3)는 표가 생기면 붙는다 — 지금은 null.
+// 바깥 연결 카드(01B FAM-08 · TX-06 — W3 9단계): external_link_id가 가리키는 official_links 행의 주소가 있을 때만(빈 주소 → 카드 0). 국세 연결이면 카드에 '국세' 배지.
 
 export interface SituationPage {
   card: SituationCard;
@@ -48,7 +49,8 @@ export interface SituationPage {
   /** 고른 지역의 기사 (0건이면 상위 시·도 기사와 그 사실) */
   regionArticles: RegionArticles | null;
   nextActions: NextAction[];
-  externalCalculator: null;
+  /** 바깥 연결 카드 (FAM-08) — 연결이 없거나 주소가 비면 null */
+  externalCalculator: { card: OfficialLinkCard; fallbacks: OfficialLinkCard[] } | null;
   reviewedAt: string | null;
   /** 세무 감수일 (한국 날짜) — 감수자 이름은 공개 칸이 아직 없다 (설계 9장 #13) */
   reviewedOn: string | null;
@@ -127,7 +129,7 @@ export async function getSituationPage(slug: string, opts: { region?: string | n
     regionSelect,
     regionArticles: regionView,
     nextActions: selectNextActions(settings.nextActionPriority, targets, settings.features),
-    externalCalculator: null,
+    externalCalculator: row.external_link_id ? await getOfficialLinkCard(num(row.external_link_id), settings.features) : null,
     reviewedAt: row.reviewed_at,
     reviewedOn: row.reviewed_at ? isoToKstDate(row.reviewed_at) : null,
   };
