@@ -1,5 +1,5 @@
 // 인물 페이지 순수 판정 (W3 7단계 — BR-02 · OPT-02) — 화면과 구조화 데이터가 같은 값에서 나오게 한 곳에 둔다. 서버 전용 아님(단위 시험)
-import type { PersonView } from "@ltr/structured-data";
+import type { ArticleView, PersonView } from "@ltr/structured-data";
 
 /** 화면 약력 한 줄 — 증빙 승인 항목만 (publicBioItems 결과) */
 export interface BioLine {
@@ -28,4 +28,16 @@ export function roleBlocks(roles: readonly string[], pagesOpen: boolean): RoleBl
   if (roles.includes("writer")) out.push("columns");
   if (roles.includes("reviewer")) out.push("reviewed");
   return out;
+}
+
+/**
+ * 기사 구조화 데이터의 감수자 (W3 10단계 · BR-03) — 기사 화면의 감수 표시('감수 ○○' — 세무 감수 서명 기록 + 서명자 동의서)가 있을 때만
+ * ArticleView.reviewer를 단다. 서명 기록이 없으면(mark null) 그대로 — 감수자 속성 0. 서명자 인물 페이지 주소는 기사 주소와 같은 사이트의 절대 주소로,
+ * 기사 주소가 상대 주소(사이트 주소 설정 없음)이면 이름만
+ */
+export function articleViewWithReviewer(view: ArticleView, mark: { reviewerName: string; reviewerHref: string | null } | null): ArticleView {
+  if (!mark) return view;
+  const origin = /^https?:\/\//.test(view.url) ? new URL(view.url).origin : null;
+  const url = mark.reviewerHref && origin ? `${origin}${mark.reviewerHref}` : undefined;
+  return { ...view, reviewer: { name: mark.reviewerName, ...(url ? { url } : {}) } };
 }

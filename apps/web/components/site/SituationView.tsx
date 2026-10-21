@@ -5,7 +5,7 @@ import { sectionTones } from "@/lib/site/home-view";
 import { regionHref, reviewedLine, situationSteps } from "@/lib/site/hub-view";
 import { ArticleGrid, ArticleItem } from "./ArticleItem";
 import { TermChipList } from "./GlossaryView";
-import { MeasureNextActions } from "./Measure";
+import { MeasureCalculatorCards, MeasureNextActions } from "./Measure";
 import { OfficialLinkCard, linkSiteLabel } from "./OfficialLinkCard";
 import { SiteSection } from "./SiteSection";
 
@@ -88,8 +88,10 @@ export function SituationView({ page }: { page: SituationPage }) {
       {page.externalCalculator && (
         <SiteSection id="situation-external" tone={tone("external")} heading={{ eyebrow: "LINK", title: "별도 사이트에서 확인하기" }} data={{ "data-situation-part": "external" }}>
           <ul data-part="external-link" className="mt-8 grid gap-4 sm:grid-cols-2">
-            <OfficialLinkCard card={page.externalCalculator.card} site={linkSiteLabel(page.externalCalculator.card.kind)} fallbacks={page.externalCalculator.fallbacks} />
+            <OfficialLinkCard card={page.externalCalculator.card} site={linkSiteLabel(page.externalCalculator.card.kind)} fallbacks={page.externalCalculator.fallbacks} rank={1} />
           </ul>
+          {/* 카드 이동 링크 누름 → calculator_card_clicked(화면 situation) (W3 10단계). 그리는 것 0 */}
+          <MeasureCalculatorCards screen="situation" section={page.section} />
         </SiteSection>
       )}
 

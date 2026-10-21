@@ -1,4 +1,6 @@
 // 측정 이벤트 규칙 시험 — 설계 문서 2.1·2.2·2.3과 같은 목록, 이벤트마다 정해진 칸만 받고 개인정보·원문을 담을 길이 없다 (FND-06 · GROW-01)
+import fs from "node:fs";
+import path from "node:path";
 import { CONTENT_TYPES, FORMATS } from "@ltr/editorial";
 import { describe, expect, test } from "vitest";
 import { NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
@@ -15,7 +17,7 @@ describe("설계 문서와 같은 목록", () => {
     expect([...values]).toEqual(designList("2.1", name));
   });
 
-  test("2.2 이벤트마다 분야 칸 규칙과 속성 칸(필수·선택)이 표와 같다 — 19종 전부", () => {
+  test("2.2 이벤트마다 분야 칸 규칙과 속성 칸(필수·선택)이 표와 같다 — 22종 전부", () => {
     const rows = designEvents();
     expect(rows.map((r) => r.name)).toEqual([...EVENT_NAMES]);
     for (const r of rows) {
@@ -52,6 +54,53 @@ describe("설계 문서와 같은 목록", () => {
     // 글자 값은 정해진 목록·slug·경로뿐 — 자유 글자 칸 0
     const kinds = new Set(Object.values(EVENT_SPECS).flatMap((s) => Object.values(s.props).map((p) => p.field.kind)));
     expect([...kinds].sort()).toEqual(["bool", "count", "enum", "id", "path", "rank", "slug"]);
+  });
+});
+
+describe("W3 10단계 이벤트 3종 (docs/dev/W3_설계.md 2.5)", () => {
+  const W3 = fs.readFileSync(path.resolve(__dirname, "../../../../docs/dev/W3_설계.md"), "utf8");
+  const w3Row = (prefix: string) => {
+    const line = W3.split("\n").find((l) => l.startsWith(`| ${prefix}`));
+    if (!line) throw new Error(`W3 설계 2.1에 '${prefix}' 줄이 없다`);
+    return [...line.split("|")[2]!.matchAll(/`([^`]+)`/g)].map((m) => m[1]!);
+  };
+
+  test("값 목록이 W3 설계 2.1 표와 같다 — 단계 = amendment_event.stage, 원문 유형 = legal_doc.doc_type (카드 키는 DB 시드와 대조 — DB 시험 w3-search-measure)", () => {
+    expect([...PROP_VALUES["amendment_viewed.stage"]]).toEqual(w3Row("amendment_event.stage"));
+    expect([...PROP_VALUES["interpretation_viewed.doc_type"]]).toEqual(w3Row("legal_doc.doc_type"));
+  });
+
+  test("calculator_card_clicked — 카드 키·화면·차례만 받고, 분야는 선택(/calc는 없음·상황 페이지는 그 분야)", () => {
+    expect(validateEvent({ name: "calculator_card_clicked", props: { card: "acquisition", screen: "calc", rank: 1 } })).toMatchObject({
+      ok: true,
+      event: { section: null, props: { card: "acquisition", screen: "calc", rank: 1 } },
+    });
+    expect(validateEvent({ name: "calculator_card_clicked", section: "realestate", props: { card: "inheritance_gift", screen: "situation", rank: 1 } }).ok).toBe(true);
+    expect(validateEvent({ name: "calculator_card_clicked", props: { card: "nts", screen: "calc", rank: 100 } }).ok).toBe(true);
+  });
+
+  test("calculator_card_clicked — 주소·검색어·입력값·표식 값을 담을 길이 없다: 목록 밖 카드 키·주소 모양 키·모르는 칸·차례 0/101·화면 밖 값은 400", () => {
+    const bad = (props: Record<string, unknown>) => validateEvent({ name: "calculator_card_clicked", props }).ok;
+    expect(bad({ card: "https://sm.example/calc?x=MARKER", screen: "calc", rank: 1 })).toBe(false);
+    expect(bad({ card: "marker_value", screen: "calc", rank: 1 })).toBe(false);
+    expect(bad({ card: "acquisition", screen: "calc", rank: 1, q: "MARKER" })).toBe(false);
+    expect(bad({ card: "acquisition", screen: "calc", rank: 1, url: "https://sm.example" })).toBe(false);
+    expect(bad({ card: "acquisition", screen: "calc", rank: 1, input: "MARKER" })).toBe(false);
+    expect(bad({ card: "acquisition", screen: "calc", rank: 0 })).toBe(false);
+    expect(bad({ card: "acquisition", screen: "calc", rank: 101 })).toBe(false);
+    expect(bad({ card: "acquisition", screen: "home", rank: 1 })).toBe(false);
+    expect(bad({ card: "acquisition", rank: 1 })).toBe(false);
+  });
+
+  test("amendment_viewed — 분야 필수·개정안 번호, 단계는 선택(기록 없는 개정안) · interpretation_viewed — 분야 필수·기사 번호·원문 유형", () => {
+    expect(validateEvent({ name: "amendment_viewed", section: "tax", props: { amendment_id: 3, stage: "pre_notice" } }).ok).toBe(true);
+    expect(validateEvent({ name: "amendment_viewed", section: "tax", props: { amendment_id: 3 } }).ok).toBe(true);
+    expect(validateEvent({ name: "amendment_viewed", props: { amendment_id: 3 } }).ok).toBe(false);
+    expect(validateEvent({ name: "amendment_viewed", section: "tax", props: { amendment_id: 3, stage: "rumor" } }).ok).toBe(false);
+    expect(validateEvent({ name: "amendment_viewed", section: "tax", props: { amendment_id: "reform-2026" } }).ok).toBe(false);
+    expect(validateEvent({ name: "interpretation_viewed", section: "tax", props: { article_id: 9, doc_type: "case" } }).ok).toBe(true);
+    expect(validateEvent({ name: "interpretation_viewed", section: "tax", props: { article_id: 9 } }).ok).toBe(false);
+    expect(validateEvent({ name: "interpretation_viewed", section: "tax", props: { article_id: 9, doc_type: "memo" } }).ok).toBe(false);
   });
 });
 

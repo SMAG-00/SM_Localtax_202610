@@ -103,6 +103,8 @@ async function renderedFacts(page) {
       datePublished: attr('time[data-date="published"]', "datetime"),
       dateModified: attr('time[data-date="modified"]', "datetime"),
       mainImageUrl: attr('img[data-part="lead-image"]', "src"),
+      // 감수 표시 '감수 ○○'의 이름 — 서명 기록이 있을 때만 화면에 있고, 그때만 JSON-LD reviewedBy가 있다 (W3 10단계)
+      reviewerName: document.querySelector('[data-part="review-mark"] a, [data-part="review-mark"] span')?.textContent?.trim(),
     };
   });
   return Object.fromEntries(Object.entries(facts).filter(([, v]) => v !== undefined));

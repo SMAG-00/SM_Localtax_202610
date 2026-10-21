@@ -21,7 +21,7 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 
 | 이름 | 값 |
 |---|---|
-| analytics_events.name (이벤트 이름 — PRD-01A 12장 19종) | `home_entry_clicked` · `hub_viewed` · `article_viewed` · `article_engaged` · `article_shared` · `search_submitted` · `glossary_opened` · `situation_card_clicked` · `next_action_clicked` · `hot_article_clicked` · `popular_article_clicked` · `video_played` · `partner_content_viewed` · `signup_completed` · `brief_preregistered` · `inquiry_submitted` · `policy_page_viewed` · `redirect_hit` · `not_found_viewed` |
+| analytics_events.name (이벤트 이름 — PRD-01A 12장 19종 + W3 10단계 3종) | `home_entry_clicked` · `hub_viewed` · `article_viewed` · `article_engaged` · `article_shared` · `search_submitted` · `glossary_opened` · `situation_card_clicked` · `next_action_clicked` · `hot_article_clicked` · `popular_article_clicked` · `video_played` · `partner_content_viewed` · `signup_completed` · `brief_preregistered` · `inquiry_submitted` · `policy_page_viewed` · `redirect_hit` · `not_found_viewed` · `calculator_card_clicked` · `amendment_viewed` · `interpretation_viewed` |
 | analytics_events.mode (모드 — PRD-00 13장 일반·전문가) | `general` · `expert` |
 | analytics_events.tier (회원 등급 — PRD-00 6장 비회원·일반·프리미엄·기관 좌석) | `guest` · `basic` · `premium` · `institution` |
 | analytics_events.entry (진입 경로 — PRD-00 13장) | `search` · `ai_answer_engine` · `naver` · `brief` · `assistant` · `experts` · `tax_lens` · `direct` · `referral` |
@@ -56,8 +56,11 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 | `policy_page_viewed` | 없음 | `policy` |
 | `redirect_hit` | 없음 | `from_path` · `to_path` |
 | `not_found_viewed` | 없음 | `path` |
+| `calculator_card_clicked` | 선택 | `card` · `screen` · `rank` |
+| `amendment_viewed` | 필수 | `amendment_id` · `stage`(선택) |
+| `interpretation_viewed` | 필수 | `article_id` · `doc_type` |
 
-속성 값의 모양 — 번호(`article_id`·`term_id`·`partner_id`)는 1 이상 정수, 개수(`query_length` 0~200 · `result_count` 0~10000 · `result_type_count` 0~20 · `interest_count`·`region_count` 0~20), 순위(`rank`) 1~100, 참·거짓(`region_classified`·`pinned`), `situation`·`category`는 slug(영문 소문자·숫자·`-`, 100자 이하), 주소(`from_path`·`to_path`·`path`)는 `/`로 시작하는 경로만(쿼리·조각 없음, 200자 이하, 풀어 읽은 글자에 이메일·전화·주민등록번호 모양 0), 나머지는 아래 2.3 목록 값이다. `format`·`content_type`은 W2-a 값 목록(`general` … · `reported_news` …), `action`은 W2-b 2.3 `next_action` 키다. 검색어 원문·질문 원문·계산 입력값·이메일·주소를 담을 칸은 어느 이벤트에도 없다.
+속성 값의 모양 — 번호(`article_id`·`term_id`·`partner_id`·`amendment_id`)는 1 이상 정수, 개수(`query_length` 0~200 · `result_count` 0~10000 · `result_type_count` 0~20 · `interest_count`·`region_count` 0~20), 순위(`rank`) 1~100, 참·거짓(`region_classified`·`pinned`), `situation`·`category`는 slug(영문 소문자·숫자·`-`, 100자 이하), 주소(`from_path`·`to_path`·`path`)는 `/`로 시작하는 경로만(쿼리·조각 없음, 200자 이하, 풀어 읽은 글자에 이메일·전화·주민등록번호 모양 0), 나머지는 아래 2.3 목록 값이다. `format`·`content_type`은 W2-a 값 목록(`general` … · `reported_news` …), `action`은 W2-b 2.3 `next_action` 키다. 검색어 원문·질문 원문·계산 입력값·이메일·주소를 담을 칸은 어느 이벤트에도 없다. W3 10단계 3종(W3 설계 2.5): `calculator_card_clicked` — 바깥 연결 카드(`/calc`·상황 페이지 공용 카드)의 이동 링크를 누를 때 1건, `rank`는 그 화면 안 카드 차례(1부터 — `/calc`는 SM 카드 다음 바깥 계산기 카드), 분야는 상황 페이지만 · `amendment_viewed` — 트래커 상세를 열 때 1건(분야 `tax`) · `interpretation_viewed` — 원문 블록이 있는 해석 해설 기사를 열 때 1건(기사 분야). 카드 주소·이용자 입력·표식 값은 어느 칸에도 없다.
 
 ### 2.3 속성 값 목록 (TypeScript 상수가 같은 값을 쓴다 — 시험이 이 표를 읽는다)
 
@@ -70,6 +73,10 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 | policy_page_viewed.policy (정책 종류) | `editorial_policy` · `ethics` · `corrections` · `ad_policy` · `privacy` |
 | inquiry_submitted.kind (문의 종류 — W2-a inquiries.kind) | `tip` · `subscription` · `advertising` · `reader_submission` · `correction` · `product` · `assistant_report` |
 | hub_viewed.topic (지자체뉴스 편집 분야 — W2-a editorial_field) | `local_tax` · `realestate` · `local_finance` · `urban_policy` |
+| calculator_card_clicked.card (바깥 연결 카드 키 — official_links.key 시드, W3 1단계 마이그레이션 …32. 키 이름은 임시 — W3 12장 #41) | `acquisition` · `property_tax` · `transfer` · `registration` · `comprehensive` · `inheritance_gift` · `wetax` · `nts` |
+| calculator_card_clicked.screen (카드가 있는 화면 — W3 1·9단계 공용 카드) | `calc` · `situation` |
+| amendment_viewed.stage (현재 단계 — W2-a amendment_event.stage, 단계 기록이 없으면 칸 없음) | `announced` · `pre_notice` · `submitted` · `passed` · `promulgated` · `effective` |
+| interpretation_viewed.doc_type (해설 대상 원문 유형 — W3 설계 2.1 legal_doc.doc_type, 첫 subject 원문) | `ruling` · `circular` · `interpretation` · `tribunal` · `case` |
 | client.entry (브라우저가 정해 보내도 되는 진입 경로 — 사이트 안 출발점) | `assistant` · `experts` · `tax_lens` |
 | settings.analytics_keys (수집·집계 설정 키) | `analytics` · `bot_user_agents` · `analytics_referrers` · `hot_weights` · `popular_rules` |
 

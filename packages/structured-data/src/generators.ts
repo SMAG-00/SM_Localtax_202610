@@ -54,11 +54,18 @@ function place(p: { name: string; address?: string } | undefined): JsonLdNode | 
   return nested("Place", { name: p.name, address: p.address });
 }
 
-/** 기사 → NewsArticle. headline은 화면 제목과 같은 광고·공동 기획 표기를 가진다 */
+/**
+ * 기사 → NewsArticle. headline은 화면 제목과 같은 광고·공동 기획 표기를 가진다.
+ * 감수자(reviewer)가 있으면 기사 페이지(mainEntityOfPage — WebPage)의 reviewedBy로 낸다(schema.org에서 reviewedBy는 WebPage 속성). 없으면 칸 0
+ */
 export function newsArticle(a: ArticleView): JsonLdNode {
   return top(PAGE_TYPE_MAP.article.primaryType, {
     url: a.url,
-    mainEntityOfPage: { "@type": "WebPage", "@id": a.url },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": a.url,
+      reviewedBy: a.reviewer ? nested("Person", { name: a.reviewer.name, url: a.reviewer.url }) : undefined,
+    },
     headline: displayTitle(a.title, a.sponsorship),
     description: a.summary,
     articleSection: a.sectionName,

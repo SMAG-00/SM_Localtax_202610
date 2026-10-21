@@ -453,13 +453,13 @@ test("권한 — anon이 실행할 수 있는 public 함수는 health_ping·sear
   assert.equal(def.rows[0].provolatile, "s");
 });
 
-test("PGroonga — extensions 스키마에 있고, 표 7개의 찾는 글 칸에 2글자 조각·NFKC 색인", async () => {
+test("PGroonga — extensions 스키마에 있고, 표 8개(W3 10단계 해석 원문 legal_docs 포함)의 찾는 글 칸에 2글자 조각·NFKC 색인", async () => {
   const ext = await client.query("select n.nspname from pg_extension e join pg_namespace n on n.oid = e.extnamespace where e.extname = 'pgroonga'");
   assert.deepEqual(ext.rows, [{ nspname: "extensions" }]);
   const { rows } = await client.query(
     "select c.relname as idx, t.relname as tbl, pg_get_indexdef(c.oid) as def from pg_index i join pg_class c on c.oid = i.indexrelid join pg_class t on t.oid = i.indrelid join pg_am am on am.oid = c.relam where am.amname = 'pgroonga' order by 2",
   );
-  assert.deepEqual(rows.map((r) => r.tbl), ["amendments", "articles", "categories", "glossary_terms", "people", "regions", "situations"]);
+  assert.deepEqual(rows.map((r) => r.tbl), ["amendments", "articles", "categories", "glossary_terms", "legal_docs", "people", "regions", "situations"]);
   for (const r of rows) {
     assert.match(r.def, /\(search_text\)/, r.idx);
     assert.match(r.def, /tokenizer='TokenBigramSplitSymbolAlphaDigit'/, r.idx);

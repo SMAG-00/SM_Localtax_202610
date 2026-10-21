@@ -60,6 +60,11 @@ export interface ArticleView {
   mainImage?: ImageRef;
   /** 동영상 기사(형식 동영상)의 영상 — 있으면 VideoObject를 함께 낸다 */
   video?: VideoView;
+  /**
+   * 세무 감수자 (BR-03 · W3 10단계) — 세무 감수 서명 기록(감수 표시 '감수 ○○')이 화면에 있을 때만 넘긴다. 손으로 넣는 값이 아니다.
+   * JSON-LD에서는 기사 페이지(WebPage — mainEntityOfPage)의 reviewedBy(Person)다. url은 서명자 인물 페이지가 있을 때만
+   */
+  reviewer?: { name: string; url?: Url };
 }
 
 /** 동영상 (유튜브 nocookie 임베드, 동영상 카드 — 재생 시간은 ISO 8601 기간 "PT1M30S") */

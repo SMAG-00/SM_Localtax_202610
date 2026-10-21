@@ -127,6 +127,28 @@ export function MeasureSituationCards({ section }: { section: SectionKey }) {
   return null;
 }
 
+/**
+ * 바깥 연결 카드(/calc·상황 페이지 공용 카드 OfficialLinkCard)의 이동 링크를 누르면 calculator_card_clicked 1건 (W3 10단계 · W2-c 2.2).
+ * 속성은 카드 키(data-link-card — official_links.key)·화면·카드 차례(data-link-rank)뿐 — 카드 주소·이 화면의 입력값·검색어·쿼리는 읽지 않는다.
+ * 카드 컴포넌트는 그리기만 하고, 누름은 문서에서 한 번 듣는다(화면마다 이 컴포넌트 하나). 대체 안내 링크(끊김 카드)는 세지 않는다
+ */
+export function MeasureCalculatorCards({ screen, section }: { screen: "calc" | "situation"; section: SectionKey | null }) {
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const link = event.target instanceof Element ? event.target.closest('[data-link-card] a[data-part="go"]') : null;
+      const item = link?.closest("[data-link-card]");
+      const card = item?.getAttribute("data-link-card") ?? "";
+      const rank = Number(item?.getAttribute("data-link-rank"));
+      // 키 목록 검사는 수집 API(events.ts — 목록 밖 키 400)가 한다. 여기서는 모양만 보고 보낸다(브라우저 묶음에 규칙 모듈을 싣지 않는다)
+      if (!/^[a-z][a-z_]{0,39}$/.test(card) || !Number.isSafeInteger(rank) || rank < 1) return;
+      void track("calculator_card_clicked", { ...(section ? { section } : {}), props: { card, screen, rank } });
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [screen, section]);
+  return null;
+}
+
 /** 문서 하나에 하나 — 화면 전환(탭·쪽 링크)으로 같은 검색을 다시 그려도 한 번만 보낸다 (lib/site/search-measure.ts) */
 const searchMeasure = createSearchMeasure();
 

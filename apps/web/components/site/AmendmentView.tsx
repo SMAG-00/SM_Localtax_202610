@@ -1,5 +1,6 @@
 import { ProgressStageBadge, UiLink } from "@ltr/ui";
 import type { AmendmentCard, AmendmentDetailView, AmendmentListView } from "@/lib/server/public";
+import { MeasureView } from "./Measure";
 
 // 개정 트래커 화면 (TX-07·08 — docs/dev/W3_설계.md 5장). 단계 배지(ProgressStageBadge)가 6단계·날짜·원문 링크·해당 없음 사유·
 // `시행 예정`과 `확정 아님` 칩(확정 기준 단계 settings.amendment_confirmed_stage 앞)을 한 컴포넌트로 그린다. 칩을 손으로 켜는 자리는 없다.
@@ -48,6 +49,8 @@ export function AmendmentDetail({ view }: { view: AmendmentDetailView }) {
   const c = view.item;
   return (
     <main id="main" className="mx-auto w-full max-w-[860px] px-4 py-10">
+      {/* 트래커 상세 열람 → amendment_viewed(개정안 번호·현재 단계) 1건 (W3 10단계 · 01B 10장). 그리는 것 0 */}
+      <MeasureView name="amendment_viewed" section="tax" props={{ amendment_id: c.id, ...(c.state.current ? { stage: c.state.current } : {}) }} />
       <p className="text-[13px] font-bold text-hermes-800">개정 트래커</p>
       <h1 className="mt-1 text-[28px] font-black text-navy-900">{c.title}</h1>
       {c.lawNames.length > 0 && <p className="mt-1 text-[14px] text-navy-500">{c.lawNames.join(" · ")}</p>}

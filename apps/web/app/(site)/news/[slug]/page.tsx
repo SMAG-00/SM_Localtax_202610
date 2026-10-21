@@ -4,12 +4,14 @@ import { connection } from "next/server";
 import { UiLink } from "@ltr/ui";
 import { cache } from "react";
 import { ArticleView } from "@/components/site/ArticleView";
+import { MeasureView } from "@/components/site/Measure";
 import { UnavailablePage } from "@/components/site/Unavailable";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { ColumnDisclosureBlock } from "@/components/site/ColumnDisclosureBlock";
 import { LegalDocBlock } from "@/components/site/InterpretationView";
 import { ThenNowBlock } from "@/components/site/ThenNowBlock";
 import { getArticleDetail, getArticleLegalDocs, getArticleReviewMark, getArticleSignature, getColumnDisclosure, isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
+import { articleViewWithReviewer } from "@/lib/server/public/brand-logic";
 import { pageTitle } from "@/lib/site/hub-view";
 import { UNAVAILABLE_TITLE } from "@/lib/site/public-gate";
 
@@ -63,7 +65,8 @@ export default async function ArticlePage({ params }: Props) {
   // 시그니처 연재 회차 — 연재 줄은 연재 틀(설정 제목·회차·근거 링크, 기능 키 tax_columns), 「그때와 지금」은 출처·기준연도가 있는 비교 항목만 (W3 8단계 BR-04).
   // 읽지 못하면 연재 줄·비교 항목 없이 칼럼 본문만
   const signature = a.contentType === "opinion" ? await readPublic("시그니처 연재", () => getArticleSignature(a.id), () => null) : null;
-  const article = signature ? { ...a, series: signature.series } : a;
+  // 구조화 데이터의 감수자(WebPage.reviewedBy)는 화면 감수 표시와 같은 값에서만 — 서명 기록이 없으면 속성 0 (W3 10단계, compareRendered 감수자 대조)
+  const article = { ...(signature ? { ...a, series: signature.series } : a), view: articleViewWithReviewer(a.view, mark) };
   return (
     <>
       {mark && (
@@ -80,6 +83,8 @@ export default async function ArticlePage({ params }: Props) {
       )}
       <ColumnDisclosureBlock disclosure={disclosure} />
       <LegalDocBlock subject={docs.subject} related={docs.related} />
+      {/* 원문 블록이 있는 해석 해설 열람 → interpretation_viewed(기사 번호·첫 해설 대상 원문 유형) 1건 (W3 10단계). 그리는 것 0 */}
+      {docs.subject[0] && <MeasureView name="interpretation_viewed" section={a.section} props={{ article_id: a.id, doc_type: docs.subject[0].doc_type }} />}
       <ThenNowBlock items={signature?.thenNow ?? []} />
       <ArticleView article={article} today={isoToKstDate(new Date().toISOString())} />
     </>

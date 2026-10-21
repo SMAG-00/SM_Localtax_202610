@@ -88,7 +88,7 @@ describe("칸 검사", () => {
 });
 
 describe("응답 모양", () => {
-  const counts = (over: Partial<Record<SearchKind, number>>) => ({ region: 0, situation: 0, tracker: 0, glossary: 0, category: 0, article: 0, person: 0, ...over });
+  const counts = (over: Partial<Record<SearchKind, number>>) => ({ region: 0, situation: 0, tracker: 0, glossary: 0, category: 0, article: 0, person: 0, interpretation: 0, ...over });
   const result: SearchResult = { query: "성동구", terms: ["성동구"], total: 0, counts: counts({ region: 1, article: 3 }), items: [], page: 1, pageSize: 20, hasMore: false };
 
   test("고른 탭의 전체 수는 탭 숫자(종류 합)에서 — 지역 분류 여부·종류별 수·쪽", () => {

@@ -194,7 +194,7 @@ function HitTitle({ hit }: { hit: SearchHit }) {
 /** 결과 한 칸 — 유형 표시 · 분야 · 날짜 → 제목(열린 화면이면 링크) → 한 줄 (카드 안쪽 24px — R7) */
 function HitItem({ hit, confirmStage }: { hit: SearchHit; confirmStage: ProgressStageKey }) {
   const section = "sectionName" in hit ? hit.sectionName : null;
-  const date = hit.kind === "article" ? hit.publishedOn : hit.kind === "tracker" ? hit.stageOn : null;
+  const date = hit.kind === "article" ? hit.publishedOn : hit.kind === "tracker" ? hit.stageOn : hit.kind === "interpretation" ? hit.decidedOn : null;
   const stage = hit.kind === "tracker" ? trackerStageView(hit, confirmStage) : null;
   return (
     <li data-search-hit="" data-kind={hit.kind} data-ref={hit.ref} {...(hit.kind === "article" ? { "data-content-type": hit.contentType ?? "none" } : {})} className="flex">
@@ -202,6 +202,7 @@ function HitItem({ hit, confirmStage }: { hit: SearchHit; confirmStage: Progress
         <p className="flex flex-wrap items-center gap-2 text-[14px] text-navy-600">
           <TypeMark hit={hit} />
           {section && <span>{section}</span>}
+          {hit.kind === "interpretation" && <Chip>{hit.docTypeLabel}</Chip>}
           {stage?.label && <Chip>{stage.label}</Chip>}
           {stage?.unconfirmed && <UnconfirmedChip />}
           {date && (
@@ -216,6 +217,13 @@ function HitItem({ hit, confirmStage }: { hit: SearchHit; confirmStage: Progress
           <p className="mt-2">
             <a href={hit.sourceUrl} target="_blank" rel="noopener noreferrer" className={TEXT_LINK}>
               현재 단계 원문 보기<span className="sr-only"> (새 창)</span>
+            </a>
+          </p>
+        )}
+        {hit.kind === "interpretation" && !hit.href && hit.sourceUrl && (
+          <p className="mt-2">
+            <a href={hit.sourceUrl} target="_blank" rel="noopener noreferrer" className={TEXT_LINK}>
+              원문 보기<span className="sr-only"> (새 창)</span>
             </a>
           </p>
         )}

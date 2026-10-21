@@ -162,6 +162,20 @@ describe("행사 상태 — 화면과 Event가 같은 렌더에서 함께 바뀐
   });
 });
 
+describe("감수자 (W3 10단계 · BR-03 — 서명 없는 감수자 속성 0)", () => {
+  const signed = pageJsonLd({ kind: "article", article: { ...sampleArticle, reviewer: { name: "시험용 감수위원", url: "https://news.example/people/r" } } });
+  it("화면 '감수 ○○'와 reviewedBy 이름이 같으면 [], 둘 다 없으면 []", () => {
+    expect(compareRendered({ ...renderedArticle, reviewerName: "시험용 감수위원" }, signed)).toEqual([]);
+    expect(compareRendered({ ...renderedArticle, reviewerName: " 시험용  감수위원 " }, signed), "공백은 합쳐 비교").toEqual([]);
+    expect(compareRendered(renderedArticle, articleNodes)).toEqual([]);
+  });
+  it("구조화 데이터에만(서명 없는 화면) · 화면에만 · 이름이 다르면 REVIEWER 하나", () => {
+    expect(compareRendered(renderedArticle, signed)).toEqual([MISMATCH.REVIEWER]);
+    expect(compareRendered({ ...renderedArticle, reviewerName: "시험용 감수위원" }, articleNodes)).toEqual([MISMATCH.REVIEWER]);
+    expect(compareRendered({ ...renderedArticle, reviewerName: "다른 감수위원" }, signed)).toEqual([MISMATCH.REVIEWER]);
+  });
+});
+
 describe("불일치 id 상수", () => {
   it("id가 겹치지 않고, 모두 편집기 패널에 보일 한국어 이름이 있다", () => {
     const ids = Object.values(MISMATCH);

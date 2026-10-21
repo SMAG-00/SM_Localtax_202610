@@ -1,8 +1,9 @@
 // 인물 페이지 순수 판정 시험 (W3 7단계 — BR-01·02 · OPT-02) — 증빙 승인 약력만 화면·구조화 데이터에 같은 글자로, 역할별 블록은 그 역할에만
 import { describe, expect, test } from "vitest";
-import { compareRendered, MISMATCH, pageJsonLd, profilePage } from "@ltr/structured-data";
+import { compareRendered, MISMATCH, newsArticle, pageJsonLd, profilePage, type ArticleView } from "@ltr/structured-data";
+import { renderedFacts } from "../articles/mapping";
 import { publicBioItems } from "./article-logic";
-import { bioText, personStructuredView, roleBlocks } from "./brand-logic";
+import { articleViewWithReviewer, bioText, personStructuredView, roleBlocks } from "./brand-logic";
 
 const URL = "https://news.example/people/sihum-pilja";
 
@@ -46,5 +47,36 @@ describe("roleBlocks — 같은 틀, 역할별 블록은 그 역할에만 (BR-02
     expect(roleBlocks(["reviewer", "writer"], true)).toEqual(["columns", "reviewed"]);
     expect(roleBlocks(["reporter"], true)).toEqual([]);
     expect(roleBlocks(["expert"], true)).toEqual([]);
+  });
+});
+
+describe("articleViewWithReviewer — 기사 구조화 데이터의 감수자는 감수 표시(서명 기록)가 있을 때만 (W3 10단계 · BR-03)", () => {
+  const view: ArticleView = {
+    url: "https://news.example/news/sihum-gisa",
+    title: "시험용 기사",
+    authors: [{ kind: "person", name: "시험용 기자" }],
+    publisher: { name: "시험용 매체" },
+    datePublished: "2026-10-01T09:00:00+09:00",
+  };
+
+  test("서명 기록 없음(mark null) → 감수자 속성 0, 화면 대조 불일치 0", () => {
+    const out = articleViewWithReviewer(view, null);
+    expect(out).toBe(view);
+    expect(JSON.stringify(newsArticle(out))).not.toContain("reviewedBy");
+    expect(compareRendered(renderedFacts(out), newsArticle(out))).toEqual([]);
+  });
+
+  test("서명 기록 있음 → reviewedBy = 화면 이름, 인물 페이지가 있으면 같은 사이트 절대 주소, 화면 대조 불일치 0", () => {
+    const out = articleViewWithReviewer(view, { reviewerName: "시험용 감수위원", reviewerHref: "/people/sihum-gamsu" });
+    expect(out.reviewer).toEqual({ name: "시험용 감수위원", url: "https://news.example/people/sihum-gamsu" });
+    expect(newsArticle(out).mainEntityOfPage).toMatchObject({ reviewedBy: { "@type": "Person", name: "시험용 감수위원", url: "https://news.example/people/sihum-gamsu" } });
+    expect(compareRendered(renderedFacts(out), newsArticle(out))).toEqual([]);
+    // 화면에서 감수 표시가 빠졌는데 구조화 데이터에만 남으면 불일치
+    expect(compareRendered(renderedFacts(view), newsArticle(out))).toEqual([MISMATCH.REVIEWER]);
+  });
+
+  test("인물 페이지가 없는 서명자 → 이름만 · 기사 주소가 상대 주소면(사이트 주소 설정 없음) 이름만", () => {
+    expect(articleViewWithReviewer(view, { reviewerName: "시험용 감수위원", reviewerHref: null }).reviewer).toEqual({ name: "시험용 감수위원" });
+    expect(articleViewWithReviewer({ ...view, url: "/news/sihum-gisa" }, { reviewerName: "시험용 감수위원", reviewerHref: "/people/x" }).reviewer).toEqual({ name: "시험용 감수위원" });
   });
 });

@@ -3,7 +3,7 @@
 import { CONTENT_TYPES, FORMATS, detectPii } from "@ltr/editorial";
 import { NEXT_ACTION_KEYS, SECTION_KEYS, type SectionKey } from "@/lib/server/public/constants";
 
-/** 이벤트 이름 19종 (PRD-01A 12장 — DB check 제약 analytics_events.name과 같다) */
+/** 이벤트 이름 22종 (PRD-01A 12장 19종 + W3 10단계 3종 — DB check 제약 analytics_events.name과 같다) */
 export const EVENT_NAMES = [
   "home_entry_clicked",
   "hub_viewed",
@@ -24,6 +24,10 @@ export const EVENT_NAMES = [
   "policy_page_viewed",
   "redirect_hit",
   "not_found_viewed",
+  // W3 10단계 (docs/dev/W3_설계.md 2.5) — 바깥 연결 카드 누름 · 트래커 상세 열람 · 해석 해설 열람
+  "calculator_card_clicked",
+  "amendment_viewed",
+  "interpretation_viewed",
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -47,6 +51,11 @@ export const PROP_VALUES = {
   "policy_page_viewed.policy": ["editorial_policy", "ethics", "corrections", "ad_policy", "privacy"],
   "inquiry_submitted.kind": ["tip", "subscription", "advertising", "reader_submission", "correction", "product", "assistant_report"],
   "hub_viewed.topic": ["local_tax", "realestate", "local_finance", "urban_policy"],
+  // W3 10단계 — 카드 키는 official_links.key 시드(마이그레이션 …32 — DB 시험 w3-search-measure가 대조), 단계는 W2-a amendment_event.stage, 원문 유형은 legal_doc.doc_type
+  "calculator_card_clicked.card": ["acquisition", "property_tax", "transfer", "registration", "comprehensive", "inheritance_gift", "wetax", "nts"],
+  "calculator_card_clicked.screen": ["calc", "situation"],
+  "amendment_viewed.stage": ["announced", "pre_notice", "submitted", "passed", "promulgated", "effective"],
+  "interpretation_viewed.doc_type": ["ruling", "circular", "interpretation", "tribunal", "case"],
 } as const satisfies Record<string, readonly string[]>;
 
 type Field =
@@ -99,6 +108,12 @@ export const EVENT_SPECS: Readonly<Record<EventName, EventSpec>> = {
   policy_page_viewed: { section: "none", props: { policy: oneOf(PROP_VALUES["policy_page_viewed.policy"]) } },
   redirect_hit: { section: "none", props: { from_path: path, to_path: path } },
   not_found_viewed: { section: "none", props: { path } },
+  calculator_card_clicked: {
+    section: "optional",
+    props: { card: oneOf(PROP_VALUES["calculator_card_clicked.card"]), screen: oneOf(PROP_VALUES["calculator_card_clicked.screen"]), rank },
+  },
+  amendment_viewed: { section: "required", props: { amendment_id: id, stage: oneOf(PROP_VALUES["amendment_viewed.stage"], true) } },
+  interpretation_viewed: { section: "required", props: { article_id: id, doc_type: oneOf(PROP_VALUES["interpretation_viewed.doc_type"]) } },
 };
 
 export const isEventName = (v: unknown): v is EventName => typeof v === "string" && (EVENT_NAMES as readonly string[]).includes(v);

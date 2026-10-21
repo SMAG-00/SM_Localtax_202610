@@ -133,10 +133,10 @@ async function checkValues(table, column) {
 
 // ── 설계 문서 ─────────────────────────────────────────────
 
-test("설계 문서 2장의 표·씨앗 블록을 모두 읽었다 — 이벤트 19종, 설정 키 5개", () => {
+test("설계 문서 2장의 표·씨앗 블록을 모두 읽었다 — 이벤트 22종(PRD-01A 19종 + W3 10단계 3종), 설정 키 5개", () => {
   assert.ok(VALUES && PROPS_VALUES, "2.1·2.3 소절이 있어야 한다");
   for (const name of VALUES.keys()) assert.match(name, /^analytics_events\./, `2.1 '${name}'은 analytics_events 칸이어야 한다`);
-  assert.equal(VALUES.get("analytics_events.name").length, 19, "PRD-01A 12장 이벤트 19종");
+  assert.equal(VALUES.get("analytics_events.name").length, 22, "PRD-01A 12장 이벤트 19종 + W3 10단계 calculator_card_clicked·amendment_viewed·interpretation_viewed");
   assert.deepEqual(VALUES.get("analytics_events.section"), ["tax", "realestate", "finance", "local"]);
   assert.deepEqual([...SEEDS.keys()].sort(), [...PROPS_VALUES.get("settings.analytics_keys")].sort(), "2.3 설정 키 = 2.5 씨앗 블록");
 });

@@ -281,6 +281,8 @@ export function renderedFacts(view: ArticleView): RenderedFacts {
     datePublished: view.datePublished,
     ...(view.dateModified ? { dateModified: view.dateModified } : {}),
     ...(view.mainImage ? { mainImageUrl: view.mainImage.url } : {}),
+    // 감수 표시 '감수 ○○' — 서명 기록이 있을 때만 화면과 구조화 데이터에 함께 (W3 10단계)
+    ...(view.reviewer ? { reviewerName: view.reviewer.name } : {}),
   };
 }
 

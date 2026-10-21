@@ -20,13 +20,13 @@ PRD-01A 9장 W2-d(통합 검색·용어사전 v0·툴팁 — 증거: 검색 정�
 
 | 이름 | 값 |
 |---|---|
-| search.kind (결과 종류 — 순서 = 같은 등급 안의 종류 순서) | `region` · `situation` · `tracker` · `glossary` · `category` · `article` · `person` |
+| search.kind (결과 종류 — 순서 = 같은 등급 안의 종류 순서) | `region` · `situation` · `tracker` · `glossary` · `category` · `article` · `person` · `interpretation` |
 | search.content_type (기사 유형 거르개 — 금주 핫뉴스 `digest`는 기사 결과에 없다) | `reported_news` · `explainer` · `guide` · `opinion` · `sponsored` |
 | search.person_roles (인물 결과에 넣는 역할 — 전문가만인 인물은 01C 검증 전 0) | `reporter` · `editor` · `writer` · `reviewer` |
 | search.tab (검색 화면 탭 — 2단계, 데이터 없는 탭 0) | `all` · `article` · `tracker` · `region` · `event` · `glossary` · `expert` |
 
-- 종류 글자(결과 유형 표시 — SRCH-01 '결과마다 유형 표시'): `region` 지역 · `situation` 상황 · `tracker` 개정 트래커 · `glossary` 용어 · `category` 분야 · `article` 기사 유형 배지(`@ltr/ui ARTICLE_TYPE_BADGE_LABELS` — `보도`·`해설`·`가이드`·`오피니언`·`광고`, 공동 기획은 유형 배지 대신 `공동 기획 ○○` — W2-b #49, 유형 없는 이관 기사는 `기사`) · `person` 기자·필자. 뒤 작업이 더하는 종류: `project` 프로젝트(01B W4) · `event` **`행사안내`**(01B W6 — 정보 목록, 기사 유형 배지 글자 0, 축제 회차 0 — LG-10) · `expert` 전문가(01C — 공개·검증 프로필만). 결과 모양(7장)은 그대로 두고 함수 몸과 이 표에만 더한다.
-- 탭 → 종류: `all` 모든 종류(종류별 묶음) · `article` 기사 · `tracker` 개정 트래커(+ 01B 프로젝트) · `region` 지역 · `event` 행사 · `glossary` 용어 · `expert` 전문가. 상황·분야·기자·필자는 `all`에만 [확인 필요 — 9장 #9].
+- 종류 글자(결과 유형 표시 — SRCH-01 '결과마다 유형 표시'): `region` 지역 · `situation` 상황 · `tracker` 개정 트래커 · `glossary` 용어 · `category` 분야 · `article` 기사 유형 배지(`@ltr/ui ARTICLE_TYPE_BADGE_LABELS` — `보도`·`해설`·`가이드`·`오피니언`·`광고`, 공동 기획은 유형 배지 대신 `공동 기획 ○○` — W2-b #49, 유형 없는 이관 기사는 `기사`) · `person` 기자·필자 · `interpretation` **`해석 원문`**(W3 10단계 — 공개 가능한 `legal_docs` 가운데 발행된 해석 해설이 다루는 원문, 유형 글자 칩(예규·통칙·유권해석·심판·판례)을 함께 단다). 뒤 작업이 더하는 종류: `project` 프로젝트(01B W4) · `event` **`행사안내`**(01B W6 — 정보 목록, 기사 유형 배지 글자 0, 축제 회차 0 — LG-10) · `expert` 전문가(01C — 공개·검증 프로필만). 결과 모양(7장)은 그대로 두고 함수 몸과 이 표에만 더한다.
+- 탭 → 종류: `all` 모든 종류(종류별 묶음) · `article` 기사 · `tracker` 개정 트래커(+ 01B 프로젝트) · `region` 지역 · `event` 행사 · `glossary` 용어 · `expert` 전문가. 상황·분야·기자·필자·해석 원문은 `all`에만 [확인 필요 — 9장 #9 · W3 12장 #39].
 
 ### 2.2 정규화 견본 (DB 함수와 TypeScript가 같은 결과 — 시험이 이 표를 읽는다)
 
@@ -179,7 +179,7 @@ PRD-01A 9장 W2-d(통합 검색·용어사전 v0·툴팁 — 증거: 검색 정�
 
 | 대상 | 표 | 찾는 글 (search_text) | 이름 (search_names — 순위 등급) | 공개 조건 (RLS + 함수 안 같은 조건) | 주소 (서버 함수가 만든다 — 닫힌 화면이면 링크 0) | 단계 |
 |---|---|---|---|---|---|---|
-| 기사 (칼럼 = `opinion` 포함) | `articles` | 제목 · 요약 · 본문 블록 글(문단 · 표 · 이미지 설명 · 인용과 발언자 · 콜아웃 · 인포그래픽 같은 내용 · 동영상 요약 · FAQ · 핵심 요약 · 카드뉴스 장). 블록 종류·media 번호·주소·근거 참조·핵심 주장(claims) 0, 문단 링크는 글만 | 제목 | 발행(`published`) · 대표 이미지 권리 확인(또는 없음) · 무료(`is_paid` 아님) · 금주 핫뉴스(`digest`) 아님. 유형 없는 이관 기사 포함 | `/news/[slug]` | 1 |
+| 기사 (칼럼 = `opinion` 포함 — 기고 계약 AI 색인 범위 `deny` 칼럼 0, W3 10단계) | `articles` | 제목 · 요약 · 본문 블록 글(문단 · 표 · 이미지 설명 · 인용과 발언자 · 콜아웃 · 인포그래픽 같은 내용 · 동영상 요약 · FAQ · 핵심 요약 · 카드뉴스 장). 블록 종류·media 번호·주소·근거 참조·핵심 주장(claims) 0, 문단 링크는 글만 | 제목 | 발행(`published`) · 대표 이미지 권리 확인(또는 없음) · 무료(`is_paid` 아님) · 금주 핫뉴스(`digest`) 아님. 유형 없는 이관 기사 포함 | `/news/[slug]` | 1 |
 | 상황 페이지 | `situations` | 제목 · 한 줄 · **검색 별칭(새 칸 `aliases`)** · 자주 틀리는 점 · 먼저 확인할 것 · 체크리스트 항목 | 제목 · 검색 별칭 | `visible`(감수된 공개 상황) | `/situations/[slug]` | 1 |
 | 개정 트래커 | `amendments` | 제목 · 요약 · 법령 이름 | 제목 | `status = public` | `/tax/amendments/[slug]` — 기능 키 `amendments`가 꺼지면 링크 0, 대신 현재 단계 원문 링크(홈 트래커 카드와 같다) | 1 |
 | 용어 | `glossary_terms` | 용어 · 읽기 · 정의 · 쉬운 풀이 · 관련 용어 | 용어 · 읽기 | 공개 상태 `visible`(3단계 — 새 용어는 숨김, 칸이 생기기 전 용어는 공개 그대로 · 12장 #28) | `/glossary/[번호]`(용어 쪽 — 3단계) — 기능 키 `glossary`가 꺼지면 링크 0(용어와 쉬운 풀이만) | 1 · 3 |
@@ -189,7 +189,8 @@ PRD-01A 9장 W2-d(통합 검색·용어사전 v0·툴팁 — 증거: 검색 정�
 | 프로젝트 | `projects` (01B) | 단계 원문·사업 이름 | 사업 이름 | 01B 공개 조건 | 01B 경로 | 01B W4 — 종류 `project` |
 | 행사 (정보 목록) | `local_events` (01B) | 행사 이름·장소·회차 | 행사 이름 | 공개 회차 · 축제 분류 0(LG-10 — 지자체 허브 안에서만) | 01B 경로 | 01B W6 — 종류 `event`, 표시 `행사안내` |
 | 공개·검증된 전문가 | `expert_profiles` (01C) | 이름·분야 | 이름 | 검증 기록 있고 재검증일 안(EXPL-03 — 다음 날 배치 뒤 0) | `/experts/...` | 01C — 종류 `expert` |
-| 공식 자료·해석 원문 | `legal_docs` 등 (01B) | 원문 요지 | 문서 이름 | 공개·권리 확인(SRCH-01 '공개 전·권리 미확인 공식 자료 0') | 01B 경로 | 01B W3~W4 |
+| 해석 원문 | `legal_docs` (W3 5단계) | 유형 글자(예규·통칙·유권해석·심판·판례) · 발행 기관 · 문서 번호 · 세목 · 조문 | 문서 번호 · 기관+번호 | 공개 가능(권리 확인·필수 칸·심판/판례 비실명 확인 — 공개 읽기 정책과 같은 식) + 발행된 해석 해설(`interpretation_articles` 지정)의 `subject` 원문(SRCH-01 '공개 전·권리 미확인 공식 자료 0') | 그 원문을 다루는 가장 최근 발행 해설 `/news/[slug]` — 기능 키 `interpretations`가 꺼지면 링크 0, 대신 원문 링크(트래커와 같다) | W3 10단계 — 종류 `interpretation` |
+| 공식 자료(보도자료·고시 등) | 01B | 원문 요지 | 문서 이름 | 공개·권리 확인 | 01B 경로 | 01B W4 |
 | 명소·맛집 | — | — | — | 만들지 않는다 (PRD-X) — 종류 값 0 | — | — |
 
 - 검색 색인·결과에 넣지 않는 것: 취재 근거(`article_evidence`·`article_datasets`·`article_interviews` — PRD-01A 6.1 '검색 색인·도우미 도구 제외'), 승인·감수 기록, 기획, 문의함, 원본 스냅샷, 운영 설정(금지·공포 표현 사전·기준값), 측정 이벤트. 찾는 글 칸은 이미 공개된 칸에서만 만든다 — 인물의 이해관계 메모·약력 원문(증빙 없는 항목)·계정 칸은 읽지 않는다.

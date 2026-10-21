@@ -38,6 +38,22 @@ import { blockedSamples } from "../fixtures/blocked";
 const CTX = "https://schema.org";
 
 describe("newsArticle", () => {
+  it("감수자(reviewer)가 있을 때만 기사 페이지(WebPage)의 reviewedBy(Person) — 없으면 칸 0, 주소 없으면 이름만 (W3 10단계 · BR-03)", () => {
+    expect(newsArticle(sampleArticle).mainEntityOfPage).toEqual({ "@type": "WebPage", "@id": sampleArticle.url });
+    expect(JSON.stringify(newsArticle(sampleArticle))).not.toContain("reviewedBy");
+    const signed = newsArticle({ ...sampleArticle, reviewer: { name: "시험용 감수위원", url: "https://news.example/people/reviewer-1" } });
+    expect(signed.mainEntityOfPage).toEqual({
+      "@type": "WebPage",
+      "@id": sampleArticle.url,
+      reviewedBy: { "@type": "Person", name: "시험용 감수위원", url: "https://news.example/people/reviewer-1" },
+    });
+    expect(newsArticle({ ...sampleArticle, reviewer: { name: "시험용 감수위원" } }).mainEntityOfPage).toEqual({
+      "@type": "WebPage",
+      "@id": sampleArticle.url,
+      reviewedBy: { "@type": "Person", name: "시험용 감수위원" },
+    });
+  });
+
   it("기사 견본의 제목·저자·날짜·이미지·매체를 그대로 옮긴다", () => {
     expect(newsArticle(sampleArticle)).toEqual({
       "@context": CTX,

@@ -205,6 +205,35 @@ describe("행 → 보기 값", () => {
     expect(searchHitView(row({ ...r, meta: { source_url: "javascript:alert(1)" } }), CLOSED_FEATURES)).toMatchObject({ sourceUrl: null });
   });
 
+  test("해석 원문 (W3 10단계) — 기능 키 interpretations가 켜지면 해설 기사 주소, 꺼지면 링크 0 + 원문 링크 · 유형 글자 · 결정일 · 모르는 유형은 그리지 않는다", () => {
+    const r = row({
+      kind: "interpretation",
+      ref: "41",
+      slug: "explainer-41",
+      title: "시험용기관 시험-1",
+      snippet: "시험용 해설",
+      section: "tax",
+      content_type: null,
+      published_at: "2026-03-01T15:00:00Z",
+      meta: { doc_type: "tribunal", decided_on: "2026-03-02", tax_kinds: ["시험세목"], provisions: [], source_url: "https://example.test/doc" },
+    });
+    expect(KIND_LABELS.interpretation).toBe("해석 원문");
+    expect(searchHitView(r, { ...CLOSED_FEATURES, interpretations: true })).toMatchObject({
+      kind: "interpretation",
+      href: "/news/explainer-41",
+      typeLabel: "해석 원문",
+      docType: "tribunal",
+      docTypeLabel: "심판",
+      decidedOn: "2026-03-02",
+      sectionName: "지방세",
+      sourceUrl: "https://example.test/doc",
+    });
+    expect(searchHitView(r, { ...ALL_OPEN, interpretations: false })).toMatchObject({ href: null, sourceUrl: "https://example.test/doc" });
+    expect(searchHitView(row({ ...r, meta: { ...r.meta, source_url: "javascript:alert(1)" } }), CLOSED_FEATURES)).toMatchObject({ href: null, sourceUrl: null });
+    expect(searchHitView(row({ ...r, meta: { ...r.meta, doc_type: "memo" } }), ALL_OPEN)).toBeNull();
+    expect(searchHitView(row({ ...r, slug: null }), ALL_OPEN)).toBeNull();
+  });
+
   test("용어 — 기능 키 glossary가 꺼지면 링크 0(용어와 쉬운 풀이만), 켜지면 그 용어의 용어사전 쪽 /glossary/[번호] (3단계)", () => {
     const r = row({ kind: "glossary", ref: "7", slug: "7", title: "취득세", section: null, content_type: null, meta: { reading: null, sections: ["tax", "nope"] } });
     expect(searchHitView(r, { ...ALL_OPEN, glossary: false })).toMatchObject({ kind: "glossary", href: null, typeLabel: "용어", sections: ["tax"] });
@@ -241,7 +270,7 @@ describe("결과 — 탭 숫자·전체 수·다음 쪽", () => {
   test("종류별 수는 모든 종류(0 포함), 다음 쪽은 남은 결과가 있을 때만", () => {
     const rows = [row({ ref: "1", total_count: "25", kind_counts: { article: 25, glossary: 2 } }), row({ ref: "2", total_count: "25", kind_counts: { article: 25, glossary: 2 } })];
     const r = toSearchResult(rows, CLOSED_FEATURES, o, { p_limit: 2, p_offset: 0, p_per_kind: null });
-    expect(r.counts).toEqual({ region: 0, situation: 0, tracker: 0, glossary: 2, category: 0, article: 25, person: 0 });
+    expect(r.counts).toEqual({ region: 0, situation: 0, tracker: 0, glossary: 2, category: 0, article: 25, person: 0, interpretation: 0 });
     expect(r.total).toBe(25);
     expect(r.items.map((i) => i.ref)).toEqual(["1", "2"]);
     expect(r.hasMore).toBe(true);
@@ -287,7 +316,7 @@ describe("탭 숫자 다시 읽기 (2단계 — 고른 탭·쪽에 행이 없을
   test("withCounts — 탭 숫자와 쓴 낱말만 바꾸고 결과 목록·쪽은 그대로", () => {
     const empty = toSearchResult([], CLOSED_FEATURES, { q: "차 팔았", page: 3 }, { p_limit: 20, p_offset: 40, p_per_kind: null });
     const counted = withCounts(empty, [row({ kind_counts: { situation: 1, article: 3 }, query_terms: ["차", "팔았"] })]);
-    expect(counted.counts).toEqual({ region: 0, situation: 1, tracker: 0, glossary: 0, category: 0, article: 3, person: 0 });
+    expect(counted.counts).toEqual({ region: 0, situation: 1, tracker: 0, glossary: 0, category: 0, article: 3, person: 0, interpretation: 0 });
     expect(counted).toMatchObject({ terms: ["차", "팔았"], items: [], page: 3, total: 0, hasMore: false });
     expect(withCounts(empty, [])).toEqual(empty);
   });

@@ -4,6 +4,7 @@
 //  · DB 행 → 결과 보기 값: 주소는 열린 화면만(isOpenPath — 꺼진 기능·아직 없는 화면이면 null), 유형 표시 글자, 기사 배지는 목록 카드와 같은 함수
 import { INFO_LIST_MARKER_LABELS } from "@ltr/ui";
 import { isoToKstDate } from "@/lib/admin/form-utils";
+import { LEGAL_DOC_TYPES, LEGAL_DOC_TYPE_LABELS, type LegalDocType } from "@/lib/admin/legal-doc-rules";
 import { SEARCH_LIMITS, leftChars, queryTerms } from "./search-normalize";
 import { sponsorMark, type SponsorMark } from "./article-logic";
 import { sponsorBadgeOf } from "./cards";
@@ -22,8 +23,8 @@ import {
   type SectionKey,
 } from "./constants";
 
-/** 결과 종류 — 차례 = 같은 등급 안의 종류 순서 (설계 2.1, DB c_kinds와 같다) */
-export const SEARCH_KINDS = ["region", "situation", "tracker", "glossary", "category", "article", "person"] as const;
+/** 결과 종류 — 차례 = 같은 등급 안의 종류 순서 (설계 2.1, DB c_kinds와 같다). interpretation(해석 원문)은 W3 10단계 */
+export const SEARCH_KINDS = ["region", "situation", "tracker", "glossary", "category", "article", "person", "interpretation"] as const;
 export type SearchKind = (typeof SEARCH_KINDS)[number];
 
 /** 기사 유형 거르개 (설계 2.1 — 금주 핫뉴스는 기사 결과에 없다) */
@@ -58,6 +59,7 @@ export const KIND_LABELS: Readonly<Record<SearchKind, string>> = {
   category: "분야",
   article: "기사",
   person: "기자·필자",
+  interpretation: "해석 원문",
 };
 /** 행사 결과(01B W6)의 표시 — 기사 유형 배지 글자를 쓰지 않는다 (원칙 ⑥) */
 export const EVENT_LABEL = INFO_LIST_MARKER_LABELS.event;
@@ -220,7 +222,19 @@ export type SearchHit =
   | (HitBase & { kind: "glossary"; reading: string | null; sections: SectionKey[] })
   | (HitBase & { kind: "region"; code: string; level: "sido" | "sigungu"; parentName: string | null })
   | (HitBase & { kind: "category"; section: SectionKey; sectionName: string })
-  | (HitBase & { kind: "person"; roles: string[] });
+  | (HitBase & { kind: "person"; roles: string[] })
+  | (HitBase & {
+      kind: "interpretation";
+      section: "tax";
+      sectionName: string;
+      docType: LegalDocType;
+      /** 유형 글자 — 예규·통칙·유권해석·심판·판례 */
+      docTypeLabel: string;
+      /** 결정·회신일 (한국 날짜) */
+      decidedOn: string | null;
+      /** 원문 주소 — 해설 화면이 닫혀 있을 때(기능 키 interpretations 꺼짐) 대신 보이는 원문 링크 */
+      sourceUrl: string | null;
+    });
 
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() !== "" ? v : null);
 const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
@@ -317,6 +331,24 @@ export function searchHitView(row: SearchRow, features: Features): SearchHit | n
       return { ...base, kind, href: open(categoryHref(row.section, slug), features), typeLabel: KIND_LABELS.category, section: row.section, sectionName: SECTION_INFO[row.section].name };
     case "person":
       return { ...base, kind, href: open(personHref(slug), features), typeLabel: KIND_LABELS.person, roles: strs(meta.roles) };
+    case "interpretation": {
+      // 해석 원문 (W3 10단계) — 주소는 그 원문을 다루는 가장 최근 발행 해설 기사. 해설 화면(원문 블록)은 기능 키 interpretations가 켜져야 열리므로
+      // 꺼져 있으면 링크 0, 대신 원문 링크(권리 확인된 공개 원문의 출처 — 트래커의 현재 단계 원문 링크와 같다)
+      const docType = (LEGAL_DOC_TYPES as readonly string[]).includes(String(meta.doc_type)) ? (meta.doc_type as LegalDocType) : null;
+      if (!docType) return null;
+      return {
+        ...base,
+        kind,
+        href: features.interpretations ? open(newsHref(slug), features) : null,
+        typeLabel: KIND_LABELS.interpretation,
+        section: "tax",
+        sectionName: SECTION_INFO.tax.name,
+        docType,
+        docTypeLabel: LEGAL_DOC_TYPE_LABELS[docType],
+        decidedOn: str(meta.decided_on),
+        sourceUrl: httpUrl(meta.source_url),
+      };
+    }
   }
   return null;
 }
