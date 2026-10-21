@@ -28,3 +28,4 @@ export type { NextAction, SlideView, SolvedCaseView, SponsorMark, TaxLensView, C
 export type { ColumnGroup } from "./column-logic";
 export { closedChrome, type SiteChrome, type NavLink, type SectionMenu } from "./chrome-logic";
 export { getCalcView, type CalcView, type OfficialLinkCard } from "./calc";
+export { getArticleReviewMark, type ReviewMark } from "./brand";

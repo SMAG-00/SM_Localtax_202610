@@ -52,6 +52,7 @@ step "개정 트래커 E2E (단계 기록 조건·정정·기능 키·확정 아
 step "바깥 연결 E2E (공개 주소 5장 카드·저장 주소 일치·점검 ok/broken·같은 실행 키 한 벌·수동 점검·7/8일 경고·broken 대체 안내)"; node --test --test-concurrency=1 e2e/tax-links.test.mjs
 step "해석 해설 E2E (발행 검사 3종·공개 조건·해시 변경 검수 큐·원문 블록)"; node --test --test-concurrency=1 e2e/tax-interpretations.test.mjs
 step "칼럼 필자 체계 E2E (필자 검증·계약·이해관계·고지 발행 검사·재검증 기한·정정 이력·화면)"; node --test --test-concurrency=1 e2e/tax-columns.test.mjs
+step "브랜드 E2E (W3 7단계 — 증빙 승인·동의서·감수 표시 권한 403·감사 / 렌더 약력 수 = 승인 증빙 수·증빙 없는 줄 0(인물·필자 줄·JSON-LD·공유 미리보기)·JSON-LD = 화면 / 동의서 없음·철회 → 404·사이트맵 원본 0·필자 링크 0·칼럼 발행 거부 / 서명 없는 감수 표시 0·오탈자 유지·실질 수정 0 + 재감수 큐 / brand_copy 감수·경력 승인 전 거부·근거 철회 시 꺼짐·people_pages 역할별 블록)"; node --test --test-concurrency=1 e2e/w3-brand.test.mjs
 step "견본 페이지 브라우저 E2E (70종·가로 스크롤 0)"; node --test --test-concurrency=1 e2e/design-page.test.mjs
 step "화면 규칙 측정 시험 (R1~R3 경계 견본)"; node --test --test-concurrency=1 e2e/screen-rules.test.mjs
 step "화면 규칙 측정 (주요 화면 × 뷰포트 표)"; node e2e/run-screen-rules.mjs

@@ -12,9 +12,11 @@ export interface Lookups {
   categories: ReadonlyMap<number, PublicCategoryRow>;
   people: ReadonlyMap<number, PublicPersonRow>;
   regions: ReadonlyMap<string, RegionRow>;
+  /** 인물 페이지를 낼 수 있는 사람(공개 + 동의서 profile_page — W3 7단계 BR-07). 없는 사람의 카드에는 필자 링크 0 */
+  profilePages: ReadonlySet<number>;
 }
 
-export const emptyLookups = (): Lookups => ({ categories: new Map(), people: new Map(), regions: new Map() });
+export const emptyLookups = (): Lookups => ({ categories: new Map(), people: new Map(), regions: new Map(), profilePages: new Set() });
 
 export interface ArticleListItem {
   id: number;
@@ -98,7 +100,7 @@ export function toListItem(row: PublicArticleListRow, lk: Lookups): ArticleListI
     modifiedOn: row.substantive_updated_at ? isoToKstDate(row.substantive_updated_at) : null,
     publishedAt: row.first_published_at,
     authorName: author?.name ?? null,
-    authorHref: author ? personHref(author.slug) : null,
+    authorHref: author && lk.profilePages.has(Number(row.author_id)) ? personHref(author.slug) : null,
     regionLabel: regionLabel(row.region_codes ?? [], lk.regions),
     regionCodes: row.region_codes ?? [],
     editorialField: row.editorial_field,

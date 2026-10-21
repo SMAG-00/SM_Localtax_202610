@@ -86,6 +86,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "sponsored.manage":       [X, X, X, O, X, X, X, O, X],
   "product.manage":         [X, X, X, X, O, X, X, O, X],
   "brand.manage":           [X, X, X, X, X, O, X, O, X],
+  "brand.approve":          [X, X, X, X, X, X, X, O, X], // W3 7단계 — 증빙 승인·동의서·경력 표시 승인은 관리자(PO)만 (설계 6장)
   "expert.manage":          [X, X, X, X, X, X, O, O, X],
   "metrics.read":           [X, X, X, X, X, X, X, O, X], // GROW-01 지표 대시보드 — PRD-00 6장에 행이 없어 관리자 전권만 (수익 대시보드와 같다, W2-c 설계 9장)
   "readiness.read":         [X, O, X, X, X, X, X, O, X], // NAV-13·14 기사 생산·제휴 준비 대시보드 — PRD-01A 3장 '편집 책임자·관리자만'
@@ -210,6 +211,14 @@ describe("운영 설정·회원 정지는 관리자만, 거부는 감사 대상 
       if (!decision.allowed) expect(decision.reason).toContain("관리자");
       expect(AUDITED_DENIALS.has(action), action).toBe(true);
     }
+  });
+  test("브랜드 공개 승인(증빙 승인·동의서·경력 표시) — 브랜드 관리 담당도 거부 + 감사 대상, 관리자만 허용 (W3 7단계 설계 6장)", () => {
+    const decision = check(viewer(["brand_ops"]), "brand.approve");
+    expect(decision.allowed).toBe(false);
+    if (!decision.allowed) expect(decision.reason).toContain("관리자");
+    expect(AUDITED_DENIALS.has("brand.approve")).toBe(true);
+    expect(can(viewer(["brand_ops"]), "brand.manage")).toBe(true);
+    expect(can(viewer([], true), "brand.approve")).toBe(true);
   });
   test("제휴사 — 편집 책임자는 열람만, 등록·수정은 광고·협찬 담당과 관리자", () => {
     expect(can(viewer(["editor"]), "partner.read")).toBe(true);

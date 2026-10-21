@@ -67,6 +67,13 @@ beforeAll(async () => {
     },
     "people",
   );
+  // W3 7단계 — 공개 약력은 승인된 증빙을 가리키는 줄만, 인물 페이지·칼럼 발행은 현재 동의서가 있어야 한다 (시험용 증빙·동의서)
+  const ev = await one("insert into public.people_evidence (person_id, kind, doc_ref, recorded_by, approved, verified_by, verified_at) values ($1, 'document', '시험용 증빙 위치', 'admin:itest', true, 'admin:itest', now()) returning id", [w.reporter.id]);
+  await db.query("update public.people set bio_items = $2 where id = $1", [
+    w.reporter.id,
+    JSON.stringify([{ item: "세무사", evidence_id: String(ev.id) }, { item: "메일 reporter@example.com", evidence_id: String(ev.id) }, { item: "승인 안 된 증빙 줄", evidence_id: "EV-1" }, { item: "증빙 없는 경력 50년" }]),
+  ]);
+  await db.query("insert into public.name_likeness_consents (person_id, version, scope, doc_ref, recorded_by) values ($1, '시험용', '{profile_page,column,home}', '시험용 동의서 위치', 'admin:itest')", [w.reporter.id]);
   w.hiddenPerson = await insert("people", { slug: `it-hidden-${RUN}`, name: "비공개 인물", roles: ["writer"] }, "people");
   w.editor = await insert("people", { slug: `it-editor-${RUN}`, name: "통합 시험 편집자", roles: ["editor"] }, "people");
   w.reviewer = await insert("people", { slug: `it-reviewer-${RUN}`, name: "통합 시험 감수위원", roles: ["reviewer"], visibility: "public" }, "people");
@@ -209,6 +216,8 @@ afterAll(async () => {
     await db.query("delete from public.amendments where id = any($1::bigint[])", [made.amendments]);
     await db.query("delete from public.raw_snapshots where id = any($1::bigint[])", [made.snapshots]);
     await db.query("delete from public.glossary_terms where id = any($1::bigint[])", [made.glossary]);
+    await db.query("delete from public.people_evidence where person_id = any($1::bigint[])", [made.people]);
+    await db.query("delete from public.name_likeness_consents where person_id = any($1::bigint[])", [made.people]);
     await db.query("delete from public.people where id = any($1::bigint[])", [made.people]);
     await db.query("delete from public.regions where code = any($1::text[])", [made.regions]);
     await db.query("delete from public.categories where id = any($1::bigint[])", [made.categories]);

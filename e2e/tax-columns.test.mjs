@@ -38,6 +38,7 @@ async function setFlag(on) {
 async function newPerson(tag) {
   const { rows } = await db.query("insert into public.people (slug, name, roles, employment) values ($1, $2, array['writer'], 'external') returning id", [`e2e-col-${tag}-${staff.run}`, `시험용 필자 ${tag}`]);
   fx.people.push(Number(rows[0].id));
+  await staff.addTestConsent(Number(rows[0].id)); // 칼럼 발행은 필자의 현재 동의서(범위 column)가 필요하다 (W3 7단계)
   return Number(rows[0].id);
 }
 async function newColumn(personId, tag) {

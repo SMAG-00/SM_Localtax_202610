@@ -302,6 +302,8 @@ test("읽기 함수 — [p_from, p_to) 경계, 기사마다 근거·권리·승�
       tax_review_status: "pending",
       body: JSON.stringify({ blocks: [{ type: "image", mediaId: String(unconfirmed) }, { type: "image", mediaId: String(confirmed) }], claims: [] }),
     });
+    // 칼럼 발행은 필자의 활성 이름·초상 동의서가 필요하다 (W3 7단계) — 시험용 동의서
+    await client.query("insert into public.name_likeness_consents (person_id, version, scope, doc_ref, recorded_by) values ($1, '시험용', array['column'], '시험용 위치', 'admin:test')", [writer]);
     const held = await article({ first_published_at: at(FROM, 3_600_000), status: "held", author_id: writer, content_type: "opinion" });
     const last = await article({ first_published_at: at(TO, -1), author_id: writer, content_type: "opinion" });
     const after = await article({ first_published_at: TO, author_id: reporter });

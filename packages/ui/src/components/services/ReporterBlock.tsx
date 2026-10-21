@@ -6,7 +6,7 @@ export type PersonRef = { name: string };
 
 type Common = {
   /** 기자·필자 — 인물 페이지 `/people/[slug]`로 잇는다. 이메일 칸은 없다 (평문 이메일 0) */
-  author: { name: string; slug: string; beat: string; bio?: string };
+  author: { name: string; slug: string | null; beat: string; bio?: string };
   editor?: PersonRef;
   /** 최초 발행 시각 (ISO) */
   publishedAt: string;
@@ -42,12 +42,17 @@ export function ReporterBlock(props: ReporterBlockProps) {
     <section data-ui="reporter-block" aria-label={`${role} 소개`} className="rounded-2xl border border-navy-100 bg-white p-6">
       <p className="text-[13px] font-bold text-navy-600">{role}</p>
       <p className="mt-1">
-        <UiLink
-          href={`/people/${encodeURIComponent(author.slug)}`}
-          className="inline-flex min-h-11 items-center text-[19px] font-black text-navy-900 hover:text-hermes-900 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500"
-        >
-          {author.name}
-        </UiLink>
+        {/* slug가 없으면 인물 페이지가 없는 사람(동의서 없음·철회) — 이름만, 링크 0 (BR-07) */}
+        {author.slug ? (
+          <UiLink
+            href={`/people/${encodeURIComponent(author.slug)}`}
+            className="inline-flex min-h-11 items-center text-[19px] font-black text-navy-900 hover:text-hermes-900 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500"
+          >
+            {author.name}
+          </UiLink>
+        ) : (
+          <span className="inline-flex min-h-11 items-center text-[19px] font-black text-navy-900">{author.name}</span>
+        )}
       </p>
       <p className="mt-1 text-[15px] text-navy-600">담당 분야 · {author.beat}</p>
       {bio && <p className="mt-3 text-[15px] text-navy-800">{bio}</p>}

@@ -8,6 +8,7 @@
  * - 저자는 이름 목록을 순서와 상관없이 비교한다.
  * - 날짜는 둘 다 오프셋이 붙은 시각이면 같은 순간인지, 아니면 글자가 같은지 본다.
  * - 화면이 '변경 확인 중'이면 Event가 없어야 맞다 (LG-16).
+ * - 인물(Person)이면 약력 글자(description)도 본다 (BR-02 — 화면과 구조화 데이터 일치 게이트).
  */
 import type { EventScreenStatus } from "./models";
 import type { JsonLdNode } from "./jsonld";
@@ -22,6 +23,8 @@ export interface RenderedFacts {
   datePublished?: string;
   dateModified?: string;
   mainImageUrl?: string;
+  /** 인물 페이지의 약력 글자(증빙 승인 줄을 ' · '로 이음 — BR-01·02). 인물이 아닌 페이지는 비운다 */
+  description?: string;
   event?: {
     startDate?: string;
     endDate?: string;
@@ -42,6 +45,7 @@ export const MISMATCH = {
   EVENT_STATUS: "structured-data.event.status",
   EVENT_LOCATION: "structured-data.event.location",
   NODE_MISSING: "structured-data.node-missing",
+  PERSON_DESCRIPTION: "structured-data.person.description",
 } as const;
 
 export type MismatchId = (typeof MISMATCH)[keyof typeof MISMATCH];
@@ -58,6 +62,7 @@ export const MISMATCH_LABELS: Readonly<Record<MismatchId, string>> = {
   [MISMATCH.EVENT_STATUS]: "구조화 데이터 행사 상태 ≠ 화면 행사 상태",
   [MISMATCH.EVENT_LOCATION]: "구조화 데이터 행사 장소 ≠ 화면 행사 장소",
   [MISMATCH.NODE_MISSING]: "화면에 있는 항목의 구조화 데이터 없음",
+  [MISMATCH.PERSON_DESCRIPTION]: "구조화 데이터 인물 약력 ≠ 화면 약력",
 };
 
 type Obj = Record<string, unknown>;
@@ -138,6 +143,8 @@ export function compareRendered(rendered: RenderedFacts, jsonld: unknown): Misma
   if (!sameDate(rendered.datePublished, str(entity.datePublished))) out.push(MISMATCH.DATE_PUBLISHED);
   if (!sameDate(rendered.dateModified, str(entity.dateModified))) out.push(MISMATCH.DATE_MODIFIED);
   if ((rendered.mainImageUrl ?? "") !== (firstImageUrl(entity.image) ?? "")) out.push(MISMATCH.IMAGE);
+  // 인물 — 화면 약력 글자와 Person.description이 같아야 한다 (증빙 없는 약력이 구조화 데이터에만 있는 경우 0, BR-02)
+  if (entity["@type"] === "Person" && normText(rendered.description) !== normText(str(entity.description))) out.push(MISMATCH.PERSON_DESCRIPTION);
 
   if (rendered.event || eventNode) {
     const ev = rendered.event;

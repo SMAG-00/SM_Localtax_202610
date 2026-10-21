@@ -60,6 +60,19 @@ describe("같으면 불일치 0", () => {
     expect(compareRendered(facts, [profilePage(samplePerson)])).toEqual([]);
     expect(compareRendered({ ...facts, title: "윤서준" }, [profilePage(samplePerson)])).toEqual([MISMATCH.HEADLINE]);
   });
+
+  it("인물 약력 — 화면 약력 글자와 Person.description이 같으면 0, 한쪽에만 있거나 다르면 PERSON_DESCRIPTION 하나 (BR-02)", () => {
+    const facts: RenderedFacts = { title: "윤서진", mainImageUrl: "https://news.example/images/people/yoon-seojin.jpg" };
+    const withBio = [profilePage({ ...samplePerson, description: "시험용 약력 가 · 시험용 약력 나" })];
+    expect(compareRendered({ ...facts, description: "시험용 약력 가 · 시험용 약력 나" }, withBio)).toEqual([]);
+    expect(compareRendered(facts, withBio), "화면에 없는 약력이 구조화 데이터에만").toEqual([MISMATCH.PERSON_DESCRIPTION]);
+    expect(compareRendered({ ...facts, description: "시험용 약력 가" }, withBio), "줄 수가 다름").toEqual([MISMATCH.PERSON_DESCRIPTION]);
+    expect(compareRendered({ ...facts, description: "시험용 약력 가" }, [profilePage(samplePerson)]), "화면에만").toEqual([MISMATCH.PERSON_DESCRIPTION]);
+  });
+
+  it("기사 페이지는 약력을 보지 않는다 — 기사 대조 결과는 그대로", () => {
+    expect(compareRendered(renderedArticle, articleNodes)).toEqual([]);
+  });
 });
 
 describe("항목 하나가 다르면 그 불일치 id 하나", () => {

@@ -36,6 +36,7 @@ import { regionLabel, sponsorBadgeOf, trackerState, type ArticleListItem, type T
 import { CONTENT_TYPE_NAMES, LIMITS, POLICY_LINKS, SECTION_INFO, amendmentHref, categoryHref, isSectionKey, partnerHref, personHref, situationHref, type SectionKey } from "./constants";
 import { publicDb, rowsOf } from "./db";
 import { linkedAmendments } from "./amendments";
+import { approvedBioMap, profilePageIds } from "./brand";
 import { readTipTerms } from "./glossary";
 import type { TipTerm } from "@/lib/site/glossary-tips";
 import { firstPlayableVideo, type MediaView } from "./media-logic";
@@ -88,7 +89,8 @@ export interface ArticleDetail {
   summary: string;
   /** 칼럼 연재 (ART-04) */
   series: { title: string; episode: number } | null;
-  author: { name: string; slug: string; href: string; beat: string | null; bio: string[]; kind: "opinion" | "explainer" | "guide" | "report" } | null;
+  /** href가 null이면 인물 페이지가 없는 사람(동의서 없음·철회 — BR-07) — 이름만 보이고 링크·구조화 데이터 url 0. bio는 증빙 승인 약력만(BR-01) */
+  author: { name: string; slug: string; href: string | null; beat: string | null; bio: string[]; kind: "opinion" | "explainer" | "guide" | "report" } | null;
   firstPublishedAt: string | null;
   substantiveUpdatedAt: string | null;
   legalBasisDate: string | null;
@@ -175,6 +177,9 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
 
   const category = a.category_id === null ? undefined : categories.find((c) => num(c.id) === num(a.category_id));
   const person = a.author_id === null ? undefined : people.find((p) => num(p.id) === num(a.author_id));
+  // 기자 소개 약력은 증빙 승인 항목만, 인물 페이지 링크는 동의서(profile_page)가 있는 사람만 (W3 7단계 — BR-01·07)
+  const [authorBio, authorPages] = person ? await Promise.all([approvedBioMap([num(person.id)]), profilePageIds([num(person.id)])]) : [new Map<number, unknown>(), new Set<number>()];
+  const authorHasPage = person ? authorPages.has(num(person.id)) : false;
   const reviewers = new Map(people.map((p) => [num(p.id), p.name]));
   const partnerRow = partner[0];
   const readable = new Set(media.map((m) => String(m.id)));
@@ -230,7 +235,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   const badgeName = a.partner_badge_name;
   const viewSource = {
     article: a,
-    author: person ? { name: person.name, slug: person.slug } : null,
+    author: person ? { name: person.name, slug: authorHasPage ? person.slug : null } : null,
     partner: badgeName ? { name: badgeName } : null,
     media: media.map((m) => ({ id: num(m.id), path: m.path, rights_status: "confirmed" })),
   };
@@ -265,7 +270,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     summary: a.summary ?? "",
     series: a.content_type === "opinion" && a.series_title && a.series_episode !== null ? { title: a.series_title, episode: Number(a.series_episode) } : null,
     author: person
-      ? { name: person.name, slug: person.slug, href: personHref(person.slug), beat: person.beat, bio: publicBio(person.bio_items), kind: reporterKind(a.content_type) }
+      ? { name: person.name, slug: person.slug, href: authorHasPage ? personHref(person.slug) : null, beat: person.beat, bio: publicBio(authorBio.get(num(person.id)) ?? []), kind: reporterKind(a.content_type) }
       : null,
     firstPublishedAt: a.first_published_at,
     substantiveUpdatedAt: a.substantive_updated_at,

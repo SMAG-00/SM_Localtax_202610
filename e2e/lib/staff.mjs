@@ -65,7 +65,8 @@ export class StaffFixture {
   }
 
   /**
-   * 계정 만들기 — 이메일 확인 완료. roles = staff_roles, person = people 행(roles는 people 역할 값: reporter·editor·writer·reviewer·expert)
+   * 계정 만들기 — 이메일 확인 완료. roles = staff_roles, person = people 행(roles는 people 역할 값: reporter·editor·writer·reviewer·expert,
+   * consent: false면 시험용 동의서를 만들지 않는다)
    * @returns {Promise<{ id: string, email: string, password: string, token: string, personId: number | null, roles: string[] }>}
    */
   async createUser({ label, email, roles = [], person = null, metadata = undefined }) {
@@ -86,12 +87,24 @@ export class StaffFixture {
       );
       personId = Number(rows[0].id); // pg는 bigint를 글자로 준다
       this.personIds.add(personId);
+      // 이름·초상 동의서(W3 7단계 BR-07) — 동의서 없이는 인물 페이지 404·칼럼 발행 거부라, 시험 인물은 시험용 동의서를 함께 받는다.
+      // 동의서 없는 사람이 필요한 시험은 person.consent = false (인물을 지우면 동의서도 함께 지워진다 — on delete cascade)
+      if (person.consent !== false) await this.addTestConsent(personId);
     }
     for (const role of roles) {
       await this.db.query("insert into public.staff_roles (user_id, role, granted_by) values ($1, $2, 'admin:e2e-setup')", [id, role]);
     }
     const token = await this.signIn(address, password);
     return { id, email: address, password, token, personId, roles };
+  }
+
+  /** 시험용 이름·초상 동의서 한 벌 (범위: 인물 페이지·칼럼·홈) — 시험 자료라는 표시가 버전·위치에 있다 */
+  async addTestConsent(personId, scope = ["profile_page", "column", "home"]) {
+    const { rows } = await this.db.query(
+      "insert into public.name_likeness_consents (person_id, version, scope, doc_ref, recorded_by) values ($1, $2, $3, '시험용 동의서 위치', 'admin:e2e-setup') returning id",
+      [personId, `시험용-${this.run}-${crypto.randomBytes(2).toString("hex")}`, scope],
+    );
+    return Number(rows[0].id);
   }
 
   async signIn(email, password) {
@@ -262,7 +275,12 @@ export class StaffFixture {
         ...[...this.extraRows.search_synonyms].map((id) => `search_synonyms:${id}`),
       ];
       await q("delete from public.audit_logs where actor = any($1::text[]) or target = any($2::text[])", [actors, targets]);
-      if (personIds.length) await q("delete from public.people where id = any($1::bigint[])", [personIds]);
+      if (personIds.length) {
+        // 증빙·동의서(W3 7단계) — 트리거를 끈 세션이라 외래 키 cascade가 돌지 않으니 인물보다 먼저 직접 지운다
+        await q("delete from public.people_evidence where person_id = any($1::bigint[])", [personIds]);
+        await q("delete from public.name_likeness_consents where person_id = any($1::bigint[])", [personIds]);
+        await q("delete from public.people where id = any($1::bigint[])", [personIds]);
+      }
     });
     for (const id of userIds) {
       const r = await this.#auth(`/admin/users/${id}`, { method: "DELETE", key: "service" });

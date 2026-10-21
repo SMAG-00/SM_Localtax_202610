@@ -39,6 +39,7 @@ function lookups(): Lookups {
     ...lk,
     categories: new Map([[7, { id: 7, section: "realestate", slug: "projects", name: "프로젝트 트래커", intro: null, sort: 20, needs_disclaimer: false, needs_tax_lens: true }]]),
     people: new Map([[3, { id: 3, slug: "kim-reporter", name: "김기자", roles: ["reporter"], affiliation: null, bio_items: [], beat: "부동산", last_verified_at: null }]]),
+    profilePages: new Set([3]),
     regions: new Map<string, RegionRow>([
       [SEOUL.code, SEOUL],
       [SEONGDONG.code, SEONGDONG],
@@ -61,6 +62,11 @@ describe("toListItem", () => {
       authorName: "김기자",
       authorHref: "/people/kim-reporter",
     });
+  });
+
+  test("인물 페이지를 낼 수 없는 기자(동의서 없음·철회)의 카드 — 이름은 그대로, 인물 링크 0 (W3 7단계 BR-07)", () => {
+    const item = toListItem(row(), { ...lookups(), profilePages: new Set() })!;
+    expect([item.authorName, item.authorHref]).toEqual(["김기자", null]);
   });
 
   test("형식 — 일반이면 배지 없음(null), 카드뉴스·인포그래픽은 그 값 (HOME-03)", () => {

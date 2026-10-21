@@ -292,6 +292,8 @@ test("기사 유형 거르개 — reported_news만 고르면 다른 유형·다�
     const M = "유형표식";
     const reported = await f.article({ title: `${M} 보도`, content_type: "reported_news", reporting_method: "qualitative" });
     await f.article({ title: `${M} 해설` });
+    // 칼럼 발행은 필자의 활성 이름·초상 동의서가 필요하다 (W3 7단계) — 시험용 동의서
+    await client.query("insert into public.name_likeness_consents (person_id, version, scope, doc_ref, recorded_by) values ($1, '시험용', array['column'], '시험용 위치', 'admin:test')", [f.reporter.id]);
     await f.article({ title: `${M} 칼럼`, content_type: "opinion" });
     await f.situation({ title: `${M} 상황` });
     await f.term({ term: `${M} 용어` });

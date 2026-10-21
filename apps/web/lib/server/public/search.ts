@@ -1,6 +1,7 @@
 import "server-only";
 import type { ProgressStageKey } from "@ltr/ui";
 import { isoToKstDate } from "@/lib/admin/form-utils";
+import { profilePageIds } from "./brand";
 import { publicDb, publicSearchDb, rowsOf } from "./db";
 import { readPublicSettings, readRegions } from "./reads";
 import { SITUATION_COLUMNS, type RegionRow, type SituationRow } from "./rows";
@@ -36,11 +37,23 @@ export async function searchSite(options: SearchOptions, mode: { perKind?: numbe
   const args = searchArgs(options, mode);
   if (!args) return emptySearchResult(options, mode.pageSize ?? SEARCH_LIMITS.pageSize);
   const db = publicSearchDb();
-  const [settings, rows] = await Promise.all([readPublicSettings(), rowsOf<SearchRow>(db.rpc("search_public", args), "통합 검색")]);
+  const [settings, found] = await Promise.all([readPublicSettings(), rowsOf<SearchRow>(db.rpc("search_public", args), "통합 검색")]);
+  const rows = await withoutClosedPeople(found);
   const result = toSearchResult(rows, settings.features, options, args);
   if (!countsMissing(rows, args)) return result;
   const counted = await rowsOf<SearchRow>(db.rpc("search_public", countArgs(options)!), "통합 검색 탭 숫자");
   return withCounts(result, counted);
+}
+
+/**
+ * 인물 결과 중 인물 페이지를 낼 수 없는 사람(동의서 없음·철회 — W3 7단계 BR-07)은 뺀다 — 결과 링크가 404로 가지 않게.
+ * 탭 숫자(kind_counts)는 DB 함수가 세므로 이 사람들이 들어 있다 — 함수 안으로 옮기는 것은 W3 10단계(검색 연결)
+ */
+async function withoutClosedPeople(rows: SearchRow[]): Promise<SearchRow[]> {
+  const ids = rows.filter((r) => r.kind === "person").map((r) => Number(r.ref)).filter((n) => Number.isInteger(n));
+  if (ids.length === 0) return rows;
+  const open = await profilePageIds(ids);
+  return rows.filter((r) => r.kind !== "person" || open.has(Number(r.ref)));
 }
 
 /** 검색 화면 (/search) 한 번에 그릴 값 */

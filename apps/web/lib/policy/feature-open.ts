@@ -50,9 +50,26 @@ export function effectiveFeatures(raw: Features, published: ReadonlySet<string>,
 
 export const featureOpen = (key: FeatureKey, raw: Features, published: ReadonlySet<string>, mailReady: boolean): boolean => effectiveFeatures(raw, published, mailReady)[key];
 
-/** 새로 켜는 키가 의존을 채우지 못하면 사유 목록 (운영 설정 화면 · 6.3) — 이미 켜져 있던 키는 건드리지 않는다 */
-export function featureEnableErrors(previous: Features, next: Features, published: ReadonlySet<string>, mailReady: boolean): string[] {
+/** 브랜드 공개 조건 기록 (W3 7단계 — 설계 2.4 · 12장 #11·#13). DB 트리거가 같은 조건을 다시 강제한다 */
+export interface BrandRecords {
+  /** brand_copy_review.reviewed — 경력 표시 광고 규정 감수 기록 */
+  reviewed: boolean;
+  /** career_claim_approved.approved + 근거 증빙이 지금도 승인 상태 */
+  careerApproved: boolean;
+  /** 활성 동의서(profile_page) + 증빙 승인 약력이 있는 공개 인물이 1명 이상 */
+  peopleReady: boolean;
+}
+
+/** 새로 켜는 키가 의존을 채우지 못하면 사유 목록 (운영 설정 화면 · 6.3) — 이미 켜져 있던 키는 건드리지 않는다. 브랜드 기록을 모르면(brand 없음) 브랜드 키는 거부 */
+export function featureEnableErrors(previous: Features, next: Features, published: ReadonlySet<string>, mailReady: boolean, brand?: BrandRecords): string[] {
   const errors: string[] = [];
+  if (next.brand_copy && !previous.brand_copy) {
+    if (!brand?.reviewed) errors.push("feature_flags.brand_copy: 경력 표시 광고 규정 감수 기록이 없어 켤 수 없습니다 (brand_copy_review)");
+    if (!brand?.careerApproved) errors.push("feature_flags.brand_copy: 경력 증빙 승인 기록이 없어 켤 수 없습니다 (career_claim_approved)");
+  }
+  if (next.people_pages && !previous.people_pages && !brand?.peopleReady) {
+    errors.push("feature_flags.people_pages: 활성 동의서(인물 페이지 범위)와 증빙 승인 약력이 있는 인물이 없어 켤 수 없습니다");
+  }
   for (const k of FEATURE_KEYS) {
     if (!next[k] || previous[k]) continue;
     const n = featureNeeds(k);

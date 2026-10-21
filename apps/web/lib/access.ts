@@ -64,6 +64,7 @@ export const ACTIONS = {
   "sponsored.manage": "광고·협찬·제휴 콘텐츠 등록·광고 상품 운영",
   "product.manage": "스토어 상품·주문 경로·구독 운영",
   "brand.manage": "인물 페이지·표준 약력·증빙·동의 기록",
+  "brand.approve": "브랜드 공개 승인 — 증빙 승인·동의서 기록/철회·경력 표시 승인·광고 규정 감수 기록·brand_copy 켜기 (관리자·PO만, W3 설계 6장)",
   "expert.manage": "전문가 등재·연락 요청 처리",
   "metrics.read": "측정 지표 대시보드 열람 (GROW-01)",
   "readiness.read": "기사 생산·제휴 준비 대시보드 열람 (NAV-13·14)",
@@ -105,6 +106,7 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "inquiry.update",
   "inquiry.contact_view",
   "audit.amend",
+  "brand.approve",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -285,6 +287,9 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
       return has(viewer, "store_ops") || viewer.isAdmin ? ALLOW : deny("스토어·구독 담당(store_ops)과 관리자만 합니다");
     case "brand.manage":
       return has(viewer, "brand_ops") || viewer.isAdmin ? ALLOW : deny("브랜드 관리 담당(brand_ops)과 관리자만 합니다");
+    // 증빙 승인·동의서·경력 표시 승인·광고 규정 감수·brand_copy — 관리자(PO)만. 브랜드 관리 담당은 증빙 등록·약력 연결까지 (W3 설계 6장 · BR-08)
+    case "brand.approve":
+      return viewer.isAdmin ? ALLOW : deny("브랜드 공개 승인(증빙 승인·동의서·경력 표시)은 관리자(PO)만 합니다");
     case "expert.manage":
       return has(viewer, "expert_ops") || viewer.isAdmin ? ALLOW : deny("전문가 담당(expert_ops)과 관리자만 합니다");
   }

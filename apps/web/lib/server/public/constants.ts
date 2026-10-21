@@ -73,6 +73,10 @@ export const FEATURE_KEYS = [
   "interpretations",
   // W3 6단계 — 칼럼 필자 체계 (의견 고지 문구 입력 + 필자 검증 1명 이상일 때만 켠다). 켜지면 모든 opinion 기사가 칼럼 발행 검사를 받는다
   "tax_columns",
+  // W3 7단계 — 인물 페이지 역할별 블록(칼럼 목록·감수 기사 목록 — 동의서·증빙 약력이 있는 인물이 있어야 켠다)·브랜드 문구(감수·경력 승인 기록 뒤에만 켠다).
+  // 동의서·증빙 검사 자체는 키와 상관없이 항상 한다 (W3 설계 2.4 · 12장 #12)
+  "people_pages",
+  "brand_copy",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;
@@ -240,6 +244,19 @@ export const MARKDOWN_LINK = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
 
 export const newsHref = (slug: string) => `/news/${encodeURIComponent(slug)}`;
 export const personHref = (slug: string) => `/people/${encodeURIComponent(slug)}`;
+
+// W3 7단계 브랜드 값 (docs/dev/W3_설계.md 2.1 — DB check·뷰와 같은 값, 시험이 표를 읽어 대조한다)
+/** 증빙 종류 people_evidence.kind — 문서 · 공식 기록 · 회사 출판 이력 */
+export const EVIDENCE_KINDS = ["document", "official_record", "publisher_history"] as const;
+export type EvidenceKind = (typeof EVIDENCE_KINDS)[number];
+/** 동의 범위 consent_doc.scope (BR-07) — 인물 페이지 · 칼럼 · 홈 · 외부 프로필 · 상품 · 광고 · 영상 */
+export const CONSENT_SCOPES = ["profile_page", "column", "home", "external_profile", "product", "ad", "video"] as const;
+export type ConsentScope = (typeof CONSENT_SCOPES)[number];
+/** 동의서 상태 consent_doc.status (뷰 name_consent_docs가 계산) */
+export const CONSENT_STATUSES = ["active", "withdrawn", "expired"] as const;
+/** 감수 표시 상태 article_review_marks.state */
+export const REVIEW_MARK_STATES = ["shown", "hidden_changed", "none"] as const;
+export type ReviewMarkState = (typeof REVIEW_MARK_STATES)[number];
 export const situationHref = (slug: string) => `/situations/${encodeURIComponent(slug)}`;
 export const amendmentHref = (slug: string) => `/tax/amendments/${encodeURIComponent(slug)}`;
 /** 제휴사 프로필 (ART-10) — 공개 제휴사 번호 */

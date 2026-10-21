@@ -55,3 +55,21 @@ describe("featureEnableErrors", () => {
     expect(e.some((x) => x.includes("먼저 켜야 하는 기능"))).toBe(true);
   });
 });
+
+describe("featureEnableErrors — 브랜드 키 (W3 7단계 설계 2.4)", () => {
+  const ready = { reviewed: true, careerApproved: true, peopleReady: true };
+  it("brand_copy — 광고 규정 감수·경력 증빙 승인 중 빠진 것마다 사유 한 줄, 둘 다 있으면 0", () => {
+    expect(featureEnableErrors(on(), on("brand_copy"), docs(), true, { ...ready, reviewed: false })).toEqual([expect.stringContaining("brand_copy_review")]);
+    expect(featureEnableErrors(on(), on("brand_copy"), docs(), true, { ...ready, careerApproved: false })).toEqual([expect.stringContaining("career_claim_approved")]);
+    expect(featureEnableErrors(on(), on("brand_copy"), docs(), true, { reviewed: false, careerApproved: false, peopleReady: true })).toHaveLength(2);
+    expect(featureEnableErrors(on(), on("brand_copy"), docs(), true, ready)).toEqual([]);
+  });
+  it("people_pages — 동의서·증빙 약력이 있는 인물이 없으면 거부, 있으면 0", () => {
+    expect(featureEnableErrors(on(), on("people_pages"), docs(), true, { ...ready, peopleReady: false })).toEqual([expect.stringContaining("people_pages")]);
+    expect(featureEnableErrors(on(), on("people_pages"), docs(), true, ready)).toEqual([]);
+  });
+  it("브랜드 기록을 모르면(인자 없음) 브랜드 키 켜기는 거부, 이미 켜진 키는 다시 보지 않는다", () => {
+    expect(featureEnableErrors(on(), on("brand_copy", "people_pages"), docs(), true)).toHaveLength(3);
+    expect(featureEnableErrors(on("brand_copy", "people_pages"), on("brand_copy", "people_pages", "calc"), docs(), true)).toEqual([]);
+  });
+});

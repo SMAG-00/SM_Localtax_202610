@@ -121,6 +121,8 @@ async function cleanup() {
     await db.query("delete from public.raw_snapshots where source = $1", [TAG]);
     await db.query("delete from public.glossary_terms where source = $1", [TAG]);
     await db.query("delete from public.regions where slug like $1", [`${TAG}-%`]);
+    // 복제 모드에서는 외래 키 연쇄 삭제가 돌지 않는다 — 동의서(W3 7단계)를 먼저 지운다
+    await db.query("delete from public.name_likeness_consents where person_id in (select id from public.people where slug like $1)", [`${TAG}-%`]);
     await db.query("delete from public.people where slug like $1", [`${TAG}-%`]);
     await db.query("commit");
   } catch (err) {
@@ -153,6 +155,11 @@ async function seed() {
     );
     const regions = (await db.query("select code from public.regions where slug like $1 order by code", [`${TAG}-%`])).rows.map((r) => r.code);
     const authors = (await db.query("select id from public.people where slug like $1 order by id", [`${TAG}-%`])).rows.map((r) => r.id);
+    // 시험용 이름·초상 동의서 (W3 7단계 — 칼럼 발행·인물 결과 링크에 필요). 인물을 지우면 함께 지워진다
+    await db.query(
+      "insert into public.name_likeness_consents (person_id, version, scope, doc_ref, recorded_by) select id, '시험용', '{profile_page,column,home}', '시험용 동의서 위치', 'admin:e2e-setup' from public.people where slug like $1",
+      [`${TAG}-%`],
+    );
     const cats = (await db.query("select id, section from public.categories where visible order by id")).rows;
     // 기사 — 유형 분포: 보도 30 · 해설 35 · 가이드 15 · 오피니언 10 · 광고 5 · 이관 미분류 5(%), 발행 95%, 5년에 걸쳐, 30%에 지역 태그
     await db.query(

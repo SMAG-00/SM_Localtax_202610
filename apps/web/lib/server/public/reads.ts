@@ -84,15 +84,19 @@ export const readRegions = cache(async (): Promise<RegionRow[]> => rowsOf<Region
 /** 목록 카드가 참조하는 인물·분야·지역 — 읽을 수 있는 행만. 공동 기획 배지의 제휴사 이름은 기사 행이 들고 있다(partner_badge_name — 제휴사 표를 읽지 않는다) */
 export async function lookupsFor(db: Db, rows: readonly { author_id: number | null }[]): Promise<Lookups> {
   const authorIds = [...new Set(rows.flatMap((r) => (r.author_id === null ? [] : [num(r.author_id)])))];
-  const [categories, regions, people] = await Promise.all([
+  const [categories, regions, people, profilePages] = await Promise.all([
     readCategories(),
     readRegions(),
     authorIds.length ? rowsOf<PublicPersonRow>(db.from("public_people").select(PERSON_COLUMNS).in("id", authorIds), "기자") : Promise.resolve([]),
+    authorIds.length
+      ? rowsOf<{ person_id: number }>(db.from("public_profile_pages").select("person_id").in("person_id", authorIds), "인물 페이지 동의")
+      : Promise.resolve([]),
   ]);
   return {
     categories: new Map(categories.map((c) => [num(c.id), c])),
     regions: new Map(regions.map((r) => [r.code, r])),
     people: new Map(people.map((p) => [num(p.id), p])),
+    profilePages: new Set(profilePages.map((p) => num(p.person_id))),
   };
 }
 

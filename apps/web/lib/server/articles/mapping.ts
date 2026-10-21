@@ -246,7 +246,8 @@ export function absolute(siteUrl: string | undefined, path: string): string {
  */
 export interface ArticleViewSource {
   article: Pick<ArticleRow, "slug" | "title" | "label" | "summary" | "section" | "first_published_at" | "substantive_updated_at" | "lead_media_id">;
-  author: Pick<PersonRow, "name" | "slug"> | null;
+  /** slug가 null이면 인물 페이지가 없는 사람(동의서 없음·철회 — BR-07) — 저자 url을 넣지 않는다 */
+  author: (Pick<PersonRow, "name"> & { slug: string | null }) | null;
   partner: Pick<PartnerRow, "name"> | null;
   media: readonly Pick<MediaRow, "id" | "path" | "rights_status">[];
 }
@@ -262,7 +263,7 @@ export function toArticleView(graph: ArticleViewSource, opts: ViewOptions): Arti
     ...(a.summary ? { summary: a.summary } : {}),
     ...(SECTION_NAMES[a.section] ? { sectionName: SECTION_NAMES[a.section] } : {}),
     authors: graph.author
-      ? [{ kind: "person" as const, name: graph.author.name, url: absolute(opts.siteUrl, `/people/${graph.author.slug}`) }]
+      ? [{ kind: "person" as const, name: graph.author.name, ...(graph.author.slug ? { url: absolute(opts.siteUrl, `/people/${graph.author.slug}`) } : {}) }]
       : [],
     publisher: { name: opts.publisherName, ...(opts.siteUrl ? { url: opts.siteUrl } : {}) },
     datePublished: a.first_published_at ?? opts.now,

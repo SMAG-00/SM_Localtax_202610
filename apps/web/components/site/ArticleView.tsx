@@ -129,9 +129,14 @@ function Head({ a }: { a: ArticleDetail }) {
         {a.author && (
           <p data-part="byline" className="mt-6 text-[15px] text-navy-700 max-sm:mt-auto max-sm:pt-6">
             <span className="mr-1">{a.author.kind === "opinion" ? "필자" : "기자"}</span>
-            <UiLink href={a.author.href} className="inline-flex min-h-11 min-w-11 items-center justify-center font-bold text-navy-900 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
-              {a.author.name}
-            </UiLink>
+            {a.author.href ? (
+              <UiLink href={a.author.href} className="inline-flex min-h-11 min-w-11 items-center justify-center font-bold text-navy-900 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
+                {a.author.name}
+              </UiLink>
+            ) : (
+              // 인물 페이지가 없는 사람(동의서 없음·철회) — 이름만, 링크 0 (BR-07)
+              <span className="font-bold text-navy-900">{a.author.name}</span>
+            )}
           </p>
         )}
       </div>
@@ -324,7 +329,7 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
                     <ReporterBlock
                       kind="opinion"
                       interest=""
-                      author={{ name: a.author.name, slug: a.author.slug, beat: a.author.beat ?? a.sectionName, bio: a.author.bio.join(" · ") || undefined }}
+                      author={{ name: a.author.name, slug: a.author.href ? a.author.slug : null, beat: a.author.beat ?? a.sectionName, bio: a.author.bio.join(" · ") || undefined }}
                       publishedAt={a.firstPublishedAt}
                       modifiedAt={a.substantiveUpdatedAt ?? undefined}
                       correctionHref={links.correctionHref}
@@ -333,7 +338,7 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
                   ) : (
                     <ReporterBlock
                       kind={a.author.kind === "explainer" ? "explainer" : a.author.kind === "guide" ? "guide" : "report"}
-                      author={{ name: a.author.name, slug: a.author.slug, beat: a.author.beat ?? a.sectionName, bio: a.author.bio.join(" · ") || undefined }}
+                      author={{ name: a.author.name, slug: a.author.href ? a.author.slug : null, beat: a.author.beat ?? a.sectionName, bio: a.author.bio.join(" · ") || undefined }}
                       publishedAt={a.firstPublishedAt}
                       modifiedAt={a.substantiveUpdatedAt ?? undefined}
                       correctionHref={links.correctionHref}

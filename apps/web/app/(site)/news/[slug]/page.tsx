@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { UiLink } from "@ltr/ui";
 import { cache } from "react";
 import { ArticleView } from "@/components/site/ArticleView";
 import { UnavailablePage } from "@/components/site/Unavailable";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { ColumnDisclosureBlock } from "@/components/site/ColumnDisclosureBlock";
 import { LegalDocBlock } from "@/components/site/InterpretationView";
-import { getArticleDetail, getArticleLegalDocs, getColumnDisclosure, isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
+import { getArticleDetail, getArticleLegalDocs, getArticleReviewMark, getColumnDisclosure, isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
 import { pageTitle } from "@/lib/site/hub-view";
 import { UNAVAILABLE_TITLE } from "@/lib/site/public-gate";
 
@@ -55,8 +56,23 @@ export default async function ArticlePage({ params }: Props) {
   const docs = await readPublic("기사 원문 연결", () => getArticleLegalDocs(a.id), () => ({ subject: [], related: [] }));
   // 칼럼이면 머리 위에 이해관계 줄 + 의견 고지 (W3 6단계 — 기능 키 tax_columns 켜짐·고지 문구 있음일 때만)
   const disclosure = a.contentType === "opinion" ? await readPublic("칼럼 이해관계", () => getColumnDisclosure(a.id), () => null) : null;
+  // 감수 표시 '감수 ○○' — 세무 감수 서명 기록(뷰 article_review_marks) + 그 뒤 오탈자 아닌 수정 없음 + 서명자 동의서 활성일 때만 (W3 7단계 BR-03).
+  // 손으로 넣는 칸이 없다. 읽지 못하면 표시하지 않는다
+  const mark = await readPublic("감수 표시", () => getArticleReviewMark(a.id), () => null);
   return (
     <>
+      {mark && (
+        <p data-part="review-mark" className="mx-auto max-w-3xl px-4 pt-4 text-[14px] text-navy-700">
+          감수{" "}
+          {mark.reviewerHref ? (
+            <UiLink href={mark.reviewerHref} className="inline-flex min-h-11 items-center font-bold text-navy-900 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
+              {mark.reviewerName}
+            </UiLink>
+          ) : (
+            <span className="font-bold text-navy-900">{mark.reviewerName}</span>
+          )}
+        </p>
+      )}
       <ColumnDisclosureBlock disclosure={disclosure} />
       <LegalDocBlock subject={docs.subject} related={docs.related} />
       <ArticleView article={a} today={isoToKstDate(new Date().toISOString())} />
