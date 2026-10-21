@@ -21,7 +21,7 @@ export { getArticleLegalDocs, getInterpretationList, parseInterpretationFilter, 
 export { getAmendment, getAmendmentList, sortTrackers, type AmendmentCard, type AmendmentDetailView, type AmendmentListView } from "./amendments";
 export { parseGlossaryId, parseGlossarySection, type GlossaryEntry, type GlossaryGroup, type GlossaryIndexView, type GlossaryTab, type GlossaryTermView, type RelatedLink, type TermChip } from "./glossary-logic";
 export { parseSearchParams, SEARCH_TABS, TAB_KINDS, KIND_LABELS, EVENT_LABEL, type SearchHit, type SearchKind, type SearchOptions, type SearchResult, type SearchTab } from "./search-logic";
-export type { HomeSection, TrackerCard, StoryCard, AmendmentsSection } from "./home-logic";
+export type { HomeSection, TrackerCard, StoryCard, AmendmentsSection, ColumnSection } from "./home-logic";
 export type { ArticleListItem, TrackerState } from "./cards";
 export type { SituationCard, CheckItem, RegionChoice, RegionArticles } from "./situation-logic";
 export type { NextAction, SlideView, SolvedCaseView, SponsorMark, TaxLensView, CorrectionEntry, UpdateEntry, SimilarCase } from "./article-logic";
@@ -29,3 +29,5 @@ export type { ColumnGroup } from "./column-logic";
 export { closedChrome, type SiteChrome, type NavLink, type SectionMenu } from "./chrome-logic";
 export { getCalcView, type CalcView, type OfficialLinkCard } from "./calc";
 export { getArticleReviewMark, type ReviewMark } from "./brand";
+export { getArticleSignature, type ArticleSignature } from "./signature";
+export type { SignatureHomeItem, ThenNowView } from "./signature-logic";

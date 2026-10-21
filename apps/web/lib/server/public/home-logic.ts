@@ -4,6 +4,7 @@
 //  · 해설 스토리: 지정(순서, 6장까지) → 3장 미만이면 최신 해설(explainer)로 3장까지 (지정과 겹침 0)
 //  · 노출 기간이 끝난 카드는 DB(RLS)가 0행으로 주지만 여기서도 한국 날짜로 다시 거른다
 import { amendmentHref, HOME_SECTION_KEYS, LIMITS, SECTION_INFO, SECTION_KEYS, type Features, type HomeSectionKey, type SectionKey } from "./constants";
+import type { SignatureHomeItem } from "./signature-logic";
 import type { ArticleListItem, TrackerSource, TrackerState } from "./cards";
 import type { CurationRow } from "./rows";
 
@@ -148,10 +149,13 @@ export interface AmendmentsSection {
   stories: StoryCard[];
   trackerSource: "designated" | "fallback";
 }
-/** 김의효 칼럼 (01C BR-04) · 자사 상품 카드 1개 (01C BIZ-03) · 분야별 전문가 소개 (01C EXPL-01) — 01C 작업에서 채운다 */
+/**
+ * 김의효 칼럼 (01C BR-04 — W3 8단계) — 시그니처 연재마다 가장 큰 공개 회차 1편(연재 제목·회차·근거 링크와 함께). 기능 키 tax_columns가 꺼졌거나
+ * 회차가 0이면 섹션째 없다(빈 카드 0). 자사 상품 카드 1개 (01C BIZ-03) · 분야별 전문가 소개 (01C EXPL-01)는 01C 작업에서 채운다
+ */
 export interface ColumnSection {
   key: "column";
-  items: ArticleListItem[];
+  items: SignatureHomeItem[];
 }
 export interface ProductSection {
   key: "product";

@@ -57,6 +57,8 @@ export interface ArticleListItem {
   /** 칼럼 연재 이름·회차 (ART-04) — 연재가 아니면 null */
   seriesTitle: string | null;
   seriesEpisode: number | null;
+  /** 시그니처 연재 제목에 경력 연수 표기가 있을 때의 근거 링크 (W3 8단계 — 연재 틀이 입힌 카드만) */
+  seriesBasisHref?: string | null;
 }
 
 /** 목록에 내는 기사 — 유형이 있고(이관 미분류 제외 — ART-01) 금주 핫뉴스(주간 페이지 경로 — ART-02)가 아님 */

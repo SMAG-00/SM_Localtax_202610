@@ -31,6 +31,13 @@ export function verifiedBio(bio: readonly BioItem[]): BioItem[] {
   return bio.filter((b) => !isBlank(b.evidenceId) && !isBlank(b.text));
 }
 
+/** 약력 줄의 증빙 앵커 id — 영숫자·`-`·`_`만, 같은 증빙 번호의 첫 줄에만 (W3 8단계 근거 링크) */
+function evidenceAnchorId(evidenceId: string | null | undefined, index: number, bio: readonly BioItem[]): string | undefined {
+  const id = (evidenceId ?? "").trim();
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) return undefined;
+  return bio.findIndex((b) => (b.evidenceId ?? "").trim() === id) === index ? `evidence-${id}` : undefined;
+}
+
 /** 인물 페이지 머리 — `/people/[slug]` (BR-02 · BR-07 · EXPL-02). 기자·필자·감수자·전문가가 같은 틀을 쓴다 */
 export function PersonHeader({ name, roles, affiliation, checkedAt, bio, photo, placeholder, books }: PersonHeaderProps) {
   const shownBio = verifiedBio(bio);
@@ -68,8 +75,11 @@ export function PersonHeader({ name, roles, affiliation, checkedAt, bio, photo, 
         <section className="mt-8">
           <h2 className="text-[19px] font-black text-navy-900">약력</h2>
           <ul aria-label="검증된 약력" className="mt-2 list-disc space-y-1 pl-5 text-[16px] text-navy-800">
-            {shownBio.map((b) => (
-              <li key={b.id}>{b.text}</li>
+            {shownBio.map((b, i) => (
+              // 증빙 번호 앵커 — 경력 연수 표기의 근거 링크(#evidence-<번호>)가 이 줄을 가리킨다. 같은 증빙의 첫 줄에만 (id 겹침 0)
+              <li key={b.id} id={evidenceAnchorId(b.evidenceId, i, shownBio)}>
+                {b.text}
+              </li>
             ))}
           </ul>
         </section>

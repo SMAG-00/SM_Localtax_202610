@@ -428,7 +428,7 @@ before(async () => {
   await taxApprove(solved);
   await publish(solved);
 
-  // 칼럼 연재 「지방세 50년」 1·2회 (필자 박필자) — 2회 본문은 1회로 잇고, 옛 요금 주소·옛 지방세봇 주소를 품고 있다
+  // 칼럼 연재 「시험용 지방세 연재」 1·2회 (필자 박필자 — 연재 이름 칸에 경력 연수 표기('50년' 등)는 W3 8단계부터 거부) — 2회 본문은 1회로 잇고, 옛 요금 주소·옛 지방세봇 주소를 품고 있다
   for (const [label, episode, text] of [
     ["col1", 1, "취득세가 지방세가 된 1976년의 이야기로 연재를 시작한다."],
     ["col2", 2, "[지난 회](/news/" + slugOf("col1") + ")에 이어 등록세와 합쳐진 2011년을 돌아본다. 옛 사이트의 [구독 안내](/pricing)와 [지방세봇](/ask)은 이제 없다."],
@@ -439,7 +439,7 @@ before(async () => {
       section: "tax",
       categoryId: fx.cat["tax/columns"],
       contentType: "opinion",
-      seriesTitle: "지방세 50년",
+      seriesTitle: "시험용 지방세 연재",
       seriesEpisode: episode,
       legalBasisDate: "2026-10-01",
       body: { blocks: [{ type: "paragraph", text }], claims: [] },

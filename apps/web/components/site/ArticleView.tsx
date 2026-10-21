@@ -19,6 +19,7 @@ import {
   type EditorialFieldBadgeKind,
 } from "@ltr/ui";
 import type { ArticleDetail } from "@/lib/server/public";
+import { ClaimBasisLink } from "./ClaimBasisLink";
 import { ARTICLE_DISCLAIMER, UPDATE_LABEL, articleParts, dateLines, partnerBadgeFor, reporterPolicyLinks, seriesLine, taxLensBoxLinks, typeBadgeFor, type ArticlePart } from "@/lib/site/article-view";
 import { formatBadge, sectionTones, type SectionTone } from "@/lib/site/home-view";
 import { articleTipPlan, hasTips, type PlannedRun } from "@/lib/site/glossary-tips";
@@ -123,6 +124,8 @@ function Head({ a }: { a: ArticleDetail }) {
         {series && (
           <p data-part="series" className="mt-3 text-[15px] font-bold text-hermes-800">
             {series}
+            {/* 연재 제목에 경력 연수 표기가 있으면 근거 링크를 늘 함께 (BR-01·04 — W3 8단계) */}
+            {a.series?.basisHref && <ClaimBasisLink href={a.series.basisHref} />}
           </p>
         )}
         {a.summary && <p data-part="summary" className="mt-5 text-[17px] leading-relaxed text-navy-700 [overflow-wrap:anywhere]">{a.summary}</p>}

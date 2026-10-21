@@ -186,7 +186,7 @@ describe("홈 섹션 순서 (HOME-01)", () => {
       weeklyHot: { key: "weekly_hot", weekHref: "/local/seoul/weekly/2026-42", items: [{ title: "t", summary: "s", sourceUrl: "https://x.go.kr", issuer: "서울시", publishedOn: "2026-10-14" }] },
       trackers: trackerCard,
       stories: [],
-      column: { key: "column", items: [listItem({ contentType: "opinion" })] },
+      column: { key: "column", items: [{ seriesKey: "signature", seriesTitle: "시그니처 칼럼", basisHref: null, cadence: null, episode: 1, article: listItem({ contentType: "opinion" }) }] },
       product: { key: "product", product: { title: "지방세 50문 50답", href: "/store/books/a", summary: "도서" } },
       experts: { key: "experts", items: [{ name: "전문가", href: "/experts/x", field: "tax" }] },
     });

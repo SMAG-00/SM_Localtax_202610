@@ -80,6 +80,7 @@ export const ACTIONS = {
   "amendment.correct_event": "개정 트래커 — 단계 기록 정정 (편집 책임자, 사유 필수)",
   "legal_doc.manage": "해석 원문·해설 — 원문 입력, 기사 연결, 해설 지정, 변경 검수 (편집 책임자)",
   "column.manage": "칼럼 필자 체계 — 필자 검증·기고 계약·이해관계 기록 (편집 책임자)",
+  "column.signature": "시그니처 연재 — 회차 지정·순서·「그때와 지금」 비교 항목·연재 제목·발행 주기 (편집 책임자 — 칼럼 정렬과 같은 편집 행위, BR-08)",
   "link.manage": "바깥 연결 — 주소·이용 조건 편집, 수동 점검 기록 (편집 책임자)",
 } as const;
 export type Action = keyof typeof ACTIONS;
@@ -107,6 +108,9 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "inquiry.contact_view",
   "audit.amend",
   "brand.approve",
+  // W3 8단계 — 칼럼 필자 체계·시그니처 연재(회차·순서) 편집 행위. 편집국 외 역할(brand_ops 등)의 시도는 거부 + 감사 (BR-08)
+  "column.manage",
+  "column.signature",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -215,9 +219,17 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     case "review.tax_review":
       return has(viewer, "reviewer") ? ALLOW : deny("세무 감수 서명은 세무 감수위원(reviewer)만 할 수 있습니다");
 
+    // 발행 — 편집 책임자만. 칼럼(opinion)은 필자 본인이 자기 칼럼을 발행하지 못한다 (BR-08 — DB 트리거도 발행 기록으로 막는다)
+    case "article.publish": {
+      if (!has(viewer, "editor")) return deny(EDITOR_ONLY);
+      if (resource && resource.contentType === "opinion" && resource.authorUserId !== null && resource.authorUserId === viewer.userId) {
+        return deny("칼럼 필자 본인은 자기 칼럼을 발행할 수 없습니다 — 다른 편집 책임자가 발행합니다 (BR-08)");
+      }
+      return ALLOW;
+    }
+
     case "article.tax_lens_skip":
     case "review.sponsor_check":
-    case "article.publish":
     case "article.sort":
     case "article.hot":
     case "article.home":
@@ -226,6 +238,7 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     case "link.manage":
     case "legal_doc.manage":
     case "column.manage":
+    case "column.signature":
     case "correction.decide":
       return editorOnly(viewer);
 

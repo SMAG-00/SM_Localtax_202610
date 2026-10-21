@@ -8,7 +8,8 @@ import { UnavailablePage } from "@/components/site/Unavailable";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { ColumnDisclosureBlock } from "@/components/site/ColumnDisclosureBlock";
 import { LegalDocBlock } from "@/components/site/InterpretationView";
-import { getArticleDetail, getArticleLegalDocs, getArticleReviewMark, getColumnDisclosure, isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
+import { ThenNowBlock } from "@/components/site/ThenNowBlock";
+import { getArticleDetail, getArticleLegalDocs, getArticleReviewMark, getArticleSignature, getColumnDisclosure, isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
 import { pageTitle } from "@/lib/site/hub-view";
 import { UNAVAILABLE_TITLE } from "@/lib/site/public-gate";
 
@@ -59,6 +60,10 @@ export default async function ArticlePage({ params }: Props) {
   // 감수 표시 '감수 ○○' — 세무 감수 서명 기록(뷰 article_review_marks) + 그 뒤 오탈자 아닌 수정 없음 + 서명자 동의서 활성일 때만 (W3 7단계 BR-03).
   // 손으로 넣는 칸이 없다. 읽지 못하면 표시하지 않는다
   const mark = await readPublic("감수 표시", () => getArticleReviewMark(a.id), () => null);
+  // 시그니처 연재 회차 — 연재 줄은 연재 틀(설정 제목·회차·근거 링크, 기능 키 tax_columns), 「그때와 지금」은 출처·기준연도가 있는 비교 항목만 (W3 8단계 BR-04).
+  // 읽지 못하면 연재 줄·비교 항목 없이 칼럼 본문만
+  const signature = a.contentType === "opinion" ? await readPublic("시그니처 연재", () => getArticleSignature(a.id), () => null) : null;
+  const article = signature ? { ...a, series: signature.series } : a;
   return (
     <>
       {mark && (
@@ -75,7 +80,8 @@ export default async function ArticlePage({ params }: Props) {
       )}
       <ColumnDisclosureBlock disclosure={disclosure} />
       <LegalDocBlock subject={docs.subject} related={docs.related} />
-      <ArticleView article={a} today={isoToKstDate(new Date().toISOString())} />
+      <ThenNowBlock items={signature?.thenNow ?? []} />
+      <ArticleView article={article} today={isoToKstDate(new Date().toISOString())} />
     </>
   );
 }

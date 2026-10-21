@@ -85,7 +85,7 @@ export function dateLines(a: { firstPublishedAt: string | null; substantiveUpdat
 }
 
 /** 칼럼 연재 줄 — "연재 「그때와 지금」 3회" */
-export function seriesLine(series: { title: string; episode: number } | null): string | null {
+export function seriesLine(series: { title: string; episode: number; basisHref?: string | null } | null): string | null {
   return series ? `연재 「${series.title}」 ${series.episode}회` : null;
 }
 

@@ -7,6 +7,7 @@ import { parseArticleInput } from "@/lib/server/articles/input";
 import { expiredPartnerError } from "@/lib/server/articles/partner-check";
 import { toArticleForPublish } from "@/lib/server/articles/mapping";
 import { planEdit } from "@/lib/server/articles/plan";
+import { episodeRowErrors, loadEpisode } from "@/lib/server/articles/signature";
 import { articleResource, currentRevisionId, loadArticle, loadArticleGraph, loadGateSettings } from "@/lib/server/articles/repository";
 import type { ArticleRow } from "@/lib/server/articles/rows";
 import { afterSave, findingsError, nowIso, saveContext, serviceDb } from "@/lib/server/articles/service";
@@ -97,6 +98,12 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   }
 
   // 계약이 끝난 제휴사를 새로 지정하면 저장 거부 — 이미 지정된 제휴사(기존 배지)와 발행된 기사는 그대로 둔다 (ART-10)
+  // 시그니처 연재 회차 — 제목·요약·주소·본문에 경력 연수 표기('50년' 등) 0, 기사 연재 이름 칸 비움 (W3 8단계 · BR-04 — DB 트리거도 막는다)
+  if (await loadEpisode(db, id)) {
+    const episodeErrors = episodeRowErrors(plan.candidate);
+    if (episodeErrors.length) return errorJson(422, "시그니처 연재 회차에 넣을 수 없는 표기가 있습니다", { errors: episodeErrors });
+  }
+
   const newPartner = plan.columns.partner_id;
   if (!published && typeof newPartner === "number" && newPartner !== before.partner_id) {
     const expired = await expiredPartnerError(db, newPartner, now);

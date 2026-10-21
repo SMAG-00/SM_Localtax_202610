@@ -241,6 +241,9 @@ export class StaffFixture {
         await q("delete from public.article_sources where article_id = any($1::bigint[])", ids);
         if (snaps.length) await q("delete from public.raw_snapshots where id = any($1::bigint[])", [snaps.map((s) => s.snapshot_id)]);
         await q("delete from public.article_revisions where article_id = any($1::bigint[])", ids);
+        // 시그니처 연재 회차·「그때와 지금」 항목(W3 8단계) — 트리거를 끈 세션이라 외래 키 cascade가 돌지 않으니 기사보다 먼저 직접 지운다
+        await q("delete from public.then_now_items where article_id = any($1::bigint[])", ids);
+        await q("delete from public.signature_episodes where article_id = any($1::bigint[])", ids);
         await q("delete from public.inquiries where related_article_id = any($1::bigint[])", ids);
         // 기사 시간 단위 집계·순위(W2-c) — 트리거를 끈 세션이라 외래 키 cascade가 돌지 않으니 기사보다 먼저 직접 지운다
         await q("delete from public.article_stats where article_id = any($1::bigint[])", ids);

@@ -111,14 +111,14 @@ test("같은 분야·같은 연재의 같은 회차는 하나 — 다른 분야�
 for (const role of ["anon", "authenticated"]) {
   test(`${role} — 발행 칼럼의 연재 이름·회차를 공개 뷰와 표에서 읽는다, 초안 칼럼은 0행`, () =>
     tx(async () => {
-      const pub = await insert("articles", column({ status: "published", series_title: "지방세 50년", series_episode: 3 }));
-      const draft = await insert("articles", column({ status: "draft", series_title: "지방세 50년", series_episode: 4 }));
+      const pub = await insert("articles", column({ status: "published", series_title: "시험용 지방세 연재", series_episode: 3 }));
+      const draft = await insert("articles", column({ status: "draft", series_title: "시험용 지방세 연재", series_episode: 4 }));
       const v = await attempt("select id, series_title, series_episode from public.public_articles where id in ($1, $2)", [pub.id, draft.id], role);
       assert.ok(v.ok, v.message);
-      assert.deepEqual(v.rows.map((r) => [Number(r.id), r.series_title, r.series_episode]), [[Number(pub.id), "지방세 50년", 3]]);
+      assert.deepEqual(v.rows.map((r) => [Number(r.id), r.series_title, r.series_episode]), [[Number(pub.id), "시험용 지방세 연재", 3]]);
       const t = await attempt("select series_title, series_episode from public.articles where id = $1", [pub.id], role);
       assert.ok(t.ok, t.message);
-      assert.deepEqual(t.rows, [{ series_title: "지방세 50년", series_episode: 3 }]);
+      assert.deepEqual(t.rows, [{ series_title: "시험용 지방세 연재", series_episode: 3 }]);
     }));
 }
 

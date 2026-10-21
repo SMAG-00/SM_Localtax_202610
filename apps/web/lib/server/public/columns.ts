@@ -4,6 +4,7 @@ import { SECTION_INFO, type SectionKey } from "./constants";
 import { publicDb } from "./db";
 import { hubTabs, type HubTab } from "./hub-logic";
 import { readArticleList, readCategories, readCategoryCounts, readTopicCounts } from "./reads";
+import { withSignature } from "./signature";
 
 // 칼럼 목록 (ART-04 — `/tax/columns` · `/finance/columns`, 부동산 칼럼은 01B W4가 하위 분야를 더하면 같은 경로 규칙으로 열린다).
 // 칼럼 = 그 분야의 공개 `opinion` 기사(하위 분야와 상관없이 — ART-04의 정의) · 연재마다 회차 순서 · 단독 칼럼은 끝에 최신 순.
@@ -32,7 +33,8 @@ export async function getColumnList(section: SectionKey): Promise<ColumnListData
   const category = categories.find((c) => c.section === section && c.slug === COLUMN_SLUG);
   if (!category) return null;
   const { items } = await readArticleList(publicDb(), { section, contentType: "opinion", limit: COLUMN_LIMIT });
-  const groups = groupColumns(items);
+  // 시그니처 연재 회차는 연재 틀(설정 제목·회차·근거 링크)을 입힌다 — 기능 키 tax_columns 켜짐일 때만 (W3 8단계)
+  const groups = groupColumns(await withSignature(items));
   const total = groups.reduce((n, g) => n + g.items.length, 0);
   const hub = SECTION_INFO[section];
   return {

@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { Chip, Eyebrow, FieldCards, Hero, HomeSearch, ProgressStageBadge, UiLink, brand, cx } from "@ltr/ui";
-import type { AmendmentsSection, HomeData, HomeSection, StoryCard, TrackerCard } from "@/lib/server/public";
+import type { AmendmentsSection, ColumnSection, HomeData, HomeSection, StoryCard, TrackerCard } from "@/lib/server/public";
 import { HERO_EYEBROW, HERO_HIGHLIGHT, SEARCH_LABEL, SEARCH_PLACEHOLDER, SECTION_HEADINGS, sectionTones, type SectionTone } from "@/lib/site/home-view";
 import { ArticleItem } from "./ArticleItem";
+import { ClaimBasisLink } from "./ClaimBasisLink";
 import { MeasureHomeEntry } from "./Measure";
 import { UnavailableNotice } from "./Unavailable";
 
@@ -89,6 +90,30 @@ function AmendmentsBody({ section, today }: { section: AmendmentsSection; today:
   );
 }
 
+/**
+ * 김의효 칼럼 영역 (BR-04 — W3 8단계) — 시그니처 연재마다 최신 회차 1편: 연재 제목(경력 연수 표기가 있으면 근거 링크 함께)·회차·발행 주기·칼럼 카드.
+ * 회차가 0이면 홈 데이터에 섹션이 없다(빈 카드 0)
+ */
+function ColumnBody({ section }: { section: ColumnSection }) {
+  return (
+    <ul data-part="signature-columns" className="mt-8 grid gap-6 sm:grid-cols-2">
+      {section.items.map((s) => (
+        <li key={s.seriesKey} data-series-key={s.seriesKey} data-article-id={s.article.id} data-episode={s.episode} className="flex flex-col gap-2">
+          <h3 className="text-[19px] leading-snug font-black text-navy-900">
+            {`연재 「${s.seriesTitle}」`}
+            {s.basisHref && <ClaimBasisLink href={s.basisHref} />}
+          </h3>
+          <p className="font-mono text-[13px] tracking-wide text-navy-600">
+            {`${s.episode}회`}
+            {s.cadence && ` · ${s.cadence}`}
+          </p>
+          <ArticleItem item={s.article} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** 섹션 안 내용 — 아직 화면이 없는 섹션은 null (섹션째 그리지 않는다 — 빈 섹션 0) */
 function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: string): ReactNode | null {
   switch (section.key) {
@@ -113,9 +138,10 @@ function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: stri
       );
     case "amendments":
       return <AmendmentsBody section={section} today={today} />;
-    // 금주 핫뉴스(01B W6)·김의효 칼럼·자사 상품·전문가 소개(01C)는 그 작업이 데이터와 화면을 함께 만든다 — 지금 홈 데이터에는 늘 없다
-    case "weekly_hot":
     case "column":
+      return <ColumnBody section={section} />;
+    // 금주 핫뉴스(01B W6)·자사 상품·전문가 소개(01C)는 그 작업이 데이터와 화면을 함께 만든다 — 지금 홈 데이터에는 늘 없다
+    case "weekly_hot":
     case "product":
     case "experts":
       return null;

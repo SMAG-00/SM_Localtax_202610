@@ -1,6 +1,7 @@
 // 기사 작성·수정 요청 본문 검사 — 순수 함수 (시험: input.test.ts). 칸 이름은 camelCase, DB 칸은 snake_case.
 // 모르는 칸은 거부한다(오타가 조용히 무시되지 않게). 값 목록은 W2-a 설계 §2 = DB check 제약과 같다.
 import { CONTENT_TYPES, FORMATS, LABELS, REPORTING_METHODS, SECTIONS, SUBTYPES, UPDATE_KINDS, headLengthProblem, type SolvedCase } from "@ltr/editorial";
+import { freeSeriesTitleErrors } from "@/lib/brand/claim";
 import { parseBodyInput, parseSolvedCaseInput, parseTaxLensInput, type Result, type StoredBody, type TaxLensInput } from "./content";
 
 export const EDITORIAL_FIELDS = ["local_tax", "realestate", "local_finance", "urban_policy"] as const;
@@ -136,6 +137,8 @@ export function parseArticleInput(raw: Record<string, unknown>, mode: "create" |
   for (const k of ["categoryId", "partnerId", "storyAssignmentId", "leadMediaId", "digestId", "amendmentId"] as const) id(k);
   // 칼럼 연재 (ART-04) — 이름·회차는 함께 보낸다. 칼럼이 아닌 기사·한쪽만 있는 값은 DB도 거부한다(articles_series_*)
   text("seriesTitle", { nullable: true, max: 100 });
+  // 연재 이름 칸에는 경력 연수 표기('50년' 등) 0 — 시그니처 연재 제목(설정)에서만, 승인 뒤에 쓴다 (W3 8단계 · BR-04 — DB 트리거도 막는다)
+  errors.push(...freeSeriesTitleErrors(out.seriesTitle));
   if (has("seriesEpisode")) {
     const v = raw.seriesEpisode;
     if (v === null) out.seriesEpisode = null;

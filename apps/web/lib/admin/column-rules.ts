@@ -3,6 +3,8 @@
 import { isRealDate } from "./amendment-rules";
 
 export const COLUMN_OPS = ["verify", "contract", "meta"] as const;
+/** 시그니처 연재 쓰기 (W3 8단계) — 권한 작업 column.signature */
+export const SIGNATURE_OPS = ["signature", "then_now", "series_title", "cadence"] as const;
 export type ColumnOp = (typeof COLUMN_OPS)[number];
 export const EVIDENCE_KINDS = ["license", "registration", "affiliation", "other"] as const;
 export const REUSE_SCOPES = ["print", "online", "book", "external"] as const;

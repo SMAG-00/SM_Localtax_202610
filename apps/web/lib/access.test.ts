@@ -64,6 +64,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "link.manage":             [X, O, X, X, X, X, X, X, X],
   "legal_doc.manage":        [X, O, X, X, X, X, X, X, X],
   "column.manage":           [X, O, X, X, X, X, X, X, X],
+  "column.signature":        [X, O, X, X, X, X, X, X, X], // W3 8단계 — 시그니처 연재 회차·순서는 칼럼 정렬과 같은 편집 행위 (BR-08)
   "correction.request":     [O, O, X, X, X, X, X, X, X],
   "correction.decide":      [X, O, X, X, X, X, X, X, X],
   "assignment.read":        [O, O, X, X, X, X, X, O, X],
@@ -151,6 +152,30 @@ describe("편집국 외 역할 4종은 기사 승인·정렬·발행 거부 (ACC
     }
     test(`${role} → 보도기사 작성 거부`, () => {
       expect(can(viewer([role]), "article.create", article({ contentType: "reported_news" }))).toBe(false);
+    });
+  }
+});
+
+describe("칼럼 필자 = 발행 승인자 거부 · 브랜드 관리 담당의 칼럼 승인·정렬 거부 (BR-08 — W3 8단계)", () => {
+  test("칼럼 필자 본인인 편집 책임자의 발행 거부 — 사유에 BR-08, 감사 대상", () => {
+    const decision = check(viewer(["editor"], false, "u-author"), "article.publish", article({ authorUserId: "u-author", contentType: "opinion" }));
+    expect(decision).toEqual({ allowed: false, reason: expect.stringContaining("BR-08") });
+    expect(AUDITED_DENIALS.has("article.publish")).toBe(true);
+  });
+  test("다른 편집 책임자는 그 칼럼을 발행할 수 있다", () => {
+    expect(can(viewer(["editor"], false, "u-other"), "article.publish", article({ authorUserId: "u-author", contentType: "opinion" }))).toBe(true);
+  });
+  test("칼럼이 아닌 기사·필자를 모르는 칼럼은 이 규칙 밖 (보도기사는 편집 승인 단계에서 NAV-12)", () => {
+    expect(can(viewer(["editor"], false, "u-author"), "article.publish", article({ authorUserId: "u-author", contentType: "reported_news" }))).toBe(true);
+    expect(can(viewer(["editor"], false, "u-author"), "article.publish", article({ authorUserId: null, contentType: "opinion" }))).toBe(true);
+  });
+  test("관리자여도 editor 없이는 발행 거부", () => {
+    expect(can(viewer([], true, "u-other"), "article.publish", article({ contentType: "opinion" }))).toBe(false);
+  });
+  for (const action of ["review.desk_edit", "article.publish", "article.sort", "article.home", "column.manage", "column.signature"] as const) {
+    test(`brand_ops → ${action} 거부 + 감사 대상`, () => {
+      expect(can(viewer(["brand_ops"]), action, article({ contentType: "opinion" }))).toBe(false);
+      expect(AUDITED_DENIALS.has(action)).toBe(true);
     });
   }
 });

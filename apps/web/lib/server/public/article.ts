@@ -88,7 +88,8 @@ export interface ArticleDetail {
   title: string;
   summary: string;
   /** 칼럼 연재 (ART-04) */
-  series: { title: string; episode: number } | null;
+  /** 연재 줄 — 시그니처 연재 회차는 기사 상세 화면이 연재 틀(설정 제목·근거 링크)로 바꿔 넣는다 (W3 8단계) */
+  series: { title: string; episode: number; basisHref?: string | null } | null;
   /** href가 null이면 인물 페이지가 없는 사람(동의서 없음·철회 — BR-07) — 이름만 보이고 링크·구조화 데이터 url 0. bio는 증빙 승인 약력만(BR-01) */
   author: { name: string; slug: string; href: string | null; beat: string | null; bio: string[]; kind: "opinion" | "explainer" | "guide" | "report" } | null;
   firstPublishedAt: string | null;

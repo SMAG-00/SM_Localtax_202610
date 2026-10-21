@@ -53,6 +53,7 @@ step "바깥 연결 E2E (공개 주소 5장 카드·저장 주소 일치·점검
 step "해석 해설 E2E (발행 검사 3종·공개 조건·해시 변경 검수 큐·원문 블록)"; node --test --test-concurrency=1 e2e/tax-interpretations.test.mjs
 step "칼럼 필자 체계 E2E (필자 검증·계약·이해관계·고지 발행 검사·재검증 기한·정정 이력·화면)"; node --test --test-concurrency=1 e2e/tax-columns.test.mjs
 step "브랜드 E2E (W3 7단계 — 증빙 승인·동의서·감수 표시 권한 403·감사 / 렌더 약력 수 = 승인 증빙 수·증빙 없는 줄 0(인물·필자 줄·JSON-LD·공유 미리보기)·JSON-LD = 화면 / 동의서 없음·철회 → 404·사이트맵 원본 0·필자 링크 0·칼럼 발행 거부 / 서명 없는 감수 표시 0·오탈자 유지·실질 수정 0 + 재감수 큐 / brand_copy 감수·경력 승인 전 거부·근거 철회 시 꺼짐·people_pages 역할별 블록)"; node --test --test-concurrency=1 e2e/w3-brand.test.mjs
+step "시그니처 칼럼·편집 독립 E2E (W3 8단계 — 승인 전 '50년' 0(제목·메타·주소·JSON-LD·사이트맵 원본·검색)·연재 제목/회차 글/연재 이름 칸 422 칸별 오류 / 승인 뒤 연재 제목에만 근거 링크와 함께·근거 거두면 0 / 「그때와 지금」 출처·기준연도 422·항목 없이 발행 422 / 빈 홈 칼럼 영역 0·최신 회차 / brand_ops 승인·정렬·발행·연재 회차 403 + 감사 1건 / 필자 = 승인자 403·DB 거부)"; node --test --test-concurrency=1 e2e/w3-signature.test.mjs
 step "견본 페이지 브라우저 E2E (70종·가로 스크롤 0)"; node --test --test-concurrency=1 e2e/design-page.test.mjs
 step "화면 규칙 측정 시험 (R1~R3 경계 견본)"; node --test --test-concurrency=1 e2e/screen-rules.test.mjs
 step "화면 규칙 측정 (주요 화면 × 뷰포트 표)"; node e2e/run-screen-rules.mjs

@@ -2,6 +2,7 @@ import { FieldHubHead, OPINION_NOTICE, UiLink } from "@ltr/ui";
 import type { ColumnListData } from "@/lib/server/public";
 import { episodeLabel } from "@/lib/server/public/column-logic";
 import { ArticleItem } from "./ArticleItem";
+import { ClaimBasisLink } from "./ClaimBasisLink";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
 
 // 칼럼 목록 (/tax/columns · /finance/columns — ART-04 · PRD-01A 3장 '칼럼 목록') — 허브와 같은 머리(분야 허브 머리 + 허브 탭) ·
@@ -29,11 +30,17 @@ export function ColumnView({ list }: { list: ColumnListData }) {
           </div>
         ) : (
           <div className="mt-8 space-y-12">
-            {list.groups.map((g) => {
+            {list.groups.map((g, gi) => {
               const writers = [...new Map(g.items.filter((a) => a.authorHref && a.authorName).map((a) => [a.authorHref!, a.authorName!])).entries()];
+              // 시그니처 연재 제목에 경력 연수 표기가 있으면 근거 링크를 제목 옆에 늘 함께 (W3 8단계 — 연재 틀이 입힌 카드만 갖는다)
+              const basisHref = g.items.find((a) => a.seriesBasisHref)?.seriesBasisHref ?? null;
+              const headingId = `column-group-${gi}`;
               return (
-                <section key={g.series ?? "single"} data-column-series={g.series ?? ""} aria-label={g.series ? `연재 「${g.series}」` : "단독 칼럼"}>
-                  <h3 className="text-[22px] leading-tight font-black text-navy-900">{g.series ? `연재 「${g.series}」` : "단독 칼럼"}</h3>
+                <section key={g.series ?? "single"} data-column-series={g.series ?? ""} aria-labelledby={headingId}>
+                  <h3 id={headingId} className="text-[22px] leading-tight font-black text-navy-900">
+                    {g.series ? `연재 「${g.series}」` : "단독 칼럼"}
+                    {g.series && basisHref && <ClaimBasisLink href={basisHref} />}
+                  </h3>
                   <ol data-part="column-articles" className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {g.items.map((a) => (
                       <li key={a.id} data-article-id={a.id} data-episode={a.seriesEpisode ?? ""} className="flex flex-col gap-2">

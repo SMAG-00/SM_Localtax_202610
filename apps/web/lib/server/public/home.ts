@@ -5,6 +5,7 @@ import { latestChangedTracker, trackerState, type ArticleListItem, type TrackerS
 import { LIMITS } from "./constants";
 import { publicDb, rowsOf } from "./db";
 import { activeCurations, closedHomeSections, homeSections, latestReports, pickStories, pickTrackers, type AmendmentsSection, type HomeSection } from "./home-logic";
+import { getSignatureHome } from "./signature";
 import { readArticleList, readPublicSettings } from "./reads";
 import { AMENDMENT_COLUMNS, AMENDMENT_EVENT_COLUMNS, CURATION_COLUMNS, num, type AmendmentEventRow, type AmendmentRow, type CurationRow } from "./rows";
 import type { ProgressStageKey } from "@ltr/ui";
@@ -70,10 +71,12 @@ export async function getHomeAmendments(now: Date = new Date()): Promise<{ today
 
 export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
   const db = publicDb();
-  const [settings, latest, amendments] = await Promise.all([
+  const [settings, latest, amendments, signature] = await Promise.all([
     readPublicSettings(),
     readArticleList(db, { contentType: "reported_news", reportedApproved: true, limit: LIMITS.homeLatestReports }),
     getHomeAmendments(now),
+    // 김의효 칼럼 영역 (BR-04 — W3 8단계): 기능 키 tax_columns + 공개 회차가 있을 때만, 아니면 빈 목록 → 섹션째 숨김
+    getSignatureHome(),
   ]);
   const sections = homeSections({
     coreMessage: settings.coreMessage,
@@ -85,7 +88,7 @@ export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
       ? { items: amendments.section.trackers, source: amendments.section.trackerSource }
       : { items: [], source: "none" },
     stories: amendments.section?.stories ?? [],
-    column: null,
+    column: signature.length ? { key: "column", items: signature } : null,
     product: null,
     experts: null,
   });
