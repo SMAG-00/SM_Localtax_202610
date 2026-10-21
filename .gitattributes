@@ -4,3 +4,5 @@
 *.jpg binary
 *.ico binary
 *.woff2 binary
+# 시험용 CP949 원본(행정구역 적재 도구 W4 1단계) — UTF-8이 아닌 글자라 바이트 그대로 둔다
+scripts/__tests__/fixtures/regions/*.cp949.txt binary

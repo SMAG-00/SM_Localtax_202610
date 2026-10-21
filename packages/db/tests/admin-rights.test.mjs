@@ -15,6 +15,7 @@ const APPEND_ONLY = new Set([
   "public.seo_checks",
   "public.amendment_events",
   "public.official_link_checks", // 링크 점검 기록(W3 2단계) — service_role은 읽기·추가만, 같은 실행 키는 유일
+  "public.region_import_runs", // 행정구역 적재 기록(W4 1단계) — service_role은 읽기·추가만, 같은 원본 applied는 하나
   "public.story_assignment_events",
   "public.article_tombstones",
 ]);
