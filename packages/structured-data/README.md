@@ -25,7 +25,7 @@
 - `displayTitle(title, label)` — 광고·공동 기획 표기를 붙인 제목. 화면 제목·메타 제목도 이 함수로 만든다 (`[광고] 제목`, `[공동 기획 ○○] 제목`)
 - `sponsorLabelText(label)` — 배지 글자. 광고 `광고`(PRD-00 8.8), 공동 기획 `공동 기획 ` + 제휴사 이름(ART-10). `SponsorLabel`의 공동 기획은 `partnerName`이 필수다 — 비면 `공동 기획`만 남고, seo-lint 「광고 표기 일치」(`partnerMissing`)와 발행 판정(`art10.co-planned-partner-required`)이 막는다. seo-lint 규칙 파일 `badgeFormats`·`markerFormat`과 같은 글자다
 - `toJsonLdScriptContent(value)` — `<` `>` `&` U+2028 U+2029 이스케이프, 키 순서 고정(@context → @type → @id → 이름순), NaN·함수·Date는 TypeError
-- `compareRendered(rendered, jsonld)` → 불일치 id 배열. id 상수는 `MISMATCH`, 패널 문구는 `MISMATCH_LABELS` (seo-lint '구조화 데이터 불일치' 차단 항목이 쓴다)
+- `compareRendered(rendered, jsonld)` → 불일치 id 배열. id 상수는 `MISMATCH`, 패널 문구는 `MISMATCH_LABELS` (seo-lint '구조화 데이터 불일치' 차단 항목이 쓴다). 화면 경로 표시(`rendered.breadcrumb` — 이름·절대 주소)를 넘기면 BreadcrumbList와 항목 수·이름·주소를 대조한다(`MISMATCH.BREADCRUMB`, W4 3단계 지역 허브). 넘기지 않으면 대조하지 않는다
 - `validate(jsonld)` → 오류 배열 `{ node, path, code, message }`. 필수 속성 표 `REQUIRED_PROPERTIES`(근거 `google`/`platform`), 금지 속성 `FORBIDDEN_PROPERTIES`(평점·후기·가격)
 
 ## 행사 상태 대응 (`src/event-status.ts`)

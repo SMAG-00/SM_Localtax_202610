@@ -2,10 +2,10 @@
 import { describe, expect, it } from "vitest";
 import { compareRendered, MISMATCH, MISMATCH_LABELS, type RenderedFacts } from "./compare";
 import { pageJsonLd } from "./page";
-import { profilePage } from "./generators";
+import { breadcrumbList, profilePage } from "./generators";
 import { toJsonLdScriptContent } from "./serialize";
 import type { JsonLdNode } from "./jsonld";
-import { passSamples, sampleAdArticle, sampleArticle, sampleEvent, samplePerson } from "../fixtures/samples";
+import { passSamples, sampleAdArticle, sampleArticle, sampleArticleBreadcrumb, sampleEvent, samplePerson } from "../fixtures/samples";
 import { renderedAdArticle, renderedArticle, renderedEvent } from "../fixtures/rendered";
 
 const articleNodes = pageJsonLd(passSamples.article);
@@ -173,6 +173,47 @@ describe("감수자 (W3 10단계 · BR-03 — 서명 없는 감수자 속성 0)"
     expect(compareRendered(renderedArticle, signed)).toEqual([MISMATCH.REVIEWER]);
     expect(compareRendered({ ...renderedArticle, reviewerName: "시험용 감수위원" }, articleNodes)).toEqual([MISMATCH.REVIEWER]);
     expect(compareRendered({ ...renderedArticle, reviewerName: "다른 감수위원" }, signed)).toEqual([MISMATCH.REVIEWER]);
+  });
+});
+
+describe("경로 표시 (SEO-01 · REG1-12 · W4 3단계 — BreadcrumbList = 화면 경로 표시)", () => {
+  // 지역 허브처럼 주 유형 없이 BreadcrumbList만 내는 페이지 (시험용 가짜 지역)
+  const crumbs = [
+    { name: "홈", url: "https://news.example/" },
+    { name: "지자체뉴스", url: "https://news.example/local" },
+    { name: "시험용 가상도", url: "https://news.example/local/gasang" },
+    { name: "시험용 가득구", url: "https://news.example/local/gasang/gadeuk-gu" },
+  ];
+  const regionNodes = [breadcrumbList({ items: crumbs })];
+
+  it("화면 경로 표시와 BreadcrumbList의 이름·주소·차례가 같으면 [] — 주 유형이 없어도 node-missing 0", () => {
+    expect(compareRendered({ breadcrumb: crumbs }, regionNodes)).toEqual([]);
+    expect(compareRendered({ breadcrumb: crumbs }, toJsonLdScriptContent(regionNodes)), "직렬화한 글자로도").toEqual([]);
+    expect(compareRendered({ breadcrumb: crumbs.map((c) => ({ ...c, name: ` ${c.name.replace(" ", "  ")} ` })) }, regionNodes), "공백은 합쳐 비교").toEqual([]);
+    // 차례 번호가 섞여 들어와도 position 순서로 읽는다
+    const shuffled = { ...regionNodes[0]!, itemListElement: [...(regionNodes[0]!.itemListElement as unknown[])].reverse() };
+    expect(compareRendered({ breadcrumb: crumbs }, [shuffled])).toEqual([]);
+  });
+
+  it("이름 하나 · 주소 하나 · 항목 수 · 차례가 다르거나 BreadcrumbList가 없으면 BREADCRUMB 하나", () => {
+    expect(compareRendered({ breadcrumb: crumbs.map((c, i) => (i === 3 ? { ...c, name: "시험용 다른구" } : c)) }, regionNodes)).toEqual([MISMATCH.BREADCRUMB]);
+    expect(compareRendered({ breadcrumb: crumbs.map((c, i) => (i === 2 ? { ...c, url: "https://news.example/local/other" } : c)) }, regionNodes)).toEqual([MISMATCH.BREADCRUMB]);
+    expect(compareRendered({ breadcrumb: crumbs.slice(1) }, regionNodes), "화면에 홈이 없음").toEqual([MISMATCH.BREADCRUMB]);
+    expect(compareRendered({ breadcrumb: [...crumbs].reverse() }, regionNodes)).toEqual([MISMATCH.BREADCRUMB]);
+    expect(compareRendered({ breadcrumb: crumbs }, []), "구조화 데이터에 경로 표시가 없음").toEqual([MISMATCH.BREADCRUMB]);
+    expect(compareRendered({ breadcrumb: crumbs.map(({ name }) => ({ name })) }, regionNodes), "화면 항목에 주소가 없음").toEqual([MISMATCH.BREADCRUMB]);
+  });
+
+  it("경로 표시를 넘기지 않은 호출은 대조하지 않는다 — 기사 화면 값 + 기사 JSON-LD(경로 표시 포함)는 그대로 []", () => {
+    expect(articleNodes.map((n) => n["@type"])).toContain("BreadcrumbList");
+    expect(compareRendered(renderedArticle, articleNodes)).toEqual([]);
+    expect(compareRendered({}, regionNodes)).toEqual([]);
+  });
+
+  it("기사 페이지도 경로 표시를 넘기면 대조한다 — 주 노드 대조와 함께", () => {
+    const shown = sampleArticleBreadcrumb.items.map((i) => ({ name: i.name, url: i.url }));
+    expect(compareRendered({ ...renderedArticle, breadcrumb: shown }, articleNodes)).toEqual([]);
+    expect(compareRendered({ ...renderedArticle, title: "다른 제목", breadcrumb: shown.slice(0, 2) }, articleNodes)).toEqual([MISMATCH.HEADLINE, MISMATCH.BREADCRUMB]);
   });
 });
 

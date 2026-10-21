@@ -1,7 +1,24 @@
 import type { ReactNode } from "react";
 import { Eyebrow } from "../base";
+import { UiLink } from "../link";
 
 export type RegionRef = { name: string; href: string };
+
+/** 경로 표시 한 칸 — current = 지금 화면 (aria-current=page) */
+export type RegionCrumb = RegionRef & { current: boolean };
+
+/**
+ * 지역 허브 경로 표시 — 홈 > 지자체뉴스 > 시·도 > 시·군·구 (W4 3단계). 화면(이 컴포넌트)과 구조화 데이터(BreadcrumbList)가 이 한 함수에서 나온다 —
+ * 두 곳의 글자·주소가 갈라지지 않게 (OPT-02 · REG1-12)
+ */
+export function regionCrumbs(sido: RegionRef, sigungu?: RegionRef): RegionCrumb[] {
+  return [
+    { name: "홈", href: "/", current: false },
+    { name: "지자체뉴스", href: "/local", current: false },
+    { name: sido.name, href: sido.href, current: !sigungu },
+    ...(sigungu ? [{ ...sigungu, current: true }] : []),
+  ];
+}
 
 export type RegionHubHeadProps = {
   sido: RegionRef;
@@ -31,15 +48,11 @@ function Chevron() {
 }
 
 /**
- * 지역 허브 머리 — /local 시·도 > 시·군·구 이동 + 분야 지방세 포인트 블록 + 분야 필터 + 지자체 허브 블록 + 지역 세금 연결 블록.
- * 순서는 이 컴포넌트가 정한다 (RP-07)
+ * 지역 허브 머리 — 홈 > 지자체뉴스 > 시·도 > 시·군·구 이동 + 분야 지방세 포인트 블록 + 분야 필터 + 지자체 허브 블록 + 지역 세금 연결 블록.
+ * 순서는 이 컴포넌트가 정한다 (RP-07). 이동 줄·시·군·구 바꾸기 링크는 사이트 안 이동(UiLink — 새로고침 0, FND-09)
  */
 export function RegionHubHead({ sido, sigungu, sigunguOptions, taxPoint, filter, blocks, taxLinks }: RegionHubHeadProps) {
-  const crumbs: Array<RegionRef & { current: boolean }> = [
-    { name: "지자체뉴스", href: "/local", current: false },
-    { name: sido.name, href: sido.href, current: !sigungu },
-    ...(sigungu ? [{ ...sigungu, current: true }] : []),
-  ];
+  const crumbs = regionCrumbs(sido, sigungu);
   const options = (sigunguOptions ?? []).filter((o) => o.href !== sigungu?.href);
 
   return (
@@ -50,9 +63,9 @@ export function RegionHubHead({ sido, sigungu, sigunguOptions, taxPoint, filter,
             {crumbs.map((c, i) => (
               <li key={c.href} className="inline-flex items-center gap-x-1">
                 {i > 0 && <Chevron />}
-                <a href={c.href} aria-current={c.current ? "page" : undefined} className={CRUMB}>
+                <UiLink href={c.href} aria-current={c.current ? "page" : undefined} className={CRUMB}>
                   {c.name}
-                </a>
+                </UiLink>
               </li>
             ))}
           </ol>
@@ -69,12 +82,12 @@ export function RegionHubHead({ sido, sigungu, sigunguOptions, taxPoint, filter,
             <ul className="flex flex-wrap gap-2 px-4 pb-4">
               {options.map((o) => (
                 <li key={o.href}>
-                  <a
+                  <UiLink
                     href={o.href}
                     className="inline-flex min-h-11 items-center rounded-md border border-navy-100 bg-ivory px-3 text-[15px] font-bold text-navy-700 transition hover:border-hermes-400 hover:bg-hermes-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500"
                   >
                     {o.name}
-                  </a>
+                  </UiLink>
                 </li>
               ))}
             </ul>

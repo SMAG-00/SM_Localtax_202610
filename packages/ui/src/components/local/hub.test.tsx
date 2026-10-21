@@ -7,7 +7,8 @@ import { TopicFilter } from "./TopicFilter";
 import { RegionTaxLinks, type RegionTaxLink } from "./RegionTaxLinks";
 import { FieldTaxPoint } from "./FieldTaxPoint";
 import { FieldHubHead } from "./FieldHubHead";
-import { RegionHubHead } from "./RegionHubHead";
+import { RegionHubHead, regionCrumbs } from "./RegionHubHead";
+import { LinkProvider, type LinkComponent } from "../link";
 import { IssueBundleHead, type IssueArticle } from "./IssueBundleHead";
 
 const cls = (el: Element | null) => el?.getAttribute("class") ?? "";
@@ -279,19 +280,55 @@ describe("지역 허브 머리 (RP-07)", () => {
   const sido = { name: "서울특별시", href: "/local/seoul" };
   const sigungu = { name: "강남구", href: "/local/seoul/gangnam-gu" };
 
-  it("/local 시·도 > 시·군·구 이동 줄 — 마지막 단계에 aria-current=page, 제목은 시·도 + 시·군·구", () => {
+  it("홈 > 지자체뉴스 > 시·도 > 시·군·구 이동 줄 — 마지막 단계에 aria-current=page, 제목은 시·도 + 시·군·구", () => {
     const { container } = render(<RegionHubHead sido={sido} sigungu={sigungu} />);
     expect(container.firstElementChild?.getAttribute("data-ui")).toBe("region-hub-head");
     const nav = screen.getByRole("navigation", { name: "지역 이동" });
     const links = within(nav).getAllByRole("link");
     expect(links.map((a) => [a.textContent, a.getAttribute("href")])).toEqual([
+      ["홈", "/"],
       ["지자체뉴스", "/local"],
       ["서울특별시", "/local/seoul"],
       ["강남구", "/local/seoul/gangnam-gu"],
     ]);
-    expect(links[2].getAttribute("aria-current")).toBe("page");
-    expect(links[1].getAttribute("aria-current")).toBeNull();
+    expect(links[3].getAttribute("aria-current")).toBe("page");
+    expect(links.slice(0, 3).map((a) => a.getAttribute("aria-current"))).toEqual([null, null, null]);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("서울특별시 강남구");
+  });
+
+  it("이동 줄 글자·주소는 regionCrumbs 한 함수에서 나온다 — 구조화 데이터(BreadcrumbList)가 같은 함수를 쓴다", () => {
+    expect(regionCrumbs(sido, sigungu)).toEqual([
+      { name: "홈", href: "/", current: false },
+      { name: "지자체뉴스", href: "/local", current: false },
+      { name: "서울특별시", href: "/local/seoul", current: false },
+      { name: "강남구", href: "/local/seoul/gangnam-gu", current: true },
+    ]);
+    expect(regionCrumbs(sido).map((c) => [c.name, c.current])).toEqual([
+      ["홈", false],
+      ["지자체뉴스", false],
+      ["서울특별시", true],
+    ]);
+    render(<RegionHubHead sido={sido} />);
+    const shown = within(screen.getByRole("navigation", { name: "지역 이동" }))
+      .getAllByRole("link")
+      .map((a) => ({ name: a.textContent, href: a.getAttribute("href"), current: a.getAttribute("aria-current") === "page" }));
+    expect(shown).toEqual(regionCrumbs(sido));
+  });
+
+  it("앱이 링크 컴포넌트를 주면 이동 줄·시·군·구 바꾸기 링크가 그 컴포넌트로 그려진다 (사이트 안 이동 — FND-09)", () => {
+    const AppLink: LinkComponent = ({ href, children, ...rest }) => (
+      <a href={href} data-app-link="" {...rest}>
+        {children}
+      </a>
+    );
+    const { container } = render(
+      <LinkProvider component={AppLink}>
+        <RegionHubHead sido={sido} sigungu={sigungu} sigunguOptions={[sigungu, { name: "서초구", href: "/local/seoul/seocho-gu" }]} />
+      </LinkProvider>,
+    );
+    const links = [...container.querySelectorAll("a")];
+    expect(links.length).toBe(5);
+    expect(links.every((a) => a.hasAttribute("data-app-link"))).toBe(true);
   });
 
   it("시·도 허브는 시·도가 현재 단계이고, 같은 시·도의 시·군·구로 옮겨 갈 링크를 둔다", () => {

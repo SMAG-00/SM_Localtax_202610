@@ -10,11 +10,14 @@
  * - 화면이 '변경 확인 중'이면 Event가 없어야 맞다 (LG-16).
  * - 인물(Person)이면 약력 글자(description)도 본다 (BR-02 — 화면과 구조화 데이터 일치 게이트).
  * - 감수자 — 화면의 '감수 ○○' 이름과 기사 페이지(mainEntityOfPage)의 reviewedBy 이름 (BR-03 · W3 10단계 — 서명 없는 감수자 속성 0).
+ * - 경로 표시 — 화면 경로 표시(이름·절대 주소, 순서대로)와 BreadcrumbList (SEO-01 · REG1-12 · W4 3단계). 화면 경로 표시를 읽어 넘긴 페이지만 본다
+ *   (breadcrumb 칸을 비운 호출은 대조하지 않는다 — 경로 표시를 그리지 않는 기사 화면 등). 넘겼으면 BreadcrumbList가 없거나 항목 수·이름·주소가 하나라도 다르면 불일치.
+ *   경로 표시만 있는 페이지(지역 허브 등 — 주 유형 없음)는 주 노드가 없어도 된다.
  */
 import type { EventScreenStatus } from "./models";
 import type { JsonLdNode } from "./jsonld";
 import { EVENT_STATUS_MAP } from "./event-status";
-import { PAGE_TYPE_MAP } from "./types-map";
+import { BREADCRUMB_TYPE, PAGE_TYPE_MAP } from "./types-map";
 
 /** 화면(렌더된 HTML)에서 읽은 값 — seo-lint가 페이지에서 뽑아 넘긴다 */
 export interface RenderedFacts {
@@ -28,6 +31,8 @@ export interface RenderedFacts {
   description?: string;
   /** 기사 화면의 감수 표시 '감수 ○○'의 이름 (BR-03 — 서명 기록이 있을 때만 화면에 있다). 없으면 비운다 */
   reviewerName?: string;
+  /** 화면 경로 표시 — 항목 글자와 링크의 절대 주소(화면 주소 기준으로 푼 값), 차례대로. 경로 표시를 대조하지 않는 페이지는 비운다 */
+  breadcrumb?: { name: string; url?: string }[];
   event?: {
     startDate?: string;
     endDate?: string;
@@ -50,6 +55,7 @@ export const MISMATCH = {
   NODE_MISSING: "structured-data.node-missing",
   PERSON_DESCRIPTION: "structured-data.person.description",
   REVIEWER: "structured-data.reviewer",
+  BREADCRUMB: "structured-data.breadcrumb",
 } as const;
 
 export type MismatchId = (typeof MISMATCH)[keyof typeof MISMATCH];
@@ -68,6 +74,7 @@ export const MISMATCH_LABELS: Readonly<Record<MismatchId, string>> = {
   [MISMATCH.NODE_MISSING]: "화면에 있는 항목의 구조화 데이터 없음",
   [MISMATCH.PERSON_DESCRIPTION]: "구조화 데이터 인물 약력 ≠ 화면 약력",
   [MISMATCH.REVIEWER]: "구조화 데이터 감수자 ≠ 화면 감수 표시",
+  [MISMATCH.BREADCRUMB]: "구조화 데이터 경로 표시 ≠ 화면 경로 표시",
 };
 
 type Obj = Record<string, unknown>;
@@ -121,11 +128,32 @@ function firstImageUrl(image: unknown): string | undefined {
 }
 
 function hasAnyFact(r: RenderedFacts): boolean {
-  return Object.values(r).some((v) => v !== undefined);
+  return Object.entries(r).some(([k, v]) => k !== "breadcrumb" && v !== undefined);
+}
+
+/** 화면 경로 표시 ↔ BreadcrumbList — 화면 값을 넘긴 때만. 항목 수·차례별 이름(공백 합침)·주소(앞뒤 공백 뺌)가 같아야 한다 */
+function breadcrumbMismatch(rendered: RenderedFacts, nodes: JsonLdNode[]): MismatchId[] {
+  if (rendered.breadcrumb === undefined) return [];
+  const node = nodes.find((n) => n["@type"] === BREADCRUMB_TYPE);
+  if (!node) return [MISMATCH.BREADCRUMB];
+  const items = asList(node.itemListElement)
+    .filter(isObj)
+    .map((it, i) => ({ position: typeof it.position === "number" ? it.position : i + 1, name: str(it.name), url: str(it.item) ?? (isObj(it.item) ? str(it.item["@id"]) : undefined) }))
+    .sort((a, b) => a.position - b.position);
+  const shown = rendered.breadcrumb;
+  const same =
+    items.length === shown.length &&
+    shown.every((s, i) => normText(s.name) === normText(items[i]!.name) && (s.url ?? "").trim() === (items[i]!.url ?? "").trim());
+  return same ? [] : [MISMATCH.BREADCRUMB];
 }
 
 export function compareRendered(rendered: RenderedFacts, jsonld: unknown): MismatchId[] {
   const nodes = toNodes(jsonld);
+  const crumbs = breadcrumbMismatch(rendered, nodes);
+  return [...compareEntity(rendered, nodes), ...crumbs];
+}
+
+function compareEntity(rendered: RenderedFacts, nodes: JsonLdNode[]): MismatchId[] {
   const eventNode = nodes.find((n) => n["@type"] === PAGE_TYPE_MAP.event.primaryType);
 
   if (rendered.event && EVENT_STATUS_MAP[rendered.event.status] === null) {

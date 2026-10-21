@@ -6,6 +6,7 @@ export { closedHomeData, getHomeData, getHomeAmendments, type HomeData } from ".
 export { getHubData, getCategoryList, getNewsList, type HubData, type HubTab, type CategoryListData, type NewsListData } from "./hub";
 export { closedHubData } from "./hub-logic";
 export { getSituationPage, type SituationPage } from "./situations";
+export { getRegionPage, type RegionPage } from "./region";
 export { getArticleDetail, type ArticleDetail, type ArticleMedia } from "./article";
 export { getHotBlock, getPopularList, type HotBlock, type HotEntry, type PopularList } from "./rankings";
 export { getColumnList, COLUMN_SLUG, type ColumnListData } from "./columns";
