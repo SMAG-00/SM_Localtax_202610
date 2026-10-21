@@ -193,7 +193,9 @@ for (const role of ["anon", "authenticated"]) {
     world(async () => {
       const r = await attempt("select key from public.settings order by key", [], role);
       assert.ok(r.ok, r.message);
-      assert.deepEqual(r.rows.map((x) => x.key), [...designList("settings.public_keys")].sort());
+      // 뒤 단계가 키 한 줄씩 따로 연 공개 정책 — W2-e company_info(바닥글 회사 정보) · W4 4단계 local_block_fields(지자체 허브 블록 대응, W4 설계 2.2)
+      const later = (await attempt("select key from public.settings where key = any($1::text[])", [["company_info", "local_block_fields"]])).rows.map((x) => x.key);
+      assert.deepEqual(r.rows.map((x) => x.key), [...designList("settings.public_keys"), ...later].sort());
       for (const key of ["forbidden_phrases", "fear_phrases", "similarity_internal"]) {
         const p = await attempt("select count(*)::int n from public.settings where key = $1", [key], role);
         assert.equal(p.rows[0].n, 0, key);

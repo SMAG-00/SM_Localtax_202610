@@ -37,6 +37,17 @@ describe("데이터 출처 줄", () => {
     const parts = [...container.querySelectorAll(".whitespace-nowrap")].map((s) => s.textContent);
     expect(parts).toEqual(["출처 행정안전부", "기준일 2025-12-31", "정보 확인일 2026-10-13"]);
   });
+
+  it("공식 자료 없이 편집국 기사만 쓴 화면 — '출처 편집국 · 최신 발행일 ○○', 기준일·확인일 칸 0 (W4 설계 2.8)", () => {
+    const { container } = render(<SourceLine source="편집국" latestPublished="2026-10-16" />);
+    expect(container.firstElementChild?.textContent).toBe("출처 편집국 · 최신 발행일 2026-10-16");
+    expect([...container.querySelectorAll(".whitespace-nowrap")].map((s) => s.textContent)).toEqual(["출처 편집국", "최신 발행일 2026-10-16"]);
+  });
+
+  it("기사도 없으면(null) '출처 편집국'만 — '확인 필요' 칸을 지어내지 않는다", () => {
+    const { container } = render(<SourceLine source="편집국" latestPublished={null} />);
+    expect(container.firstElementChild?.textContent).toBe("출처 편집국");
+  });
 });
 
 describe("국세·지방세 배지", () => {

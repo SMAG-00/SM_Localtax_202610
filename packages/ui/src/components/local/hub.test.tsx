@@ -75,8 +75,20 @@ describe("지자체 허브 블록 (LG-08·REG1-02)", () => {
   });
 
   it("시·군·구 기사가 없어 상위 시·도 기사를 보이면 그 사실을 글자로 밝힌다 (REG-06)", () => {
-    render(<LocalHubBlocks localTax={{ ...block("지방세"), fallbackRegion: "서울특별시" }} />);
-    expect(screen.getByText("이 지역 기사가 없어 서울특별시 기사를 보여 드립니다.")).toBeTruthy();
+    render(<LocalHubBlocks localTax={{ ...block("지방세"), fallbackNotice: "시험용 빈구 기사가 없어 시험용 가상도 기사를 보입니다" }} />);
+    const notice = screen.getByText("시험용 빈구 기사가 없어 시험용 가상도 기사를 보입니다");
+    expect(notice.getAttribute("data-part")).toBe("block-fallback");
+    expect(within(screen.getByRole("region", { name: "지방세·지방재정" })).getAllByRole("listitem").length).toBe(1);
+  });
+
+  it("0건 문장을 받은 블록은 카드 없이 그 문장만 보인다 — 빈 목록·'준비 중' 0 (REG1-02)", () => {
+    const { container } = render(<LocalHubBlocks localTax={block("지방세")} realEstate={{ items: [], empty: "아직 공개된 부동산·개발 기사가 없습니다." }} sources={{ items: [], empty: "  " }} />);
+    expect(blockKeys(container)).toEqual(["localTax", "realEstate"]);
+    const section = screen.getByRole("region", { name: "부동산·개발" });
+    expect(within(section).getByText("아직 공개된 부동산·개발 기사가 없습니다.").getAttribute("data-part")).toBe("block-empty");
+    expect(within(section).queryAllByRole("listitem")).toEqual([]);
+    expect(section.querySelector("ul")).toBeNull();
+    expect(container.textContent).not.toContain("준비 중");
   });
 
   it("금주 핫뉴스 블록은 주차·기간·발행일 줄을 고정폭으로, 더 보기 링크를 함께 보인다", () => {

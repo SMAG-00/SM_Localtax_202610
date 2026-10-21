@@ -1,12 +1,13 @@
 import "server-only";
 import type { LocalTopic } from "@ltr/ui";
 import type { ArticleListItem } from "./cards";
-import { HOT_CATEGORY, LIMITS, LOCAL_BLOCK_TOPICS, POLICY_LINKS, SECTION_INFO, isLocalTopic, type SectionKey } from "./constants";
+import { HOT_CATEGORY, LIMITS, POLICY_LINKS, SECTION_INFO, isLocalTopic, type SectionKey } from "./constants";
 import { publicDb, rowsOf } from "./db";
 import { termChip } from "./glossary-logic";
 import { ALL_TAB, hubTabs, localBlocks, newsTabs, pageNumber, type HubData, type HubTab } from "./hub-logic";
 import { getHotBlock, type HotBlock } from "./rankings";
 import { getHubTaxPoint } from "./hub-points";
+import { readLocalBlockFields } from "./region-hub";
 import { readArticleList, readCategories, readCategoryCounts, readPublicSettings, readTopicCounts } from "./reads";
 import { GLOSSARY_COLUMNS, SITUATION_COLUMNS, num, type GlossaryRow, type SituationRow } from "./rows";
 import { hubSituationCards } from "./situation-logic";
@@ -15,13 +16,26 @@ import { hubSituationCards } from "./situation-logic";
 // 분야 지방세 포인트(01B CORE-02 — W3 9단계)는 감수 서명이 있는 분야만(hub-points.ts). 지방세·부동산·개발금융 허브의 분야 고유 블록(01B)은 그 작업에서 더한다.
 // 상담 사례 HOT(HOME-05 — W2-c 2단계)은 지방세 허브와 상담 사례 분야 목록(HOT_CATEGORY)의 첫 쪽에 둔다 (rankings.ts).
 // 지자체뉴스 허브는 분야 고유 블록 자리에 LG-08 순서의 지자체 허브 블록 중 데이터가 있는 ② 지방세·지방재정 ③ 부동산·개발을 둔다.
+// 블록과 편집 분야 대응은 설정 local_block_fields(W4 4단계 — 마이그레이션 …40). 읽지 못하거나 모양이 틀리면 블록 0(닫힌 쪽)
 
 export type { HubData, HubTab } from "./hub-logic";
 
 export async function getHubData(section: SectionKey, opts: { topic?: string | null } = {}): Promise<HubData> {
   const db = publicDb();
   const topic: LocalTopic | null = section === "local" && isLocalTopic(opts.topic) ? opts.topic : null;
-  const [settings, categories, counts, topicCounts, latest, situations, terms, blockTax, blockRealEstate, hot, taxPoint] = await Promise.all([
+  // 지자체 허브 블록 — 전체 보기에서만 (분야를 고르면 목록 하나로 좁힌다). 대응 설정을 읽은 뒤 블록마다 그 편집 분야 기사
+  const localBlockReads =
+    section === "local" && !topic
+      ? readLocalBlockFields().then(async (fields) => {
+          if (!fields) return null;
+          const [tax, realEstate] = await Promise.all([
+            readArticleList(db, { section, editorialFields: fields.local_tax, limit: LIMITS.localBlock }),
+            readArticleList(db, { section, editorialFields: fields.realestate, limit: LIMITS.localBlock }),
+          ]);
+          return { fields, tax, realEstate };
+        })
+      : null;
+  const [settings, categories, counts, topicCounts, latest, situations, terms, blockReads, hot, taxPoint] = await Promise.all([
     readPublicSettings(),
     readCategories(),
     readCategoryCounts(),
@@ -29,9 +43,7 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     readArticleList(db, { section, ...(topic ? { editorialFields: [topic] } : {}), limit: LIMITS.hubLatest }),
     rowsOf<SituationRow>(db.from("situations").select(SITUATION_COLUMNS).eq("section", section).not("hub_slot", "is", null).order("hub_slot"), "허브 상황 카드"),
     rowsOf<GlossaryRow>(db.from("glossary_terms").select(GLOSSARY_COLUMNS).contains("section", [section]).order("term").limit(LIMITS.hubTerms), "관련 용어"),
-    // 지자체 허브 블록 — 전체 보기에서만 (분야를 고르면 목록 하나로 좁힌다)
-    section === "local" && !topic ? readArticleList(db, { section, editorialFields: LOCAL_BLOCK_TOPICS.localTax, limit: LIMITS.localBlock }) : null,
-    section === "local" && !topic ? readArticleList(db, { section, editorialFields: LOCAL_BLOCK_TOPICS.realEstate, limit: LIMITS.localBlock }) : null,
+    localBlockReads,
     section === HOT_CATEGORY.section ? getHotBlock() : null,
     getHubTaxPoint(section),
   ]);
@@ -44,7 +56,7 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     tabs: hubTabs(section, categories, counts, topicCounts),
     currentTab: topic ?? ALL_TAB,
     topic,
-    blocks: blockTax && blockRealEstate ? localBlocks(blockTax.items, blockRealEstate.items) : null,
+    blocks: blockReads ? localBlocks(blockReads.fields, blockReads.tax.items, blockReads.realEstate.items) : null,
     latest: latest.items,
     hot,
     situations: hubSituationCards(situations, section, settings.hubSituationLimit),

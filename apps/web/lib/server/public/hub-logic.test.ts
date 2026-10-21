@@ -81,26 +81,36 @@ describe("뉴스 전체 탭 (CAT-02 '허브 탭 4개')", () => {
   });
 });
 
-describe("지자체 허브 블록 (LG-08 ② 지방세·지방재정 ③ 부동산·개발)", () => {
+describe("지자체 허브 블록 (LG-08 ② 지방세·지방재정 ③ 부동산·개발 — 대응은 설정 local_block_fields, W4 4단계)", () => {
   const local = (editorialField: string | null, over = {}) => listItem({ section: "local", editorialField, ...over });
+  // REG1-02 초기값 (마이그레이션 …40 씨앗과 같다 — region-hub-logic.test.ts가 설계 2.2 글자와 대조한다)
+  const FIELDS = { local_tax: ["local_tax", "local_finance"], realestate: ["realestate", "urban_policy"] } as const;
 
   test("블록마다 그 편집 분야 기사만 — 지방재정은 ②, 도시정책은 ③. 다른 분야·편집 분야 없는 기사는 빠진다", () => {
     const tax = [local("local_tax", { id: 1 }), local("local_finance", { id: 2 }), local("realestate", { id: 3 }), local(null, { id: 4 }), listItem({ id: 5, section: "tax", editorialField: "local_tax" })];
     const re = [local("realestate", { id: 6 }), local("urban_policy", { id: 7 }), local("local_tax", { id: 8 })];
-    const blocks = localBlocks(tax, re);
+    const blocks = localBlocks(FIELDS, tax, re);
     expect(blocks?.localTax.map((a) => a.id)).toEqual([1, 2]);
     expect(blocks?.realEstate.map((a) => a.id)).toEqual([6, 7]);
   });
 
   test("블록 한 칸은 4장까지 (PRD-00 8.10 — 기사 카드 2~4장)", () => {
     const many = Array.from({ length: 6 }, (_, i) => local("local_tax", { id: 100 + i }));
-    expect(localBlocks(many, [])?.localTax.map((a) => a.id)).toEqual([100, 101, 102, 103]);
+    expect(localBlocks(FIELDS, many, [])?.localTax.map((a) => a.id)).toEqual([100, 101, 102, 103]);
   });
 
   test("두 블록이 모두 0건이면 null — 블록 자리째 없다 (빈 블록 0)", () => {
-    expect(localBlocks([], [])).toBeNull();
-    expect(localBlocks([local(null)], [local("local_tax")])).toBeNull();
-    expect(localBlocks([], [local("urban_policy")])).toMatchObject({ localTax: [], realEstate: [expect.objectContaining({ editorialField: "urban_policy" })] });
+    expect(localBlocks(FIELDS, [], [])).toBeNull();
+    expect(localBlocks(FIELDS, [local(null)], [local("local_tax")])).toBeNull();
+    expect(localBlocks(FIELDS, [], [local("urban_policy")])).toMatchObject({ localTax: [], realEstate: [expect.objectContaining({ editorialField: "urban_policy" })] });
+  });
+
+  test("대응 설정을 읽지 못하면(null) 블록 0 — 닫힌 쪽 · 대응을 바꾸면 그 대응대로 (도시정책을 ②로 옮기면 ③에서 빠진다)", () => {
+    expect(localBlocks(null, [local("local_tax")], [local("realestate")])).toBeNull();
+    const moved = { local_tax: ["local_tax", "urban_policy"], realestate: ["realestate"] } as const;
+    const b = localBlocks(moved, [local("urban_policy", { id: 31 }), local("local_finance", { id: 32 })], [local("urban_policy", { id: 33 }), local("realestate", { id: 34 })]);
+    expect(b?.localTax.map((a) => a.id)).toEqual([31]);
+    expect(b?.realEstate.map((a) => a.id)).toEqual([34]);
   });
 });
 

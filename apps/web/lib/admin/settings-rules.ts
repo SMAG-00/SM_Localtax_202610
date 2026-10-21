@@ -12,6 +12,7 @@ import { hasClaimToken } from "@/lib/brand/claim";
 // 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
 import { SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings";
+import { localBlockFieldsErrors } from "@/lib/server/public/region-hub-logic";
 import { phraseError } from "./dictionary-rules";
 
 const SEARCH_CHIP_RANGE = [SEARCH_CHIPS_MIN, SEARCH_CHIPS_MAX] as const;
@@ -251,6 +252,13 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "기능 공개 목록 (HOME-02 · ART-06 · HELP-05)",
     guide: `{ "기능 키": true/false } — 켠 기능만 메뉴·링크·버튼이 나옵니다. 키: ${FEATURE_KEYS.join(" · ")}`,
     check: (value) => featureFlags(value),
+  },
+  // ── W4 4단계 지자체 허브 블록 대응 (docs/dev/W4_설계.md 2.2 · 2.8) — 공개 화면(region-hub-logic.ts parseLocalBlockFields)·DB 트리거(…40)와 같은 검사 ──
+  local_block_fields: {
+    label: "지자체 허브 블록과 편집 분야 대응 (REG1-02 · LG-08)",
+    guide:
+      '{ "local_tax": ["local_tax", "local_finance"], "realestate": ["realestate", "urban_policy"] } — ② 지방세·지방재정(local_tax)·③ 부동산·개발(realestate) 블록마다 담는 편집 분야(local_tax·local_finance·realestate·urban_policy) 1개 이상, 한 편집 분야는 한 블록에만. 블록 순서는 바꾸지 못합니다(코드 고정). 바꾸면 배포 없이 다음 요청부터',
+    check: (value) => localBlockFieldsErrors(value),
   },
   next_action_priority: {
     label: "다음 행동 버튼 우선순위 (ART-06)",

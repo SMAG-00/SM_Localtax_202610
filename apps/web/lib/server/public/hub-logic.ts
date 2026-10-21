@@ -1,12 +1,14 @@
 // 4대 분야 허브 공통 골격·하위 분야 목록·뉴스 전체 규칙 (CAT-02 · UX-05 · LG-08) — 순수 함수 (시험 hub-logic.test.ts)
 //  · 탭 = [전체] + 기사 있는 하위 분야(지자체뉴스는 기사 있는 편집 분야). 헤더 하위 메뉴와 같은 목록(subsectionLinks)이다 — 기사 0건이면 탭·메뉴에서 숨긴다
 //  · 하위 분야가 하나도 없으면 [전체] 하나뿐인 탭은 두지 않는다 (빈 탭 0)
-//  · 지자체뉴스 허브의 분야 고유 블록은 LG-08 순서 — 지금 데이터가 있는 ② 지방세·지방재정 ③ 부동산·개발만 (① 금주 핫뉴스·④ 행사안내는 01B W6, ⑤ 공식 자료/해설은 01B W4)
+//  · 지자체뉴스 허브의 분야 고유 블록은 LG-08 순서 — 지금 데이터가 있는 ② 지방세·지방재정 ③ 부동산·개발만 (① 금주 핫뉴스·④ 행사안내는 01B W6, ⑤ 공식 자료/해설은 01B W4 9단계).
+//    블록과 편집 분야 대응은 설정 local_block_fields (W4 4단계 — region-hub-logic.ts가 지역 허브와 같은 함수로 고른다)
 import type { LocalTopic } from "@ltr/ui";
 import type { ArticleListItem } from "./cards";
 import { subsectionLinks } from "./chrome-logic";
-import { LIMITS, LOCAL_BLOCK_TOPICS, NEWS_TAB_LABELS, SECTION_INFO, SECTION_KEYS, type SectionKey } from "./constants";
+import { NEWS_TAB_LABELS, SECTION_INFO, SECTION_KEYS, type SectionKey } from "./constants";
 import type { TermChip } from "./glossary-logic";
+import type { LocalBlocks } from "./region-hub-logic";
 import type { PublicCategoryRow } from "./rows";
 import type { HotBlock } from "./rankings";
 import type { HubTaxPoint } from "./hub-point-logic";
@@ -37,20 +39,7 @@ export function newsTabs(): HubTab[] {
   return [{ id: ALL_TAB, label: "전체", href: "/news" }, ...SECTION_KEYS.map((key) => ({ id: key, label: NEWS_TAB_LABELS[key], href: `/news?section=${key}` }))];
 }
 
-export interface LocalBlocks {
-  /** ② 지방세·지방재정 */
-  localTax: ArticleListItem[];
-  /** ③ 부동산·개발 */
-  realEstate: ArticleListItem[];
-}
-
-/** 지자체 허브 블록에 담을 기사 — 그 블록의 편집 분야 기사만, 블록마다 4장까지. 둘 다 0건이면 null (블록 자리째 없다) */
-export function localBlocks(localTax: readonly ArticleListItem[], realEstate: readonly ArticleListItem[]): LocalBlocks | null {
-  const pick = (items: readonly ArticleListItem[], topics: readonly string[]) =>
-    items.filter((a) => a.section === "local" && a.editorialField !== null && topics.includes(a.editorialField)).slice(0, LIMITS.localBlock);
-  const blocks = { localTax: pick(localTax, LOCAL_BLOCK_TOPICS.localTax), realEstate: pick(realEstate, LOCAL_BLOCK_TOPICS.realEstate) };
-  return blocks.localTax.length || blocks.realEstate.length ? blocks : null;
-}
+export { localBlocks, type LocalBlocks } from "./region-hub-logic";
 
 /** 쪽 번호 — 1 이상 정수만, 아니면 1 */
 export function pageNumber(page: number | undefined): number {

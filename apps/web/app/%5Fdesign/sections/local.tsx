@@ -308,7 +308,7 @@ export function LocalSection() {
           <LocalHubBlocks
             weekly={{ items: [hotNews], meta: "2026-42 · 10.12~10.18 · 발행 2026-10-16", more: { href: "/local/seoul/weekly/2026-42", label: "이번 주 핫뉴스 전체 보기" } }}
             localTax={{ items: [article("강남구 내년 재산세 고지, 무엇이 달라지나", "고지서 안내 문구와 납부 기한을 정리했습니다."), article("구 예산안, 지방세 수입은 얼마나", "예산안의 세입 구성을 원문과 함께 봅니다.")] }}
-            realEstate={{ items: [presale], fallbackRegion: "서울특별시" }}
+            realEstate={{ items: [presale], fallbackNotice: "강남구 기사가 없어 서울특별시 기사를 보입니다" }}
             events={{ items: [] }}
             sources={{ items: [officialSource] }}
           />

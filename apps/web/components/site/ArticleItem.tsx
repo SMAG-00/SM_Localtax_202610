@@ -9,7 +9,7 @@ import { formatBadge } from "@/lib/site/home-view";
 // 표기 배지는 기사 상세 머리와 같은 함수(typeBadgeFor·partnerBadgeFor) — 광고는 '광고', 공동 기획은 '공동 기획 ○○' (ART-10 · NAV-06 '목록·상세 같은 표시')
 
 export type CardItem = Pick<ArticleListItem, "href" | "title" | "summary" | "section" | "subsection" | "publishedOn" | "regionLabel" | "authorName" | "contentType" | "format"> &
-  Partial<Pick<ArticleListItem, "editorialField" | "sponsor">>;
+  Partial<Pick<ArticleListItem, "editorialField" | "sponsor" | "modifiedOn">>;
 
 const EDITORIAL_FIELDS = new Set<string>(["local_tax", "realestate", "local_finance", "urban_policy"]);
 
@@ -20,7 +20,8 @@ export function cardTypeBadge(item: Pick<CardItem, "contentType" | "sponsor">): 
   return type ? <ArticleTypeBadge type={type} /> : partner ? <PartnerBadge partner={partner} /> : undefined;
 }
 
-export function ArticleItem({ item }: { item: CardItem }) {
+/** withModified — 실질 수정일도 카드에 (지자체 허브 블록 — REG1-02 '기사마다 기자·출처·발행/수정일') */
+export function ArticleItem({ item, withModified = false }: { item: CardItem; withModified?: boolean }) {
   const field = item.editorialField && EDITORIAL_FIELDS.has(item.editorialField) ? (item.editorialField as EditorialFieldBadgeKind) : undefined;
   return (
     <ArticleCard
@@ -30,6 +31,7 @@ export function ArticleItem({ item }: { item: CardItem }) {
       section={item.section}
       subsection={item.subsection ?? undefined}
       publishedAt={item.publishedOn}
+      modifiedAt={withModified ? (item.modifiedOn ?? undefined) : undefined}
       region={item.regionLabel ?? undefined}
       byline={item.authorName ?? undefined}
       typeBadge={cardTypeBadge(item)}

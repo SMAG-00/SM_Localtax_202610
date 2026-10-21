@@ -12,8 +12,10 @@ export type HubBlockContent = {
   /** 지자체 허브 블록 픽토그램 (글자 라벨인 블록 제목과 함께 보인다) */
   pictogram?: ReactNode;
   more?: { href: string; label: string };
-  /** 시·군·구 기사가 없어 상위 시·도 기사를 보일 때 그 시·도 이름 (REG-06) */
-  fallbackRegion?: string;
+  /** 시·군·구 기사가 없어 상위 시·도 기사를 보일 때 그 사실 문장 (REG-06 — "○○ 기사가 없어 ○○ 기사를 보입니다", 문장은 화면이 정한다) */
+  fallbackNotice?: string;
+  /** 카드가 0장일 때 블록째 보일 0건 문장 (REG1-02 '상위에도 없으면 0건 상태 문장') — 없으면 블록째 뺀다. 행사안내는 늘 '현재 확인된 일정 없음' */
+  empty?: string;
 };
 
 /**
@@ -56,9 +58,15 @@ function Block({ id, blockKey, eyebrow, title, content }: { id: string; blockKey
           {content.meta && <p className={`mt-1 ${MONO} text-navy-600`}>{content.meta}</p>}
         </div>
       </div>
-      {content.fallbackRegion && <p className="mt-4 text-[15px] text-navy-600">{`이 지역 기사가 없어 ${content.fallbackRegion} 기사를 보여 드립니다.`}</p>}
-      {items.length === 0 && isEvents ? (
-        <p className="mt-6 text-[17px] text-navy-600">현재 확인된 일정 없음</p>
+      {content.fallbackNotice && (
+        <p data-part="block-fallback" className="mt-4 text-[15px] text-navy-600">
+          {content.fallbackNotice}
+        </p>
+      )}
+      {items.length === 0 ? (
+        <p data-part="block-empty" className="mt-6 text-[17px] text-navy-600">
+          {isEvents ? "현재 확인된 일정 없음" : content.empty}
+        </p>
       ) : (
         <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item, i) => (
@@ -85,8 +93,8 @@ export function LocalHubBlocks(props: LocalHubBlocksProps) {
       {BLOCKS.map(({ key, eyebrow, title }) => {
         const content = props[key];
         if (!content) return null;
-        // 기사·자료가 없는 블록은 빈 카드나 다른 정보로 채우지 않고 뺀다. 행사안내만 '현재 확인된 일정 없음'
-        if (content.items.length === 0 && key !== "events") return null;
+        // 기사·자료가 없는 블록은 빈 카드나 다른 정보로 채우지 않고 뺀다 — 0건 문장(empty)을 받은 블록은 그 문장만. 행사안내는 '현재 확인된 일정 없음'
+        if (content.items.length === 0 && key !== "events" && !content.empty?.trim()) return null;
         return <Block key={key} id={`${base}-${key}`} blockKey={key} eyebrow={eyebrow} title={title} content={content} />;
       })}
     </div>

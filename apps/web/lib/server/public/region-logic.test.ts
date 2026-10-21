@@ -3,7 +3,6 @@
 import { describe, expect, test } from "vitest";
 import { breadcrumbList, compareRendered, validate } from "@ltr/structured-data";
 import type { RegionRouteRow } from "@/lib/site/region-route";
-import type { ArticleListItem } from "./cards";
 import { breadcrumbView, emptyGuide, regionArticleCodes, regionPage, sigunguOptions } from "./region-logic";
 
 const TODAY = "2026-10-22";
@@ -20,7 +19,6 @@ const SOON = r("9904100000", "nae-gu", "시험용 내일구", { valid_from: "202
 const OTHER = r("9800000000", "dareun", "시험용 다른도");
 const OTHER_GU = r("9801100000", "dareun-gu", "시험용 다른구");
 const REGIONS = [SIDO, GU_B, GU_A, GONE, SOON, OTHER, OTHER_GU];
-const item = (id: number) => ({ id, title: `시험용 기사 ${id}` }) as unknown as ArticleListItem;
 
 describe("기사 범위 (12장 #26)", () => {
   test("시·도 = 자기 + 하위 시·군·구(폐지·시작 전 하위 포함), 다른 시·도 하위 0", () => {
@@ -43,8 +41,8 @@ describe("시·군·구 바꾸기", () => {
 
 describe("빈 지역 — 200 + noindex + 상위 지역 안내 (REG1-01 · REG1-12)", () => {
   test("시·군·구 0건 → noindex · 상위 시·도 소식 링크 + 지자체뉴스 전체 · 기사 0", () => {
-    const p = regionPage({ sido: SIDO, sigungu: GU_B, regions: REGIONS, articles: [], total: 0, today: TODAY, siteUrl: SITE });
-    expect(p).toMatchObject({ level: "sigungu", code: "9902100000", fullName: "시험용 가상도 시험용 빈구", href: "/local/gasang/bin-gu", empty: true, noindex: true, total: 0, articles: [] });
+    const p = regionPage({ sido: SIDO, sigungu: GU_B, regions: REGIONS, total: 0, today: TODAY, siteUrl: SITE });
+    expect(p).toMatchObject({ level: "sigungu", code: "9902100000", fullName: "시험용 가상도 시험용 빈구", href: "/local/gasang/bin-gu", empty: true, noindex: true, total: 0 });
     expect(p.guide).toEqual({
       text: "시험용 가상도 시험용 빈구에는 아직 공개된 기사가 없습니다. 상위 지역 시험용 가상도 소식을 보세요.",
       links: [
@@ -55,27 +53,25 @@ describe("빈 지역 — 200 + noindex + 상위 지역 안내 (REG1-01 · REG1-1
   });
 
   test("시·도 0건 → noindex · 지자체뉴스 전체 링크 하나", () => {
-    const p = regionPage({ sido: SIDO, sigungu: null, regions: REGIONS, articles: [], total: 0, today: TODAY, siteUrl: SITE });
+    const p = regionPage({ sido: SIDO, sigungu: null, regions: REGIONS, total: 0, today: TODAY, siteUrl: SITE });
     expect(p).toMatchObject({ level: "sido", code: "9900000000", fullName: "시험용 가상도", noindex: true });
     expect(p.guide?.links).toEqual([{ label: "지자체뉴스 전체 보기", href: "/local" }]);
     expect(emptyGuide(p.sido, null, p.fullName).text).toBe("시험용 가상도에는 아직 공개된 기사가 없습니다. 지자체뉴스 전체에서 다른 지역 소식을 보세요.");
   });
 
-  test("기사가 있으면 색인 대상(noindex 0) · 안내 0 · 기사 그대로", () => {
-    const p = regionPage({ sido: SIDO, sigungu: GU_A, regions: REGIONS, articles: [item(1), item(2)], total: 2, today: TODAY, siteUrl: SITE });
+  test("기사가 있으면 색인 대상(noindex 0) · 안내 0", () => {
+    const p = regionPage({ sido: SIDO, sigungu: GU_A, regions: REGIONS, total: 2, today: TODAY, siteUrl: SITE });
     expect(p).toMatchObject({ empty: false, noindex: false, guide: null, total: 2 });
-    expect(p.articles.map((a) => a.id)).toEqual([1, 2]);
   });
 
-  test("수는 있는데 목록이 비면(쪽 넘김 끝 등) 빈 지역으로 본다 — 빈 목록 껍데기 0", () => {
-    const p = regionPage({ sido: SIDO, sigungu: GU_A, regions: REGIONS, articles: [], total: 3, today: TODAY, siteUrl: SITE });
-    expect(p).toMatchObject({ empty: true, noindex: true, total: 0 });
+  test("수가 0 이하이면 빈 지역 — 음수·0 모두 total 0", () => {
+    expect(regionPage({ sido: SIDO, sigungu: GU_A, regions: REGIONS, total: -1, today: TODAY, siteUrl: SITE })).toMatchObject({ empty: true, noindex: true, total: 0 });
   });
 });
 
 describe("이동 줄 = BreadcrumbList (홈 > 지자체뉴스 > 시·도 > 시·군·구)", () => {
   test("시·군·구 — 네 칸, 마지막이 지금 화면 · 구조화 데이터 주소는 사이트 절대 주소", () => {
-    const p = regionPage({ sido: SIDO, sigungu: GU_A, regions: REGIONS, articles: [item(1)], total: 1, today: TODAY, siteUrl: SITE });
+    const p = regionPage({ sido: SIDO, sigungu: GU_A, regions: REGIONS, total: 1, today: TODAY, siteUrl: SITE });
     expect(p.crumbs.map((c) => [c.name, c.href, c.current])).toEqual([
       ["홈", "/", false],
       ["지자체뉴스", "/local", false],
@@ -98,7 +94,7 @@ describe("이동 줄 = BreadcrumbList (홈 > 지자체뉴스 > 시·도 > 시·�
   });
 
   test("시·도 — 세 칸, 시·도가 지금 화면", () => {
-    const p = regionPage({ sido: SIDO, sigungu: null, regions: REGIONS, articles: [], total: 0, today: TODAY, siteUrl: SITE });
+    const p = regionPage({ sido: SIDO, sigungu: null, regions: REGIONS, total: 0, today: TODAY, siteUrl: SITE });
     expect(p.crumbs.map((c) => [c.name, c.current])).toEqual([
       ["홈", false],
       ["지자체뉴스", false],
@@ -107,7 +103,7 @@ describe("이동 줄 = BreadcrumbList (홈 > 지자체뉴스 > 시·도 > 시·�
   });
 
   test("사이트 주소가 없으면 구조화 데이터를 내지 않는다 (틀린 주소 0)", () => {
-    expect(regionPage({ sido: SIDO, sigungu: null, regions: REGIONS, articles: [], total: 0, today: TODAY, siteUrl: undefined }).breadcrumb).toBeNull();
+    expect(regionPage({ sido: SIDO, sigungu: null, regions: REGIONS, total: 0, today: TODAY, siteUrl: undefined }).breadcrumb).toBeNull();
     expect(breadcrumbView([{ name: "홈", href: "/", current: false }], undefined)).toBeNull();
   });
 });

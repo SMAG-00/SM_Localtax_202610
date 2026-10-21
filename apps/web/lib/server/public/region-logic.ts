@@ -4,12 +4,15 @@
 //  · 기사 범위 — 시·도 = 자기 + 하위 시·군·구 태그, 시·군·구 = 자기 태그만 (12장 #26). 지자체뉴스 분야 기사
 //  · 기사 0건이면 200 + noindex + 상위 지역 안내(시·군·구 → 시·도 · 지자체뉴스 전체, 시·도 → 지자체뉴스 전체) — 빈 카드·'준비 중' 0
 //  · 구조화 데이터 BreadcrumbList = 화면 이동 줄 (regionCrumbs 한 함수). 사이트 주소(NEXT_PUBLIC_SITE_URL)가 없으면 내지 않는다(틀린 주소 0)
-// LG-08 블록(②③⑤)·분야 필터·지방세 포인트·데이터 출처 줄·색인 최소선(9.2)은 4·9·11단계가 더한다.
-import { regionCrumbs, type RegionCrumb, type RegionRef } from "@ltr/ui";
+//  · W4 4단계 — 머리 아래 지방세 포인트(hub_tax_points.local, 서명본만) · 분야 필터(?topic=) · LG-08 블록 ②③⑤(규칙은 region-hub-logic.ts) · 데이터 출처 줄.
+//    분야를 골랐는데 그 지역 범위에 그 분야 기사가 0이면 그 주소도 noindex. 폐지 지역 태그 기사는 후속 지역 화면에 넣지 않는다(자기 태그만 — 12장 #26·#36)
+// 지역 세금 연결 블록·⑤의 공식 자료/감수 해설은 9단계, 색인 최소선(9.2)·메타 설명은 11단계가 더한다.
+import { regionCrumbs, type LocalTopic, type RegionCrumb, type RegionRef } from "@ltr/ui";
 import type { BreadcrumbView } from "@ltr/structured-data";
 import { isValidOn, regionHref, type RegionRouteRow } from "@/lib/site/region-route";
-import type { ArticleListItem } from "./cards";
 import { SECTION_INFO } from "./constants";
+import type { HubTaxPoint } from "./hub-point-logic";
+import { regionHubBlocks, regionSourceLine, topicHasOwnArticles, type BlockArticles, type LocalBlockFields, type RegionHubBlock, type RegionSourceLine } from "./region-hub-logic";
 
 export interface RegionGuide {
   text: string;
@@ -28,11 +31,18 @@ export interface RegionPage {
   sigunguOptions: RegionRef[];
   /** 화면 이동 줄 — 구조화 데이터가 같은 값을 쓴다 */
   crumbs: RegionCrumb[];
-  /** 그 지역 지자체뉴스 기사 (최신 순, 첫 묶음) */
-  articles: ArticleListItem[];
+  /** 고른 분야 (?topic=) — 목록 밖 값이면 null(전체) */
+  topic: LocalTopic | null;
+  /** 지방세 포인트 (CORE-02 — hub_tax_points.local 서명본, 감수 전이면 null → 블록째 숨김) */
+  taxPoint: HubTaxPoint | null;
+  /** LG-08 블록 — ②③(고른 분야를 담는 블록만)·⑤ 순서 고정 (①④는 W6 — 요소 0) */
+  blocks: RegionHubBlock[];
+  /** 데이터 출처 줄 (REG-10) */
+  source: RegionSourceLine;
+  /** 그 지역 범위의 지자체뉴스 기사 수 (편집 분야와 상관없이) */
   total: number;
   empty: boolean;
-  /** 검색 노출 제외 — 기사 0건 (REG1-01 '빈 시·군·구 주소는 200 + noindex') */
+  /** 검색 노출 제외 — 기사 0건 (REG1-01 '빈 시·군·구 주소는 200 + noindex'), 고른 분야 기사 0건 */
   noindex: boolean;
   guide: RegionGuide | null;
   /** BreadcrumbList 입력 — 사이트 주소가 없으면 null */
@@ -72,17 +82,28 @@ export function regionPage(input: {
   sido: RegionRouteRow;
   sigungu: RegionRouteRow | null;
   regions: readonly RegionRouteRow[];
-  articles: readonly ArticleListItem[];
   total: number;
   today: string;
   siteUrl: string | undefined;
+  topic?: LocalTopic | null;
+  /** 설정 local_block_fields — 읽지 못했거나 모양이 틀리면 null (기사 블록 0) */
+  fields?: LocalBlockFields | null;
+  /** 그 지역 범위 블록 기사 */
+  own?: BlockArticles;
+  /** 상위 시·도 범위 블록 기사 (시·군·구 허브만) */
+  parent?: BlockArticles;
+  taxPoint?: HubTaxPoint | null;
 }): RegionPage {
   const { sido, sigungu } = input;
   const sidoRef: RegionRef = { name: sido.name, href: regionHref(sido.slug) };
   const sigunguRef: RegionRef | null = sigungu ? { name: sigungu.name, href: regionHref(sido.slug, sigungu.slug) } : null;
   const fullName = sigungu ? `${sido.name} ${sigungu.name}` : sido.name;
   const crumbs = regionCrumbs(sidoRef, sigunguRef ?? undefined);
-  const empty = input.total === 0 || input.articles.length === 0;
+  const topic = input.topic ?? null;
+  const fields = input.fields ?? null;
+  const own = input.own ?? {};
+  const blocks = regionHubBlocks({ fields, topic, sidoName: sido.name, sigunguName: sigungu?.name ?? null, own, parent: input.parent ?? {} });
+  const empty = input.total <= 0;
   return {
     level: sigungu ? "sigungu" : "sido",
     code: (sigungu ?? sido).code,
@@ -92,10 +113,13 @@ export function regionPage(input: {
     sigungu: sigunguRef,
     sigunguOptions: sigunguOptions(sido, input.regions, input.today),
     crumbs,
-    articles: [...input.articles],
+    topic,
+    taxPoint: input.taxPoint ?? null,
+    blocks,
+    source: regionSourceLine(blocks),
     total: empty ? 0 : input.total,
     empty,
-    noindex: empty,
+    noindex: empty || (topic !== null && !topicHasOwnArticles(fields, topic, own)),
     guide: empty ? emptyGuide(sidoRef, sigunguRef, fullName) : null,
     breadcrumb: breadcrumbView(crumbs, input.siteUrl),
   };

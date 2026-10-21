@@ -18,6 +18,8 @@ export type ArticleCardProps = {
   subsection?: string;
   /** 최초 발행일 YYYY-MM-DD */
   publishedAt: string;
+  /** 실질 수정일 YYYY-MM-DD — 넘긴 화면(지자체 허브 블록 — REG1-02 '발행/수정일')만 "수정 ○○"을 함께 보인다 */
+  modifiedAt?: string;
   /** 지역 태그 (예: 서울 성동구) */
   region?: string;
   /** 기사 유형 배지 자리 (보도·해설·가이드·오피니언·금주 핫뉴스·광고 — 다른 묶음의 배지) */
@@ -33,7 +35,7 @@ export type ArticleCardProps = {
  * 기사 카드 — 분야 칩 · 제목(19px 900) · 요약 2줄 · 기자명 · 발행일(고정폭) · 지역 칩 · 기사 유형 배지 · 형식 배지 (PRD-00 8.6 · RP-04 · PRD-01A 3장 홈)
  * 제목 링크가 카드 전체를 덮는다 — 링크 이름은 제목만, 칩·배지는 글자로 읽힌다
  */
-export function ArticleCard({ href, title, summary, section, subsection, publishedAt, region, typeBadge, editorialBadge, format, byline }: ArticleCardProps) {
+export function ArticleCard({ href, title, summary, section, subsection, publishedAt, modifiedAt, region, typeBadge, editorialBadge, format, byline }: ArticleCardProps) {
   const field = FIELDS[section].name;
   const showFormat = format !== undefined && format !== "일반";
   return (
@@ -70,6 +72,11 @@ export function ArticleCard({ href, title, summary, section, subsection, publish
         <time dateTime={publishedAt} className="font-mono text-[13px] tracking-wide text-navy-600">
           {publishedAt}
         </time>
+        {modifiedAt?.trim() && modifiedAt.trim() !== publishedAt && (
+          <time data-part="modified" dateTime={modifiedAt.trim()} className="font-mono text-[13px] tracking-wide text-navy-600">
+            {`수정 ${modifiedAt.trim()}`}
+          </time>
+        )}
         {region && <Chip>{region}</Chip>}
       </div>
     </article>

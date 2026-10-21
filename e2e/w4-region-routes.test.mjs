@@ -6,7 +6,7 @@
 //  c) 옛 slug(주소를 바꾼 지역) → 지금 주소로 301 한 번, 쿼리 그대로
 //  d) A→B 폐지 뒤 B→C 폐지 — A·B 옛 주소 모두 C로 바로(301 한 번, 연쇄 0) · 옛 주소 표 없는 폐지 지역도 후속으로 301 · 후속 없는 폐지 404
 //  e) 이름만 바뀐 지역(slug 그대로) 200 + 새 이름
-//  f) 기사 0건 시·군·구 200 + noindex + 상위 시·도 안내(빈 카드·'준비 중' 0) / 기사 있는 시·군·구·그 시·도(하위 태그 포함) 기사 카드
+//  f) 기사 0건 시·군·구 200 + noindex + 상위 시·도 안내(빈 카드·'준비 중' 0) — 블록에는 상위 시·도 기사 + 그 사실(W4 4단계) / 기사 있는 시·군·구·그 시·도(하위 태그 포함) 기사 카드
 //  g) BreadcrumbList(홈 > 지자체뉴스 > 시·도 > 시·군·구) = 화면 이동 줄 — compareRendered 불일치 0
 //  h) 지역 화면 링크 전수 404 0 · 360·1280px 가로 넘침 0 · 접근성 95
 //  i) 공개 데이터를 읽지 못하면 지역 주소 503(있는지 모르므로 404·301 0) — /local 허브는 200 그대로
@@ -280,14 +280,19 @@ test("f) 기사 0건 시·군·구 — 200 + noindex + 상위 시·도 안내 / 
     ["시험용 가상도 소식 보기", sidoPath()],
     ["지자체뉴스 전체 보기", "/local"],
   ]);
-  assert.equal(await empty.page.locator("[data-article-id]").count(), 0, "기사 카드 0");
+  // W4 4단계 — 블록 ②는 상위 시·도 범위 기사(가득구 해설) + 대체 문장, ③⑤는 0건 문장 (빈 카드 0)
+  assert.deepEqual(await empty.page.$$eval('[data-hub-block="localTax"] [data-article-id]', (els) => els.map((e) => Number(e.getAttribute("data-article-id")))), [fx.article.id]);
+  assert.equal(await empty.page.locator('[data-hub-block="localTax"] [data-part="block-fallback"]').textContent(), `${GU.empty.name} 기사가 없어 시험용 가상도 기사를 보입니다`);
+  assert.equal(await empty.page.locator('[data-hub-block="realEstate"] [data-article-id], [data-hub-block="sources"] [data-article-id]').count(), 0, "③⑤ 기사 카드 0");
+  assert.equal(await empty.page.locator('[data-part="block-empty"]').count(), 2, "③⑤ 0건 문장");
   assert.equal(await empty.page.getByText("준비 중").count(), 0);
   await empty.page.close();
 
   const full = await open(guPath(GU.full.key));
   assert.equal(full.status, 200);
   assert.equal(await full.page.getAttribute('[data-ui="region-page"]', "data-region-empty"), "false");
-  assert.deepEqual(await full.page.$$eval('[data-part="region-articles"] [data-article-id]', (els) => els.map((e) => Number(e.getAttribute("data-article-id")))), [fx.article.id]);
+  assert.deepEqual(await full.page.$$eval('[data-hub-block="localTax"] [data-article-id]', (els) => els.map((e) => Number(e.getAttribute("data-article-id")))), [fx.article.id]);
+  assert.equal(await full.page.locator('[data-part="block-fallback"]').count(), 0, "자기 기사 — 대체 문장 0");
   assert.equal(await full.page.locator('[data-part="empty-guide"]').count(), 0);
   await full.page.close();
 

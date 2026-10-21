@@ -21,8 +21,7 @@ export const LOCAL_TOPICS: ReadonlyArray<{ topic: LocalTopic; label: string }> =
 export const isLocalTopic = (v: unknown): v is LocalTopic => typeof v === "string" && LOCAL_TOPICS.some((t) => t.topic === v);
 export const localTopicHref = (topic: LocalTopic) => `${SECTION_INFO.local.href}?topic=${topic}`;
 
-/** 지자체 허브 블록(LG-08) ② 지방세·지방재정 ③ 부동산·개발 에 담는 편집 분야 — 도시정책은 부동산·개발 블록 [확인 필요 — 설계 9장] */
-export const LOCAL_BLOCK_TOPICS = { localTax: ["local_tax", "local_finance"], realEstate: ["realestate", "urban_policy"] } as const satisfies Record<string, readonly LocalTopic[]>;
+// 지자체 허브 블록(LG-08) ② 지방세·지방재정 ③ 부동산·개발 에 담는 편집 분야는 설정 local_block_fields가 정한다 (W4 4단계 — region-hub-logic.ts, 코드 상수에서 옮겼다)
 
 /** 뉴스 전체(/news)의 허브 탭 글자 (PRD-01A 3장 화면 표 — 탭 지방세·부동산·개발금융·지자체) */
 export const NEWS_TAB_LABELS: Readonly<Record<SectionKey, string>> = { tax: "지방세", realestate: "부동산", finance: "개발금융", local: "지자체" };
@@ -77,6 +76,11 @@ export const FEATURE_KEYS = [
   // 동의서·증빙 검사 자체는 키와 상관없이 항상 한다 (W3 설계 2.4 · 12장 #12)
   "people_pages",
   "brand_copy",
+  // W4 4단계 — 지자체 허브 ① 금주 핫뉴스·④ 행사안내(W6가 데이터·화면과 함께 켠다)·③ 정비사업 현황·⑤ 조례 원문 자리(3단계). W4 화면은 켜져도 그리는 것 0 (W4 설계 2.4)
+  "weekly_digest",
+  "local_events",
+  "redevelopment_status",
+  "ordinance_texts",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;

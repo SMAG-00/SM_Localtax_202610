@@ -45,6 +45,19 @@ describe("기사 카드", () => {
     expect(time.className).toContain("font-mono");
   });
 
+  it("수정일은 넘긴 화면에서만 '수정 ○○' 고정폭 <time>으로 — 없거나 발행일과 같으면 자리 0", () => {
+    const { container, rerender } = render(<ArticleCard {...BASE} modifiedAt="2026-10-20" />);
+    const mod = container.querySelector('[data-part="modified"]')!;
+    expect(mod.tagName.toLowerCase()).toBe("time");
+    expect(mod.textContent).toBe("수정 2026-10-20");
+    expect(mod.getAttribute("datetime")).toBe("2026-10-20");
+    expect(mod.className).toContain("font-mono");
+    rerender(<ArticleCard {...BASE} />);
+    expect(container.querySelector('[data-part="modified"]')).toBeNull();
+    rerender(<ArticleCard {...BASE} modifiedAt={BASE.publishedAt} />);
+    expect(container.querySelector('[data-part="modified"]')).toBeNull();
+  });
+
   it("지역 칩은 지역이 있을 때만 보인다", () => {
     const { rerender } = render(<ArticleCard {...BASE} region="서울 성동구" />);
     expect(screen.getByText("서울 성동구").getAttribute("data-ui")).toBe("chip");
