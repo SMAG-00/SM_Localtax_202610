@@ -17,6 +17,8 @@ export interface JobServices {
   purgeQueryTerms(now: Date): Promise<Record<string, unknown>>;
   /** W2-e 보존 기한 정리 — 미확인 가입·사전 알림, 철회 동의, 문의 연락처·첨부, 시도 기록 (설계 9.3). 지운 수만 돌려준다 */
   purgePrivacy(now: Date): Promise<Record<string, unknown>>;
+  /** W3 바깥 링크 점검 — 주소가 있는 활성 연결을 실행 키(ISO 주)당 한 번 점검한다 (TX-01 · FAM-08). 결과는 수뿐(주소 0) */
+  checkLinks(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -31,6 +33,8 @@ export const jobs: Record<string, Job> = {
   "analytics-retention": async ({ now, services }) => ({ detail: { ...(await services.purgeAnalytics(now)), queryTerms: await services.purgeQueryTerms(now) } }),
   // 개인정보 보존 기한 정리 (하루 한 번) — 결과는 지운 수뿐(개인정보 0)
   "privacy-retention": async ({ now, services }) => ({ detail: await services.purgePrivacy(now) }),
+  // 바깥 링크 점검 (하루 한 번 호출, 같은 ISO 주에는 이미 점검한 링크를 건너뛴다) — 상태가 바뀌면 카드가 달라지므로 공개 화면 캐시를 비운다
+  "link-check": async ({ now, services }) => ({ detail: await services.checkLinks(now), revalidatePublic: true }),
 };
 
 export function findJob(name: string): Job | undefined {

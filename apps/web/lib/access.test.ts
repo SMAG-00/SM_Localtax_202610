@@ -61,6 +61,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "article.home":           [X, O, X, X, X, X, X, X, X],
   "amendment.record_event":  [X, O, X, X, X, X, X, X, X],
   "amendment.correct_event": [X, O, X, X, X, X, X, X, X],
+  "link.manage":             [X, O, X, X, X, X, X, X, X],
   "correction.request":     [O, O, X, X, X, X, X, X, X],
   "correction.decide":      [X, O, X, X, X, X, X, X, X],
   "assignment.read":        [O, O, X, X, X, X, X, O, X],

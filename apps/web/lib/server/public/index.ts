@@ -25,3 +25,4 @@ export type { SituationCard, CheckItem, RegionChoice, RegionArticles } from "./s
 export type { NextAction, SlideView, SolvedCaseView, SponsorMark, TaxLensView, CorrectionEntry, UpdateEntry, SimilarCase } from "./article-logic";
 export type { ColumnGroup } from "./column-logic";
 export { closedChrome, type SiteChrome, type NavLink, type SectionMenu } from "./chrome-logic";
+export { getCalcView, type CalcView, type OfficialLinkCard } from "./calc";

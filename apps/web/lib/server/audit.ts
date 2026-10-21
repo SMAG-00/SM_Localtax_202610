@@ -30,6 +30,7 @@ export const targetOf = {
   partner: (id: number | string) => `partners:${id}`,
   member: (userId: string) => `members:${userId}`,
   amendment: (id: number | string) => `amendments:${id}`,
+  officialLink: (id: number | string) => `official_links:${id}`,
   amendmentEvent: (id: number | string) => `amendment_events:${id}`,
   articleAmendment: (articleId: number | string, amendmentId: number | string) => `article_amendments:${articleId}:${amendmentId}`,
   homeCuration: (id: number | string) => `home_curations:${id}`,

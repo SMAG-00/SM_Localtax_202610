@@ -31,6 +31,7 @@ const RULES: readonly MenuRule[] = [
   { id: "placement", label: "기사 배치", href: "/admin/placement", when: (a) => a.has("article.sort"), paths: ["/admin/placement"] },
   { id: "home", label: "홈 배치", href: "/admin/home", when: (a) => a.has("article.home"), paths: ["/admin/home"] },
   { id: "amendments", label: "개정 트래커", href: "/admin/amendments", when: (a) => a.has("amendment.record_event"), paths: ["/admin/amendments"] },
+  { id: "links", label: "바깥 연결", href: "/admin/links", when: (a) => a.has("link.manage"), paths: ["/admin/links"] },
   {
     id: "situations",
     label: "상황 카드",
