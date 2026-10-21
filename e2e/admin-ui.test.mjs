@@ -606,7 +606,7 @@ test("d) 편집국 외 역할 4종 — 승인·정렬·발행 메뉴 0, 검토·
 
   const editor = await login(u.editor);
   const menu = await menuLabels(editor);
-  assert.deepEqual(menu, ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "바깥 연결", "상황 카드", "분야", "사전", "검색어", "제휴 준비", "문의함", "정책 페이지"]);
+  assert.deepEqual(menu, ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "바깥 연결", "허브 지방세 포인트", "상황 카드", "분야", "사전", "검색어", "제휴 준비", "문의함", "정책 페이지"]);
   assert.equal((await open(editor, "/admin/home")).status(), 200, "편집자 홈 배치 화면");
   for (const label of OPERATIONS_MENUS) assert.ok(!menu.includes(label));
   for (const path of ["/admin/store", "/admin/brand", "/admin/experts"]) assert.equal((await open(editor, path)).status(), 403, `편집자 ${path}`);
