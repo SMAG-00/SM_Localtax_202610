@@ -4,7 +4,10 @@ import { maskEmailForDisplay } from "@/lib/policy/email";
 import { parseHelpInput } from "@/lib/help/forms";
 
 // 가림 정규식이 글 길이의 제곱만큼 느려지지 않는지 (2026-10-21 — '@' 없는 한글 5천 자가 0.4초, 문의 폼 본문 2만 자면 수 초).
-// 시간 기준은 넉넉히 잡는다(직선 시간이면 수십 ms, 제곱이면 수 초) — 바쁜 PC에서도 흔들리지 않게.
+// 시간 기준은 넉넉히 잡는다 — 바쁜 PC에서도 흔들리지 않게. 실측(2026-10-22, 이 파일만): 한글 2만 자 약 0.3초, 영문 2만 자 약 0.02초.
+// 고치기 전(제곱 시간)은 한글 5천 자 0.4초 → 2만 자면 약 6초다. 웹 단위 시험 103개 파일이 함께 돌면 4배쯤 느려져 1초 기준을 넘었다
+// (1.16초) — 기준 2초는 정상(≤1.2초)과 제곱(≈6초)을 여전히 가른다.
+const LIMIT_MS = 2000;
 const ms = (f: () => void) => {
   const t = performance.now();
   f();
@@ -12,17 +15,17 @@ const ms = (f: () => void) => {
 };
 
 describe("가림 속도 — 긴 글도 직선 시간", () => {
-  test("'@' 없는 한글 2만 자 maskBody가 1초 안", () => {
-    expect(ms(() => maskBody("가".repeat(20_000)))).toBeLessThan(1000);
+  test("'@' 없는 한글 2만 자 maskBody가 2초 안", () => {
+    expect(ms(() => maskBody("가".repeat(20_000)))).toBeLessThan(LIMIT_MS);
   });
-  test("'@' 없는 영문·숫자·띄어쓰기 섞인 2만 자 maskBody가 1초 안", () => {
-    expect(ms(() => maskBody("ab1 ".repeat(5_000)))).toBeLessThan(1000);
+  test("'@' 없는 영문·숫자·띄어쓰기 섞인 2만 자 maskBody가 2초 안", () => {
+    expect(ms(() => maskBody("ab1 ".repeat(5_000)))).toBeLessThan(LIMIT_MS);
   });
-  test("끝에 '@' 하나만 있는 한글 2만 자도 1초 안", () => {
-    expect(ms(() => maskBody(`${"가".repeat(20_000)}@`))).toBeLessThan(1000);
+  test("끝에 '@' 하나만 있는 한글 2만 자도 2초 안", () => {
+    expect(ms(() => maskBody(`${"가".repeat(20_000)}@`))).toBeLessThan(LIMIT_MS);
   });
-  test("'@' 없는 영문 5만 자 maskEmailForDisplay가 1초 안", () => {
-    expect(ms(() => maskEmailForDisplay("a".repeat(50_000)))).toBeLessThan(1000);
+  test("'@' 없는 영문 5만 자 maskEmailForDisplay가 2초 안", () => {
+    expect(ms(() => maskEmailForDisplay("a".repeat(50_000)))).toBeLessThan(LIMIT_MS);
   });
 });
 
