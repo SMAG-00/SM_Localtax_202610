@@ -16,6 +16,7 @@ export type { MediaView, VideoBlockView, VideoListEntry } from "./media-logic";
 export { PublicDataError } from "./db";
 export { searchSite, getSearchPage, type SearchPageData } from "./search";
 export { getGlossaryIndex, getGlossaryTerm } from "./glossary";
+export { getArticleLegalDocs, getInterpretationList, parseInterpretationFilter, type InterpretationListView, type LegalDocRow } from "./interpretations";
 export { getAmendment, getAmendmentList, sortTrackers, type AmendmentCard, type AmendmentDetailView, type AmendmentListView } from "./amendments";
 export { parseGlossaryId, parseGlossarySection, type GlossaryEntry, type GlossaryGroup, type GlossaryIndexView, type GlossaryTab, type GlossaryTermView, type RelatedLink, type TermChip } from "./glossary-logic";
 export { parseSearchParams, SEARCH_TABS, TAB_KINDS, KIND_LABELS, EVENT_LABEL, type SearchHit, type SearchKind, type SearchOptions, type SearchResult, type SearchTab } from "./search-logic";

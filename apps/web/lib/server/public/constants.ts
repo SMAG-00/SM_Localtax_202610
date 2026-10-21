@@ -69,6 +69,8 @@ export const FEATURE_KEYS = [
   "page_advertise",
   "members",
   "brief",
+  // W3 5단계 — 해석 해설 /tax/interpretations (원문 입력·세무 감수 뒤 공개 해설 1건 이상일 때만 켠다)
+  "interpretations",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;

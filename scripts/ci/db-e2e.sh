@@ -50,6 +50,7 @@ step "W2-d 수용 E2E (정규화 견본 2.2 전체·취득세=취득 세·재건
 step "W2-e 수용 E2E (회원 E2E 가입→확인→/my→재설정→탈퇴 / 평문 이메일 0 여섯 면·감시 주소 추적 / 정책 링크 전수 404 0 / 회원 삭제·감사 403 정확히 1건 / 기능 키 꺼짐·켜짐 / 정적 정책 본문 0 / R1~R3·360px·접근성 95)"; node --test --test-concurrency=1 e2e/w2e-acceptance.test.mjs
 step "개정 트래커 E2E (단계 기록 조건·정정·기능 키·확정 아님 칩·시행 예정·입법예고→국회 제출 연결 기사 3건 배너·dateModified 불변·실질 수정/연결 해제 뒤 배너 0·360px)"; node --test --test-concurrency=1 e2e/tax-tracker.test.mjs
 step "바깥 연결 E2E (공개 주소 5장 카드·저장 주소 일치·점검 ok/broken·같은 실행 키 한 벌·수동 점검·7/8일 경고·broken 대체 안내)"; node --test --test-concurrency=1 e2e/tax-links.test.mjs
+step "해석 해설 E2E (발행 검사 3종·공개 조건·해시 변경 검수 큐·원문 블록)"; node --test --test-concurrency=1 e2e/tax-interpretations.test.mjs
 step "견본 페이지 브라우저 E2E (70종·가로 스크롤 0)"; node --test --test-concurrency=1 e2e/design-page.test.mjs
 step "화면 규칙 측정 시험 (R1~R3 경계 견본)"; node --test --test-concurrency=1 e2e/screen-rules.test.mjs
 step "화면 규칙 측정 (주요 화면 × 뷰포트 표)"; node e2e/run-screen-rules.mjs

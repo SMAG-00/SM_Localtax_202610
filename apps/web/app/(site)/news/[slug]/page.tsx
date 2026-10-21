@@ -5,7 +5,8 @@ import { cache } from "react";
 import { ArticleView } from "@/components/site/ArticleView";
 import { UnavailablePage } from "@/components/site/Unavailable";
 import { isoToKstDate } from "@/lib/admin/form-utils";
-import { getArticleDetail, isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
+import { LegalDocBlock } from "@/components/site/InterpretationView";
+import { getArticleDetail, getArticleLegalDocs, isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
 import { pageTitle } from "@/lib/site/hub-view";
 import { UNAVAILABLE_TITLE } from "@/lib/site/public-gate";
 
@@ -49,5 +50,12 @@ export default async function ArticlePage({ params }: Props) {
   const a = await load((await params).slug);
   if (isUnavailable(a)) return <UnavailablePage />;
   if (!a) notFound();
-  return <ArticleView article={a} today={isoToKstDate(new Date().toISOString())} />;
+  // 해석 해설이면 원문 블록을 해설 본문과 따로 앞에 둔다 (W3 5단계 — 공개 가능한 원문만, 기능 키 꺼짐이면 없음)
+  const docs = await readPublic("기사 원문 연결", () => getArticleLegalDocs(a.id), () => ({ subject: [], related: [] }));
+  return (
+    <>
+      <LegalDocBlock subject={docs.subject} related={docs.related} />
+      <ArticleView article={a} today={isoToKstDate(new Date().toISOString())} />
+    </>
+  );
 }
