@@ -51,7 +51,8 @@ export default async function LinksPage() {
         )}
         {stale > 0 && (
           <p data-part="warn-stale" role="status" className="rounded-xl border border-hermes-200 bg-hermes-50 p-4 text-[15px] text-navy-900">
-            점검한 지 8일이 넘은 연결이 {stale}건 있습니다.
+            {/* 판정 = isStale(KST 날짜 기준 8일 이상 지남 또는 주소가 있는데 점검 전) — 7일 전 점검은 경고 0, 8일 전 점검은 경고 1 (TX-03) */}
+            점검 기록이 없거나 점검한 지 8일 이상 지난 연결이 {stale}건 있습니다.
           </p>
         )}
         <Panel id="link-list" title="연결 목록">

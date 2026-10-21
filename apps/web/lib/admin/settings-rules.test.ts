@@ -132,6 +132,18 @@ describe("W2-b 공개 설정 — 관리자 화면이 고치는 값과 공개 데
     }
   });
 
+  test("칼럼 의견 고지 문구 — 운영 설정 화면에서 고친다: 빈 글자(발행 거부 상태)·300자 통과, 글자 아님·여러 줄·301자·경력 연수 표기 거부 (W3 6단계 · 12장 #8)", () => {
+    expect(isEditableSetting("column_opinion_notice")).toBe(true);
+    for (const ok of ["", "시험용 의견 고지 문구입니다", "가".repeat(300), "1950년 이후 시험용 고지"]) expect(validateSettingValue("column_opinion_notice", ok, null).ok, ok).toBe(true);
+    expect(errorsOf(validateSettingValue("column_opinion_notice", null, null))[0]).toMatch(/^값: 따옴표로 감싼 글자 한 줄/);
+    expect(errorsOf(validateSettingValue("column_opinion_notice", 3, null))[0]).toMatch(/^값: 따옴표로 감싼 글자 한 줄/);
+    expect(errorsOf(validateSettingValue("column_opinion_notice", "첫 줄\n둘째 줄", null))).toEqual(["값: 한 줄이어야 합니다"]);
+    expect(errorsOf(validateSettingValue("column_opinion_notice", "가".repeat(301), null))[0]).toMatch(/300자 이하.*지금 301자/);
+    for (const claim of ["시험용 지방세 50년 고지", "시험용 반세기 고지"]) {
+      expect(errorsOf(validateSettingValue("column_opinion_notice", claim, null)), claim).toEqual([expect.stringMatching(/^값: .*경력 연수 표기/)]);
+    }
+  });
+
   test("추천 검색어 — 0개·3개·6개 통과, 2개·7개·중복·빈 글자·21자 거부 (HOME-01)", () => {
     for (const ok of [[], ["취득세", "개편안", "책임준공"], ["a", "b", "c", "d", "e", "f"]]) expect(validateSettingValue("home_search_chips", ok, null).ok).toBe(true);
     for (const bad of [["취득세", "개편안"], ["a", "b", "c", "d", "e", "f", "g"], ["취득세", "취득세 ", "개편안"], ["취득세", "", "개편안"], ["가".repeat(21), "b", "c"], "취득세"]) {

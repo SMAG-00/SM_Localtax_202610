@@ -123,6 +123,21 @@ export function coreMessageErrors(value: unknown): string[] {
   return errors;
 }
 
+/** 칼럼 의견 고지 문구 상한 — 칼럼 상세 머리 아래 고지 한 줄 (W3 설계 2.2 · 12장 #8) */
+export const OPINION_NOTICE_MAX = 300;
+
+/**
+ * 칼럼 의견 고지 문구 (TX-16 · W3 6단계) — PO 감수본을 운영 설정 화면에서 넣는다(12장 #8). 빈 글자 = 칼럼 발행 거부 상태(DB 발행 검사가 본다).
+ * 글자 한 줄 · 300자 이하 · 경력 연수 표기('50년' 등) 0 — 모든 칼럼에 붙는 고지에는 근거 링크 자리가 없다(12장 #26)
+ */
+export function opinionNoticeErrors(value: unknown): string[] {
+  if (typeof value !== "string") return ['값: 따옴표로 감싼 글자 한 줄이어야 합니다 — 비우면 "" (칼럼 발행이 막힌다)'];
+  if (/[\r\n]/.test(value)) return ["값: 한 줄이어야 합니다"];
+  if (chars(value.trim()) > OPINION_NOTICE_MAX) return [`값: ${OPINION_NOTICE_MAX}자 이하여야 합니다 (지금 ${chars(value.trim())}자)`];
+  if (hasClaimToken(value)) return ["값: 의견 고지 문구에는 경력 연수 표기('50년' 등)를 쓰지 않습니다 — 근거 링크를 붙일 수 있는 연재 제목에만 (설계 12장 #26)"];
+  return [];
+}
+
 function searchChips(value: unknown): string[] {
   if (!Array.isArray(value)) return ["값: 글자 목록이어야 합니다 — 비우면 []"];
   const errors: string[] = [];
@@ -211,6 +226,11 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "홈 핵심 메시지 (HOME-01 · CORE-02)",
     guide: `따옴표로 감싼 문구 한 줄 — ${SCREEN_SENTENCE_MAX}자 이하, 경력 연수 표기('50년' 등) 0. 바꾸면 배포 없이 다음 요청부터 홈 히어로에 보입니다`,
     check: (value) => coreMessageErrors(value),
+  },
+  column_opinion_notice: {
+    label: "칼럼 의견 고지 문구 (TX-16)",
+    guide: `따옴표로 감싼 문구 한 줄 — PO 감수본, ${OPINION_NOTICE_MAX}자 이하, 경력 연수 표기('50년' 등) 0. 비우면("") 새 칼럼 발행이 막힙니다. 바꾸면 배포 없이 다음 요청부터 칼럼 상세에 보입니다`,
+    check: (value) => opinionNoticeErrors(value),
   },
   home_search_chips: {
     label: "홈 추천 검색어 칩 (HOME-01)",

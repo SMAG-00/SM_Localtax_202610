@@ -10,7 +10,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { chromium } from "playwright";
 import { ROOT, buildWeb, localSupabase, startServer } from "./lib/local.mjs";
 import { StaffFixture } from "./lib/staff.mjs";
@@ -108,21 +108,25 @@ after(async () => {
 });
 
 test("a) 국세 검사 — 저장소 통과·위반 파일을 실제로 잡음·공개 HTML 국세 금액 입력 0·국세 계산 경로 404", async () => {
-  const run = () => spawnSync(process.execPath, [path.join(ROOT, "scripts", "check-national-tax.mjs"), ROOT], { encoding: "utf8" });
-  let r = run();
+  // 검사 스크립트는 따로 띄우되 기다리는 동안 이 프로세스의 이벤트 루프를 막지 않는다 — 막으면 웹 서버가 닫은 keep-alive 연결을 fetch가 다시 써 ECONNRESET이 난다
+  const run = () =>
+    new Promise((resolve) =>
+      execFile(process.execPath, [path.join(ROOT, "scripts", "check-national-tax.mjs"), ROOT], { encoding: "utf8" }, (err, stdout, stderr) => resolve({ status: err ? (typeof err.code === "number" ? err.code : 1) : 0, stdout, stderr })),
+    );
+  let r = await run();
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /국세 미산출 검사 통과/);
   const rel = `apps/web/lib/e2e-nt-fixture-${process.pid}.ts`;
   const full = path.join(ROOT, rel);
   try {
     fs.writeFileSync(full, N("export const ", "gift", "TaxRates = [0.1, 0.2];\n"));
-    r = run();
+    r = await run();
     assert.equal(r.status, 1, r.stdout + r.stderr);
     assert.ok(r.stderr.includes(`${rel}:1 NT1`), r.stderr);
   } finally {
     fs.rmSync(full, { force: true });
   }
-  assert.equal(run().status, 0, "위반 파일을 빼면 다시 통과");
+  assert.equal((await run()).status, 0, "위반 파일을 빼면 다시 통과");
 
   for (const p of ["/", "/tax", "/realestate", "/finance", "/local", "/news"]) {
     const { status, html } = await page(p);
