@@ -71,6 +71,8 @@ export const FEATURE_KEYS = [
   "brief",
   // W3 5단계 — 해석 해설 /tax/interpretations (원문 입력·세무 감수 뒤 공개 해설 1건 이상일 때만 켠다)
   "interpretations",
+  // W3 6단계 — 칼럼 필자 체계 (의견 고지 문구 입력 + 필자 검증 1명 이상일 때만 켠다). 켜지면 모든 opinion 기사가 칼럼 발행 검사를 받는다
+  "tax_columns",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;
