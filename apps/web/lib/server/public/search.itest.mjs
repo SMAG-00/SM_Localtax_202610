@@ -255,3 +255,76 @@ describe("2단계 — 탭 숫자 다시 읽기 · 검색 화면 값 (getSearchPa
     }
   });
 });
+
+// W4 10단계 — 지역 + 주제 분류 (docs/dev/W4_설계.md 1장 10단계 · 2.9.1 · 11.9). 시험용 지역은 접두 99 가짜 코드와 '시험' 이름(설계 8장) —
+// 시·도 9900000000이 없으면 넣고(있으면 그대로) 시·군·구 9907100000을 넣는다. 끝나면 이 시험이 넣은 것만 지우고 주제 사전을 되돌린다.
+describe("W4 10단계 — 지역 + 주제 분류 (실제 API·anon 키)", () => {
+  const G = `${M}가람구`;
+  const SIDO = "9900000000";
+  const GU = "9907100000";
+  let createdSido = false;
+  let savedTopics;
+  const x = {};
+
+  beforeAll(async () => {
+    savedTopics = (await one("select value from public.settings where key = 'search_topics'")).value;
+    const sido = await one("insert into public.regions (code, parent_code, level, name, slug, aliases) values ($1, null, 'sido', '시험용 통합분류도', $2, '{통합분류도}') on conflict (code) do nothing returning code", [SIDO, `it-cls-sido-${RUN}`]);
+    createdSido = Boolean(sido);
+    await insert("regions", { code: GU, parent_code: SIDO, level: "sigungu", slug: `it-cls-gu-${RUN}`, name: G }, "regions");
+    const local = (slug, over) =>
+      insert(
+        "articles",
+        { slug: `it-cls-${slug}-${RUN}`, section: "local", content_type: "explainer", status: "published", author_id: w.reporter.id, body: para("본문"), first_published_at: new Date().toISOString(), editorial_field: "realestate", public_question: "시험용 공익적 질문", region_codes: [GU], ...over },
+        "articles",
+      );
+    x.tagged = await local("tagged", { title: `재건축 조합원 세금 정리 ${RUN}` });
+    x.draft = await local("draft", { title: `재건축 초안 ${RUN}`, status: "draft", first_published_at: null });
+  });
+
+  afterAll(async () => {
+    if (savedTopics !== undefined) await db.query("update public.settings set value = $1 where key = 'search_topics'", [JSON.stringify(savedTopics)]);
+    await db.query("delete from public.articles where id = any($1::bigint[])", [[x.tagged?.id, x.draft?.id].filter(Boolean)]);
+    await db.query("delete from public.regions where code = $1", [GU]);
+    if (createdSido) await db.query("delete from public.regions where code = $1", [SIDO]);
+  });
+
+  test("지역 + 주제 — 지역 허브가 첫 결과, 그 지역 태그 기사(주제 별칭 '재건축'), 초안 0 · 분류(지역·주제) 붙음 · region_hubs가 꺼지면 링크 0, 켜면 허브 주소", async () => {
+    const r = await api.searchSite(options({ q: `${G} 재개발` }));
+    expect(`${r.items[0].kind}:${r.items[0].ref}`).toBe(`region:${GU}`);
+    expect(r.items[0]).toMatchObject({ tier: 0, href: null, parentName: "시험용 통합분류도" });
+    expect(refs(r)).toContain(`article:${x.tagged.id}`);
+    expect(refs(r)).not.toContain(`article:${x.draft.id}`);
+    expect(r.classification).toMatchObject({ regions: [{ code: GU, name: G, level: "sigungu", parentName: "시험용 통합분류도" }], topics: [{ key: "redevelopment", label: "재개발·재건축" }], ambiguous: false });
+    await setFlags({ ...savedFlags, region_hubs: true });
+    try {
+      const open = await api.searchSite(options({ q: `${G} 재개발` }));
+      expect(open.items[0].href).toBe(`/local/${createdSido ? `it-cls-sido-${RUN}` : (await one("select slug from public.regions where code = $1", [SIDO])).slug}/it-cls-gu-${RUN}`);
+    } finally {
+      await setFlags(savedFlags);
+    }
+  });
+
+  test("지역 밖 결과 0 → 검색 화면 값에 제안(상위 지역·다른 표기)과 상황 카드 — 지역명 없는 0건은 W2-d 그대로", async () => {
+    await setFlags({ ...savedFlags, search: true });
+    try {
+      const page = await api.getSearchPage(options({ q: `${G} 취득세` }));
+      expect(page.result.counts.region).toBe(1);
+      expect(page.result.counts.article).toBe(0);
+      expect(page.result.classification.upper).toEqual(["시험용 통합분류도 취득세", "취득세"]);
+      expect(page.result.classification.spellings).toEqual([`통합분류도 ${G} 취득세`]);
+      expect(page.situations.map((s) => s.slug)).toContain(`it-search-car-${RUN}`);
+      // 지역 밖 결과가 있으면 상황 카드를 읽지 않는다
+      expect((await api.getSearchPage(options({ q: `${G} 재개발` }))).situations).toEqual([]);
+    } finally {
+      await setFlags(savedFlags);
+    }
+  });
+
+  test("주제 사전을 바꾸면 다음 검색부터 — 별칭 '세금정리'를 취득세에 더하면 분류 주제 acquisition_tax, 그 지역 태그 기사", async () => {
+    expect((await api.searchSite(options({ q: `${G} 세금정리` }))).classification.topics).toEqual([]);
+    await db.query("update public.settings set value = jsonb_set(value, '{acquisition_tax,aliases}', '[\"세금정리\"]') where key = 'search_topics'");
+    const r = await api.searchSite(options({ q: `${G} 세금정리` }));
+    expect(r.classification.topics).toEqual([{ key: "acquisition_tax", label: "취득세" }]);
+    expect(refs(r)).toContain(`article:${x.tagged.id}`);
+  });
+});

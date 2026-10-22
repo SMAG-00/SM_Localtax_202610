@@ -6,6 +6,7 @@ import { INFO_LIST_MARKER_LABELS } from "@ltr/ui";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { LEGAL_DOC_TYPES, LEGAL_DOC_TYPE_LABELS, type LegalDocType } from "@/lib/admin/legal-doc-rules";
 import { SEARCH_LIMITS, leftChars, queryTerms } from "./search-normalize";
+import type { SearchClassification } from "./search-classify";
 import { sponsorMark, type SponsorMark } from "./article-logic";
 import { sponsorBadgeOf } from "./cards";
 import {
@@ -366,7 +367,26 @@ export interface SearchResult {
   page: number;
   pageSize: number;
   hasMore: boolean;
+  /**
+   * 지역 + 주제 분류 (W4 10단계 — search-classify.ts, DB search_classify와 같은 규칙). 검색 서버 함수가 공개 행정구역·주제 사전으로 붙인다 —
+   * DB를 부르지 않은 결과·분류 자료를 읽지 못한 결과에는 없다
+   */
+  classification?: SearchClassification;
 }
+
+/** 지역 결과를 뺀 결과 수 (탭과 상관없이) — 지역으로 분류됐는데 이것이 0이면 결과 0건 제안(상위 지역·다른 표기·상황 카드 — REG1-11) */
+export const nonRegionCount = (counts: Readonly<Record<SearchKind, number>>): number => SEARCH_KINDS.reduce((n, k) => (k === "region" ? n : n + (counts[k] ?? 0)), 0);
+
+/** 지역으로 분류됐고(후보 1개 이상) 지역 밖 결과가 0건인가 */
+export const regionOnlyResult = (result: Pick<SearchResult, "counts" | "classification">): boolean =>
+  (result.classification?.regions.length ?? 0) > 0 && nonRegionCount(result.counts) === 0;
+
+/**
+ * 지역 분류 여부 (W4 10단계 — search_submitted.region_classified · API regionClassified) — 검색어에 지역 이름·별칭이 있어 지역 후보가 1개 이상인가
+ * (동명처럼 하나로 정하지 않은 것도 참 — 12장 #74). 분류를 붙이지 못한 결과(분류 자료를 읽지 못함)는 W2-d 대리값(지역 결과가 있는가)
+ */
+export const regionClassified = (result: Pick<SearchResult, "counts" | "classification">): boolean =>
+  result.classification ? result.classification.regions.length > 0 : (result.counts.region ?? 0) > 0;
 
 export const zeroCounts = (): Record<SearchKind, number> => Object.fromEntries(SEARCH_KINDS.map((k) => [k, 0])) as Record<SearchKind, number>;
 

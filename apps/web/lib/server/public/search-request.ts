@@ -4,7 +4,7 @@
 //  · 속도 제한은 수집 API(/api/events)와 같은 서버 메모리 토큰 통 — IP는 해시한 열쇠만 들고 있다(lib/analytics/rate-limit.ts)
 import { TokenBuckets, type Take } from "@/lib/analytics/rate-limit";
 import { SECTION_KEYS, isSectionKey } from "./constants";
-import { SEARCH_CONTENT_TYPES, SEARCH_KINDS, SEARCH_MAX_PAGE, SEARCH_TABS, TAB_KINDS, type SearchContentType, type SearchKind, type SearchOptions, type SearchResult, type SearchTab } from "./search-logic";
+import { SEARCH_CONTENT_TYPES, SEARCH_KINDS, SEARCH_MAX_PAGE, SEARCH_TABS, TAB_KINDS, regionClassified, type SearchContentType, type SearchKind, type SearchOptions, type SearchResult, type SearchTab } from "./search-logic";
 import { SEARCH_LIMITS } from "./search-normalize";
 
 /** 설계 2.4 */
@@ -76,7 +76,10 @@ export function parseSearchRequest(params: URLSearchParams): SearchRequest {
   };
 }
 
-/** 응답 본문 — 고른 탭의 전체 수는 탭 숫자(그 탭 종류의 합). 지역 분류 여부는 search_submitted와 같은 뜻(지역 결과가 있는가) */
+/**
+ * 응답 본문 — 고른 탭의 전체 수는 탭 숫자(그 탭 종류의 합). 지역 분류 여부는 search_submitted와 같은 뜻(실제 분류 — W4 10단계),
+ * `classification`(지역 후보·주제·동명 여부·결과 0건 제안 검색어)은 분류를 붙인 결과에만
+ */
 export function searchResponseBody(result: SearchResult, o: SearchOptions) {
   const total = TAB_KINDS[o.tab].reduce((n, k: SearchKind) => n + (result.counts[k] ?? 0), 0);
   return {
@@ -88,7 +91,8 @@ export function searchResponseBody(result: SearchResult, o: SearchOptions) {
     total,
     hasMore: result.hasMore,
     counts: Object.fromEntries(SEARCH_KINDS.map((k) => [k, result.counts[k] ?? 0])) as Record<SearchKind, number>,
-    regionClassified: (result.counts.region ?? 0) > 0,
+    regionClassified: regionClassified(result),
+    classification: result.classification,
     items: result.items,
   };
 }

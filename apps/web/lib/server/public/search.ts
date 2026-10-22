@@ -2,8 +2,10 @@ import "server-only";
 import type { ProgressStageKey } from "@ltr/ui";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { profilePageIds } from "./brand";
+import { cache } from "react";
 import { publicDb, publicSearchDb, rowsOf } from "./db";
 import { readPublicSettings, readRegions } from "./reads";
+import { describeClassification, parseSearchTopics, type SearchTopicDict } from "./search-classify";
 import { SITUATION_COLUMNS, type RegionRow, type SituationRow } from "./rows";
 import {
   SEARCH_LIMITS,
@@ -13,6 +15,7 @@ import {
   countsMissing,
   emptySearchResult,
   queryTerms,
+  regionOnlyResult,
   searchArgs,
   toSearchResult,
   withCounts,
@@ -33,16 +36,40 @@ import type { SectionKey } from "./constants";
  * perKind를 주면 종류별 묶음(전체 탭 — 종류마다 앞 n개, 쪽 없음).
  * 고른 탭·쪽에 행이 없으면 탭 숫자도 오지 않으므로 같은 거르개로 한 행만 다시 읽어 탭 숫자를 채운다(2단계 — 다른 탭에 결과가 있으면 그 탭이 보인다)
  */
-export async function searchSite(options: SearchOptions, mode: { perKind?: number; pageSize?: number } = {}): Promise<SearchResult> {
+export async function searchSite(options: SearchOptions, mode: { perKind?: number; pageSize?: number } = {}, now: Date = new Date()): Promise<SearchResult> {
   const args = searchArgs(options, mode);
   if (!args) return emptySearchResult(options, mode.pageSize ?? SEARCH_LIMITS.pageSize);
   const db = publicSearchDb();
-  const [settings, found] = await Promise.all([readPublicSettings(), rowsOf<SearchRow>(db.rpc("search_public", args), "통합 검색")]);
+  const [settings, found, classification] = await Promise.all([
+    readPublicSettings(),
+    rowsOf<SearchRow>(db.rpc("search_public", args), "통합 검색"),
+    classify(options.q, now),
+  ]);
   const rows = await withoutClosedPeople(found);
-  const result = toSearchResult(rows, settings.features, options, args);
+  const result = { ...toSearchResult(rows, settings.features, options, args), ...(classification ? { classification } : {}) };
   if (!countsMissing(rows, args)) return result;
   const counted = await rowsOf<SearchRow>(db.rpc("search_public", countArgs(options)!), "통합 검색 탭 숫자");
   return withCounts(result, counted);
+}
+
+/** 검색 주제 사전 (설정 search_topics — …45의 공개 정책으로 이 키 한 줄). 없거나 모양이 틀리면 null(주제 분류 0) */
+export const readSearchTopics = cache(async (): Promise<SearchTopicDict | null> => {
+  const rows = await rowsOf<{ key: string; value: unknown }>(publicDb().from("settings").select("key, value").eq("key", "search_topics"), "검색 주제 사전");
+  return parseSearchTopics(rows[0]?.value);
+});
+
+/**
+ * 지역 + 주제 분류 (W4 10단계) — 공개 행정구역·주제 사전(30초 공개 데이터 캐시)으로 DB search_classify와 같은 규칙. 결과 차례는 DB 검색 함수가 정했다.
+ * 분류 자료를 읽지 못하면 분류 없이(검색 결과는 그대로 — 분류 줄·0건 제안만 빠진다). 기록에는 검색어를 남기지 않는다
+ */
+async function classify(q: string, now: Date) {
+  try {
+    const [regions, topics] = await Promise.all([readRegions(), readSearchTopics()]);
+    return describeClassification(q, regions, topics, isoToKstDate(now.toISOString()));
+  } catch (err) {
+    console.error("[search] 지역 + 주제 분류 자료를 읽지 못했습니다:", err instanceof Error ? err.name : "오류");
+    return null;
+  }
 }
 
 /**
@@ -64,7 +91,7 @@ export interface SearchPageData {
   result: SearchResult | null;
   /** 추천 검색어 (settings.home_search_chips — 3~6개일 때만, 아니면 빈 목록) */
   chips: string[];
-  /** 결과 없음 화면의 상황 카드 (UX-05) — 결과가 있으면 빈 목록 */
+  /** 결과 없음 화면의 상황 카드 (UX-05) — 결과가 있으면 빈 목록 (지역으로 분류됐는데 지역 밖 결과가 0이면 제안 상황 카드 — W4 10단계) */
   situations: SituationCard[];
   /** 지역 거르개 선택지의 원본 — 공개 행정구역 (화면이 오늘 유효한 것만 고른다 — lib/site/search-view.ts regionGroups) */
   regions: RegionRow[];
@@ -92,15 +119,17 @@ export async function getSearchPage(requested: SearchOptions, now: Date = new Da
   const options = screenOptions(requested);
   const searching = queryTerms(options.q).terms.length > 0;
   const [result, regions] = await Promise.all([
-    searching ? searchSite(options, options.tab === "all" ? { perKind: SEARCH_SCREEN.allPerKind } : {}) : Promise.resolve(null),
+    searching ? searchSite(options, options.tab === "all" ? { perKind: SEARCH_SCREEN.allPerKind } : {}, now) : Promise.resolve(null),
     readRegions(),
   ]);
   const empty = result !== null && Object.values(result.counts).every((n) => n === 0);
+  // 지역으로 분류됐는데 지역 밖 결과가 0이어도 상황 카드를 제안한다 (REG1-11 '결과 0건은 상위 지역·다른 표기·상황 카드')
+  const suggest = empty || (result !== null && regionOnlyResult(result));
   return {
     options,
     result,
     chips: settings.searchChips,
-    situations: empty ? await emptySituations(options.section, settings.hubSituationLimit) : [],
+    situations: suggest ? await emptySituations(options.section, settings.hubSituationLimit) : [],
     regions,
     today: isoToKstDate(now.toISOString()),
     confirmStage: settings.confirmStage,

@@ -6,12 +6,14 @@ import { SEARCH_CONTENT_TYPES, SEARCH_SCREEN } from "@/lib/server/public/search-
 import { SEARCH_PLACEHOLDER } from "@/lib/site/home-view";
 import {
   SEARCH_TAB_LABELS,
+  classifiedLine,
   filterSummary,
   hasFilters,
   clearFiltersHref,
   hitGroups,
   noResultView,
   regionGroups,
+  regionSuggestView,
   searchEventProps,
   searchHref,
   searchPager,
@@ -20,8 +22,10 @@ import {
   startSuggestions,
   tabCount,
   trackerStageView,
+  type ClassifiedLine,
   type NoResultView,
   type RegionGroup,
+  type RegionSuggestView,
   type SuggestionLink,
 } from "@/lib/site/search-view";
 import { cardTypeBadge } from "./ArticleItem";
@@ -36,6 +40,8 @@ import { UnavailableNotice } from "./Unavailable";
 //  · 결과 주소는 열린 화면만 — 닫힌 화면(용어사전 전·꺼진 기능)은 글자만 (트래커는 현재 단계 원문 링크)
 //  · 결과 없음 — 추천 검색어(설정) 3개 · 상황 카드 · [AI 도우미에게 묻기]는 도우미 공개 승인 전 0 (01C가 위젯과 함께 붙인다)
 //  · 결과 목록 위·안에 AI 답변을 끼워 넣는 요소 0 (SRCH-02 — 결과를 대체하지 않는다)
+//  · 지역 + 주제 분류 (W4 10단계 — REG-08 · REG1-11) — 검색 폼 아래 분류 줄('이렇게 찾았습니다 — 지역 ○○ · 주제 ○○', 동명은 후보 모두), 지역 허브는
+//    검색 함수가 첫 결과로 둔다(기능 키 region_hubs가 꺼지면 글자만). 지역으로 분류됐는데 지역 밖 결과가 0이면 제안 — 상위 지역·다른 표기·상황 카드
 // 부분마다 data-search-part — E2E가 화면 골격·결과를 본다
 
 /** 검색 입력창 — 히어로 입력창과 같은 형태(흰 바탕 rounded-2xl, 높이 64px 이상)를 밝은 바탕에 */
@@ -242,9 +248,9 @@ function HitList({ hits, confirmStage }: { hits: readonly SearchHit[]; confirmSt
   );
 }
 
-function SuggestionChips({ items, part }: { items: readonly SuggestionLink[]; part: string }) {
+function SuggestionChips({ items, part, label = "추천 검색어" }: { items: readonly SuggestionLink[]; part: string; label?: string }) {
   return (
-    <ul aria-label="추천 검색어" data-part={part} className="mt-4 flex flex-wrap gap-x-2">
+    <ul aria-label={label} data-part={part} className="mt-4 flex flex-wrap gap-x-2">
       {items.map((s) => (
         <li key={s.label}>
           <UiLink href={s.href} className={CHIP_LINK}>
@@ -341,6 +347,57 @@ function NoResult({ q, view }: { q: string; view: NoResultView }) {
   );
 }
 
+/** 분류 줄 (W4 10단계) — 검색어를 지역·주제로 어떻게 읽었는지. 후보가 둘 이상이면 하나로 정하지 않았다고 쓴다 */
+function ClassifiedNote({ line }: { line: ClassifiedLine }) {
+  return (
+    <p data-search-part="classified" className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px] text-navy-700 [overflow-wrap:anywhere]">
+      <span className="font-bold text-navy-900">이렇게 찾았습니다</span>
+      {line.regions.length > 0 && (
+        <span data-classified="regions">
+          {line.ambiguous ? `지역 후보 ${line.regions.length}곳 — ${line.regions.join(" · ")} (하나로 정하지 않고 모두 보입니다)` : `지역 ${line.regions[0]}`}
+        </span>
+      )}
+      {line.topics.length > 0 && <span data-classified="topics">{`주제 ${line.topics.join(" · ")}`}</span>}
+    </p>
+  );
+}
+
+/** 결과 0건 제안 (W4 10단계 — REG1-11 상위 지역·다른 표기·상황 카드). 셋 다 비면 그리지 않는다 */
+function RegionSuggest({ view }: { view: RegionSuggestView }) {
+  if (view.upper.length === 0 && view.spellings.length === 0 && view.situations.length === 0) return null;
+  return (
+    <SiteSection id="search-region-suggest" tone="ivory" data={{ "data-search-part": "region-suggest" }}>
+      <h2 className="text-[22px] leading-snug font-black text-navy-900">이 지역에서 찾은 기사가 없습니다</h2>
+      <p className="mt-3 text-[17px] text-navy-700">상위 지역이나 다른 표기로 찾거나, 상황으로 찾아보세요.</p>
+      {view.upper.length > 0 && (
+        <>
+          <h3 className="mt-8 text-[19px] font-black text-navy-900">상위 지역으로 찾기</h3>
+          <SuggestionChips items={view.upper} part="suggest-upper" label="상위 지역 검색어" />
+        </>
+      )}
+      {view.spellings.length > 0 && (
+        <>
+          <h3 className="mt-8 text-[19px] font-black text-navy-900">다른 표기로 찾기</h3>
+          <SuggestionChips items={view.spellings} part="suggest-spellings" label="다른 표기 검색어" />
+        </>
+      )}
+      {view.situations.length > 0 && (
+        <>
+          <h3 className="mt-8 text-[19px] font-black text-navy-900">상황으로 찾기</h3>
+          <ul data-part="search-situations" className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {view.situations.map((s) => (
+              <li key={s.slug} data-situation-slug={s.slug} data-situation-section={s.section}>
+                <SituationCard href={s.href} pictogram={s.pictogram} title={s.title} description={s.subtitle} />
+              </li>
+            ))}
+          </ul>
+          <MeasureSearchSituationCards />
+        </>
+      )}
+    </SiteSection>
+  );
+}
+
 function Head({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <SiteSection id="search-head" tone="ivory" first data={{ "data-search-part": "head" }}>
@@ -371,12 +428,16 @@ export function SearchView({ data, blankSubmitted }: { data: SearchPageData; bla
   const event = result ? searchEventProps(result, o.q) : null;
   // 도우미 위젯·공개 승인(01C CHAT-01·CHAT-14) 전 — [AI 도우미에게 묻기] 0
   const noResult = empty ? noResultView({ options: o, chips: data.chips, situations: data.situations, assistantOpen: false }) : null;
+  const line = result ? classifiedLine(result.classification) : null;
+  // 결과 없음 화면이 상황 카드를 이미 보이므로, 그때는 제안 묶음에서 상황 카드를 뺀다
+  const suggest = regionSuggestView(result, empty ? [] : data.situations);
 
   return (
     <div data-ui="search-page">
       {event && <MeasureSearch section={o.section} props={event} />}
       <Head title={searchTitle(o.q)}>
         <SearchForm o={o} blankSubmitted={blankSubmitted} />
+        {line && <ClassifiedNote line={line} />}
         {result && !empty && (
           <div className="mt-8">
             <TabNav label="결과 종류" items={searchTabs(result, o).map((t) => ({ id: t.id, label: `${t.label} ${t.count}`, href: t.href }))} current={o.tab} />
@@ -396,6 +457,7 @@ export function SearchView({ data, blankSubmitted }: { data: SearchPageData; bla
           {o.tab === "all" ? <AllTab result={result} o={o} confirmStage={confirmStage} /> : <KindTab result={result} o={o} confirmStage={confirmStage} />}
         </SiteSection>
       )}
+      {suggest && <RegionSuggest view={suggest} />}
     </div>
   );
 }

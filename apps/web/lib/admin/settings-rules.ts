@@ -15,6 +15,7 @@ import { hasClaimToken } from "@/lib/brand/claim";
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
 import { SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings";
 import { localBlockFieldsErrors } from "@/lib/server/public/region-hub-logic";
+import { searchTopicsErrors } from "@/lib/server/public/search-classify";
 import { phraseError } from "./dictionary-rules";
 import { EXPIRY_DAYS_DEFAULT, EXPIRY_DAYS_MAX, EXPIRY_DAYS_MIN, expiryDaysErrors } from "@/lib/source-review/rules";
 
@@ -294,6 +295,13 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     guide:
       '["local_tax", "realestate", "local_finance", "urban_policy"] — 판정 책임자(편집 책임자 역할)가 있는 편집 분야. 목록에서 뺀 분야의 지역 기사는 보류(held)이고 발행되지 않습니다. 0~4개, 같은 분야 두 번 0. 바꾸면 배포 없이 다음 발행 판정부터',
     check: (value) => regionalJudgeFieldsErrors(value),
+  },
+  // ── W4 10단계 검색 주제 사전 (docs/dev/W4_설계.md 2.2 · 2.9.1) — 검색 분류(search-classify.ts parseSearchTopics)·DB 트리거(…45 search_topics_guard)와 같은 검사 ──
+  search_topics: {
+    label: "검색 주제 사전 (REG-08 · REG1-11)",
+    guide:
+      '{ "acquisition_tax": { "label": "취득세", "aliases": [] }, …, "redevelopment": { "label": "재개발·재건축", "aliases": ["재개발", "재건축"] } } — 주제 6개(acquisition_tax·property_tax·inheritance_gift·realestate_transaction·redevelopment·local_finance)는 고정, 주제마다 화면 글자(1~20자)와 별칭(0~20개·1~20자). 띄어쓰기·기호를 뺀 글자가 2글자 이상이고, 한 낱말은 한 주제에만. 지역명과 함께 찾으면 그 지역 허브를 첫 결과로 그 지역 기사에서 주제를 찾습니다. 바꾸면 배포 없이 다음 검색부터',
+    check: (value) => searchTopicsErrors(value),
   },
   next_action_priority: {
     label: "다음 행동 버튼 우선순위 (ART-06)",

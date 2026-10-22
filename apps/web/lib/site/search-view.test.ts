@@ -28,6 +28,8 @@ import {
   startSuggestions,
   tabCount,
   trackerStageView,
+  classifiedLine,
+  regionSuggestView,
 } from "./search-view";
 
 const MD = fs.readFileSync(path.resolve(__dirname, "../../../../docs/dev/W2-d_설계.md"), "utf8");
@@ -261,5 +263,52 @@ describe("지역 거르개 선택지", () => {
       { code: "1100000000", name: "서울특별시", children: [{ code: "1111000000", name: "종로구" }, { code: "1120000000", name: "성동구" }] },
       { code: "2600000000", name: "부산광역시", children: [] },
     ]);
+  });
+});
+
+describe("지역 + 주제 분류 화면 값 (W4 10단계 — REG-08 · REG1-11, docs/dev/W4_설계.md 11.9)", () => {
+  const region = (code: string, name: string, parentName: string | null) => ({ code, name, level: (parentName ? "sigungu" : "sido") as "sido" | "sigungu", parentName });
+  const cls = (over = {}) => ({
+    regions: [region("9901100000", "시험가람구", "시험용 분류도")],
+    topics: [{ key: "redevelopment" as const, label: "재개발·재건축" }],
+    ambiguous: false,
+    upper: ["시험용 분류도 재개발", "재개발"],
+    spellings: ["분류도 시험가람구 재개발"],
+    ...over,
+  });
+  const card: SituationCard = { slug: "car", href: "/situations/car", section: "tax", title: "차를 팔았어요", subtitle: "한 줄", pictogram: "car-sold" } as SituationCard;
+
+  test("분류 줄 — 시·군·구는 시·도 이름을 앞에 · 주제 글자 · 동명은 후보 모두 · 지역·주제가 없으면 null", () => {
+    expect(classifiedLine(cls())).toEqual({ regions: ["시험용 분류도 시험가람구"], topics: ["재개발·재건축"], ambiguous: false });
+    const two = cls({ regions: [region("9901300000", "시험고개군", "가도"), region("9901400000", "시험고개군", "나도")], ambiguous: true, topics: [] });
+    expect(classifiedLine(two)).toEqual({ regions: ["가도 시험고개군", "나도 시험고개군"], topics: [], ambiguous: true });
+    expect(classifiedLine(cls({ regions: [], topics: [] }))).toBeNull();
+    expect(classifiedLine(undefined)).toBeNull();
+  });
+
+  test("결과 0건 제안 — 지역으로 분류됐고 지역 밖 결과가 0일 때만: 상위 지역·다른 표기 링크 + 상황 카드", () => {
+    const view = regionSuggestView(result({ counts: counts({ region: 1 }), classification: cls() }), [card]);
+    expect(view).toEqual({
+      upper: [
+        { label: "시험용 분류도 재개발", href: `/search?q=${encodeURIComponent("시험용 분류도 재개발")}` },
+        { label: "재개발", href: "/search?q=%EC%9E%AC%EA%B0%9C%EB%B0%9C" },
+      ],
+      spellings: [{ label: "분류도 시험가람구 재개발", href: `/search?q=${encodeURIComponent("분류도 시험가람구 재개발")}` }],
+      situations: [card],
+    });
+    expect(regionSuggestView(result({ counts: counts({ region: 1, article: 1 }), classification: cls() }), [card])).toBeNull(); // 지역 밖 결과가 있다
+    expect(regionSuggestView(result({ counts: counts({ region: 0 }), classification: cls({ regions: [] }) }), [card])).toBeNull(); // 지역 없음
+    expect(regionSuggestView(result({ counts: counts({ region: 1 }) }), [card])).toBeNull(); // 분류를 붙이지 못한 결과
+    expect(regionSuggestView(null, [card])).toBeNull();
+  });
+
+  test("search_submitted.region_classified = 실제 분류 — 지역 결과가 있어도 후보가 없으면 거짓, 동명(후보 둘)도 참 · 속성 4칸·지역 코드·주제 0", () => {
+    const none = searchEventProps(result({ counts: counts({ region: 3, article: 2 }), classification: cls({ regions: [], topics: [] }) }), "구 소식")!;
+    expect(none.region_classified).toBe(false);
+    const two = searchEventProps(result({ counts: counts({ region: 2 }), classification: cls({ regions: [region("1", "가", null), region("2", "가", null)], ambiguous: true }) }), "시험고개군 재산세")!;
+    expect(two.region_classified).toBe(true);
+    expect(Object.keys(two).sort()).toEqual([...SEARCH_EVENT_PROPS].sort());
+    for (const piece of ["9901", "redevelopment", "시험", "재산세"]) expect(JSON.stringify(two)).not.toContain(piece);
+    expect(validateEvent({ name: "search_submitted", props: two }).ok).toBe(true);
   });
 });

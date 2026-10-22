@@ -121,3 +121,24 @@ describe("속도 제한 (IP별 1분 상한 — 서버 메모리)", () => {
     expect(takeSearchToken(limiter, "ip:a", t0 + 60_000)).toEqual({ ok: true });
   });
 });
+
+describe("응답 모양 — 지역 + 주제 분류 (W4 10단계)", () => {
+  const counts = (over: Partial<Record<SearchKind, number>>) => ({ region: 0, situation: 0, tracker: 0, glossary: 0, category: 0, article: 0, person: 0, interpretation: 0, ...over });
+  const o = { q: "시험가람구 재개발", tab: "all" as const, section: null, contentType: null, region: null, from: null, to: null, page: 1 };
+  const classification = {
+    regions: [{ code: "9901100000", name: "시험가람구", level: "sigungu" as const, parentName: "시험용 분류도" }],
+    topics: [{ key: "redevelopment" as const, label: "재개발·재건축" }],
+    ambiguous: false,
+    upper: ["시험용 분류도 재개발", "재개발"],
+    spellings: ["분류도 시험가람구 재개발"],
+  };
+
+  test("분류를 붙인 결과 — regionClassified = 지역 후보가 있는가(지역 결과 수가 아니라), classification 그대로", () => {
+    const body = searchResponseBody({ query: o.q, terms: ["시험가람구", "재개발"], total: 1, counts: counts({ region: 1 }), items: [], page: 1, pageSize: 20, hasMore: false, classification }, o);
+    expect(body.regionClassified).toBe(true);
+    expect(body.classification).toEqual(classification);
+    // 지역 결과가 있어도(이름에 든 지역) 분류 후보가 없으면 거짓 — 대리값을 쓰지 않는다
+    const none = searchResponseBody({ query: "구", terms: ["구"], total: 5, counts: counts({ region: 5 }), items: [], page: 1, pageSize: 20, hasMore: false, classification: { ...classification, regions: [], topics: [], upper: [], spellings: [] } }, o);
+    expect(none.regionClassified).toBe(false);
+  });
+});

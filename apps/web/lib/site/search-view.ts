@@ -5,7 +5,22 @@
 import { PROGRESS_STAGE_LABELS, PROGRESS_STAGE_ORDER, type ProgressStageKey } from "@ltr/ui";
 import { CONTENT_TYPE_NAMES, SECTION_INFO } from "@/lib/server/public/constants";
 import type { RegionRow } from "@/lib/server/public/rows";
-import { KIND_LABELS, SEARCH_KINDS, SEARCH_SCREEN, SEARCH_TABS, TAB_KINDS, squash, type SearchHit, type SearchKind, type SearchOptions, type SearchResult, type SearchTab } from "@/lib/server/public/search-logic";
+import {
+  KIND_LABELS,
+  SEARCH_KINDS,
+  SEARCH_SCREEN,
+  SEARCH_TABS,
+  TAB_KINDS,
+  regionClassified,
+  regionOnlyResult,
+  squash,
+  type SearchHit,
+  type SearchKind,
+  type SearchOptions,
+  type SearchResult,
+  type SearchTab,
+} from "@/lib/server/public/search-logic";
+import type { SearchClassification } from "@/lib/server/public/search-classify";
 import type { SituationCard } from "@/lib/server/public/situation-logic";
 
 /** 화면 값 (설계 2.4 — 공개 데이터 함수와 같이 쓰므로 search-logic.ts에 있다) */
@@ -156,8 +171,8 @@ export function noResultView(input: { options: SearchOptions; chips: readonly st
 }
 
 /**
- * search_submitted 속성 — 검색어 원문 0 (W2-c 2.2). 결과 수는 탭과 상관없이 모든 종류의 합(같은 거르개 안), 지역 분류 여부는
- * 지역 결과가 있는가(검색어의 낱말이 모두 지역 이름·옛 이름에 든다 — 지역 + 주제 분류는 01B W4, 설계 12장 #11). 남는 글자 없는 검색어(검색 안 함)는 null
+ * search_submitted 속성 — 검색어 원문 0 (W2-c 2.2). 결과 수는 탭과 상관없이 모든 종류의 합(같은 거르개 안), 지역 분류 여부는 실제 분류(regionClassified —
+ * 참거짓뿐, 지역 코드·주제도 싣지 않는다). 남는 글자 없는 검색어(검색 안 함)는 null
  */
 export function searchEventProps(result: SearchResult, q: string): SearchEventProps | null {
   if (result.terms.length === 0) return null;
@@ -166,8 +181,39 @@ export function searchEventProps(result: SearchResult, q: string): SearchEventPr
     query_length: Math.min(Array.from(q).length, EVENT_MAX.queryLength),
     result_count: Math.min(total, EVENT_MAX.resultCount),
     result_type_count: SEARCH_KINDS.filter((k) => (result.counts[k] ?? 0) > 0).length,
-    region_classified: (result.counts.region ?? 0) > 0,
+    region_classified: regionClassified(result),
   };
+}
+
+/** 분류 줄 (W4 10단계 — 검색어를 어떻게 읽었는지 글자로) — 지역·주제가 하나도 없으면 null */
+export interface ClassifiedLine {
+  /** 지역 글자 — 시·군·구는 '시·도 이름'을 앞에 */
+  regions: string[];
+  topics: string[];
+  /** 지역 후보가 둘 이상 — 하나로 정하지 않았다 */
+  ambiguous: boolean;
+}
+
+export function classifiedLine(c: SearchClassification | undefined): ClassifiedLine | null {
+  if (!c || (c.regions.length === 0 && c.topics.length === 0)) return null;
+  return {
+    regions: c.regions.map((r) => (r.level === "sigungu" && r.parentName ? `${r.parentName} ${r.name}` : r.name)),
+    topics: c.topics.map((t) => t.label),
+    ambiguous: c.ambiguous,
+  };
+}
+
+/** 결과 0건 제안 (REG1-11 — 상위 지역·다른 표기·상황 카드) — 지역으로 분류됐는데 지역 밖 결과가 0일 때만, 아니면 null */
+export interface RegionSuggestView {
+  upper: SuggestionLink[];
+  spellings: SuggestionLink[];
+  situations: SituationCard[];
+}
+
+export function regionSuggestView(result: SearchResult | null, situations: readonly SituationCard[]): RegionSuggestView | null {
+  if (!result || !result.classification || !regionOnlyResult(result)) return null;
+  const c = result.classification;
+  return { upper: c.upper.map(suggestionLink), spellings: c.spellings.map(suggestionLink), situations: [...situations] };
 }
 
 /** 트래커 결과의 단계 — 단계 글자와 '확정 아님'(확정 기준 단계 앞 — TX-07·08, 설정 amendment_confirmed_stage) */
