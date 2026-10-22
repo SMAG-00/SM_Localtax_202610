@@ -1,7 +1,7 @@
 // 기사 상세 출처 화면 값 (W4 5단계 — REG1-07 · REG1-09 · REG1-13 · PR-07). 시험용 가상 기관·가짜 주소만 쓴다
 import { describe, expect, test } from "vitest";
 import { LICENSE_TYPE_LABELS } from "@ltr/editorial";
-import { officialCard, sourceCards, type SourceCardInput } from "./source-cards";
+import { UNDER_REVIEW_LABEL, officialCard, sourceCards, type SourceCardInput } from "./source-cards";
 
 /** 칸이 모두 찬 공식 자료 — 시험용 가상구 */
 const FULL: SourceCardInput = {
@@ -33,6 +33,7 @@ describe("공식 자료 카드 (원문 블록)", () => {
       regionUnit: "시·군·구",
       verifiedOn: "2026-10-21",
       license: "공공누리 제1유형 (출처표시)",
+      underReview: false,
     });
   });
 
@@ -78,13 +79,30 @@ describe("출처 화면 값 — 카드와 줄을 나눈다", () => {
     ]);
     expect(official.map((c) => c.id)).toEqual([11]);
     expect(lines).toEqual([
-      { id: 12, text: "시험용 가상구 보도자료", href: "https://gasang.example/open/tax-2026", issuer: "시험용 가상구청", license: "공공누리 제2유형 (출처표시·상업적 이용금지)" },
-      { id: 13, text: "시험용 법령 조문", href: "https://gasang.example/open/tax-2026", issuer: "시험용 가상구청", license: null },
+      { id: 12, text: "시험용 가상구 보도자료", href: "https://gasang.example/open/tax-2026", issuer: "시험용 가상구청", license: "공공누리 제2유형 (출처표시·상업적 이용금지)", underReview: false },
+      { id: 13, text: "시험용 법령 조문", href: "https://gasang.example/open/tax-2026", issuer: "시험용 가상구청", license: null, underReview: false },
     ]);
   });
 
   test("http(s)가 아닌 주소는 링크로 만들지 않는다, 제목이 없으면 발표기관 이름이 글자", () => {
     const { lines } = sourceCards([{ ...FULL, kind: "other", title: null, source_url: "ftp://x.example/a" }]);
-    expect(lines).toEqual([{ id: 11, text: "시험용 가상구청", href: null, issuer: null, license: "공공누리 제1유형 (출처표시)" }]);
+    expect(lines).toEqual([{ id: 11, text: "시험용 가상구청", href: null, issuer: null, license: "공공누리 제1유형 (출처표시)", underReview: false }]);
+  });
+});
+
+describe("검토 중 (W4 6단계 — REG1-13)", () => {
+  test("열린 검수 항목이 있는 출처만 카드·줄에 검토 중 — 없는 출처는 false, 표시가 있어도 카드 조건은 그대로", () => {
+    const { official, lines } = sourceCards([
+      { ...FULL, under_review: true },
+      { ...FULL, id: 15 },
+      { ...FULL, id: 16, kind: "official_doc", title: "시험용 칸 빈 옛 자료", reference_date: null, under_review: true },
+      { ...FULL, id: 17, reference_date: null, source_name: null, title: null, source_url: null, under_review: true },
+    ]);
+    expect(official.map((c) => [c.id, c.underReview])).toEqual([
+      [11, true],
+      [15, false],
+    ]);
+    expect(lines.map((l) => [l.id, l.underReview])).toEqual([[16, true]]);
+    expect(UNDER_REVIEW_LABEL).toBe("검토 중");
   });
 });

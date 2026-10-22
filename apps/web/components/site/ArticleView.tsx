@@ -30,7 +30,7 @@ import { CardNewsSlider } from "./CardNewsSlider";
 import { popularClickItems } from "@/lib/site/popular-view";
 import { MeasureArticle, MeasureClicks, MeasureNextActions, MeasurePartnerContent } from "./Measure";
 import { ShareButton } from "./ShareButton";
-import { sourceCards } from "@/lib/site/source-cards";
+import { UNDER_REVIEW_LABEL, UNDER_REVIEW_NOTE, sourceCards } from "@/lib/site/source-cards";
 import { TEXT_LINK } from "./SiteSection";
 
 // 기사 상세 (/news/[slug] — ART-02 · ART-03 · ART-04 · ART-05 · ART-06 · CAT-05 · CORE-01 · PRD-01A 3장 '기사 상세'·'해결 사례 상세')
@@ -251,6 +251,16 @@ function Body({ a, today, tips }: { a: ArticleDetail; today: string; tips: Reado
   );
 }
 
+/** 검토 중 표시 (W4 6단계 — REG1-13) — 원문 카드 안. 색에 더해 글자로 뜻을 전한다 */
+function ReviewMark() {
+  return (
+    <p data-part="source-review-mark" className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-navy-800">
+      <span className="inline-flex rounded-md border border-hermes-200 bg-hermes-50 px-2 py-0.5 text-[13px] font-bold text-hermes-900">{UNDER_REVIEW_LABEL}</span>
+      <span>{UNDER_REVIEW_NOTE}</span>
+    </p>
+  );
+}
+
 /**
  * 출처 (W4 5단계 — REG1-07 · REG1-09 · REG1-13 · PR-07): ① 공식 자료 원문 — 발표기관 자료의 사실만 담은 카드(원문 블록). 기자의 해석인 본문 블록과
  * 다른 구역이다 — 카드에 본문 글자 0. 칸이 모두 찬 공식 자료만(lib/site/source-cards.ts) ② 출처 줄 — 나머지 출처, 공공누리 유형 글자를 함께
@@ -271,6 +281,7 @@ function SourceSections({ sources }: { sources: ArticleDetail["sources"] }) {
                 <p data-part="official-source-type" className="text-[13px] font-bold text-hermes-800">
                   {c.typeLabel}
                 </p>
+                {c.underReview && <ReviewMark />}
                 <p className="mt-1 text-[16px] font-black text-navy-900 [overflow-wrap:anywhere]">{c.title}</p>
                 <p className="mt-1 text-[14px] text-navy-700 [overflow-wrap:anywhere]">
                   {c.issuer}
@@ -337,6 +348,11 @@ function SourceSections({ sources }: { sources: ArticleDetail["sources"] }) {
                 {s.license && (
                   <span data-part="license-badge" className="text-navy-600">
                     {` · ${s.license}`}
+                  </span>
+                )}
+                {s.underReview && (
+                  <span data-part="source-review-mark" className="ml-2 inline-flex rounded-md border border-hermes-200 bg-hermes-50 px-2 py-0.5 text-[13px] font-bold text-hermes-900">
+                    {UNDER_REVIEW_LABEL}
                   </span>
                 )}
               </li>

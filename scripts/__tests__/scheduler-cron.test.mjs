@@ -85,7 +85,7 @@ test("popular-hourly는 UTC 매시 5분에 한 번씩 — 24개 시간대마다 
   assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T07:05:00Z")), ["popular-hourly"]);
   assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T07:06:00Z")), []);
   const daily = DAY_MINUTES.flatMap((d) => dueJobs(SCHEDULE, d)).filter((j) => j !== "popular-hourly");
-  assert.deepEqual(daily.sort(), ["analytics-retention", "link-check", "privacy-retention", "scheduler-heartbeat"]);
+  assert.deepEqual(daily.sort(), ["analytics-retention", "link-check", "privacy-retention", "scheduler-heartbeat", "source-expiry"]);
 });
 
 test("일정 파일의 작업은 모두 작업 목록(workflows)에 있다 — 없는 작업을 부르는 일정 0", async () => {
@@ -93,4 +93,16 @@ test("일정 파일의 작업은 모두 작업 목록(workflows)에 있다 — �
   const names = [...new Set(SCHEDULE.map((c) => c.path.replace("/api/jobs/", "")))];
   for (const n of names) assert.ok(Object.hasOwn(jobs, n), `${n}이 workflows 작업 목록에 없다`);
   assert.deepEqual(names.sort(), Object.keys(jobs).sort(), "목록의 작업은 모두 일정이 있다");
+});
+
+test("source-expiry(공식 자료 시점 만료 — W4 6단계)는 한국 날짜 00시대에 하루 한 번 — 실행 키(한국 날짜)가 그날 하나 (Hobby ±59분이어도 같은 날짜)", () => {
+  const rows = SCHEDULE.filter((c) => c.path === "/api/jobs/source-expiry");
+  assert.equal(rows.length, 1, "일정 한 줄");
+  const hits = DAY_MINUTES.filter((d) => dueJobs(rows, d).length > 0);
+  assert.equal(hits.length, 1);
+  const utcHour = hits[0].getUTCHours();
+  assert.equal(utcHour, 15, "UTC 15시 = 한국 00시");
+  // Hobby는 그 시간 안 아무 때 — 15:00~15:59 UTC는 모두 한국 날짜가 같다(다음 날 00:00~00:59)
+  const kstDate = (d) => new Date(d.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
+  assert.equal(kstDate(new Date("2026-10-18T15:00:00Z")), kstDate(new Date("2026-10-18T15:59:59Z")));
 });

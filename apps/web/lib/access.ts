@@ -83,6 +83,7 @@ export const ACTIONS = {
   "column.signature": "시그니처 연재 — 회차 지정·순서·「그때와 지금」 비교 항목·연재 제목·발행 주기 (편집 책임자 — 칼럼 정렬과 같은 편집 행위, BR-08)",
   "link.manage": "바깥 연결 — 주소·이용 조건 편집, 수동 점검 기록 (편집 책임자)",
   "hub_point.edit": "허브 지방세 포인트 — 초안(문구 1~3줄·기준일·해설 링크) 저장·지우기 (편집 책임자 — 감수 서명은 review.tax_review)",
+  "source_review.resolve": "원문 검수 큐 — 공식 자료 원문 다시 받기·검수 항목 해결(확인일 다시 적기 포함) (편집 책임자·관리자, W4 6단계 REG1-13)",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
@@ -114,6 +115,8 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "column.signature",
   // W3 9단계 — 허브 지방세 포인트 초안(홈·허브 공개 문구). 편집국 외 역할의 시도는 거부 + 감사
   "hub_point.edit",
+  // W4 6단계 — 원문 검수 큐(다시 받기·해결). 공개 기사의 '검토 중' 표시를 바꾸는 일이라 거부도 감사 (REG1-13)
+  "source_review.resolve",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -245,6 +248,10 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     case "column.signature":
     case "correction.decide":
       return editorOnly(viewer);
+
+    // 원문 검수 큐 (W4 6단계) — 편집 책임자·관리자 (W4 설계 6장 '편집 책임자 이상')
+    case "source_review.resolve":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("원문 검수(다시 받기·해결)는 편집 책임자와 관리자만 합니다 (REG1-13)");
 
     case "correction.request":
       return has(viewer, "reporter", "editor") ? ALLOW : deny("정정·반론 요청은 기자·편집 책임자가 작성합니다");

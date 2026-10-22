@@ -15,6 +15,7 @@ import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
 import { SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings";
 import { localBlockFieldsErrors } from "@/lib/server/public/region-hub-logic";
 import { phraseError } from "./dictionary-rules";
+import { EXPIRY_DAYS_DEFAULT, EXPIRY_DAYS_MAX, EXPIRY_DAYS_MIN, expiryDaysErrors } from "@/lib/source-review/rules";
 
 const SEARCH_CHIP_RANGE = [SEARCH_CHIPS_MIN, SEARCH_CHIPS_MAX] as const;
 
@@ -273,6 +274,12 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     guide:
       '{ "photoTypes": ["kogl_1", "not_applicable"], "fullTextTypes": [] } — photoTypes 게시하는 사진 유형(kogl_1~3·not_applicable), fullTextTypes 원문 본문을 옮겨도 되는 유형(kogl_1~3). 1단계 권고는 사진 제1유형·자체 촬영만, 전재 0 — 제2·3유형은 법률 검토 기록 뒤에 엽니다. 제4유형·미표시(kogl_4·unmarked)는 넣을 수 없습니다(코드 고정)',
     check: (value) => koglUsageErrors(value),
+  },
+  // ── W4 6단계 시점 만료 기준 (docs/dev/W4_설계.md 2.2 · 12장 #23) — 만료 배치(DB source_expiry_scan)·DB 트리거(…42)와 같은 검사 ──
+  official_source_expiry_days: {
+    label: "공식 자료 시점 만료 기준 (REG1-13)",
+    guide: `${EXPIRY_DAYS_MIN}~${EXPIRY_DAYS_MAX} 정수 하나 (초기값 ${EXPIRY_DAYS_DEFAULT}) — 공식 자료의 확인일(한국 날짜)부터 이 일수를 넘기면 다음 만료 배치가 검수 큐에 1건씩 올립니다. 기준 당일은 0건, 하루 넘긴 날 1건`,
+    check: (value) => expiryDaysErrors(value),
   },
   next_action_priority: {
     label: "다음 행동 버튼 우선순위 (ART-06)",

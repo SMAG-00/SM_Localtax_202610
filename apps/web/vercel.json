@@ -28,6 +28,7 @@
     { "path": "/api/jobs/popular-hourly", "schedule": "5 23 * * *" },
     { "path": "/api/jobs/analytics-retention", "schedule": "40 18 * * *" },
     { "path": "/api/jobs/privacy-retention", "schedule": "20 18 * * *" },
-    { "path": "/api/jobs/link-check", "schedule": "50 18 * * *" }
+    { "path": "/api/jobs/link-check", "schedule": "50 18 * * *" },
+    { "path": "/api/jobs/source-expiry", "schedule": "10 15 * * *" }
   ]
 }

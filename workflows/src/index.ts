@@ -19,6 +19,8 @@ export interface JobServices {
   purgePrivacy(now: Date): Promise<Record<string, unknown>>;
   /** W3 바깥 링크 점검 — 주소가 있는 활성 연결을 실행 키(ISO 주)당 한 번 점검한다 (TX-01 · FAM-08). 결과는 수뿐(주소 0) */
   checkLinks(now: Date): Promise<Record<string, unknown>>;
+  /** W4 6단계 공식 자료 시점 만료 — 확인일(한국 날짜)부터 기준 일수를 넘긴 공식 자료마다 검수 큐 1건, 실행 키 = 한국 날짜 (REG1-13). 결과는 수뿐 */
+  scanSourceExpiry(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -35,6 +37,8 @@ export const jobs: Record<string, Job> = {
   "privacy-retention": async ({ now, services }) => ({ detail: await services.purgePrivacy(now) }),
   // 바깥 링크 점검 (하루 한 번 호출, 같은 ISO 주에는 이미 점검한 링크를 건너뛴다) — 상태가 바뀌면 카드가 달라지므로 공개 화면 캐시를 비운다
   "link-check": async ({ now, services }) => ({ detail: await services.checkLinks(now), revalidatePublic: true }),
+  // 공식 자료 시점 만료 (하루 한 번, 한국 날짜 00시대 — 같은 날 두 번이면 한 벌) — 기사 화면 '검토 중' 표시가 바뀌므로 공개 화면 캐시를 비운다
+  "source-expiry": async ({ now, services }) => ({ detail: await services.scanSourceExpiry(now), revalidatePublic: true }),
 };
 
 export function findJob(name: string): Job | undefined {

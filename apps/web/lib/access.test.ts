@@ -64,6 +64,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "link.manage":             [X, O, X, X, X, X, X, X, X],
   "hub_point.edit":          [X, O, X, X, X, X, X, X, X], // W3 9단계 — 허브 지방세 포인트 초안은 편집 책임자, 감수 서명은 review.tax_review(감수위원)
   "legal_doc.manage":        [X, O, X, X, X, X, X, X, X],
+  "source_review.resolve":   [X, O, X, X, X, X, X, O, X], // W4 6단계 — 원문 검수 큐(다시 받기·해결)는 편집 책임자·관리자 (W4 설계 6장)
   "column.manage":           [X, O, X, X, X, X, X, X, X],
   "column.signature":        [X, O, X, X, X, X, X, X, X], // W3 8단계 — 시그니처 연재 회차·순서는 칼럼 정렬과 같은 편집 행위 (BR-08)
   "correction.request":     [O, O, X, X, X, X, X, X, X],

@@ -9,5 +9,6 @@
 | `scheduler-heartbeat` | 매일 15:00 | 호출 경로(Vercel Cron · 사내 스케줄러)가 살아 있는지 실행 기록으로 남긴다 |
 | `popular-hourly` | 매시 5분 (하루 한 번짜리 24줄 — Vercel Hobby 제한, `docs/dev/W2-c_설계.md` 8.2) | 측정 이벤트 → 시간 단위 집계 → 많이 본 기사·상담 사례 HOT 순위 |
 | `analytics-retention` | 매일 18:40 | 보존 기한이 지난 측정 원본·시간 단위 집계를 나눠 지운다 |
+| `source-expiry` | 매일 15:10 (한국 00:10 — Hobby ±59분이어도 같은 한국 날짜) | 공식 자료 확인일(한국 날짜)부터 `official_source_expiry_days`(365)일을 넘긴 출처마다 원문 검수 큐 1건, 실행 키 = 한국 날짜 (W4 6단계 REG1-13) |
 
 작업은 DB를 직접 열지 않는다 — 웹 앱의 작업 경로(`/api/jobs/[job]`)가 서버 기능(`JobServices`, service_role)을 넘긴다.

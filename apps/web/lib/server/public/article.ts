@@ -105,7 +105,8 @@ export interface ArticleDetail {
   leadImage: ArticleMedia | null;
   /** 해결 사례 카드 (CAT-05) — 4칸·결론·근거가 다 있을 때만 */
   solvedCase: SolvedCaseView | null;
-  sources: PublicSourceRow[];
+  /** 출처 — 대체되지 않은 판만. under_review = 열린 원문 검수 항목이 있음(W4 6단계 REG1-13 — 공개 뷰 public_source_reviews, 화면 '검토 중') */
+  sources: (PublicSourceRow & { under_review: boolean })[];
   corrections: CorrectionEntry[];
   updates: UpdateEntry[];
   amendment: { title: string; href: string | null; stage: TrackerState; banner: { stageLabel: string; changedAt: string } | null } | null;
@@ -160,7 +161,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   // 기자와 「지방세로 읽기」 서명 감수위원 — 공개 인물만 읽힌다(RLS). 비공개 감수위원이면 박스 0 (BR-03)
   const personIds = [...new Set([a.author_id, lens?.reviewed_by ?? null].filter((x): x is number => x !== null).map(num))];
 
-  const [settings, categories, regions, people, partner, media, sources, corrections, revisions, tagRows, situation, popular, glossary] = await Promise.all([
+  const [settings, categories, regions, people, partner, media, sources, corrections, revisions, tagRows, situation, popular, glossary, reviewing] = await Promise.all([
     readPublicSettings(),
     readCategories(),
     readRegions(),
@@ -174,6 +175,8 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     rowsOf<{ slug: string }>(db.from("situations").select("slug").contains("article_ids", [id]).order("sort").limit(1), "연결 상황"),
     readPopularSidebar(id),
     readTipTerms(),
+    // 원문 검수 중인 출처 번호 (W4 6단계 — 마이그레이션 …42 뷰. 기능 키와 상관없이 늘 읽는다)
+    rowsOf<{ source_id: number }>(db.from("public_source_reviews").select("source_id").eq("article_id", id), "원문 검수 표시"),
   ]);
 
   const category = a.category_id === null ? undefined : categories.find((c) => num(c.id) === num(a.category_id));
@@ -243,6 +246,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   const view = toArticleView(viewSource, { siteUrl: site, publisherName: brand.productName, now: now.toISOString() });
   const facts = renderedFacts(view);
   const supersededSources = new Set(sources.flatMap((s) => (s.supersedes_id === null ? [] : [num(s.supersedes_id)])));
+  const underReview = new Set(reviewing.map((r) => num(r.source_id)));
   const { slides, rest } = splitCardNews(a.format, openBlockLinks(publicBlocks(body.blocks, readable), settings.features));
   const mediaViews = Object.fromEntries(media.map((m) => [num(m.id), mediaOf(m, site)]));
   const lead = a.lead_media_id === null ? null : (mediaViews[num(a.lead_media_id)] ?? null);
@@ -282,7 +286,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     media: mediaViews,
     leadImage: lead,
     solvedCase: a.subtype === "solved_case" ? solvedCaseView(readStoredSolvedCase(a.solved_case)) : null,
-    sources: sources.filter((s) => !supersededSources.has(num(s.id))),
+    sources: sources.filter((s) => !supersededSources.has(num(s.id))).map((s) => ({ ...s, under_review: underReview.has(num(s.id)) })),
     corrections: correctionEntries(corrections),
     updates: updateEntries(revisions),
     amendment:

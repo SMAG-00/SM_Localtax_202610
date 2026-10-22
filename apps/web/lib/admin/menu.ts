@@ -34,6 +34,8 @@ const RULES: readonly MenuRule[] = [
   { id: "links", label: "바깥 연결", href: "/admin/links", when: (a) => a.has("link.manage"), paths: ["/admin/links"] },
   // 허브 지방세 포인트 (CORE-02 — W3 9단계) — 초안은 편집 책임자, 감수 서명은 세무 감수위원
   { id: "hub-points", label: "허브 지방세 포인트", href: "/admin/hub-points", when: (a) => a.has("hub_point.edit") || a.has("review.tax_review"), paths: ["/admin/hub-points"] },
+  // 원문 검수 큐 (REG1-13 — W4 6단계) — 편집 책임자·관리자
+  { id: "source-review", label: "원문 검수", href: "/admin/source-review", when: (a) => a.has("source_review.resolve"), paths: ["/admin/source-review"] },
   {
     id: "situations",
     label: "상황 카드",
