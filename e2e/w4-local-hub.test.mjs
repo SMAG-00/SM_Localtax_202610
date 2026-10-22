@@ -267,8 +267,9 @@ test("d) 분야 필터 ?topic= — 고른 분야만(다른 블록 0) · 목록 �
   assert.deepEqual(blocks.map((b) => b.key), ["localTax", "sources"], "지방세를 담지 않는 ③ 블록 0");
   assert.deepEqual(blocks[0].ids, [fx.tax.id], "지방재정 기사 0");
   assert.equal(await tax.page.locator('[data-ui="topic-filter"] a[aria-current="page"]').textContent(), "지방세");
-  // 운영 전환 전에는 루트가 모든 화면을 noindex로 두므로(SITE_INDEXING), 이 주소 자체의 판정은 화면 값으로 본다
-  assert.equal(await tax.page.getAttribute('[data-ui="region-page"]', "data-region-noindex"), "false", "기사 있는 분야 — 이 주소 자체는 색인 대상");
+  // 운영 전환 전에는 루트가 모든 화면을 noindex로 두므로(SITE_INDEXING), 이 주소 자체의 판정은 화면 값으로 본다.
+  // 기사 있는 분야 — 이 주소의 제외 사유는 '고른 분야 0건'이 아니다. 이 시험 자료는 공식 자료가 0이라 지역 전체가 최소선 미달(W4 11단계 — 색인 판정은 e2e/w4-region-index)
+  assert.equal(await tax.page.getAttribute('[data-ui="region-page"]', "data-region-noindex-reason"), "below_minimum", "기사 있는 분야 — 사유는 최소선 미달뿐(고른 분야 0건 아님)");
   const filter = await tax.page.$$eval('[data-ui="topic-filter"] a', (as) => as.map((a) => [a.textContent, a.getAttribute("href")]));
   const gu = guPath(GU.full.key);
   assert.deepEqual(filter, [
@@ -297,7 +298,8 @@ test("d) 분야 필터 ?topic= — 고른 분야만(다른 블록 0) · 목록 �
   assert.equal(none.status, 200);
   assert.match(none.html, /<meta name="robots" content="noindex, ?nofollow"/);
   assert.ok(none.html.includes('data-region-noindex="true"'), "고른 분야 0건 — 이 주소 noindex");
-  assert.ok((await get(gu)).html.includes('data-region-noindex="false"'), "전체 보기 — 색인 대상");
+  assert.ok(none.html.includes('data-region-noindex-reason="topic_empty"'), "사유 = 고른 분야 0건");
+  assert.ok((await get(gu)).html.includes('data-region-noindex-reason="below_minimum"'), "전체 보기 — 빈 목록 사유 0, 최소선 판정만(공식 자료 0 — 11단계)");
 });
 
 test("e) 대체 표시 — 시·군·구 0건 → 상위 시·도 기사 + '○○ 기사가 없어 ○○ 기사를 보입니다' · 상위도 0 → 0건 문장", async () => {

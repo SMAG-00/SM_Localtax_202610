@@ -202,21 +202,21 @@ describe("지역 화면 값 — 블록·분야 필터·noindex (regionPage)", ()
   const GU = r("9901100000", "gadeuk-gu", "시험용 가득구");
   const base = { sido: SIDO, sigungu: GU, regions: [SIDO, GU], today: "2026-10-22", siteUrl: undefined, fields: FIELDS };
 
-  test("기사 있는 지역 + 고른 분야 기사 있음 → 색인 대상 · topic 값 그대로", () => {
-    const p = regionPage({ ...base, total: 1, topic: "local_tax", own: { local_tax: [local(1, "local_tax")] } });
-    expect(p).toMatchObject({ topic: "local_tax", noindex: false, empty: false });
+  test("기사 있는 지역 + 최소선 이상 + 고른 분야 기사 있음 → 색인 대상 · topic 값 그대로", () => {
+    const p = regionPage({ ...base, total: 1, topic: "local_tax", own: { local_tax: [local(1, "local_tax")] }, indexable: true });
+    expect(p).toMatchObject({ topic: "local_tax", noindex: false, noindexReason: null, empty: false });
     expect(p.blocks.map((b) => b.key)).toEqual(["local_tax", "official"]);
   });
 
   test("고른 분야에 그 지역 기사 0(상위 대체만) → noindex · 상위 안내(empty-guide)는 지역 전체가 0일 때만", () => {
-    const p = regionPage({ ...base, total: 1, topic: "local_finance", own: { local_tax: [] }, parent: { local_tax: [local(9, "local_finance")] } });
-    expect(p).toMatchObject({ noindex: true, empty: false, guide: null });
+    const p = regionPage({ ...base, total: 1, topic: "local_finance", own: { local_tax: [] }, parent: { local_tax: [local(9, "local_finance")] }, indexable: true });
+    expect(p).toMatchObject({ noindex: true, noindexReason: "topic_empty", empty: false, guide: null });
     expect(p.blocks[0]).toMatchObject({ fallbackNotice: "시험용 가득구 기사가 없어 시험용 가상도 기사를 보입니다" });
   });
 
   test("기사 0건 시·군·구 → noindex + 상위 안내 + 블록은 상위 시·도 기사와 대체 문장", () => {
     const p = regionPage({ ...base, total: 0, own: { local_tax: [], realestate: [] }, parent: { local_tax: [local(9, "local_tax")], realestate: [] } });
-    expect(p).toMatchObject({ empty: true, noindex: true });
+    expect(p).toMatchObject({ empty: true, noindex: true, noindexReason: "empty" });
     expect(p.guide?.text).toBe("시험용 가상도 시험용 가득구에는 아직 공개된 기사가 없습니다. 상위 지역 시험용 가상도 소식을 보세요.");
     expect(p.blocks.map((b) => [b.key, b.items.length, b.fallbackNotice !== null, b.empty !== null])).toEqual([
       ["local_tax", 1, true, false],

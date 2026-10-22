@@ -12,7 +12,7 @@ import { loadRegionsBoard, type QueueItemView } from "@/lib/server/regions/board
 // 지역 기사 판정판 (/admin/regions, PRD-01B REG1-14·17 · W4 7·8단계 — docs/dev/W4_설계.md 5장 · 6장) — 편집 책임자·관리자(regional.judge).
 //  · 별도 상품 검토 큐 — 여행 후기·맛집 추천·행사 홍보로 판정한 원고(열린 항목은 공개 0). 닫으려면 결정 사유를 적는다
 //  · 편집 분야 승인 대기 — 공개 전 지역 기사 중 편집 승인 전 · 보류 — 편집 보류된 지역 기사
-// 판정 자체는 기사 편집 화면의 '지역 기사 판정' 줄에서 한다. 시범 지역 최소선 리포트는 11단계가 이 화면에 더한다.
+// 판정 자체는 기사 편집 화면의 '지역 기사 판정' 줄에서 한다. 시범 지역 최소선 판정 리포트는 /admin/regions/report(11단계 — 이 화면 머리에서 링크, 메뉴 항목은 그대로)
 export const metadata: Metadata = { title: "지역 기사 판정" };
 export const dynamic = "force-dynamic";
 
@@ -67,7 +67,11 @@ export default async function RegionsPage() {
       <PageTitle
         title="지역 기사 판정"
         description="여행 후기·맛집 추천·행사 홍보로 판정한 원고는 별도 상품 검토 큐에 들어가고, 열린 동안은 어떤 화면에도 공개되지 않습니다. 판정은 기사 편집 화면에서 합니다."
-      />
+      >
+        <a className={TEXT_LINK} href="/admin/regions/report" data-testid="region-report-link">
+          시범 지역 최소선 리포트
+        </a>
+      </PageTitle>
       <div className="space-y-8">
         <Panel id="separate-product-open" title={`별도 상품 검토 큐 — 열린 항목 ${board.open.length}건`} description="닫을 때 결정(광고·협찬 상품 전환·행사안내 등록·폐기 등)을 적습니다. 닫아도 보도기사·해설로는 발행되지 않습니다.">
           {board.open.length === 0 ? (

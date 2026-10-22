@@ -16,6 +16,7 @@ import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
 import { SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings";
 import { localBlockFieldsErrors } from "@/lib/server/public/region-hub-logic";
 import { searchTopicsErrors } from "@/lib/server/public/search-classify";
+import { REGION_INDEX_LIMITS, pilotRegionsErrors, regionIndexThresholdErrors } from "@/lib/server/public/region-index-logic";
 import { phraseError } from "./dictionary-rules";
 import { EXPIRY_DAYS_DEFAULT, EXPIRY_DAYS_MAX, EXPIRY_DAYS_MIN, expiryDaysErrors } from "@/lib/source-review/rules";
 
@@ -302,6 +303,17 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     guide:
       '{ "acquisition_tax": { "label": "취득세", "aliases": [] }, …, "redevelopment": { "label": "재개발·재건축", "aliases": ["재개발", "재건축"] } } — 주제 6개(acquisition_tax·property_tax·inheritance_gift·realestate_transaction·redevelopment·local_finance)는 고정, 주제마다 화면 글자(1~20자)와 별칭(0~20개·1~20자). 띄어쓰기·기호를 뺀 글자가 2글자 이상이고, 한 낱말은 한 주제에만. 지역명과 함께 찾으면 그 지역 허브를 첫 결과로 그 지역 기사에서 주제를 찾습니다. 바꾸면 배포 없이 다음 검색부터',
     check: (value) => searchTopicsErrors(value),
+  },
+  // ── W4 11단계 지역 색인 임계값·시범 지역 (docs/dev/W4_설계.md 2.2 · PRD-01B 9.2) — DB 트리거(…46 region_index_settings_guard)와 같은 검사 ──
+  region_index_threshold: {
+    label: "지역 허브 색인 임계값 (REG-09 · REG1-12)",
+    guide: `{ "reported_news": 1, "official_sources": 1 } — 자체 취재 기사 수·공식 원문/자료 수가 모두 이 값 이상인 지역 허브만 색인·사이트맵 원본(초기값 9.2 최소선). 정수 ${REGION_INDEX_LIMITS.min}~${REGION_INDEX_LIMITS.max}(0은 빈 지역이 색인되어 넣을 수 없습니다). 바꾸면 배포 없이 다음 렌더부터`,
+    check: (value) => regionIndexThresholdErrors(value),
+  },
+  pilot_regions: {
+    label: "시범 취재 지역 (PRD-01B 9.2)",
+    guide: `["1100000000", "2600000000"] — 법정동코드 0~${REGION_INDEX_LIMITS.pilots}개(새로 넣는 코드는 오늘 유효한 행정구역). 최소선 판정 리포트(/admin/regions/report)가 지역마다 수와 최소선, 서로 다른 시·도 2곳 이상인지를 보입니다. /local 시·도 카드에 '시범 지역' 표시`,
+    check: (value) => pilotRegionsErrors(value),
   },
   next_action_priority: {
     label: "다음 행동 버튼 우선순위 (ART-06)",

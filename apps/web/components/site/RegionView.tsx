@@ -74,6 +74,10 @@ export function RegionView({ page }: { page: RegionPage }) {
       data-region-topic={page.topic ?? "all"}
       // 이 주소의 검색 노출 제외(화면 metadata와 같은 값) — 루트가 운영 전환 전 모두 noindex라 meta만으로는 구별되지 않는다
       data-region-noindex={page.noindex ? "true" : "false"}
+      // 제외 사유 (W4 11단계 — empty 빈 지역 · topic_empty 고른 분야 0건 · below_minimum 최소선 미달 — 이 순서로 하나, 없으면 빈 글자)
+      data-region-noindex-reason={page.noindexReason ?? ""}
+      // 최소선 판정 (색인 대상 = 두 항목 모두 최소선 이상 — 사이트맵 원본 public_region_index에 있음)
+      data-region-indexable={page.indexable ? "true" : "false"}
     >
       {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
       <SiteSection id="region-head" tone="ivory" first data={{ "data-region-part": "head" }}>

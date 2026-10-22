@@ -51,6 +51,11 @@ export function auditAdminEmails(): string[] {
     .filter((e) => e.length > 0);
 }
 
+/** 검색 노출 게이트 (PRD-01A 11장 운영 도메인 전환 — 권고값 off). `on`일 때만 색인 대상 화면(최소선 이상 지역 허브 — W4 11단계)이 index를 낸다. 그 밖 값·없음 = 꺼짐 */
+export function siteIndexing(): boolean {
+  return process.env.SITE_INDEXING?.trim() === "on";
+}
+
 /** 사이트 절대 주소 (canonical·구조화 데이터). 없으면 canonical을 만들지 않는다 — 발행 점검이 막는다 (OPT-11) */
 export function siteUrl(): string | undefined {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();

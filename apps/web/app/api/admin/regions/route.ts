@@ -7,10 +7,12 @@ import { articleSummary, updateArticle } from "@/lib/server/articles/writes";
 import { authorize, requireViewer } from "@/lib/server/dal";
 import { dbError, errorJson, handle, json, readJson } from "@/lib/server/http";
 import { QUEUE_COLUMNS, loadRegionsBoard, type QueueItem } from "@/lib/server/regions/board";
+import { loadRegionIndexReport } from "@/lib/server/regions/report";
 
-// 지역 기사 관리 (W4 7·8단계 — PRD-01B REG1-14·17, docs/dev/W4_설계.md 4장 `/api/admin/regions` · 6장). 최소선 리포트는 11단계가 같은 경로에 더한다.
+// 지역 기사 관리 (W4 7·8·11단계 — PRD-01B REG1-14·17 · 9.2, docs/dev/W4_설계.md 4장 `/api/admin/regions` · 6장).
 // 모두 편집 책임자·관리자(PO)만(regional.judge — 광고·협찬 담당·기자 등은 403 + 거부 감사).
 //  · GET — 판정판: 별도 상품 검토 큐(열린 항목 + 최근 닫힌 20건, 원고 제목) · 편집 분야 승인 대기 · 보류 지역 기사
+//  · GET ?view=report — 시범 지역 최소선 판정 리포트(11단계 — 시범 지역마다 자체 취재 수·공식 자료 수와 최소선, 시·도 분포, 전국 색인 대상 수). 다른 view 값은 422
 //  · POST op=judge { articleId, judgement(news_candidate·travel_review·restaurant_pick·event_promo, null = 판정 지우기), note? } — 편집자 판정.
 //    판정자·시각을 기사에 남기고 감사 article.regional_judgement 1건. 지역 기사(지역 태그 또는 지자체뉴스)만 · 공개(예약) 중인 원고에 비보도 판정은 409
 //    (보도·해설 — 7단계, 그 밖의 유형 — 8단계: 큐 원고는 공개 0이므로 먼저 내린다. DB 트리거도 막는다).
@@ -23,8 +25,11 @@ export const dynamic = "force-dynamic";
 export const GET = handle(async (request: Request) => {
   const viewer = await requireViewer(request);
   if (viewer instanceof Response) return viewer;
-  const denied = await authorize(viewer, "regional.judge", "separate_product_queue:list");
+  const view = new URL(request.url).searchParams.get("view");
+  const denied = await authorize(viewer, "regional.judge", view === "report" ? "region_index_status:report" : "separate_product_queue:list");
   if (denied) return denied;
+  if (view === "report") return json({ report: await loadRegionIndexReport(serviceDb()) });
+  if (view !== null) return errorJson(422, "view는 report만 있습니다 (없으면 판정판)");
   return json(await loadRegionsBoard(serviceDb()));
 });
 

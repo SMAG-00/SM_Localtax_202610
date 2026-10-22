@@ -11,6 +11,7 @@ import { readLocalBlockFields } from "./region-hub";
 import { readArticleList, readCategories, readCategoryCounts, readPublicSettings, readRegions, readTopicCounts } from "./reads";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { sourceLineOf } from "./region-hub-logic";
+import { readIndexedSidoCodes, readPilotRegions } from "./region-index";
 import { readRegionalOfficial } from "./region-official";
 import { EMPTY_REGIONAL_OFFICIAL, sidoCards } from "./region-official-logic";
 import { GLOSSARY_COLUMNS, SITUATION_COLUMNS, num, type GlossaryRow, type SituationRow } from "./rows";
@@ -23,6 +24,7 @@ import { hubSituationCards } from "./situation-logic";
 // 블록과 편집 분야 대응은 설정 local_block_fields(W4 4단계 — 마이그레이션 …40). 읽지 못하거나 모양이 틀리면 블록 0(닫힌 쪽)
 // W4 9단계 — 지자체뉴스 허브 = /local 전국 화면: 시·도 카드(region_hubs가 켜졌을 때만 링크) · ⑤ 공식 자료/해설(전국 검수 공식 자료·감수 해설 — 있을 때만) ·
 // 데이터 출처 줄. 새 표·뷰는 읽지 않는다(region-official.ts — 마이그레이션 …08·…35·…41·…42 공개 읽기)
+// W4 11단계 — 시·도 카드 칩 '시범 지역'(설정 pilot_regions)·'색인 대상'(뷰 public_region_index) — 마이그레이션 …46 공개 읽기
 
 export type { HubData, HubTab } from "./hub-logic";
 
@@ -42,7 +44,7 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
         })
       : null;
   const localOfficial = section === "local" && !topic ? readRegionalOfficial(null) : null;
-  const [settings, categories, counts, topicCounts, latest, situations, terms, blockReads, hot, taxPoint, official, regions] = await Promise.all([
+  const [settings, categories, counts, topicCounts, latest, situations, terms, blockReads, hot, taxPoint, official, regions, pilots, indexedSido] = await Promise.all([
     readPublicSettings(),
     readCategories(),
     readCategoryCounts(),
@@ -55,6 +57,8 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     getHubTaxPoint(section),
     localOfficial,
     section === "local" && !topic ? readRegions() : null,
+    section === "local" && !topic ? readPilotRegions() : null,
+    section === "local" && !topic ? readIndexedSidoCodes() : null,
   ]);
   const blocks =
     section === "local" && !topic
@@ -79,7 +83,9 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     local:
       section === "local"
         ? {
-            sido: regions ? sidoCards(regions, isoToKstDate(new Date().toISOString()), settings.features.region_hubs) : [],
+            sido: regions
+              ? sidoCards(regions, isoToKstDate(new Date().toISOString()), settings.features.region_hubs, { pilots: pilots ?? [], indexed: indexedSido ?? new Set() })
+              : [],
             source: sourceLineOf(blocks?.official?.cards ?? [], [...(blocks?.localTax ?? []), ...(blocks?.realEstate ?? []), ...(blocks?.official?.explainers ?? []), ...latest.items]),
           }
         : null,

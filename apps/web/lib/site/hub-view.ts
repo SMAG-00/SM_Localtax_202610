@@ -20,6 +20,9 @@ export const HUB_HEADINGS = {
   regions: { eyebrow: "REGIONS", title: "시·도별 지자체 허브" },
 } as const;
 
+/** /local 시·도 카드 칩 글자 (W4 11단계 — PRD-01B 5장 '시범 지역·색인 대상 표시') */
+export const SIDO_CHIP_LABELS = { pilot: "시범 지역", indexed: "색인 대상" } as const;
+
 interface HubShape {
   blocks: unknown;
   /** /local 전국 화면 (W4 9단계) — 시·도 카드·데이터 출처 줄. 다른 허브는 null·없음 */

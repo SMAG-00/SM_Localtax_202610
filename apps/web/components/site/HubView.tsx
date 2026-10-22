@@ -1,6 +1,6 @@
-import { FieldHubHead, LocalHubBlocks, SituationCard, UiLink, type HubBlockContent } from "@ltr/ui";
+import { Chip, FieldHubHead, LocalHubBlocks, SituationCard, UiLink, type HubBlockContent } from "@ltr/ui";
 import type { ArticleListItem, HubData } from "@/lib/server/public";
-import { HUB_HEADINGS, hubParts } from "@/lib/site/hub-view";
+import { HUB_HEADINGS, SIDO_CHIP_LABELS, hubParts } from "@/lib/site/hub-view";
 import { ArticleGrid, ArticleItem } from "./ArticleItem";
 import { OfficialSourceCardView } from "./OfficialSourceCardView";
 import { OFFICIAL_GROUPS, RegionSourceLineView } from "./RegionView";
@@ -15,6 +15,29 @@ import { UnavailableNotice } from "./Unavailable";
 // 내용 0건인 부분은 빠지고 순서는 그대로다. 부분마다 data-hub-part — E2E가 네 허브의 골격을 비교한다.
 // 지자체뉴스 허브(/local 전국 화면 — W4 9단계)만 머리 뒤 시·도 카드(regions — region_hubs가 꺼지면 링크 없이 글자만)와 블록 ⑤ 공식 자료/해설(있을 때만),
 // 맨 아래 데이터 출처 줄(source — REG-10)이 더 있다.
+
+/** 시·도 카드 칩 (W4 11단계 — 5장 /local '시범·색인 표시'). 글자로 뜻을 전한다(PRD-00 8.9). 둘 다 아니면 요소 0 */
+function SidoChips({ card }: { card: { pilot: boolean; indexed: boolean } }) {
+  if (!card.pilot && !card.indexed) return null;
+  return (
+    <span className="flex flex-wrap gap-1">
+      {card.pilot && (
+        <Chip>
+          <span data-part="sido-chip" data-chip="pilot">
+            {SIDO_CHIP_LABELS.pilot}
+          </span>
+        </Chip>
+      )}
+      {card.indexed && (
+        <Chip>
+          <span data-part="sido-chip" data-chip="indexed">
+            {SIDO_CHIP_LABELS.indexed}
+          </span>
+        </Chip>
+      )}
+    </span>
+  );
+}
 
 /** 블록 한 칸 — 기사 카드. 0건이면 블록째 없다 (빈 블록 0) */
 function blockContent(items: readonly ArticleListItem[]): HubBlockContent | undefined {
@@ -76,16 +99,20 @@ export function HubView({ hub }: { hub: HubData }) {
               <SiteSection key={key} id="hub-regions" tone={tone} heading={HUB_HEADINGS.regions} data={{ "data-hub-part": "regions" }}>
                 <ul data-part="sido-cards" className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                   {(hub.local?.sido ?? []).map((r) => (
-                    <li key={r.code} data-sido-code={r.code}>
+                    <li key={r.code} data-sido-code={r.code} data-pilot={r.pilot ? "true" : "false"} data-indexed={r.indexed ? "true" : "false"}>
                       {r.href ? (
                         <UiLink
                           href={r.href}
-                          className="flex min-h-11 items-center rounded-xl border border-navy-100 bg-white px-4 py-3 text-[16px] font-bold text-navy-900 transition hover:border-hermes-400 hover:bg-hermes-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500"
+                          className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-navy-100 bg-white px-4 py-3 text-[16px] font-bold text-navy-900 transition hover:border-hermes-400 hover:bg-hermes-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500"
                         >
-                          {r.name}
+                          <span data-part="sido-name">{r.name}</span>
+                          <SidoChips card={r} />
                         </UiLink>
                       ) : (
-                        <span className="flex min-h-11 items-center rounded-xl border border-navy-100 bg-white px-4 py-3 text-[16px] font-bold text-navy-700">{r.name}</span>
+                        <span className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-navy-100 bg-white px-4 py-3 text-[16px] font-bold text-navy-700">
+                          <span data-part="sido-name">{r.name}</span>
+                          <SidoChips card={r} />
+                        </span>
                       )}
                     </li>
                   ))}

@@ -6,13 +6,16 @@
 //  · 구조화 데이터 BreadcrumbList = 화면 이동 줄 (regionCrumbs 한 함수). 사이트 주소(NEXT_PUBLIC_SITE_URL)가 없으면 내지 않는다(틀린 주소 0)
 //  · W4 4단계 — 머리 아래 지방세 포인트(hub_tax_points.local, 서명본만) · 분야 필터(?topic=) · LG-08 블록 ②③⑤(규칙은 region-hub-logic.ts) · 데이터 출처 줄.
 //    분야를 골랐는데 그 지역 범위에 그 분야 기사가 0이면 그 주소도 noindex. 폐지 지역 태그 기사는 후속 지역 화면에 넣지 않는다(자기 태그만 — 12장 #26·#36)
-// W4 9단계 — ⑤ 공식 자료/해설(검수 공식 자료 카드·감수 해설)과 지역 세금 연결 블록(⑤ 뒤 — 규칙은 region-official-logic.ts). 색인 최소선(9.2)·메타 설명은 11단계가 더한다.
+// W4 9단계 — ⑤ 공식 자료/해설(검수 공식 자료 카드·감수 해설)과 지역 세금 연결 블록(⑤ 뒤 — 규칙은 region-official-logic.ts).
+// W4 11단계 — 색인 최소선(9.2 — DB 뷰 public_region_index 판정)·검색 노출 제외 사유·메타 설명(규칙은 region-index-logic.ts).
+//    사유 = 빈 지역 → 고른 분야 0건 → 최소선 미달 순으로 하나. 분야를 고른 주소의 canonical은 그 지역 허브(쿼리 없음)
 import { regionCrumbs, type LocalTopic, type RegionCrumb, type RegionRef } from "@ltr/ui";
 import type { BreadcrumbView } from "@ltr/structured-data";
 import { isValidOn, regionHref, type RegionRouteRow } from "@/lib/site/region-route";
 import { SECTION_INFO } from "./constants";
 import type { HubTaxPoint } from "./hub-point-logic";
 import { regionHubBlocks, regionSourceLine, topicHasOwnArticles, type BlockArticles, type LocalBlockFields, type RegionHubBlock, type RegionSourceLine } from "./region-hub-logic";
+import { regionDescription, regionNoindexReason, type NoindexReason } from "./region-index-logic";
 import type { RegionalOfficial, RegionTaxLinksView } from "./region-official-logic";
 
 export interface RegionGuide {
@@ -45,8 +48,14 @@ export interface RegionPage {
   /** 그 지역 범위의 지자체뉴스 기사 수 (편집 분야와 상관없이) */
   total: number;
   empty: boolean;
-  /** 검색 노출 제외 — 기사 0건 (REG1-01 '빈 시·군·구 주소는 200 + noindex'), 고른 분야 기사 0건 */
+  /** 최소선 판정 (REG-09 · 9.2 — 뷰 public_region_index에 있음 = 두 항목 모두 최소선 이상 + region_hubs 켜짐) */
+  indexable: boolean;
+  /** 검색 노출 제외 사유 — 기사 0건(REG1-01) · 고른 분야 기사 0건(CAT-02) · 최소선 미달(REG-09). 없으면 null */
+  noindexReason: NoindexReason | null;
+  /** 검색 노출 제외 — 사유가 있을 때 */
   noindex: boolean;
+  /** 메타 설명 — 그 지역 코드 하나만 단 최신 자체 취재 기사 제목 2건, 없으면 null (템플릿 문장 0 — 12장 #27) */
+  description: string | null;
   guide: RegionGuide | null;
   /** BreadcrumbList 입력 — 사이트 주소가 없으면 null */
   breadcrumb: BreadcrumbView | null;
@@ -99,6 +108,10 @@ export function regionPage(input: {
   /** ⑤ 검수 공식 자료·감수 해설 (그 지역 범위) */
   official?: RegionalOfficial;
   taxLinks?: RegionTaxLinksView | null;
+  /** 최소선 판정 — 읽지 않았으면 미달(닫힌 쪽) */
+  indexable?: boolean;
+  /** 메타 설명 재료 — 그 지역 코드 하나만 단 최신 자체 취재 기사 제목 */
+  descriptionTitles?: readonly string[];
 }): RegionPage {
   const { sido, sigungu } = input;
   const sidoRef: RegionRef = { name: sido.name, href: regionHref(sido.slug) };
@@ -110,6 +123,8 @@ export function regionPage(input: {
   const own = input.own ?? {};
   const blocks = regionHubBlocks({ fields, topic, sidoName: sido.name, sigunguName: sigungu?.name ?? null, own, parent: input.parent ?? {}, ...(input.official ? { official: input.official } : {}) });
   const empty = input.total <= 0;
+  const indexable = input.indexable === true;
+  const noindexReason = regionNoindexReason({ empty, indexable, topicEmpty: topic !== null && !topicHasOwnArticles(fields, topic, own) });
   return {
     level: sigungu ? "sigungu" : "sido",
     code: (sigungu ?? sido).code,
@@ -126,7 +141,10 @@ export function regionPage(input: {
     source: regionSourceLine(blocks),
     total: empty ? 0 : input.total,
     empty,
-    noindex: empty || (topic !== null && !topicHasOwnArticles(fields, topic, own)),
+    indexable,
+    noindexReason,
+    noindex: noindexReason !== null,
+    description: regionDescription(input.descriptionTitles ?? []),
     guide: empty ? emptyGuide(sidoRef, sigunguRef, fullName) : null,
     breadcrumb: breadcrumbView(crumbs, input.siteUrl),
   };

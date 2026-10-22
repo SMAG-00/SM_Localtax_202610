@@ -59,9 +59,28 @@ describe("빈 지역 — 200 + noindex + 상위 지역 안내 (REG1-01 · REG1-1
     expect(emptyGuide(p.sido, null, p.fullName).text).toBe("시험용 가상도에는 아직 공개된 기사가 없습니다. 지자체뉴스 전체에서 다른 지역 소식을 보세요.");
   });
 
-  test("기사가 있으면 색인 대상(noindex 0) · 안내 0", () => {
-    const p = regionPage({ sido: SIDO, sigungu: GU_A, regions: REGIONS, total: 2, today: TODAY, siteUrl: SITE });
-    expect(p).toMatchObject({ empty: false, noindex: false, guide: null, total: 2 });
+  test("기사가 있고 최소선 이상이면 색인 대상(noindex 0) · 안내 0", () => {
+    const p = regionPage({ sido: SIDO, sigungu: GU_A, regions: REGIONS, total: 2, today: TODAY, siteUrl: SITE, indexable: true });
+    expect(p).toMatchObject({ empty: false, indexable: true, noindexReason: null, noindex: false, guide: null, total: 2 });
+  });
+
+  test("W4 11단계 — 기사가 있어도 최소선 미달(판정을 읽지 않음 포함)이면 noindex, 사유 below_minimum · 안내 0", () => {
+    for (const indexable of [false, undefined]) {
+      const p = regionPage({ sido: SIDO, sigungu: GU_A, regions: REGIONS, total: 2, today: TODAY, siteUrl: SITE, ...(indexable === undefined ? {} : { indexable }) });
+      expect(p).toMatchObject({ empty: false, indexable: false, noindexReason: "below_minimum", noindex: true, guide: null });
+    }
+    // 빈 지역은 판정과 상관없이 사유 empty (REG1-01 '빈 시·군·구 주소는 noindex')
+    expect(regionPage({ sido: SIDO, sigungu: GU_B, regions: REGIONS, total: 0, today: TODAY, siteUrl: SITE, indexable: true })).toMatchObject({ noindexReason: "empty", noindex: true });
+  });
+
+  test("W4 11단계 — 메타 설명 = 그 지역 최신 자체 취재 기사 제목 2건(없으면 null — 지명만 바꾼 템플릿 문장 0)", () => {
+    const titles = ["시험용 가득구 세수 감소 보도", "시험용 가득구 재산세 부과 보도", "시험용 세 번째 보도"];
+    const p = regionPage({ sido: SIDO, sigungu: GU_A, regions: REGIONS, total: 3, today: TODAY, siteUrl: SITE, indexable: true, descriptionTitles: titles });
+    expect(p.description).toBe("시험용 가득구 세수 감소 보도 · 시험용 가득구 재산세 부과 보도");
+    const none = regionPage({ sido: SIDO, sigungu: GU_A, regions: REGIONS, total: 3, today: TODAY, siteUrl: SITE, indexable: true });
+    expect(none.description).toBeNull();
+    // 같은 재료 없이 두 지역의 설명이 지명만 다르게 만들어지는 일 0 — 재료가 없으면 둘 다 null
+    expect(regionPage({ sido: SIDO, sigungu: null, regions: REGIONS, total: 3, today: TODAY, siteUrl: SITE, indexable: true }).description).toBeNull();
   });
 
   test("수가 0 이하이면 빈 지역 — 음수·0 모두 total 0", () => {

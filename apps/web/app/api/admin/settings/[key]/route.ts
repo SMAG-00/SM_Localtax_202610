@@ -5,11 +5,14 @@ import { publishedDocKeys } from "@/lib/server/auth-guard";
 import { mailEnv } from "@/lib/server/env";
 import { mailConfigured } from "@/lib/server/mail/config";
 import { parseFeatures } from "@/lib/server/public/settings";
+import { pilotRegionsRegionErrors } from "@/lib/server/public/region-index-logic";
+import { isoToKstDate } from "@/lib/admin/form-utils";
+import type { RegionRouteRow } from "@/lib/site/region-route";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { readSetting, writeSetting } from "@/lib/server/admin/backoffice";
 import { serviceDb } from "@/lib/server/articles/service";
 import { authorize, requireViewer } from "@/lib/server/dal";
-import { errorJson, handle, json, readJson } from "@/lib/server/http";
+import { dbError, errorJson, handle, json, readJson } from "@/lib/server/http";
 
 // 운영 설정 한 줄 고치기 — 관리자만(settings.edit, 거부는 403 + 감사 로그).
 //  · 본문 { valueJson: "JSON 글" } 또는 { value: JSON 값 }, 둘 중 하나. updatedAt(읽은 시각)을 주면 그 뒤에 다른 사람이 고쳤을 때 409
@@ -49,6 +52,13 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   const checked = validateSettingValue(key, value, current.value);
   if (!checked.ok) return errorJson(422, "설정 값이 규칙에 맞지 않습니다", { errors: checked.errors });
   if (sameJson(value, current.value)) return json({ setting: current, unchanged: true });
+  // 시범 지역: 새로 넣는 코드는 오늘 유효한 행정구역 (W4 11단계 — DB 트리거 …46과 같은 규칙, 422로 칸마다 사유)
+  if (key === "pilot_regions") {
+    const { data, error } = await db.from("regions").select("code, parent_code, level, name, slug, valid_from, valid_to").in("code", value as string[]);
+    if (error) throw dbError(error, "regions 읽기");
+    const regionErrors = pilotRegionsRegionErrors(value as string[], current.value, (data ?? []) as RegionRouteRow[], isoToKstDate(new Date().toISOString()));
+    if (regionErrors.length) return errorJson(422, "설정 값이 규칙에 맞지 않습니다", { errors: regionErrors });
+  }
   // 기능 키를 새로 켜는 경우: 게시본·메일 설정 의존을 채우지 못하면 거부하고 사유를 보인다 (W2-e 설계 2.3 · 6.3)
   if (key === "feature_flags") {
     const depErrors = featureEnableErrors(parseFeatures(current.value), parseFeatures(value), await publishedDocKeys(db), mailConfigured(mailEnv()), await brandRecords(db));

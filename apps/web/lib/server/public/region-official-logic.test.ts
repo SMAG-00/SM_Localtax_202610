@@ -236,9 +236,19 @@ describe("3단계 자리 · /local 시·도 카드", () => {
   test("오늘 유효한 시·도만, 코드 순 — region_hubs가 켜졌을 때만 링크(꺼지면 글자만)", () => {
     const rows = [r("9902000000"), r("9900000000"), r("9901100000", { level: "sigungu", parent_code: "9900000000" }), r("9903000000", { valid_to: "2026-01-01" }), r("9904000000", { valid_from: "2027-01-01" })];
     expect(sidoCards(rows, "2026-10-22", true)).toEqual([
-      { code: "9900000000", name: "시험용 9900000000", href: "/local/s9900000000" },
-      { code: "9902000000", name: "시험용 9902000000", href: "/local/s9902000000" },
+      { code: "9900000000", name: "시험용 9900000000", href: "/local/s9900000000", pilot: false, indexed: false },
+      { code: "9902000000", name: "시험용 9902000000", href: "/local/s9902000000", pilot: false, indexed: false },
     ]);
     expect(sidoCards(rows, "2026-10-22", false).map((c) => c.href)).toEqual([null, null]);
+  });
+
+  test("11단계 칩 — 시범 지역 = 그 시·도 또는 그 아래 시·군·구가 pilot_regions에, 색인 대상 = public_region_index에 그 시·도", () => {
+    const rows = [r("9700000000"), r("9800000000"), r("9900000000")];
+    const cards = sidoCards(rows, "2026-10-22", true, { pilots: ["9800000000", "9901100000"], indexed: new Set(["9700000000", "9901100000"]) });
+    expect(cards.map((c) => [c.code, c.pilot, c.indexed])).toEqual([
+      ["9700000000", false, true],
+      ["9800000000", true, false],
+      ["9900000000", true, false], // 시·군·구만 시범·색인 대상 — 시범 표시는 상위 시·도 카드에, 색인 표시는 시·도 행 판정만
+    ]);
   });
 });

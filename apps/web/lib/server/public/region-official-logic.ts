@@ -8,13 +8,15 @@
 //  · 지역 세금 연결 블록 = 상황 카드(지자체뉴스·부동산 허브 줄, 상한 hub_situation_limit) · 지방세 감수 해설 ≤ 3 · SM 취득세 카드 1(기능 키 + 주소) ·
 //    공식 원문 ≤ 5(검수 공식 자료의 원문 링크). 모두 0이면 블록째 0, 줄마다 0이면 줄째 숨김 (12장 #25)
 //  · 3단계 자리(정비사업 현황 — ③, 조례 원문 — ⑤)는 기능 키 자리만. W4는 키가 켜져도 그릴 내용 0 (빈 블록 금지 — 12장 #24)
-//  · /local 전국 화면의 시·도 카드 — 오늘 유효한 시·도, 코드 순. region_hubs가 켜졌을 때만 지역 허브 링크(꺼지면 글자만 — 404 링크 0)
+//  · /local 전국 화면의 시·도 카드 — 오늘 유효한 시·도, 코드 순. region_hubs가 켜졌을 때만 지역 허브 링크(꺼지면 글자만 — 404 링크 0).
+//    11단계 — 칩 '시범 지역'(pilot_regions)·'색인 대상'(public_region_index)
 import { BLOCKED_OFFICIAL_SOURCE_TYPES } from "@ltr/editorial";
 import { isValidOn, regionHref, type RegionRouteRow } from "@/lib/site/region-route";
 import { officialCard, type OfficialSourceCard, type SourceCardInput } from "@/lib/site/source-cards";
 import type { ArticleListItem } from "./cards";
 import type { FeatureKey } from "./constants";
 import type { OfficialLinkCard } from "./calc";
+import { sidoIsPilot } from "./region-index-logic";
 import { hubSituationCards, type SituationCard } from "./situation-logic";
 import type { SituationRow } from "./rows";
 
@@ -218,12 +220,22 @@ export interface SidoCard {
   name: string;
   /** 지역 허브 주소 — region_hubs가 꺼졌으면 null(글자만) */
   href: string | null;
+  /** '시범 지역' 칩 (W4 11단계 — 설정 pilot_regions: 그 시·도 또는 그 아래 시·군·구) */
+  pilot: boolean;
+  /** '색인 대상' 칩 (W4 11단계 — 사이트맵 원본 public_region_index에 그 시·도가 있음 = 최소선 이상) */
+  indexed: boolean;
 }
 
-/** 시·도 카드 — 오늘 유효한 시·도, 코드 순 */
-export function sidoCards(regions: readonly RegionRouteRow[], today: string, hubsOpen: boolean): SidoCard[] {
+/** 시·도 카드 — 오늘 유효한 시·도, 코드 순. 칩 재료(시범 지역·색인 대상)는 11단계 */
+export function sidoCards(
+  regions: readonly RegionRouteRow[],
+  today: string,
+  hubsOpen: boolean,
+  marks: { pilots?: readonly string[]; indexed?: ReadonlySet<string> } = {},
+): SidoCard[] {
+  const pilots = marks.pilots ?? [];
   return regions
     .filter((r) => r.level === "sido" && isValidOn(r, today))
     .sort((a, b) => a.code.localeCompare(b.code))
-    .map((r) => ({ code: r.code, name: r.name, href: hubsOpen ? regionHref(r.slug) : null }));
+    .map((r) => ({ code: r.code, name: r.name, href: hubsOpen ? regionHref(r.slug) : null, pilot: sidoIsPilot(r.code, pilots), indexed: marks.indexed?.has(r.code) ?? false }));
 }
