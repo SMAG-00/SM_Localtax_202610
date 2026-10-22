@@ -17,6 +17,8 @@ export type TaxLensBoxProps = {
   reviewer: string;
   /** 법령 기준일 */
   basisDate: string;
+  /** 한 화면에 박스가 여럿일 때 구별하는 이름 (화면 읽기용 — 제목 뒤에 숨은 글자로 붙는다. 예: 단계 이름 — PR-08) */
+  label?: string;
 };
 
 const MAX_POINTS = 3;
@@ -42,7 +44,7 @@ function openLinks(links: TaxLensBoxProps["links"]) {
  * 「지방세로 읽기」 박스 — 부동산·개발금융·지자체 기사 끝 흰 카드 (CORE-01 · PR-08).
  * 저장 규칙(세목 1개 이상 · 포인트 1~3줄 · 링크 1개 이상 · 세액 표현 0)을 어긴 값은 박스 HTML 0으로 막는다.
  */
-export function TaxLensBox({ taxes, points, links, reviewer, basisDate }: TaxLensBoxProps) {
+export function TaxLensBox({ taxes, points, links, reviewer, basisDate, label }: TaxLensBoxProps) {
   const headingId = useId();
   const taxChips = nonBlank(taxes);
   const lines = nonBlank(points);
@@ -57,6 +59,7 @@ export function TaxLensBox({ taxes, points, links, reviewer, basisDate }: TaxLen
         <Eyebrow>LOCAL TAX LENS</Eyebrow>
         <h2 id={headingId} className="mt-2 text-[19px] font-black text-navy-900">
           지방세로 읽기
+          {!isBlank(label ?? "") && <span className="sr-only"> — {label}</span>}
         </h2>
         <ul className="mt-3 flex flex-wrap gap-2" aria-label="관련 세목">
           {taxChips.map((t) => (

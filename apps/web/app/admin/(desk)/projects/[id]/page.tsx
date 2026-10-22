@@ -2,21 +2,27 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CorrectionForm, PublishForm, StageEventForm } from "@/components/admin/ProjectControls";
+import { StageLensItem } from "@/components/admin/ProjectLensControls";
 import { ConfirmLinkForm, CreateLinkForm, RemoveLinkForm, SuggestLinksButton } from "@/components/admin/RegionalLinkControls";
 import { EmptyNote, MONO, PageTitle, Panel, TEXT_LINK, ToneChip } from "@/components/admin/ui";
 import { LICENSE_TYPE_LABELS, type LicenseType } from "@ltr/editorial";
+import { can } from "@/lib/access";
+import { lensBoard } from "@/lib/admin/project-lens-rules";
 import { isoToKstDate, isoToKstDateTime } from "@/lib/admin/form-utils";
 import { errorsByField } from "@/lib/admin/project-rules";
 import { LINK_RELATION_LABELS, LINK_STATUS_LABELS, LINK_TYPE_LABELS } from "@/lib/admin/regional-link-rules";
 import { pageId, pageViewer, requirePage } from "@/lib/server/admin/pages";
 import { serviceDb } from "@/lib/server/articles/service";
 import { loadProject, loadProjectSettings, type EventView } from "@/lib/server/projects/board";
+import { loadLensRows } from "@/lib/server/projects/lenses";
 import { loadLinkBoard, type LinkView } from "@/lib/server/regional-links/board";
 
 // 프로젝트 한 건 (/admin/projects/[id] — W4 14단계, PRD-01B PR-02 · PR-03 · PR-05 · REG1-10) — 편집 책임자·관리자(project.manage).
 //  · 단계 기록(추가만) — 단계마다 고시 번호·고시일·고시 기관·원문 주소(새 창)·공공누리·원본 스냅샷 번호, 정정·정정됨·해당 없음·비공개·`검토 중`(원문 검수 큐) 표시
 //  · 단계 기록하기(고시 6칸) · 정정(사유 + 한 번만 — 바꿔 적기·거두기) · 공개(공개 단계 1건 + 데이터 출처 + 정보 확인일) · 내리기
 //  · 지역 연결 — 13단계와 같은 작업(같은 지역 후보 찾기·만들기·확인·지우기, 출발 = 이 프로젝트). 후보는 이 화면에만, 확인된 연결만 공개
+//  · 단계별 「지방세로 읽기」(16단계 — PR-08) — 이 사업 유형의 단계마다 템플릿 상태·문구·초안 폼. 템플릿은 같은 유형의 모든 프로젝트가 함께 쓴다.
+//    서명은 세무 감수위원(review.tax_review)만 — 감수위원은 /admin/projects/lenses에서 서명한다(이 화면은 편집 책임자·관리자)
 // 가격·분양가·분담금·수익률·시세 입력 요소는 없다(PR-05). 원본 스냅샷 글자는 그리지 않는다(번호만 — 12장 #19).
 export const metadata: Metadata = { title: "프로젝트" };
 export const dynamic = "force-dynamic";
@@ -91,7 +97,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   const detail = await loadProject(db, id, settings);
   if (!detail) notFound();
   const { project: p, stages, events, publishBlockers } = detail;
-  const links = await loadLinkBoard(db, { type: "project", id: String(p.id) });
+  const [links, lensRows] = await Promise.all([loadLinkBoard(db, { type: "project", id: String(p.id) }), loadLensRows(db, p.project_type)]);
+  const lensStages = lensBoard(settings.types, settings.lists, lensRows, p.project_type)[0]?.stages ?? [];
+  const canReview = can(viewer, "review.tax_review");
   const blockers = errorsByField(publishBlockers);
   const targets = events.filter((e) => e.corrected_by === null).map((e) => ({ id: e.id, label: `기록 ${e.id} · ${KIND_LABELS[e.kind]}${e.stage_label ? ` · ${e.stage_label}` : ""}` }));
 
@@ -127,6 +135,27 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
         <Panel id="project-event-input" title="단계 기록하기" description="이 사업 유형의 단계 목록 안에서 고릅니다. 같은 단계를 두 번 적거나 앞 순서로 돌아가는 기록은 거부됩니다.">
           {stages.length === 0 ? <EmptyNote>이 사업 유형의 단계 목록이 없습니다 — 운영 설정 project_stage_lists를 확인하세요.</EmptyNote> : <StageEventForm projectId={p.id} stages={stages} />}
+        </Panel>
+
+        <Panel
+          id="project-lenses"
+          title="단계별 「지방세로 읽기」"
+          description="이 사업 유형의 단계마다 템플릿 하나 — 같은 유형의 모든 프로젝트 화면에 함께 붙습니다. 세무 감수 서명 뒤에만 공개되고, 고치면 서명이 지워집니다(재감수 필요)."
+        >
+          {lensStages.length === 0 ? (
+            <EmptyNote>이 사업 유형의 단계 목록이 없습니다.</EmptyNote>
+          ) : (
+            <ol className="space-y-4" data-testid="project-lenses">
+              {lensStages.map((s) => (
+                <StageLensItem key={s.key} projectType={p.project_type} stage={s.key} stageLabel={s.label} row={s.row} canEdit canReview={canReview} />
+              ))}
+            </ol>
+          )}
+          <p className="mt-4 text-[15px]">
+            <Link className={TEXT_LINK} href="/admin/projects/lenses" prefetch={false} data-testid="lens-board-link">
+              모든 사업 유형의 템플릿 보기 (감수 서명 화면)
+            </Link>
+          </p>
         </Panel>
 
         <Panel id="project-correct" title="정정" description="정정은 사유가 필수이고 한 기록에 한 번만 합니다. 정정을 다시 고치려면 정정 기록을 정정합니다.">

@@ -27,7 +27,11 @@ import {
   sortProjects,
   sourceCoverage,
   stageRecord,
+  lensFor,
+  stageLensMap,
+  stageLensView,
   type ProjectCard,
+  type PublicStageLensRow,
   type PublicProjectEventRow,
   type PublicProjectRow,
   type StageListRow,
@@ -299,5 +303,78 @@ describe("GET /api/projects/{slug} — 400 · 응답 모양 · 가격 칸 0 (PR-
     const keys = (v: unknown): string[] => (Array.isArray(v) ? v.flatMap(keys) : v && typeof v === "object" ? Object.entries(v).flatMap(([k, x]) => [k, ...keys(x)]) : []);
     expect(PRICE_WORDS.length).toBe(16);
     expect(keys(body).filter((k) => priceWordsIn(k).length > 0)).toEqual([]);
+  });
+});
+
+// ── 단계별 「지방세로 읽기」 (16단계 — PR-08 · CORE-01 · 12장 #129~) ──
+describe("단계별 「지방세로 읽기」 박스 값 (stageLensView · stageLensMap · lensFor)", () => {
+  const lensRow = (over: Partial<PublicStageLensRow> = {}): PublicStageLensRow => ({
+    project_type: "siheom_pl",
+    stage: "zone",
+    stage_position: 1,
+    topics: ["시험용 세목"],
+    points: ["시험용 포인트 하나"],
+    links: [
+      { kind: "explainer", label: "시험용 해설", url: "/tax" },
+      { kind: "book", label: "시험용 도서", url: "/store/siheom" },
+      { kind: "expert", label: "시험용 전문가", url: "/experts?field=siheom" },
+    ],
+    base_date: "2026-01-01",
+    reviewed_at: "2026-10-23T02:00:00+00:00",
+    reviewer_name: "시험용 감수위원",
+    ...over,
+  });
+  // 전문가 링크는 기능 expert_finder + 화면 /experts(유틸 메뉴 기능 experts)가 모두 열려야 남는다
+  const open = features(["store", "expert_finder", "experts"]);
+
+  test("서명된 줄 → 박스 값 (세목·포인트·열린 링크·기준일·감수자)", () => {
+    expect(stageLensView(lensRow(), open)).toEqual({
+      topics: ["시험용 세목"],
+      points: ["시험용 포인트 하나"],
+      links: [
+        { kind: "explainer", href: "/tax" },
+        { kind: "book", href: "/store/siheom" },
+        { kind: "expert", href: "/experts?field=siheom" },
+      ],
+      basisDate: "2026-01-01",
+      reviewer: "시험용 감수위원",
+    });
+  });
+  test("닫힌 기능의 링크는 뺀다 — 도서(store)·전문가(expert_finder) 꺼짐이면 해설만, 해설이 닫힌 화면이면 박스 0", () => {
+    expect(stageLensView(lensRow(), features())!.links).toEqual([{ kind: "explainer", href: "/tax" }]);
+    expect(stageLensView(lensRow(), features(["store", "expert_finder"]))!.links.map((l) => l.kind)).toEqual(["explainer", "book"]);
+    expect(stageLensView(lensRow({ links: [{ kind: "explainer", label: "시험용", url: "/local/events" }] }), open)).toBeNull();
+    expect(stageLensView(lensRow({ links: [{ kind: "explainer", label: "시험용", url: "/realestate/projects/siheom-a" }] }), open)).toBeNull();
+    expect(stageLensView(lensRow({ links: [{ kind: "explainer", label: "시험용", url: "/realestate/projects/siheom-a" }] }), features(["realestate_projects"]))).not.toBeNull();
+  });
+  test("모양이 틀리면 박스 0 — 서명자 공개 이름 없음(BR-03)·기준일 없음·포인트 0·4줄·세액 표현·계산기·바깥 주소", () => {
+    for (const over of [
+      { reviewer_name: null },
+      { reviewer_name: " " },
+      { base_date: null },
+      { points: [] },
+      { points: ["가", "나", "다", "라"] },
+      { points: ["시험용 300만 원"] },
+      { topics: [] },
+      { topics: "시험용" },
+      { links: [] },
+      { links: [{ kind: "calculator", label: "시험용", url: "/calc" }] },
+      { links: [{ kind: "explainer", label: "시험용", url: "https://gasang.example/x" }] },
+    ] as Partial<PublicStageLensRow>[]) {
+      expect(stageLensView(lensRow(over), open), JSON.stringify(over)).toBeNull();
+    }
+  });
+  test("단계 키 → 박스 — 그 사업 유형만 · 같은 단계는 앞 줄 · 해당 없음 단계에는 붙이지 않는다 · 없는 단계 0", () => {
+    const map = stageLensMap(
+      [lensRow(), lensRow({ points: ["시험용 다른 줄"] }), lensRow({ project_type: "siheom_pm", stage: "plan" }), lensRow({ stage: "done", reviewer_name: null })],
+      "siheom_pl",
+      open,
+    );
+    expect(Object.keys(map)).toEqual(["zone"]);
+    expect(map.zone!.points).toEqual(["시험용 포인트 하나"]);
+    expect(lensFor({ key: "zone", status: "recorded" }, map)).toBe(map.zone);
+    expect(lensFor({ key: "zone", status: "none" }, map)).toBe(map.zone);
+    expect(lensFor({ key: "zone", status: "not_applicable" }, map)).toBeNull();
+    expect(lensFor({ key: "plan", status: "recorded" }, map)).toBeNull();
   });
 });

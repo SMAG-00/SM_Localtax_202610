@@ -2,6 +2,7 @@
 // 로컬 Supabase에 anon 키로 읽는다 (경계 = 공개 뷰 public_projects · public_project_events · public_project_stage_lists · public_project_search · public_regional_links).
 // 시험 세계: 시험용 시·도 1 + 시·군·구 2(접두 99 가짜 코드 — 설계 8장) · 시험용 사업 유형 1(단계 4) · 공개 프로젝트 2(시·군·구 A·B) · 초안 프로젝트 1 ·
 // 공개 기사 2(프로젝트 → 기사 · 기사 → 프로젝트 연결) · 지역 → 프로젝트 확인된 연결 1. 끝나면 만든 행을 모두 지우고 기능 키·사업 유형 설정을 되돌린다.
+// 16단계: 단계별 「지방세로 읽기」 템플릿(public_project_stage_lenses — 서명된 것만)·SM 취득세 카드(sm_calculator + 주소) — 시험용 감수위원 계정·인물, SM 주소는 되돌린다.
 // 실행: pnpm --filter @ltr/web test:integration
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { execFileSync } from "node:child_process";
@@ -23,7 +24,7 @@ let api;
 let projects;
 const saved = {};
 const w = {};
-const made = { people: [], articles: [], snapshots: [], regions: [], projects: [], links: [] };
+const made = { people: [], articles: [], snapshots: [], regions: [], projects: [], links: [], users: [] };
 
 function localSupabase() {
   const out = execFileSync("supabase", ["status", "-o", "json"], {
@@ -170,6 +171,8 @@ afterAll(async () => {
   try {
     await db.query("set local session_replication_role = replica");
     await db.query("delete from public.regional_links where id = any($1::bigint[])", [made.links]);
+    await db.query("delete from public.project_stage_lenses where project_type = $1", [TYPE]);
+    if (saved.smRow) await db.query("update public.official_links set url = $2, status = $3 where id = $1", [saved.smRow.id, saved.smRow.url, saved.smRow.status]);
     await db.query("delete from public.source_review_queue where target_type = 'project_event' and target_id in (select id from public.project_events where project_id = any($1::bigint[]))", [made.projects]);
     await db.query("delete from public.project_events where project_id = any($1::bigint[])", [made.projects]);
     await db.query("delete from public.projects where id = any($1::bigint[])", [made.projects]);
@@ -177,6 +180,8 @@ afterAll(async () => {
     await db.query("delete from public.articles where id = any($1::bigint[])", [made.articles]);
     await db.query("delete from public.raw_snapshots where id = any($1::bigint[])", [made.snapshots]);
     await db.query("delete from public.people where id = any($1::bigint[])", [made.people]);
+    await db.query("delete from public.staff_roles where user_id = any($1::uuid[])", [made.users]);
+    await db.query("delete from auth.users where id = any($1::uuid[])", [made.users]);
     await db.query("delete from public.regions where code = any($1::text[])", [made.regions]);
     for (const [k, v] of Object.entries(saved)) await setSetting(k, v);
     await db.query("commit");
@@ -294,6 +299,72 @@ describe("기능 키 켜짐 — 공개 프로젝트만 (anon)", () => {
       expect(r.counts.project).toBe(2);
       expect(hits.find((h) => h.href.endsWith(w.B.slug))).toMatchObject({ typeLabel: "프로젝트", stageLabel: "시험용 구역지정", projectTypeLabel: "시험용 정비사업", regionCode: GU2 });
     } finally {
+      await flags({});
+    }
+  });
+});
+
+describe("단계별 「지방세로 읽기」 (16단계 — PR-08 · public_project_stage_lenses)", () => {
+  const LENS = (points) => ({ topics: ["시험용 세목"], points, links: [{ kind: "explainer", label: "시험용 해설", url: "/tax" }], base_date: "2026-01-01" });
+  const SM_URL = "https://sm.example.test/acquisition";
+  const lensUpsert = (stage, points) =>
+    db.query(
+      "insert into public.project_stage_lenses (project_type, stage, lens, drafted_by) values ($1, $2, $3::jsonb, $4) on conflict (project_type, stage) do update set lens = excluded.lens, drafted_by = excluded.drafted_by",
+      [TYPE, stage, JSON.stringify(LENS(points)), ACTOR],
+    );
+  const signLens = (stage, userId) => db.query("update public.project_stage_lenses set reviewed_by = $3 where project_type = $1 and stage = $2", [TYPE, stage, `user:${userId}`]);
+
+  test("서명 전 0 · 서명 뒤 박스(감수자 공개 이름) · 고치면 다음 읽기부터 0 → 다시 서명하면 새 문구 · SM 카드는 박스가 있고 sm_calculator + 주소일 때만", async () => {
+    const reviewer = (await one("insert into auth.users (id) values (gen_random_uuid()) returning id")).id;
+    made.users.push(reviewer);
+    await db.query("insert into public.staff_roles (user_id, role, granted_by) values ($1, 'reviewer', 'admin:itest')", [reviewer]);
+    await insert("people", { slug: `it-w4pp-reviewer-${RUN}`, name: "통합 시험 감수위원", roles: ["reviewer"], visibility: "public", staff_user_id: reviewer }, "people");
+    saved.smRow = await one("select id, url, status from public.official_links where kind = 'sm_calculator' and key = 'acquisition'");
+    await flags({ realestate_projects: true });
+    try {
+      let v = await projects.getProject(w.B.slug);
+      expect(v.lenses).toEqual({});
+      expect(v.sm).toBeNull();
+      await lensUpsert("zone", ["시험용 구역지정 포인트"]);
+      await lensUpsert("plan", ["시험용 계획인가 포인트"]);
+      expect((await projects.getProject(w.B.slug)).lenses).toEqual({}); // 서명 전 — 박스 0('준비 중' 0)
+
+      await signLens("zone", reviewer);
+      await signLens("plan", reviewer);
+      v = await projects.getProject(w.B.slug);
+      expect(Object.keys(v.lenses).sort()).toEqual(["plan", "zone"]); // 기록 없는 예정 단계에도 서명된 템플릿이면 박스
+      expect(v.lenses.zone).toEqual({ topics: ["시험용 세목"], points: ["시험용 구역지정 포인트"], links: [{ kind: "explainer", href: "/tax" }], basisDate: "2026-01-01", reviewer: "통합 시험 감수위원" });
+      expect(v.sm).toBeNull(); // sm_calculator 꺼짐
+      expect(priceKeys(v.lenses)).toEqual([]);
+      // 같은 템플릿을 쓰는 다른 공개 프로젝트(A)에도 같은 박스
+      expect((await projects.getProject(w.A.slug)).lenses.zone.points).toEqual(["시험용 구역지정 포인트"]);
+
+      // 고치면 서명 지움 → 다음 읽기부터 그 단계 박스 0 (두 프로젝트 모두)
+      await lensUpsert("zone", ["시험용 고친 포인트"]);
+      expect(Object.keys((await projects.getProject(w.B.slug)).lenses)).toEqual(["plan"]);
+      expect(Object.keys((await projects.getProject(w.A.slug)).lenses)).toEqual(["plan"]);
+      expect((await one("select review_status from public.project_stage_lenses where project_type = $1 and stage = 'zone'", [TYPE])).review_status).toBe("rereview_needed");
+      await signLens("zone", reviewer);
+      expect((await projects.getProject(w.B.slug)).lenses.zone.points).toEqual(["시험용 고친 포인트"]);
+
+      // SM 카드 — 키를 켜도 주소가 비면 0, 주소가 있으면 저장 주소 그대로(취득세 — 국세 아님)
+      await flags({ realestate_projects: true, sm_calculator: true });
+      expect((await projects.getProject(w.B.slug)).sm).toBeNull();
+      await db.query("update public.official_links set url = $2, status = 'ok' where id = $1", [saved.smRow.id, SM_URL]);
+      v = await projects.getProject(w.B.slug);
+      expect(v.sm.card).toMatchObject({ kind: "sm_calculator", key: "acquisition", url: SM_URL });
+      // 서명된 템플릿이 없으면 카드도 0 (박스 옆 카드)
+      await db.query("delete from public.project_stage_lenses where project_type = $1", [TYPE]);
+      v = await projects.getProject(w.B.slug);
+      expect([v.lenses, v.sm]).toEqual([{}, null]);
+      // 서명자가 감수위원 역할을 잃으면 박스 0
+      await lensUpsert("zone", ["시험용 다시 쓴 포인트"]);
+      await signLens("zone", reviewer);
+      expect(Object.keys((await projects.getProject(w.B.slug)).lenses)).toEqual(["zone"]);
+      await db.query("delete from public.staff_roles where user_id = $1", [reviewer]);
+      expect((await projects.getProject(w.B.slug)).lenses).toEqual({});
+    } finally {
+      await db.query("update public.official_links set url = $2, status = $3 where id = $1", [saved.smRow.id, saved.smRow.url, saved.smRow.status]);
       await flags({});
     }
   });

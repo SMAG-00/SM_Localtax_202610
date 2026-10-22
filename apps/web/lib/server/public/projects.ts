@@ -1,6 +1,7 @@
 import "server-only";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { siteUrl } from "../env";
+import { getSmCalculatorCard, type OfficialLinkCard } from "./calc";
 import type { ArticleListItem } from "./cards";
 import { publicDb, rowsOf } from "./db";
 import { readArticleList, readPublicSettings, readRegions } from "./reads";
@@ -9,6 +10,7 @@ import {
   PROJECT_PUBLIC_LIMITS,
   PUBLIC_PROJECT_COLUMNS,
   PUBLIC_PROJECT_EVENT_COLUMNS,
+  PUBLIC_STAGE_LENS_COLUMNS,
   STAGE_LIST_COLUMNS,
   filterProjects,
   hubProjectCards,
@@ -22,6 +24,7 @@ import {
   relatedArticleIds,
   sortProjects,
   sourceCoverage,
+  stageLensMap,
   type ProjectCard,
   type ProjectCrumb,
   type ProjectFilter,
@@ -29,6 +32,8 @@ import {
   type ProjectLinkRow,
   type PublicProjectEventRow,
   type PublicProjectRow,
+  type PublicStageLensRow,
+  type StageLensView,
   type StageListRow,
   type TimelineStage,
 } from "./project-logic";
@@ -40,6 +45,8 @@ import type { RegionRow } from "./rows";
 // 프로젝트 공개 화면 데이터 (W4 15단계 — 규칙은 project-logic.ts). 공개 뷰만 anon 키로 읽는다:
 // public_projects(공개 프로젝트 + 공개 단계 1건 이상) · public_project_events(정정되지 않은 공개 기록 — 링크만) · public_project_stage_lists(전체 단계 목록 — …49) ·
 // public_regional_links(확인된 연결 — 두 끝이 지금 공개). 기능 키 realestate_projects가 꺼져 있으면 null → 상세 404·목록은 하위 분야 목록(W3 12장 #20과 같은 방식).
+// 16단계: public_project_stage_lenses(서명이 살아 있는 단계별 「지방세로 읽기」 — …50)와 SM 취득세 카드(official_links — 기능 키 sm_calculator·주소가 있을 때만).
+// 둘 다 읽지 못하면 박스·카드 0으로 그리고 서버 기록에만 남긴다(프로젝트 화면은 그대로 — 12장 #109와 같은 방식).
 
 export interface ProjectListView {
   today: string;
@@ -66,9 +73,25 @@ export interface ProjectDetailView {
   links: RegionalLinkItem[];
   crumbs: ProjectCrumb[];
   breadcrumb: BreadcrumbView | null;
+  /** 단계 키 → 단계별 「지방세로 읽기」 박스 (서명된 템플릿만 — 없는 단계는 키 없음) */
+  lenses: Record<string, StageLensView>;
+  /** 박스 옆 SM 취득세 카드 (공용 카드 — 기능 키 sm_calculator가 켜지고 주소가 있을 때만, 끊김이면 대체 안내) */
+  sm: { card: OfficialLinkCard; fallbacks: OfficialLinkCard[] } | null;
+}
+
+/** 읽기 실패를 0으로 — 박스·카드는 화면의 덧붙임이라 프로젝트 화면을 막지 않는다 */
+async function orEmpty<T>(where: string, load: () => Promise<T>, empty: T): Promise<T> {
+  try {
+    return await load();
+  } catch (err) {
+    console.error(`[public] 프로젝트 화면 ${where}을(를) 읽지 못해 0으로 그립니다:`, err instanceof Error ? err.message : String(err));
+    return empty;
+  }
 }
 
 const kstToday = (now: Date) => isoToKstDate(now.toISOString());
+/** 박스 옆 SM 계산기 카드 키 — 취득세 (1장 16단계 'SM 취득세 카드(공용 카드)' · 12장 #25와 같은 카드) */
+export const LENS_SM_KEY = "acquisition";
 
 /** 공개 프로젝트 줄 → 카드 (지역 이름·허브 주소를 붙여) — 카드 칸이 빈 줄은 빠진다 */
 function cardsOf(rows: readonly PublicProjectRow[], regions: readonly RegionRow[], today: string, hubsOpen: boolean): ProjectCard[] {
@@ -106,7 +129,7 @@ export async function getProject(slug: string, now: Date = new Date()): Promise<
   const [row] = await rowsOf<PublicProjectRow>(db.from("public_projects").select(PUBLIC_PROJECT_COLUMNS).eq("slug", slug).limit(1), "공개 프로젝트");
   if (!row) return null;
   const id = Number(row.id);
-  const [regions, events, lists, fromRows, toRows] = await Promise.all([
+  const [regions, events, lists, fromRows, toRows, lensRows, sm] = await Promise.all([
     readRegions(),
     rowsOf<PublicProjectEventRow>(db.from("public_project_events").select(PUBLIC_PROJECT_EVENT_COLUMNS).eq("project_id", id).order("stage_position").order("id"), "프로젝트 단계 기록"),
     rowsOf<StageListRow>(db.from("public_project_stage_lists").select(STAGE_LIST_COLUMNS).eq("project_type", row.project_type).order("stage_position"), "프로젝트 단계 목록"),
@@ -125,6 +148,12 @@ export async function getProject(slug: string, now: Date = new Date()): Promise<
         .limit(50),
       "프로젝트로 오는 기사 연결",
     ),
+    orEmpty(
+      "단계별 「지방세로 읽기」",
+      () => rowsOf<PublicStageLensRow>(db.from("public_project_stage_lenses").select(PUBLIC_STAGE_LENS_COLUMNS).eq("project_type", row.project_type).order("stage_position"), "단계별 「지방세로 읽기」"),
+      [] as PublicStageLensRow[],
+    ),
+    orEmpty("SM 취득세 카드", () => getSmCalculatorCard(LENS_SM_KEY, settings.features), null),
   ]);
   const card = projectCard(row, projectRegion(row.region_code, regions, today, settings.features.region_hubs));
   if (!card) return null;
@@ -142,7 +171,19 @@ export async function getProject(slug: string, now: Date = new Date()): Promise<
   const order = new Map(articleIds.map((x, i) => [x, i]));
   const articles = [...articleList.items].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
   const crumbs = projectCrumbs({ name: card.name, href: card.href });
-  return { today, card, timeline, coverage: sourceCoverage(timeline), articles, links, crumbs, breadcrumb: projectBreadcrumb(crumbs, siteUrl()) };
+  const lenses = stageLensMap(lensRows, row.project_type, settings.features);
+  return {
+    today,
+    card,
+    timeline,
+    coverage: sourceCoverage(timeline),
+    articles,
+    links,
+    crumbs,
+    breadcrumb: projectBreadcrumb(crumbs, siteUrl()),
+    lenses,
+    sm: Object.keys(lenses).length > 0 ? sm : null,
+  };
 }
 
 /**

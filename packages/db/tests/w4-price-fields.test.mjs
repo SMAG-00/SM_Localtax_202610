@@ -1,6 +1,6 @@
 // W4 12단계 DB — 가격 칸 검사 (PRD-01B PR-05 · docs/dev/W4_설계.md 1장 12단계 · 2.10, 스크립트 scripts/check-price-fields.mjs)
 //  · 사전 = 설계 2.10 낱말 16개 · 대상 표 = 2.10 표 4개 (시험이 설계 문서 줄을 읽는다)
-//  · 실제 DB — projects·project_events와 그 표를 읽는 뷰(현재 단계·공개 뷰 2개)를 보고 위반 0건
+//  · 실제 DB — projects·project_events·project_stage_lenses(16단계)와 그 표를 읽는 뷰(현재 단계·공개 뷰들)를 보고 위반 0건
 //  · 시험 마이그레이션(트랜잭션 안에서 적용 → 되돌림) — 사전 낱말이 든 칸 이름·대소문자·밑줄 무시·칸 설명·아직 없는 대상 표·여러 겹 뷰를 검사가 실제로 잡는다
 //  · 명령 — 위반 0이면 종료 코드 0
 import { test, before, after } from "node:test";
@@ -63,12 +63,12 @@ test("낱말 맞추기 — 소문자·밑줄 무시·일부 일치, 사전 밖 �
   );
 });
 
-test("실제 DB — 프로젝트 표 2개와 그 표를 읽는 뷰를 보고 위반 0건 (아직 없는 표는 분양 정보·「지방세로 읽기」)", async () => {
+test("실제 DB — 프로젝트 표 3개(16단계 「지방세로 읽기」 포함)와 그 표를 읽는 뷰를 보고 위반 0건 (아직 없는 표는 분양 정보)", async () => {
   const r = await scanPriceFields(client);
-  for (const rel of ["projects", "project_events", "project_current_stages", "public_projects", "public_project_events"]) {
+  for (const rel of ["projects", "project_events", "project_current_stages", "public_projects", "public_project_events", "project_stage_lenses", "public_project_stage_lenses"]) {
     assert.ok(r.relations.includes(rel), `${rel}를 보지 않았다 — 검사가 비어 있으면 안 된다`);
   }
-  assert.deepEqual(r.missingTables, ["supply_notices", "project_stage_lenses"]);
+  assert.deepEqual(r.missingTables, ["supply_notices"]);
   assert.deepEqual(r.hits, []);
 });
 
@@ -84,6 +84,8 @@ const VIOLATIONS = [
     "create table public.supply_notices (id bigint primary key, name text, supply_price bigint); alter table public.supply_notices enable row level security",
     [["supply_notices", "supply_price", "name"]],
   ],
+  ["project_stage_lenses 칸 이름 (16단계 — expected_return)", "alter table public.project_stage_lenses add column expected_return numeric", [["project_stage_lenses", "expected_return", "name"]]],
+  ["project_stage_lenses 칸 설명에 분담금", "comment on column public.project_stage_lenses.lens is '단계별 분담금 안내'", [["project_stage_lenses", "lens", "comment"]]],
   [
     "대상 표를 읽는 뷰의 칸 (수익률)",
     "create view public.w4_price_probe as select p.id, 0::numeric as expected_profit from public.projects p",

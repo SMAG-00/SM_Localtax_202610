@@ -16,7 +16,7 @@ const EXPECTED: [string, Viewer, string[]][] = [
     ["dashboard", "assignments", "articles", "reviews", "placement", "home", "amendments", "links", "hub-points", "source-review", "regions", "projects", "situations", "categories", "dictionaries", "query-terms", "readiness", "inquiries", "pages"],
   ],
   ["편집 책임자 + 기자", viewer(["editor", "reporter"]), ["dashboard", "assignments", "articles", "reviews", "placement", "home", "amendments", "links", "hub-points", "source-review", "regions", "projects", "situations", "categories", "dictionaries", "query-terms", "readiness", "inquiries", "pages"]],
-  ["세무 감수위원 — 상황 카드·허브 지방세 포인트는 감수 서명만", viewer(["reviewer"]), ["dashboard", "articles", "reviews", "hub-points", "situations"]],
+  ["세무 감수위원 — 상황 카드·허브 지방세 포인트·단계 「지방세로 읽기」는 감수 서명만", viewer(["reviewer"]), ["dashboard", "articles", "reviews", "hub-points", "project-lenses", "situations"]],
   ["광고·협찬 담당 — 제휴사 관리", viewer(["ad_ops"]), ["dashboard", "sponsored", "partners", "inquiries", "pages"]],
   ["스토어·구독 담당", viewer(["store_ops"]), ["dashboard", "store", "inquiries"]],
   ["브랜드 관리 담당", viewer(["brand_ops"]), ["dashboard", "brand"]],
@@ -84,6 +84,7 @@ describe("지금 보는 메뉴 (aria-current)", () => {
     ["/admin/news-readiness/requirements", "readiness"],
     ["/admin/projects", "projects"],
     ["/admin/projects/5", "projects"],
+    ["/admin/projects/lenses", "projects"],
     ["/admin/partners", ""],
     ["/admin/unknown", ""],
   ])("%s → %s", (path, expected) => {
@@ -97,6 +98,13 @@ describe("지금 보는 메뉴 (aria-current)", () => {
     expect(activeMenuId(admin, "/admin/metrics")).toBe("metrics");
     expect(activeMenuId(adminMenu(viewer(["editor"])), "/admin/metrics")).toBe("");
     expect(activeMenuId(adminMenu(viewer(["ad_ops"])), "/admin/partners")).toBe("partners");
+  });
+
+  test("세무 감수위원의 단계 「지방세로 읽기」 감수 화면 (W4 16단계) — 편집 책임자 + 감수위원이면 더 긴 주소의 메뉴", () => {
+    expect(activeMenuId(adminMenu(viewer(["reviewer"])), "/admin/projects/lenses")).toBe("project-lenses");
+    expect(activeMenuId(adminMenu(viewer(["reviewer"])), "/admin/projects/5")).toBe("");
+    expect(activeMenuId(adminMenu(viewer(["editor", "reviewer"])), "/admin/projects/lenses")).toBe("project-lenses");
+    expect(activeMenuId(adminMenu(viewer(["editor", "reviewer"])), "/admin/projects/5")).toBe("projects");
   });
 
   test("광고 담당의 기사 화면은 '광고·협찬 콘텐츠' 메뉴", () => {

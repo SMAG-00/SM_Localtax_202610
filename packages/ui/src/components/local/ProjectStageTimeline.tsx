@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { cx } from "../base";
 import { ExternalLink, Field, MONO, StateChip } from "./shared";
 import { filled, isIsoDate, type IsoDate } from "./dates";
@@ -27,6 +27,8 @@ export type ProjectStage = {
   taxLens?: string;
   /** 이 프로젝트에 없는 단계(편집자 해당 없음 기록) — 상태 글자 대신 '해당 없음' */
   notApplicable?: boolean;
+  /** 단계 카드 아래에 붙는 내용 — 단계별 「지방세로 읽기」 박스(CORE-01 형식)와 계산기 카드 (PR-08). 표에는 넣지 않는다 */
+  after?: ReactNode;
 };
 
 type State = "past" | "current" | "upcoming";
@@ -43,7 +45,7 @@ function validRecord(r: ProjectStageRecord | undefined): r is ProjectStageRecord
  */
 export function ProjectStageTimeline({ stages, title = "사업 단계" }: { stages: ProjectStage[]; title?: string }) {
   const headingId = useId();
-  const rows = stages.map((s) => ({ name: s.name, record: validRecord(s.record) ? s.record : undefined, taxLens: filled(s.taxLens) ? s.taxLens : undefined, notApplicable: s.notApplicable === true }));
+  const rows = stages.map((s) => ({ name: s.name, record: validRecord(s.record) ? s.record : undefined, taxLens: filled(s.taxLens) ? s.taxLens : undefined, notApplicable: s.notApplicable === true, after: s.after }));
   const current = rows.reduce((last, r, i) => (r.record ? i : last), -1);
   if (current < 0) return null;
   const stateOf = (i: number): State => (i < current ? "past" : i === current ? "current" : "upcoming");
@@ -106,6 +108,11 @@ export function ProjectStageTimeline({ stages, title = "사업 단계" }: { stag
                   )}
                 </div>
               </div>
+              {s.after && (
+                <div data-stage-after className="relative mt-3">
+                  {s.after}
+                </div>
+              )}
             </li>
           );
         })}

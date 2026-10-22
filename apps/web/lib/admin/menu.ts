@@ -40,6 +40,8 @@ const RULES: readonly MenuRule[] = [
   { id: "regions", label: "지역 기사 판정", href: "/admin/regions", when: (a) => a.has("regional.judge"), paths: ["/admin/regions"] },
   // 프로젝트 트래커 — 프로젝트·단계 기록·정정·공개 전환·지역 연결 (PR-02·03 — W4 14단계) — 편집 책임자·관리자
   { id: "projects", label: "프로젝트", href: "/admin/projects", when: (a) => a.has("project.manage"), paths: ["/admin/projects"] },
+  // 단계별 「지방세로 읽기」 감수 (PR-08 — W4 16단계) — 세무 감수위원의 서명 자리. 편집 책임자·관리자는 '프로젝트' 화면에서 같은 템플릿을 쓴다(메뉴 그대로)
+  { id: "project-lenses", label: "단계 지방세로 읽기 감수", href: "/admin/projects/lenses", when: (a) => a.has("review.tax_review"), paths: ["/admin/projects/lenses"] },
   {
     id: "situations",
     label: "상황 카드",

@@ -269,6 +269,15 @@ describe("「지방세로 읽기」 박스 (CORE-01)", () => {
     expect(within(box).getAllByRole("link").length).toBe(3);
   });
 
+  it("구별 이름(label — 한 화면에 박스가 여럿일 때, W4 16단계)은 제목 뒤 숨은 글자로만 — 없으면 제목 그대로", () => {
+    const { unmount } = render(<TaxLensBox {...lens} label="시험용 구역지정 단계" />);
+    expect(screen.getByRole("region", { name: /^지방세로 읽기\s*— 시험용 구역지정 단계$/ })).toBeTruthy();
+    expect(cls(screen.getByText(/— 시험용 구역지정 단계/))).toContain("sr-only");
+    unmount();
+    render(<TaxLensBox {...lens} />);
+    expect(screen.getByRole("region", { name: "지방세로 읽기" })).toBeTruthy();
+  });
+
   it("링크는 주 버튼이 아니다 — 주 버튼·button 요소 0", () => {
     render(<TaxLensBox {...lens} />);
     const box = document.querySelector('[data-ui="tax-lens-box"]') as HTMLElement;

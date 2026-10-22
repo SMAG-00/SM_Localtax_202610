@@ -116,6 +116,15 @@ describe("프로젝트 단계 타임라인 (PR-02·PR-03·PR-05·PR-08)", () => 
     expect(within(rows[3]).getByText("예정 단계")).toBeTruthy();
   });
 
+  it("단계 카드 아래 덧붙임(after — 단계별 「지방세로 읽기」 박스 자리, W4 16단계)은 준 단계에만, 표에는 넣지 않는다", () => {
+    const withAfter: ProjectStage[] = stages.map((s, i) => (i === 1 ? { ...s, after: <p data-testid="lens-slot">시험용 박스 자리</p> } : s));
+    const { container } = render(<ProjectStageTimeline stages={withAfter} />);
+    const items = [...container.querySelectorAll("ol > li")];
+    expect(items.map((li) => li.querySelectorAll("[data-stage-after]").length)).toEqual([0, 1, 0, 0, 0, 0]);
+    expect(within(items[1] as HTMLElement).getByTestId("lens-slot").closest("[data-stage-after]")).not.toBeNull();
+    expect(container.querySelector("table")!.textContent).not.toContain("시험용 박스 자리");
+  });
+
   it("원문을 다시 받아 내용이 달라진 단계는 '검토 중'을 보인다", () => {
     const review = stages.map((s, i) => (i === 0 ? { ...s, record: { ...s.record!, underReview: true } } : s));
     const { container } = render(<ProjectStageTimeline stages={review} />);

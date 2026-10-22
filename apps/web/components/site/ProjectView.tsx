@@ -1,8 +1,9 @@
 import { breadcrumbList, toJsonLdScriptContent } from "@ltr/structured-data";
-import { Chip, Eyebrow, ProjectStageTimeline, SourceLine, UiLink, cx, type ProjectStage } from "@ltr/ui";
-import type { FilterChip, ProjectCard, ProjectCrumb, TimelineStage } from "@/lib/server/public/project-logic";
+import { Chip, Eyebrow, ProjectStageTimeline, SourceLine, TaxLensBox, UiLink, cx, type ProjectStage } from "@ltr/ui";
+import { lensFor, type FilterChip, type ProjectCard, type ProjectCrumb, type StageLensView, type TimelineStage } from "@/lib/server/public/project-logic";
 import type { ProjectDetailView, ProjectListView } from "@/lib/server/public/projects";
 import { ArticleItem } from "./ArticleItem";
+import { OfficialLinkCard, linkSiteLabel } from "./OfficialLinkCard";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
 
 // 프로젝트 트래커 화면 (W4 15단계 — PRD-01B 3.2 '프로젝트 트래커' · PR-01 · PR-02 · PR-03 · PR-05, docs/dev/W4_설계.md 5장 · 12장 120번~).
@@ -10,6 +11,8 @@ import { SiteSection, TEXT_LINK } from "./SiteSection";
 //  · 상세 /realestate/projects/[slug] — 지역 칩·사업 유형 칩·현재 단계 배지 → 단계 타임라인(첫 단계 … 마지막 단계, 권리 칩 없는 변형 — 고시 번호·고시일·확인일 고정폭 ·
 //    [원문 보기] 새 창 · 공공누리 유형 · `검토 중`, 같은 내용의 표) → 확인된 연결 → 관련 기사 → 데이터 출처 줄
 //  · 가격·분양가·분담금·수익률·시세 요소 0 (PR-05 — 공개 뷰에 칸이 없다). 원문 본문 전재 0(링크만 — #19). 이동 줄 = BreadcrumbList(같은 값)
+//  · 단계별 「지방세로 읽기」(16단계 — PR-08) — 서명된 템플릿이 있는 단계 카드 아래에만 박스(CORE-01 TaxLensBox — 세목·포인트·해설·도서·전문가 링크·감수·기준일)와
+//    SM 취득세 카드(공용 카드 — 새 창·noreferrer·저장 주소 그대로·입력값 0, 기능 키·주소가 있을 때만). 없는 단계는 요소 0('준비 중' 0). 측정은 24단계
 
 /** 이동 줄 (홈 > 부동산 > 프로젝트 트래커 > 이름) — 구조화 데이터와 같은 값 */
 function Crumbs({ crumbs }: { crumbs: readonly ProjectCrumb[] }) {
@@ -149,8 +152,25 @@ export function ProjectList({ view }: { view: ProjectListView }) {
   );
 }
 
-/** 타임라인 단계 → UI 컴포넌트 값 (기록 없는 단계·해당 없음은 기록 0) */
-export function timelineStages(timeline: readonly TimelineStage[]): ProjectStage[] {
+const LENS_BOX_KIND = { explainer: "explainer", book: "product", expert: "experts" } as const;
+
+/** 단계별 「지방세로 읽기」 박스 + SM 취득세 카드 (PR-08 — 카드는 박스가 있을 때만) */
+function StageLens({ stageKey, stage, lens, sm }: { stageKey: string; stage: string; lens: StageLensView; sm: ProjectDetailView["sm"] }) {
+  const links = Object.fromEntries(lens.links.map((l) => [LENS_BOX_KIND[l.kind], { href: l.href, enabled: true }]));
+  return (
+    <div data-stage-lens={stageKey} className="space-y-3">
+      <TaxLensBox taxes={lens.topics} points={lens.points} links={links} reviewer={lens.reviewer} basisDate={lens.basisDate} label={`${stage} 단계`} />
+      {sm && (
+        <ul data-part="lens-sm-card" aria-label={`${stage} 단계 세금 계산기 (별도 사이트)`}>
+          <OfficialLinkCard card={sm.card} site={linkSiteLabel(sm.card.kind)} fallbacks={sm.fallbacks} rank={1} />
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** 타임라인 단계 → UI 컴포넌트 값 (기록 없는 단계·해당 없음은 기록 0). lenses가 있으면 서명된 템플릿 단계 아래에 박스 */
+export function timelineStages(timeline: readonly TimelineStage[], lenses: ProjectDetailView["lenses"] = {}, sm: ProjectDetailView["sm"] = null): ProjectStage[] {
   return timeline.map((s) => ({
     name: s.label,
     ...(s.record
@@ -167,6 +187,7 @@ export function timelineStages(timeline: readonly TimelineStage[]): ProjectStage
         }
       : {}),
     ...(s.status === "not_applicable" ? { notApplicable: true } : {}),
+    ...(lensFor(s, lenses) ? { after: <StageLens stageKey={s.key} stage={s.label} lens={lensFor(s, lenses)!} sm={sm} /> } : {}),
   }));
 }
 
@@ -201,7 +222,7 @@ export function ProjectDetail({ view }: { view: ProjectDetailView }) {
         </div>
       </SiteSection>
       <SiteSection id="project-timeline" tone="ivory-dark" data={{ "data-project-part": "timeline" }}>
-        <ProjectStageTimeline stages={timelineStages(view.timeline)} title="단계 타임라인" />
+        <ProjectStageTimeline stages={timelineStages(view.timeline, view.lenses, view.sm)} title="단계 타임라인" />
         <p className="mt-6 text-[15px] text-navy-600">단계마다 고시 원문 링크만 둡니다. 원문 내용은 고시 기관 누리집에서 확인하세요.</p>
       </SiteSection>
       {view.links.length > 0 && (

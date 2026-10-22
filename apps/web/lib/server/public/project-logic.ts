@@ -6,11 +6,15 @@
 //  · 가격·분양가·분담금·수익률·시세 값은 공개 뷰에 칸이 없어 화면·API·구조화 데이터 어디에도 없다(PR-05) — 값을 만드는 함수 0
 //  · 목록 거르개 ?region=(법정동코드 10자리 — 시·도는 그 아래 시·군·구 포함)·?type=(사업 유형 키)·?stage=(현재 단계 키, 유형을 고른 뒤) — 모양 밖 값은 전체(JS 없이 링크)
 //  · GET /api/projects/{slug} 요청 검사 — 모양 밖 주소·모르는 쿼리 칸은 400, 어떤 입력에도 500 0 (DB를 부르기 전에 끝난다)
+//  · 단계별 「지방세로 읽기」(16단계 — PR-08) — 공개 뷰 public_project_stage_lenses(서명이 살아 있는 템플릿만 — …50)의 줄 → 박스 값. 모양이 틀리거나
+//    서명자 공개 이름·기준일이 없거나 열린 링크가 하나도 안 남으면 박스 0('준비 중' 0). 해당 없음 단계에는 박스를 붙이지 않는다
+import { pointLineProblems } from "@ltr/editorial";
 import type { BreadcrumbView } from "@ltr/structured-data";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { licenseBadge } from "@/lib/admin/official-source-rules";
+import { LENS_LIMITS, LENS_LINK_KINDS, LENS_URL_RE, type LensLinkKind } from "@/lib/admin/project-lens-rules";
 import { isValidOn, regionHref, sidoCodeOf } from "@/lib/site/region-route";
-import { SECTION_INFO } from "./constants";
+import { SECTION_INFO, isOpenPath, type Features } from "./constants";
 import type { RegionRow } from "./rows";
 
 /** 프로젝트 트래커 주소 (5장) — 목록 · 한 건 */
@@ -413,3 +417,73 @@ export function projectApiBody(card: ProjectCard, timeline: readonly TimelineSta
     status: timeline.some((s) => s.record?.underReview) ? "under_review" : "public",
   };
 }
+
+// ── 단계별 「지방세로 읽기」 (16단계 — PR-08 · CORE-01) ──
+
+export const PUBLIC_STAGE_LENS_COLUMNS = "project_type, stage, stage_position, topics, points, links, base_date, reviewed_at, reviewer_name";
+
+export interface PublicStageLensRow {
+  project_type: string;
+  stage: string;
+  stage_position: number | null;
+  topics: unknown;
+  points: unknown;
+  links: unknown;
+  base_date: string | null;
+  reviewed_at: string | null;
+  reviewer_name: string | null;
+}
+
+export interface StageLensView {
+  topics: string[];
+  points: string[];
+  /** 열린 링크만 (해설 = 열린 화면 · 도서 = 스토어 기능 · 전문가 = 전문가 찾기 기능) */
+  links: { kind: LensLinkKind; href: string }[];
+  /** 법령 기준일 */
+  basisDate: string;
+  /** 서명한 세무 감수위원 공개 이름 (서명 기록의 공개 인물에서만 — 01C BR-03) */
+  reviewer: string;
+}
+
+const LENS_LINK_FEATURE: Record<LensLinkKind, keyof Features | null> = { explainer: null, book: "store", expert: "expert_finder" };
+const strings = (v: unknown): string[] | null => (Array.isArray(v) && v.every((x) => typeof x === "string") ? (v as string[]).map((x) => x.trim()) : null);
+
+/** 공개 뷰 줄 하나 → 박스 값. 모양·한도가 틀리면 null (DB 트리거가 이미 막는 모양 — 직접 넣은 행 대비) */
+export function stageLensView(row: PublicStageLensRow, features: Features): StageLensView | null {
+  const topics = strings(row.topics);
+  const points = strings(row.points);
+  const reviewer = text(row.reviewer_name);
+  const basisDate = text(row.base_date);
+  if (!topics || !points || !reviewer || !basisDate || !ISO_DATE.test(basisDate)) return null;
+  if (topics.length < 1 || topics.length > LENS_LIMITS.topics || topics.some((t) => t === "")) return null;
+  if (points.length < LENS_LIMITS.pointsMin || points.length > LENS_LIMITS.pointsMax || points.some((p) => p === "")) return null;
+  if (pointLineProblems([...topics, ...points], []).length > 0) return null; // 세액 표현(숫자 + 원) — 박스 0
+  const seen = new Set<string>();
+  const links = (Array.isArray(row.links) ? row.links : []).flatMap((l) => {
+    const o = (typeof l === "object" && l !== null ? l : {}) as Record<string, unknown>;
+    const kind = o.kind as LensLinkKind;
+    const href = typeof o.url === "string" ? o.url : "";
+    if (!(LENS_LINK_KINDS as readonly string[]).includes(kind) || seen.has(kind) || !LENS_URL_RE.test(href)) return [];
+    const feature = LENS_LINK_FEATURE[kind];
+    if ((feature !== null && !features[feature]) || !isOpenPath(href, features)) return [];
+    seen.add(kind);
+    return [{ kind, href }];
+  });
+  if (links.length === 0) return null;
+  return { topics, points, links, basisDate, reviewer };
+}
+
+/** 단계 키 → 박스 (그 사업 유형의 줄만, 같은 단계 두 줄이면 앞 줄) */
+export function stageLensMap(rows: readonly PublicStageLensRow[], projectType: string, features: Features): Record<string, StageLensView> {
+  const out: Record<string, StageLensView> = {};
+  for (const r of rows) {
+    if (r.project_type !== projectType || out[r.stage]) continue;
+    const v = stageLensView(r, features);
+    if (v) out[r.stage] = v;
+  }
+  return out;
+}
+
+/** 이 단계에 박스를 붙일까 — 서명된 템플릿이 있고 해당 없음 단계가 아닐 때 (#132) */
+export const lensFor = (stage: Pick<TimelineStage, "key" | "status">, lenses: Readonly<Record<string, StageLensView>>): StageLensView | null =>
+  stage.status === "not_applicable" ? null : (lenses[stage.key] ?? null);
