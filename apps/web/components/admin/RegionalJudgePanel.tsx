@@ -13,7 +13,7 @@ const STATE_TEXT: Record<RegionalState, string> = {
   not_regional: "지역 기사 아님",
   candidate: "기사 후보",
   held: "보류(held) — 기사 후보가 아닙니다",
-  separate_product: "별도 상품 검토 대상 — 보도기사·해설로 발행하지 않습니다",
+  separate_product: "별도 상품 검토 대상 — 검토 큐에 있는 동안 공개하지 않고, 보도기사·해설로는 발행하지 않습니다",
 };
 
 /**
@@ -66,6 +66,14 @@ export function RegionalJudgePanel({
           ))}
         </ul>
       )}
+      {regional.state === "separate_product" && canJudge && (
+        <p className="text-[14px] text-navy-700" data-part="separate-product-link">
+          <a className="font-bold text-navy-900 underline underline-offset-4" href="/admin/regions#separate-product-open">
+            별도 상품 검토 큐 보기
+          </a>{" "}
+          — 검토를 닫을 때 결정(광고·협찬 상품 전환·행사안내 등록·폐기)을 적습니다
+        </p>
+      )}
       <p className="text-[14px] text-navy-700" data-part="regional-judgement">
         편집자 판정: {judgement ? EDITORIAL_JUDGEMENT_LABELS[judgement as keyof typeof EDITORIAL_JUDGEMENT_LABELS] ?? judgement : "없음"}
         {judgedAt ? ` (${judgedAt.slice(0, 10)})` : ""}
@@ -75,7 +83,7 @@ export function RegionalJudgePanel({
           <SelectField
             id="regional-judgement"
             label="편집자 판정"
-            hint="여행 후기·맛집 추천·행사 홍보로 판정하면 보도기사·해설로 발행되지 않습니다 (REG1-17)"
+            hint="여행 후기·맛집 추천·행사 홍보로 판정하면 별도 상품 검토 큐에 들어가 공개되지 않습니다 (REG1-14·17)"
             options={optionsOf(EDITORIAL_JUDGEMENT_LABELS, [...EDITORIAL_JUDGEMENTS])}
             placeholder="판정 없음"
             value={value}

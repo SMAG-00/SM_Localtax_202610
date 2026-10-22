@@ -15,6 +15,8 @@ export interface FailingSample {
   context: PublishContext;
   /** 나와야 하는 차단 항목 ID (규칙 목록 순서) */
   expectedBlockers: readonly RuleId[];
+  /** 함께 나와야 하는 경고 항목 ID (규칙 목록 순서) — 바꾼 한 곳 때문에 생기는 경고만. 대개 빈 목록 (W4 8단계 REG1-14 지역 기사 편집 경고) */
+  expectedWarnings: readonly RuleId[];
 }
 
 const q = QUANTITATIVE_NEWS;
@@ -27,8 +29,9 @@ function sample(
   article: ArticleForPublish,
   expectedBlockers: readonly RuleId[],
   context: PublishContext = BASE_CONTEXT,
+  expectedWarnings: readonly RuleId[] = [],
 ): FailingSample {
-  return { id, description, article, context, expectedBlockers };
+  return { id, description, article, context, expectedBlockers, expectedWarnings };
 }
 
 export const FAILING_SAMPLES: readonly FailingSample[] = [
@@ -68,14 +71,16 @@ export const FAILING_SAMPLES: readonly FailingSample[] = [
     { ...q, reviews: [{ ...q.reviews[0]!, kind: "tax_review", reviewerUserId: "user-taxreviewer-01" }] },
     ["nav03.desk-edit-required"],
   ),
-  sample("quant-no-evidence", "보도기사 — 자체 취재 근거가 0건이다", { ...q, evidence: [] }, [
-    "nav04.own-evidence-required",
-  ]),
+  // 지역 기사라 근거가 0건이면 수치 문단(1,284억 원)을 잇는 근거도 사라진다 — 근거 없는 지역 수치 경고 (REG1-14 · W4 8단계)
+  sample("quant-no-evidence", "보도기사 — 자체 취재 근거가 0건이다", { ...q, evidence: [] }, ["nav04.own-evidence-required"], BASE_CONTEXT, ["reg1_14.unsupported-figure"]),
   sample(
     "quant-photo-rights",
     "보도기사 — 대표 사진 권리를 확인하지 않았다",
     { ...q, leadImage: { ...q.leadImage!, rightsStatus: "unconfirmed" } },
     ["nav04.image-rights"],
+    BASE_CONTEXT,
+    // 지역 기사 편집 경고 목록에도 같은 사진이 '권리 정보 누락'으로 모인다 (REG1-14 · W4 8단계)
+    ["reg1_14.photo-rights"],
   ),
   sample("quant-no-tax-lens", "지자체뉴스 보도 — 「지방세로 읽기」 박스도 생략 사유도 없다", { ...q, taxLens: null }, [
     "core01.box-or-reason",

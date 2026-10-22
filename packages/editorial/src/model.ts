@@ -124,6 +124,18 @@ export const REGIONAL_DESK_CHECKLIST_LABELS: Readonly<Record<RegionalDeskCheck, 
  */
 export const REGIONAL_JUDGE_FIELDS_DEFAULT: readonly EditorialField[] = EDITORIAL_FIELDS;
 
+/** 별도 상품 검토 큐 상태 `separate_product_queue.status` (W4 설계 2.1 — REG1-14·17): 열림 · 닫힘. 열린 항목이 있는 원고는 공개되지 않는다 */
+export const SEPARATE_PRODUCT_STATUSES = ["open", "closed"] as const;
+export type SeparateProductStatus = (typeof SEPARATE_PRODUCT_STATUSES)[number];
+export const SEPARATE_PRODUCT_STATUS_LABELS: Readonly<Record<SeparateProductStatus, string>> = { open: "검토 중", closed: "닫힘" };
+
+/** 오래된 통계 경고 기준 `settings.stale_statistics_days` 씨앗 (W4 설계 2.2 · 2.3 · 12장 #23 — 365일, 기준 당일 0건·하루 넘김 1건) */
+export const STALE_STATISTICS_DAYS_DEFAULT = 365;
+export const STALE_STATISTICS_DAYS_MIN = 1;
+export const STALE_STATISTICS_DAYS_MAX = 3650;
+/** 통계로 보는 공식 자료 종류 — 자료(dataset)는 모두, 공식 문서는 예산/결산 · 지방세 세수 · 부동산 거래/공시만 (REG1-14 오래된 통계 경고) */
+export const STATISTICS_SOURCE_TYPES = ["budget_settlement", "local_tax_revenue", "realestate_transaction"] as const satisfies readonly (typeof OFFICIAL_SOURCE_TYPES)[number][];
+
 /** `article_evidence.evidence_type` (NAV-12) */
 export const EVIDENCE_TYPES = ["dataset", "document", "interview", "field", "photo", "calculation"] as const;
 export type EvidenceType = (typeof EVIDENCE_TYPES)[number];
@@ -661,11 +673,21 @@ export interface PublishContext {
    * packages/similarity 결과. 검사를 돌리지 않았으면 null.
    * copied — 원문 문장과 기준 이상 같은 본문 문장(직접 인용 블록 제외)과 그 원문 `sources[].id` (PR-07 원문 전재 검사)
    */
-  similarity: { status: SimilarityStatus; copied?: readonly { sourceId: string; sentenceIndex: number }[] } | null;
+  similarity: {
+    status: SimilarityStatus;
+    copied?: readonly { sourceId: string; sentenceIndex: number }[];
+    /**
+     * 보도자료 재게시 (REG1-14) — 본문 문장(인용 제외) 중 그 보도자료 문장과 기준 이상 같은 문장의 비율이
+     * 기사 비율 기준(settings.similarity_internal articleRatio·articleComparator) 이상인 보도자료 `sources[].id`와 그 비율
+     */
+    reposted?: readonly { sourceId: string; ratio: number }[];
+  } | null;
   /** 공공누리 이용 범위 `settings.kogl_usage` — 없으면 KOGL_USAGE_DEFAULT (PR-07 · W4 12장 #13) */
   kogl?: KoglUsage;
   /** 공식 자료 종류 허용 목록 `settings.official_source_types` — 없으면 씨앗 OFFICIAL_SOURCE_TYPES (REG1-07) */
   officialSourceTypes?: readonly string[];
   /** 판정 책임자가 있는 편집 분야 `settings.regional_judge_fields` — 없으면 씨앗 REGIONAL_JUDGE_FIELDS_DEFAULT (REG1-17 · W4 12장 #7) */
   regionalJudgeFields?: readonly EditorialField[];
+  /** 오래된 통계 경고 기준 일수 `settings.stale_statistics_days` — 없으면 씨앗 STALE_STATISTICS_DAYS_DEFAULT (REG1-14 · W4 2.2) */
+  staleStatisticsDays?: number;
 }

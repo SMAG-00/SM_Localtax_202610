@@ -44,7 +44,10 @@ export interface PanelItem {
 
 export interface PanelView {
   blockers: PanelItem[];
+  /** 경고 — 지역 기사 편집 경고(REG1-14)를 뺀 나머지 */
   warnings: PanelItem[];
+  /** 지역 기사 편집 경고 4종 (REG1-14 — 보도자료 재게시·근거 없는 지역 수치·사진 권리 누락·오래된 통계, W4 8단계) */
+  editorialWarnings: PanelItem[];
   scores: { label: string; value: string }[];
   disclaimer: string;
   ruleVersion: string;
@@ -59,6 +62,8 @@ const AXES: readonly [string, string][] = [
   ["공통", "공통"],
 ];
 const LINT_FINDINGS = new Set(["opt03.seo-lint-blocker", "opt03.seo-lint-warning"]);
+/** 지역 기사 편집 경고의 근거 PRD ID — 점검 패널에서 따로 묶는다 (W4 8단계) */
+export const EDITORIAL_WARNING_REF = "REG1-14";
 
 const PERSPECTIVE_NAMES: Record<string, string> = { local_gov: "지자체", residents_taxpayers: "주민·납세자", experts: "전문가" };
 const SOLVED_CASE_CELLS: Record<string, string> = { situation: "상황", issue: "쟁점", result: "결과", lesson: "교훈", resultEvidence: "결과 근거" };
@@ -81,6 +86,8 @@ const FIELD_NAMES: Record<string, string> = {
   relationTypes: "관계 유형",
   editorialJudgement: "편집자 판정",
   interestDisclosure: "이해관계 표시",
+  // W4 8단계 편집 경고 (REG1-14)
+  "sources.referenceDate": "출처 기준일",
 };
 
 /** 위치 글자 — blockTypes는 본문 블록 종류(저장된 순서) */
@@ -132,7 +139,8 @@ export function panelView(report: CheckReport, blockTypes: readonly string[]): P
   const items = report.findings.map((f, i) => ({ f, item: itemOf(f, i, report, blockTypes) }));
   return {
     blockers: items.filter((x) => x.f.level === "block").map((x) => x.item),
-    warnings: items.filter((x) => x.f.level === "warn").map((x) => x.item),
+    warnings: items.filter((x) => x.f.level === "warn" && x.f.ruleRef !== EDITORIAL_WARNING_REF).map((x) => x.item),
+    editorialWarnings: items.filter((x) => x.f.level === "warn" && x.f.ruleRef === EDITORIAL_WARNING_REF).map((x) => x.item),
     scores: AXES.map(([axis, label]) => {
       const v = report.seoLint.scores[axis];
       return { label, value: isScore(v) ? String(v) : "—" };
@@ -178,6 +186,7 @@ export const PANEL_COPY = {
   basis: "저장된 버전 기준 점검입니다. 고친 내용은 저장한 뒤 다시 점검하세요.",
   blockers: "차단 항목 — 발행 불가",
   warnings: "경고 — 발행할 수 있고 발행 기록에 남습니다",
+  editorialWarnings: "편집 경고 — 지역 기사 점검, 발행 기록에 남습니다",
   none: "없음",
   taxReasons: "세무 감수 대상 이유",
   recheck: "다시 점검",

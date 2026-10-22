@@ -37,7 +37,7 @@ describe("실패 견본 — 바꾼 한 곳의 차단 항목만 나온다", () =>
     const result = evaluatePublish(s.article, s.context);
     expect(result.canPublish).toBe(false);
     expect(uniqueIds(result.blockers)).toEqual(s.expectedBlockers);
-    expect(result.warnings).toEqual([]);
+    expect(uniqueIds(result.warnings)).toEqual(s.expectedWarnings);
   });
 });
 

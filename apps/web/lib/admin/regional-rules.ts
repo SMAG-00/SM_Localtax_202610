@@ -6,6 +6,9 @@ import {
   EDITORIAL_JUDGEMENTS,
   NON_NEWS_BLOCKED_TYPES,
   REGIONAL_DESK_CHECKLIST,
+  STALE_STATISTICS_DAYS_DEFAULT,
+  STALE_STATISTICS_DAYS_MAX,
+  STALE_STATISTICS_DAYS_MIN,
   REGIONAL_DESK_CHECKLIST_LABELS,
   isNonNewsJudgement,
   missingRegionalChecks,
@@ -55,12 +58,70 @@ export function parseJudgeInput(raw: Record<string, unknown>): { ok: true; value
   return { ok: true, value: { articleId: id as number, judgement: (j ?? null) as EditorialJudgement | null, note: typeof note === "string" && note.trim() ? note.trim() : null } };
 }
 
-/** 공개(예약) 중인 보도·해설에 비보도 판정을 걸 수 없다 — 먼저 내린다 (DB 트리거와 같은 문장 뜻) */
+/**
+ * 공개(예약) 중인 원고에 비보도 판정을 걸 수 없다 — 먼저 내린다 (DB 트리거와 같은 문장 뜻).
+ * 보도·해설은 7단계 규칙(REG1-17), 그 밖의 유형도 8단계부터 — 비보도 판정은 별도 상품 검토 큐 1건을 열고, 큐 원고는 공개 0이다 (REG1-14·17)
+ */
 export function judgeConflict(article: { status: string; content_type: string | null }, judgement: EditorialJudgement | null): string | null {
   if (!isNonNewsJudgement(judgement)) return null;
   if (!["published", "scheduled"].includes(article.status)) return null;
-  if (!(NON_NEWS_BLOCKED_TYPES as readonly (string | null)[]).includes(article.content_type)) return null;
-  return "공개(예약) 중인 보도기사·해설은 여행 후기·맛집 추천·행사 홍보로 판정할 수 없습니다 — 먼저 내린 뒤 판정하세요 (REG1-17)";
+  if ((NON_NEWS_BLOCKED_TYPES as readonly (string | null)[]).includes(article.content_type)) {
+    return "공개(예약) 중인 보도기사·해설은 여행 후기·맛집 추천·행사 홍보로 판정할 수 없습니다 — 먼저 내린 뒤 판정하세요 (REG1-17)";
+  }
+  return "공개(예약) 중인 원고는 여행 후기·맛집 추천·행사 홍보로 판정해 별도 상품 검토 큐로 보낼 수 없습니다 — 먼저 내린 뒤 판정하세요 (REG1-14·17)";
+}
+
+/** 운영 설정 stale_statistics_days 검사 — 1~3650 정수 (DB 트리거 settings_stale_statistics_guard와 같다, W4 8단계 REG1-14) */
+export function staleStatisticsDaysErrors(value: unknown): string[] {
+  return typeof value === "number" && Number.isInteger(value) && value >= STALE_STATISTICS_DAYS_MIN && value <= STALE_STATISTICS_DAYS_MAX
+    ? []
+    : [`값: ${STALE_STATISTICS_DAYS_MIN}~${STALE_STATISTICS_DAYS_MAX} 정수여야 합니다 (REG1-14 초기값 ${STALE_STATISTICS_DAYS_DEFAULT})`];
+}
+
+// ── 별도 상품 검토 큐 (W4 8단계 — REG1-14·17, 3장 separate_product_queue · 6장 regional.judge) ──
+
+/** 닫기 메모 한도 — DB 칸 검사와 같다 */
+export const QUEUE_NOTE_MAX = 500;
+
+/** 검토 닫기 요청 { op: "close", itemId, note } — 메모(결정 사유)는 필수 */
+export interface CloseInput {
+  itemId: number;
+  note: string;
+}
+
+export function parseCloseInput(raw: Record<string, unknown>): { ok: true; value: CloseInput } | { ok: false; errors: string[] } {
+  const errors: string[] = [];
+  for (const key of Object.keys(raw)) if (!["op", "itemId", "note"].includes(key)) errors.push(`${key}: 모르는 칸입니다`);
+  const id = raw.itemId;
+  if (typeof id !== "number" || !Number.isSafeInteger(id) || id < 1) errors.push("itemId: 1 이상의 항목 번호여야 합니다");
+  const note = raw.note;
+  if (typeof note !== "string" || !note.trim()) errors.push("note: 닫는 사유(결정)를 적어야 합니다 — 예: 광고·협찬 상품으로 전환, 행사안내로 등록(W6), 폐기");
+  else if (note.length > QUEUE_NOTE_MAX) errors.push(`note: ${QUEUE_NOTE_MAX}자 이하여야 합니다`);
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, value: { itemId: id as number, note: (note as string).trim() } };
+}
+
+/** /admin/regions 지역 기사 묶음 — 편집 분야 승인 대기 · 보류 (편집 승인 상태·게재 상태로만 나눈다 — 판정 상태는 편집 화면이 계산) */
+export interface RegionalDeskRow {
+  id: number;
+  title: string;
+  status: string;
+  editorial_status: string;
+  editorial_field: string | null;
+  editorial_judgement: string | null;
+  updated_at: string;
+}
+
+export function groupRegionalDesk<T extends RegionalDeskRow>(rows: readonly T[], openArticleIds: ReadonlySet<number>): { awaiting: T[]; held: T[] } {
+  const awaiting: T[] = [];
+  const held: T[] = [];
+  for (const r of rows) {
+    if (openArticleIds.has(Number(r.id))) continue; // 별도 상품 검토 큐에 있는 원고는 큐 쪽에만
+    if (["published", "scheduled", "deleted"].includes(r.status)) continue;
+    if (r.status === "held" || r.editorial_status === "held") held.push(r);
+    else if (r.editorial_status !== "approved") awaiting.push(r);
+  }
+  return { awaiting, held };
 }
 
 /** 지역 기사 편집 승인(desk_edit approve)의 checklist 오류 — `checklist.<키>: 문장` (편집 승인 API 422·편집 화면 칸 오류 같은 글자) */

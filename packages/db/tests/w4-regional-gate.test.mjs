@@ -75,7 +75,25 @@ const insert = async (table, row) => (await client.query(...insertSql(table, row
 /** 지역 기사 초안 — 지역 태그·편집 분야·공익적 질문이 찬 모양 (가짜 내용) */
 const draft = (over = {}) =>
   insert("articles", { slug: uniq("w4rg"), title: "시험용 지역 기사", section: "local", content_type: "reported_news", status: "draft", region_codes: [SEOUL], editorial_field: "local_finance", public_question: Q, ...over });
-const publish = (id) => attempt("update public.articles set status = 'published' where id = $1 returning status, first_published_at", [id]);
+const DESK_FULL = { evidence: true, relation: true, ad_independence: true };
+/**
+ * 발행 — W4 8단계부터 지역 기사는 단계를 밟아야 공개된다(초안 → 편집 승인(지역 기사 3항목) → 승인 → 발행, REG1-14 · …44 articles_stage_order).
+ * 편집 승인·승인 단계를 밟은 뒤 발행 상태로 바꾼다. 실패하면 그 문장(발행 검사 문장은 7단계·5단계 트리거가 먼저 낸다). 한 번에 되돌린다
+ */
+async function publish(id) {
+  await client.query("savepoint p");
+  try {
+    const desk = (await client.query("insert into public.people (slug, name, roles) values ($1, '시험용 편집 책임자', '{editor}') returning id", [uniq("desk")])).rows[0].id;
+    await client.query("insert into public.editorial_reviews (article_id, kind, reviewer_id, decision, checklist) values ($1, 'desk_edit', $2, 'approve', $3)", [id, desk, JSON.stringify(DESK_FULL)]);
+    await client.query("update public.articles set status = 'approved' where id = $1 and status not in ('approved', 'published', 'scheduled')", [id]);
+    const res = await client.query("update public.articles set status = 'published' where id = $1 returning status, first_published_at", [id]);
+    await client.query("release savepoint p");
+    return { ok: true, rows: res.rows, rowCount: res.rowCount };
+  } catch (err) {
+    await client.query("rollback to savepoint p");
+    return { ok: false, message: err.message, code: err.code };
+  }
+}
 const person = () => insert("people", { slug: uniq("p"), name: "시험용 편집자", roles: ["editor"] });
 const approve = async (articleId, checklist) => {
   const editor = await person();
@@ -186,6 +204,9 @@ test("편집자 판정 — 여행 후기·맛집 추천·행사 홍보 + 보도�
     const explainer = await draft({ content_type: "explainer", editorial_judgement: "travel_review", ...judged });
     assert.equal((await publish(explainer.id)).ok, false);
     const guide = await draft({ content_type: "guide", editorial_judgement: "event_promo", ...judged });
+    // 8단계 — 비보도 판정 원고는 별도 상품 검토 큐에 열린 항목이 생겨 어떤 유형이든 공개되지 않는다. 검토를 닫으면 가이드는 ④ 규칙 밖이라 발행된다
+    assert.match((await publish(guide.id)).message, /별도 상품 검토 큐에 열린 항목/, "큐가 열려 있으면 가이드도 공개 0");
+    await client.query("update public.separate_product_queue set status = 'closed', closed_by = 'user:w4rg-test', closed_at = now(), note = '가이드로 유지' where article_id = $1 and status = 'open'", [guide.id]);
     assert.equal((await publish(guide.id)).ok, true, "가이드는 이 규칙 밖");
     const candidate = await draft({ editorial_judgement: "news_candidate", ...judged });
     assert.equal((await publish(candidate.id)).ok, true);

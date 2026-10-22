@@ -3,8 +3,8 @@
 //  · 검사를 지난 값은 발행 판정 설정 읽기(lib/server/articles/gate.ts parseGateSettings)를 그대로 통과한다 — 같은 키·같은 모양.
 //  · 버전이 있는 값(사전·유사도 기준)은 내용을 바꾸면 버전도 바꿔야 한다 — 점검 기록에 남는 버전이 값과 어긋나지 않게.
 import { koglUsageErrors, officialSourceTypesErrors } from "./official-source-rules";
-import { regionalJudgeFieldsErrors } from "./regional-rules";
-import { normalizeText } from "@ltr/editorial";
+import { regionalJudgeFieldsErrors, staleStatisticsDaysErrors } from "./regional-rules";
+import { STALE_STATISTICS_DAYS_DEFAULT, STALE_STATISTICS_DAYS_MAX, STALE_STATISTICS_DAYS_MIN, normalizeText } from "@ltr/editorial";
 import { checkDomainCutover } from "@/lib/analytics/metrics";
 import { checkQueryTermsSettings } from "@/lib/analytics/query-terms";
 import { ANALYTICS_SETTING_CHECKS } from "@/lib/analytics/settings";
@@ -281,6 +281,12 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "공식 자료 시점 만료 기준 (REG1-13)",
     guide: `${EXPIRY_DAYS_MIN}~${EXPIRY_DAYS_MAX} 정수 하나 (초기값 ${EXPIRY_DAYS_DEFAULT}) — 공식 자료의 확인일(한국 날짜)부터 이 일수를 넘기면 다음 만료 배치가 검수 큐에 1건씩 올립니다. 기준 당일은 0건, 하루 넘긴 날 1건`,
     check: (value) => expiryDaysErrors(value),
+  },
+  // ── W4 8단계 오래된 통계 경고 기준 (docs/dev/W4_설계.md 2.2 · 2.3) — 발행 판정(gate.ts)·DB 트리거(…44 stale_statistics_settings_guard)와 같은 검사 ──
+  stale_statistics_days: {
+    label: "오래된 통계 경고 기준 (REG1-14)",
+    guide: `${STALE_STATISTICS_DAYS_MIN}~${STALE_STATISTICS_DAYS_MAX} 정수 하나 (초기값 ${STALE_STATISTICS_DAYS_DEFAULT}) — 지역 기사에 쓴 통계 자료의 기준일이 오늘보다 이 일수를 넘겨 앞서면 편집 화면에 '오래된 통계' 경고가 뜹니다(발행은 막지 않음). 기준 당일은 경고 0, 하루 넘긴 날부터 경고`,
+    check: (value) => staleStatisticsDaysErrors(value),
   },
   // ── W4 7단계 지역 기사 판정 책임자 (docs/dev/W4_설계.md 2.2 · 12장 #7) — 발행 판정(gate.ts)·DB 트리거(…43 regional_settings_guard)와 같은 검사 ──
   regional_judge_fields: {

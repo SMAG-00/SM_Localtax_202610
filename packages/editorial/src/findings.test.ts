@@ -36,8 +36,12 @@ describe("규칙 목록", () => {
     expect(checkScreenCopy(copy, BASE_CONTEXT)).toEqual([]);
   });
 
-  it("경고 항목은 W2-a 설계 §4 표의 경고 칸 그대로 — 실명 표현 · 풀이 없는 용어 · 60자 · 3문장 · seo-lint 경고 · 유사도 비교 대상 없음", () => {
+  it("경고 항목은 W2-a 설계 §4 표의 경고 칸 + W4 8단계 지역 기사 편집 경고 4종(REG1-14) 그대로 — 실명 표현 · 풀이 없는 용어 · 60자 · 3문장 · seo-lint 경고 · 유사도 비교 대상 없음 · 보도자료 재게시 · 근거 없는 지역 수치 · 사진 권리 누락 · 오래된 통계", () => {
     expect(RULES.filter((r) => r.level === "warn").map((r) => r.id)).toEqual([
+      "reg1_14.press-release-repost",
+      "reg1_14.unsupported-figure",
+      "reg1_14.photo-rights",
+      "reg1_14.stale-statistics",
       "cat05.real-name",
       "ux01.jargon-unexplained",
       "ux01.guide-sentence-long",

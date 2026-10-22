@@ -1,3 +1,5 @@
+import { stageSkipProblem } from "@ltr/editorial";
+import { isRegionalRow } from "@/lib/admin/review-form";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { withPublishRecord } from "@/lib/server/articles/content";
 import { gateReport, seoCheckRow } from "@/lib/server/articles/report";
@@ -13,6 +15,8 @@ import { dbError, errorJson, handle, json, parseId } from "@/lib/server/http";
 //  · 없으면 게재 상태 published, 최초 발행일 기록(한 번 정해지면 바뀌지 않는다), 경고는 발행 기록(check_log.publish)·감사 로그에 남긴다
 //  · 편집국 외 역할의 발행 시도는 403 + 감사 로그 (NAV-06) · 칼럼(opinion) 필자 본인의 발행도 403 + 감사 로그 (BR-08 — DB 트리거가 발행 기록으로 다시 막는다)
 //  · 시그니처 연재 회차는 경력 연수 표기 0·「그때와 지금」 비교 항목 1개 이상이어야 한다 — 422 { errors } (W3 8단계)
+//  · 지역 기사는 승인(approved) 단계를 거쳐야 처음 공개한다 — 판정을 통과해도 단계를 건너뛰면 409 { failed: ["reg1_14.stage-skip"] } (REG1-14 · W4 8단계, DB articles_stage_order도 막는다)
+//  · 별도 상품 검토 큐에 열린 항목이 있는 원고는 DB가 공개를 거부한다 — 409 (DB 문장 그대로)
 export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -44,6 +48,15 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   if (!gate.canPublish) {
     return errorJson(422, `발행할 수 없습니다 — 차단 항목 ${gate.failed.length}개`, { seoCheckId, ...gateReport(gate) });
   }
+  const stage = stageSkipProblem({
+    from: before.status,
+    to: "published",
+    regional: isRegionalRow(before),
+    firstPublished: before.first_published_at !== null,
+    editorialStatus: before.editorial_status,
+    taxReviewStatus: before.tax_review_status,
+  });
+  if (stage) return errorJson(409, stage, { seoCheckId, failed: ["reg1_14.stage-skip"] });
 
   const record = { at: now, version: before.version, by: actorOf(viewer), seoCheckId, warnings: gate.warnings };
   const article = await updateArticle(

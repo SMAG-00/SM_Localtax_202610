@@ -1,6 +1,7 @@
-import { REVIEW_DECISIONS, REVIEW_KINDS, hasTaxLensContent, type ReviewDecision, type ReviewKind } from "@ltr/editorial";
+import { REVIEW_DECISIONS, REVIEW_KINDS, hasTaxLensContent, stageSkipProblem, type ReviewDecision, type ReviewKind } from "@ltr/editorial";
 import type { Action } from "@/lib/access";
 import { contractedPartners, regionalChecklistErrors } from "@/lib/admin/regional-rules";
+import { isRegionalRow } from "@/lib/admin/review-form";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { readStoredTaxLens } from "@/lib/server/articles/content";
 import { toTaxLens } from "@/lib/server/articles/mapping";
@@ -15,6 +16,8 @@ import { dbError, errorJson, handle, json, parseId, readJson } from "@/lib/serve
 //  · tax_review — 세무 감수위원만. 승인하면 「지방세로 읽기」 박스의 감수 표시를 이 버전으로 켜고 서명 기록(감수위원·시각)을 남긴다
 //  · 승인은 기사의 현재 버전에 대한 것이다 — 원고를 고치면 다시 받는다
 //  · 편집국 외 역할의 승인 시도는 403 + 감사 로그 (NAV-06)
+//  · 지역 기사 단계 순서 (REG1-14 · W4 8단계 — DB articles_stage_order와 같은 규칙): 세무 감수가 반려·보류면 편집 승인을 받아도 승인 단계로 가지 않고,
+//    그 뒤 세무 감수 승인이 나면(편집 승인이 있으면) 승인 단계로 간다
 export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -86,9 +89,21 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   // 트리거가 편집 승인·세무 감수 상태 칸을 다시 계산했다 — 그 값 위에서 게재 상태·박스 감수 표시를 바꾼다
   const synced = await loadArticle(db, id);
   const columns: Record<string, unknown> = {};
+  const stageOk = (to: string) =>
+    stageSkipProblem({
+      from: synced.status,
+      to,
+      regional: isRegionalRow(synced),
+      firstPublished: synced.first_published_at !== null,
+      editorialStatus: synced.editorial_status,
+      taxReviewStatus: synced.tax_review_status,
+    }) === null;
   if (kind === "desk_edit") {
     const next = statusAfterDeskEdit(synced.status, decision);
-    if (next !== synced.status) columns.status = next;
+    if (next !== synced.status && (next !== "approved" || stageOk("approved"))) columns.status = next;
+  }
+  if (kind === "tax_review" && decision === "approve" && isRegionalRow(synced) && synced.editorial_status === "approved" && ["draft", "in_review", "held"].includes(synced.status) && stageOk("approved")) {
+    columns.status = "approved";
   }
   if (kind === "tax_review" && decision === "approve") {
     const lens = readStoredTaxLens(synced.tax_lens);

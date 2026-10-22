@@ -90,7 +90,25 @@ function source(articleId, kind, cols, role = null) {
     role,
   );
 }
-const publish = (id) => attempt("update public.articles set status = 'published' where id = $1 returning status", [id]);
+const DESK_FULL = { evidence: true, relation: true, ad_independence: true };
+/**
+ * 발행 — W4 8단계부터 지역 기사는 단계를 밟아야 공개된다(초안 → 편집 승인(지역 기사 3항목) → 승인 → 발행, REG1-14 · …44 articles_stage_order).
+ * 편집 승인·승인 단계를 밟은 뒤 발행 상태로 바꾼다. 실패하면 그 문장(발행 검사 문장은 7단계·5단계 트리거가 먼저 낸다). 한 번에 되돌린다
+ */
+async function publish(id) {
+  await client.query("savepoint p");
+  try {
+    const desk = (await client.query("insert into public.people (slug, name, roles) values ($1, '시험용 편집 책임자', '{editor}') returning id", [uniq("desk")])).rows[0].id;
+    await client.query("insert into public.editorial_reviews (article_id, kind, reviewer_id, decision, checklist) values ($1, 'desk_edit', $2, 'approve', $3)", [id, desk, JSON.stringify(DESK_FULL)]);
+    await client.query("update public.articles set status = 'approved' where id = $1 and status not in ('approved', 'published', 'scheduled')", [id]);
+    const res = await client.query("update public.articles set status = 'published' where id = $1 returning status, first_published_at", [id]);
+    await client.query("release savepoint p");
+    return { ok: true, rows: res.rows, rowCount: res.rowCount };
+  } catch (err) {
+    await client.query("rollback to savepoint p");
+    return { ok: false, message: err.message, code: err.code };
+  }
+}
 const setSetting = (key, value) => attempt("update public.settings set value = $1::jsonb where key = $2", [JSON.stringify(value), key]);
 const checkValues = async (constraint) => {
   const def = (await client.query("select pg_get_constraintdef(oid) d from pg_constraint where conname = $1", [constraint])).rows[0]?.d ?? "";

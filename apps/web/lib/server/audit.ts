@@ -38,6 +38,7 @@ export const targetOf = {
   requirement: (id: number | string) => `news_partner_requirements:${id}`,
   policy: (docKey: string, version: number | string) => `policy_versions:${docKey}:${version}`,
   synonym: (id: number | string) => `search_synonyms:${id}`,
+  separateProduct: (id: number | string) => `separate_product_queue:${id}`,
 };
 
 /** 감사 로그 한 줄. 실패하면 예외 — 감사 기록 없는 변경을 성공으로 알리지 않는다 */

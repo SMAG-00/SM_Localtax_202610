@@ -110,6 +110,15 @@ export function CheckPanel({
           </h3>
           <Items items={view.warnings} tone="amber" label="경고" testId="check-warnings" />
 
+          {view.editorialWarnings.length > 0 && (
+            <>
+              <h3 className="mt-4 text-[15px] font-black text-navy-900">
+                {PANEL_COPY.editorialWarnings} <span data-testid="editorial-warning-count">{view.editorialWarnings.length}</span>개
+              </h3>
+              <Items items={view.editorialWarnings} tone="amber" label="편집 경고" testId="check-editorial-warnings" />
+            </>
+          )}
+
           {view.taxReviewReasons.length > 0 && (
             <div className="mt-4">
               <h3 className="text-[15px] font-black text-navy-900">{PANEL_COPY.taxReasons}</h3>

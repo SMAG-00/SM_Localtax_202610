@@ -38,6 +38,26 @@ describe("차단·경고 묶기", () => {
     expect(v.warnings.map((w) => w.id)).toEqual(["ux01.jargon-unexplained", "seo.internal-links"]);
   });
 
+  test("지역 기사 편집 경고(REG1-14)는 경고와 따로 묶는다 — 규칙 이름·위치, 다른 경고 목록엔 0 (W4 8단계)", () => {
+    const base = report();
+    const v = panelView(
+      report({
+        findings: [
+          ...base.findings,
+          { id: "reg1_14.unsupported-figure", level: "warn", ruleRef: "REG1-14", message: "지역 수치 ‘312억 원’가 있는 문단에 공식 자료·취재 근거 연결이 없습니다", location: { field: "blocks", blockIndex: 2, phrase: "312억 원" } },
+          { id: "reg1_14.stale-statistics", level: "warn", ruleRef: "REG1-14", message: "통계 기준일이 오래됐습니다", location: { field: "sources.referenceDate", phrase: "src:3" } },
+        ],
+      }),
+      ["key_summary", "paragraph", "paragraph"],
+    );
+    expect(v.warnings.map((w) => w.id)).toEqual(["ux01.jargon-unexplained", "seo.internal-links"]);
+    expect(v.editorialWarnings.map((w) => [w.id, w.title, w.where])).toEqual([
+      ["reg1_14.unsupported-figure", "지역 수치 문단에 공식 자료·근거 연결 없음", "본문 3번째 블록(문단) · ‘312억 원’"],
+      ["reg1_14.stale-statistics", "기준일이 설정 기간보다 오래된 통계", "출처 기준일 · ‘src:3’"],
+    ]);
+    expect(panelView(base, []).editorialWarnings).toEqual([]);
+  });
+
   test("편집 판정 항목은 규칙 이름과 판정 문장, 최적화 점검 항목은 점검 이름과 점검 문장", () => {
     const v = panelView(report(), []);
     expect(v.blockers[0]).toMatchObject({ title: "관련 기관·전문가 확인 빔", ruleRef: "NAV-10", message: "관계자 확인 묶음이 비었습니다 — 관련 기관·전문가 확인 기록을 남겨 주세요" });

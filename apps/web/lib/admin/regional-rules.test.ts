@@ -1,6 +1,6 @@
 // 지역 기사 편집 게이트 운영 규칙 (W4 7단계 — REG1-17 · 12장 #7) — 운영 설정·판정 입력·편집 승인 3항목·계약 제휴사
 import { describe, expect, test } from "vitest";
-import { contractedPartners, judgeConflict, parseJudgeInput, parseRegionalJudgeFields, regionalChecklistErrors, regionalJudgeFieldsErrors } from "./regional-rules";
+import { contractedPartners, groupRegionalDesk, judgeConflict, parseCloseInput, parseJudgeInput, parseRegionalJudgeFields, regionalChecklistErrors, regionalJudgeFieldsErrors, staleStatisticsDaysErrors } from "./regional-rules";
 import { reviewErrorsFromServer, checksFor, isRegionalRow, reviewPayload } from "./review-form";
 import { SETTING_SPECS } from "./settings-rules";
 
@@ -39,7 +39,9 @@ describe("편집자 판정 입력 { op, articleId, judgement, note? }", () => {
     expect(judgeConflict({ status: "published", content_type: "reported_news" }, "restaurant_pick")).toMatch(/먼저 내린 뒤/);
     expect(judgeConflict({ status: "scheduled", content_type: "explainer" }, "event_promo")).toMatch(/REG1-17/);
     expect(judgeConflict({ status: "draft", content_type: "reported_news" }, "travel_review")).toBeNull();
-    expect(judgeConflict({ status: "published", content_type: "guide" }, "travel_review")).toBeNull();
+    // W4 8단계 — 공개 중인 가이드도 비보도 판정(별도 상품 검토 큐)으로 보낼 수 없다 (큐 원고는 공개 0)
+    expect(judgeConflict({ status: "published", content_type: "guide" }, "travel_review")).toMatch(/별도 상품 검토 큐로 보낼 수 없습니다 .*REG1-14·17/);
+    expect(judgeConflict({ status: "draft", content_type: "guide" }, "travel_review")).toBeNull();
     expect(judgeConflict({ status: "published", content_type: "reported_news" }, "news_candidate")).toBeNull();
   });
 });
@@ -84,5 +86,29 @@ describe("편집 승인 폼 — 지역 기사 3항목 (REG1-17)", () => {
     expect(
       reviewErrorsFromServer("desk_edit", ["checklist.relation: 관계 확인이 필요합니다", "checklist.evidence: 근거 확인이 필요합니다", "interestDisclosure: 이해관계 표시가 있어야 승인됩니다"]),
     ).toEqual({ fields: { "review-desk_edit-checks": "관계 확인이 필요합니다 · 근거 확인이 필요합니다" }, rest: ["이해관계 표시가 있어야 승인됩니다"] });
+  });
+});
+
+describe("별도 상품 검토 큐·오래된 통계 설정 (W4 8단계 — REG1-14·17, DB …44와 같은 규칙)", () => {
+  test("닫기 요청 — 항목 번호·사유 필수, 사유 500자까지, 모르는 칸 거부", () => {
+    expect(parseCloseInput({ op: "close", itemId: 3, note: " 광고·협찬 상품으로 전환 " })).toEqual({ ok: true, value: { itemId: 3, note: "광고·협찬 상품으로 전환" } });
+    const bad = parseCloseInput({ op: "close", itemId: 0, note: "  ", extra: 1 });
+    expect(bad.ok).toBe(false);
+    expect(bad.ok ? [] : bad.errors.map((e) => e.split(": ")[0])).toEqual(["extra", "itemId", "note"]);
+    const long = parseCloseInput({ op: "close", itemId: 3, note: "가".repeat(501) });
+    expect(long.ok ? [] : long.errors).toEqual(["note: 500자 이하여야 합니다"]);
+  });
+  test("판정판 묶기 — 공개 전 지역 기사를 승인 대기·보류로, 큐에 열린 원고·공개·삭제 기사는 빼고", () => {
+    const row = (id: number, status: string, editorial_status: string) => ({ id, title: `시험용 ${id}`, status, editorial_status, editorial_field: "local_tax", editorial_judgement: null, updated_at: "2026-10-22T00:00:00Z" });
+    const rows = [row(1, "draft", "pending"), row(2, "in_review", "pending"), row(3, "held", "held"), row(4, "approved", "approved"), row(5, "draft", "pending"), row(6, "published", "approved"), row(7, "in_review", "held")];
+    const { awaiting, held } = groupRegionalDesk(rows, new Set([5]));
+    expect(awaiting.map((r) => r.id)).toEqual([1, 2]);
+    expect(held.map((r) => r.id)).toEqual([3, 7]);
+  });
+  test("stale_statistics_days — 1~3650 정수만 (DB 트리거 settings_stale_statistics_guard와 같다)", () => {
+    for (const ok of [1, 365, 3650]) expect(staleStatisticsDaysErrors(ok)).toEqual([]);
+    for (const bad of [0, 3651, 1.5, "365", null, [365]]) expect(staleStatisticsDaysErrors(bad)).toEqual(["값: 1~3650 정수여야 합니다 (REG1-14 초기값 365)"]);
+    expect(SETTING_SPECS.stale_statistics_days!.check(30, 365)).toEqual([]);
+    expect(SETTING_SPECS.stale_statistics_days!.check(0, 365)).toHaveLength(1);
   });
 });

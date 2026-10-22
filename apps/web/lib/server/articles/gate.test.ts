@@ -406,3 +406,62 @@ describe("W4 7단계 지역 기사 게이트 — DB 칸 → 발행 판정 (REG1-
     expect(regionalFailed(graph(), { ...SETTINGS, regionalJudgeFields: narrowed.settings.regionalJudgeFields })).toEqual(["reg1_17.field-judge-missing"]);
   });
 });
+
+describe("W4 8단계 지역 기사 편집 경고 — DB 칸·유사도 결과 → 경고 (REG1-14)", () => {
+  const base = graph();
+  const src = base.sources[0]!;
+  const PRESS = "시험용 가상구는 상반기 지방세 세수가 집계됐다고 밝혔다. 구는 거래 감소가 원인이라고 설명했다. 다음 달 세부 자료를 낸다.";
+  const editorialWarnings = (g: ReturnType<typeof graph>, settings = SETTINGS) =>
+    runGate(g, settings, GATE_OPTIONS).evaluation.warnings.filter((f) => f.ruleRef === "REG1-14");
+  const withPress = (text: string) =>
+    graph(
+      { sources: [src, { ...src, id: 4, kind: "press_release", source_type: null, snapshot_id: 51 }], snapshots: [{ id: 51, payload: PRESS }] },
+      { summary: null, body: { blocks: [{ type: "paragraph", text }], claims: [] } },
+    );
+
+  test("견본(지역 기사)은 편집 경고 0", () => {
+    expect(editorialWarnings(graph())).toEqual([]);
+  });
+  test("같은 보도자료와 기사 비율 기준(유사도 설정 60% 초과) 이상 → 재게시 경고 1건, 기준 이하 → 0", () => {
+    const all = editorialWarnings(withPress(PRESS)).filter((f) => f.id === "reg1_14.press-release-repost");
+    expect(all).toHaveLength(1);
+    expect(all[0]!.location).toMatchObject({ field: "sources", phrase: "src:4" });
+    expect(all[0]!.message).toContain("100%");
+    // 3문장 중 1문장만 같음 = 33% → 경고 0 (자체 문장 2개)
+    const one = "시험용 가상구는 상반기 지방세 세수가 집계됐다고 밝혔다. 편집국이 구별 징수 실적을 따로 대조했다. 감소 폭은 구마다 달랐다.";
+    expect(editorialWarnings(withPress(one)).map((f) => f.id)).not.toContain("reg1_14.press-release-repost");
+    // 기준을 낮추면(설정) 같은 원고도 경고
+    const loose = { ...SETTINGS, similarity: { ...SETTINGS.similarity, articleRatio: 0.3 } };
+    expect(editorialWarnings(withPress(one), loose).map((f) => f.id)).toContain("reg1_14.press-release-repost");
+  });
+  test("지역 기사가 아니면(지역 태그 없는 지방세 기사) 재게시 경고 0 — 유사도 차단은 그대로", () => {
+    const g = withPress(PRESS);
+    const tax = { ...g, article: { ...g.article, section: "tax" as const, region_codes: [] }, category: { ...g.category!, section: "tax" as const } };
+    expect(editorialWarnings(tax)).toEqual([]);
+  });
+  test("수치 문단에 근거 연결이 없으면 근거 없는 지역 수치 경고 — 핵심 주장이 공식 자료(src)·근거(ev)를 이으면 0", () => {
+    const text = "누리구 재산세는 312억 원으로 늘었다.";
+    const bare = graph({}, { body: { blocks: [...(base.article.body as { blocks: unknown[] }).blocks, { type: "paragraph", text }], claims: (base.article.body as { claims: unknown[] }).claims } });
+    expect(editorialWarnings(bare).map((f) => f.id)).toEqual(["reg1_14.unsupported-figure"]);
+    const blocks = (bare.article.body as { blocks: unknown[] }).blocks;
+    const linked = graph({}, { body: { blocks, claims: [...(base.article.body as { claims: unknown[] }).claims, { id: "claim-9", text, kind: "fact", evidenceIds: ["src:3"], blockIndex: blocks.length - 1 }] } });
+    expect(editorialWarnings(linked)).toEqual([]);
+  });
+  test("오래된 통계 — 설정 stale_statistics_days(없으면 365) 기준, 기준 당일 0·하루 넘김 1 (오늘 = KST 2026-10-17)", () => {
+    expect(editorialWarnings(graph({ sources: [{ ...src, reference_date: "2025-10-17" }] }))).toEqual([]);
+    expect(editorialWarnings(graph({ sources: [{ ...src, reference_date: "2025-10-16" }] })).map((f) => f.id)).toEqual(["reg1_14.stale-statistics"]);
+    const dict = [
+      { key: "forbidden_phrases", value: { phrases: ["절세 보장"] } },
+      { key: "fear_phrases", value: { phrases: ["큰일"] } },
+    ];
+    expect(parseGateSettings(dict, []).settings.staleStatisticsDays).toBe(365);
+    expect(parseGateSettings([...dict, { key: "stale_statistics_days", value: 30 }], []).settings.staleStatisticsDays).toBe(30);
+    for (const bad of [0, 3651, "30", 1.5]) expect(parseGateSettings([...dict, { key: "stale_statistics_days", value: bad }], []).settings.staleStatisticsDays).toBe(365);
+    const thirty = { ...SETTINGS, staleStatisticsDays: 30 };
+    expect(editorialWarnings(graph(), thirty).map((f) => f.id)).toEqual(["reg1_14.stale-statistics"]);
+  });
+  test("사진 권리 누락 — 대표 사진의 공공누리 유형이 비면 경고 목록에 1건", () => {
+    const g = graph({ media: [mediaRow({ id: 61, rights_status: "confirmed", license_type: null })] }, { lead_media_id: 61 });
+    expect(editorialWarnings(g).map((f) => [f.id, f.location?.field])).toEqual([["reg1_14.photo-rights", "leadImage"]]);
+  });
+});
