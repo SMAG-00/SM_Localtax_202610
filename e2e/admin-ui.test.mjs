@@ -549,8 +549,11 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
   assert.equal(await save(editor), 3);
   await open(editor, `/admin/reviews/${id}`);
   assert.deepEqual(await blockers(editor, { expectCount: 1 }), ["nav03.desk-edit-required"]);
-  const deskChecks = await editor.getByRole("form", { name: "편집 승인 결정" }).locator('input[type="checkbox"]').count();
-  assert.equal(deskChecks, 4, "정성형 승인에는 '인과 단정 없음' 항목이 없다");
+  const deskForm = editor.getByRole("form", { name: "편집 승인 결정" });
+  assert.equal(await deskForm.getByLabel(/인과 단정 없음/).count(), 0, "정성형 승인에는 '인과 단정 없음' 항목이 없다");
+  // 지역 기사면 W4 7단계 지역 확인 3항목(근거·관계·광고 독립성)이 더 붙는다 — 그것을 뺀 기본 항목은 4개
+  const regionalChecks = await deskForm.getByLabel(/^(근거|관계|광고 독립성) — /).count();
+  assert.equal((await deskForm.locator('input[type="checkbox"]').count()) - regionalChecks, 4, "정성형 승인 기본 확인 항목 4개");
   await approveDesk(editor);
   await publishFromPanel(editor, id);
   assert.equal((await anonPublic(id)).length, 1, "공개 키로 읽힌다");
