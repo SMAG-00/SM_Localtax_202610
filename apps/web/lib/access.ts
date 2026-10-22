@@ -86,6 +86,7 @@ export const ACTIONS = {
   "source_review.resolve": "원문 검수 큐 — 공식 자료 원문 다시 받기·검수 항목 해결(확인일 다시 적기 포함) (편집 책임자·관리자, W4 6단계 REG1-13)",
   "regional.judge": "지역 기사 편집자 판정 — 기사 후보·여행 후기·맛집 추천·행사 홍보 (편집 책임자, 1인 체제면 관리자·PO — W4 7단계 REG1-17 · 12장 #7)",
   "article.regional_fields": "지역 기사 편집 칸 — 편집 분야·공익적 질문·소재·관계 유형·다룬 제휴사·이해관계 표시 (기자·편집 책임자·관리자 — 편집국 외 역할 403 + 감사, W4 7단계)",
+  "regional_link.confirm": "지역 연결 — 같은 지역 후보 찾기·연결 만들기·확인·지우기 (편집 책임자·관리자, W4 13단계 REG1-10 — 확인된 연결만 공개)",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
@@ -122,6 +123,8 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   // W4 7단계 — 지역 기사 편집자 판정·편집 분야 칸. 광고·협찬 담당 등 편집국 외 역할의 시도는 거부 + 감사 (REG1-17 · PRD_최종 §9.1)
   "regional.judge",
   "article.regional_fields",
+  // W4 13단계 — 지역 연결 확인(공개 화면의 연결 링크를 바꾸는 편집 행위). 편집국 외 역할의 시도는 거부 + 감사 (REG1-10)
+  "regional_link.confirm",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -261,6 +264,9 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     // 지역 기사 편집자 판정 (W4 7단계 · 12장 #7 권고안) — 편집 책임자, 1인 체제면 관리자(PO)
     case "regional.judge":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("지역 기사 판정은 편집 책임자(editor)와 관리자(PO)만 합니다 — 광고·협찬 등 편집국 외 역할은 판정을 바꿀 수 없습니다 (REG1-17)");
+    // 지역 연결 (W4 13단계 — REG1-10 '편집자가 확인한 연결만 공개') — 편집 책임자·관리자
+    case "regional_link.confirm":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("지역 연결(후보 찾기·만들기·확인·지우기)은 편집 책임자와 관리자만 합니다 (REG1-10)");
     // 지역 기사 편집 칸 (편집 분야·공익적 질문·소재·관계 유형·다룬 제휴사·이해관계 표시) — 기자·편집 책임자·관리자
     case "article.regional_fields":
       return has(viewer, "reporter", "editor") || viewer.isAdmin

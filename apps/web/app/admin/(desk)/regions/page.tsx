@@ -5,6 +5,7 @@ import { EmptyNote, MONO, PageTitle, Panel, TEXT_LINK, ToneChip } from "@/compon
 import { isoToKstDate, isoToKstDateTime } from "@/lib/admin/form-utils";
 import { ARTICLE_STATUS_LABELS, CONTENT_TYPE_LABELS, EDITORIAL_STATUS_LABELS } from "@/lib/admin/labels";
 import type { RegionalDeskRow } from "@/lib/admin/regional-rules";
+import { can } from "@/lib/access";
 import { pageViewer, requirePage } from "@/lib/server/admin/pages";
 import { serviceDb } from "@/lib/server/articles/service";
 import { loadRegionsBoard, type QueueItemView } from "@/lib/server/regions/board";
@@ -70,7 +71,12 @@ export default async function RegionsPage() {
       >
         <a className={TEXT_LINK} href="/admin/regions/report" data-testid="region-report-link">
           시범 지역 최소선 리포트
-        </a>
+        </a>{" "}
+        {can(viewer, "regional_link.confirm") && (
+          <a className={TEXT_LINK} href="/admin/regions/links" data-testid="regional-links-link">
+            지역 연결
+          </a>
+        )}
       </PageTitle>
       <div className="space-y-8">
         <Panel id="separate-product-open" title={`별도 상품 검토 큐 — 열린 항목 ${board.open.length}건`} description="닫을 때 결정(광고·협찬 상품 전환·행사안내 등록·폐기 등)을 적습니다. 닫아도 보도기사·해설로는 발행되지 않습니다.">

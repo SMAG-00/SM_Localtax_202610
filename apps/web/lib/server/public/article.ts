@@ -41,6 +41,8 @@ import { readTipTerms } from "./glossary";
 import type { TipTerm } from "@/lib/site/glossary-tips";
 import { firstPlayableVideo, type MediaView } from "./media-logic";
 import { readPopularSidebar } from "./rankings";
+import { readArticleLinks } from "./regional-links";
+import type { RegionalLinkItem } from "./regional-links-logic";
 import { readArticleList, readCategories, readPublicSettings, readRegions } from "./reads";
 import {
   ARTICLE_DETAIL_COLUMNS,
@@ -116,6 +118,8 @@ export interface ArticleDetail {
   similarCases: SimilarCase[];
   nextActions: NextAction[];
   related: ArticleListItem[];
+  /** 확인된 지역 연결 (W4 13단계 — REG1-10) — 편집자가 확인한 연결 중 도착 화면이 지금 열린 것만(기사·공식 원문·지역 허브). 후보 0 */
+  links: RegionalLinkItem[];
   /** 자사 상품 카드 (01C BIZ-03) — 01C 전 null */
   product: null;
   /** 많이 본 기사 사이드바 (ART-11) — 지금 보는 기사를 뺀 popular_rules.sidebar_size건, 집계 전이면 빈 목록 */
@@ -161,7 +165,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   // 기자와 「지방세로 읽기」 서명 감수위원 — 공개 인물만 읽힌다(RLS). 비공개 감수위원이면 박스 0 (BR-03)
   const personIds = [...new Set([a.author_id, lens?.reviewed_by ?? null].filter((x): x is number => x !== null).map(num))];
 
-  const [settings, categories, regions, people, partner, media, sources, corrections, revisions, tagRows, situation, popular, glossary, reviewing] = await Promise.all([
+  const [settings, categories, regions, people, partner, media, sources, corrections, revisions, tagRows, situation, popular, glossary, reviewing, links] = await Promise.all([
     readPublicSettings(),
     readCategories(),
     readRegions(),
@@ -177,6 +181,8 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     readTipTerms(),
     // 원문 검수 중인 출처 번호 (W4 6단계 — 마이그레이션 …42 뷰. 기능 키와 상관없이 늘 읽는다)
     rowsOf<{ source_id: number }>(db.from("public_source_reviews").select("source_id").eq("article_id", id), "원문 검수 표시"),
+    // 확인된 지역 연결 (W4 13단계 — 마이그레이션 …48 공개 뷰). 읽지 못하면 연결 0(기사 화면은 그대로)
+    readArticleLinks(id, now),
   ]);
 
   const category = a.category_id === null ? undefined : categories.find((c) => num(c.id) === num(a.category_id));
@@ -303,6 +309,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     similarCases,
     nextActions: selectNextActions(settings.nextActionPriority, targets, settings.features),
     related,
+    links,
     product: null,
     popular,
     // 정책 링크 7종 + [광고·제휴 문의](page_advertise) — 모두 실제로 열린 기능일 때만 (W2-e 6.4)

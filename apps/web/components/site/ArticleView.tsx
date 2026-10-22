@@ -404,6 +404,38 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
                 <ArticleGrid part="related-articles" items={a.related} />
               </Part>
             );
+          // 확인된 지역 연결 (W4 13단계 — REG1-10 · LG-14): 편집자가 이유를 적어 확인한 연결 중 도착 화면이 지금 열린 것만.
+          // 종류·관계는 글자 칩(색만으로 뜻을 전하지 않는다 — PRD-00 8.9), 공식 원문은 새 창·noreferrer, 원문 검수 중이면 '검토 중'
+          case "links":
+            return (
+              <Part key={part} part={part} tone={tone(part)} rail={rail}>
+                <h2 className={H2}>확인된 연결</h2>
+                <p className="mt-2 text-[15px] text-navy-700">편집국이 이 기사와 함께 볼 자료로 확인한 기사·공식 원문·지역 허브입니다.</p>
+                <ul className="mt-6 space-y-3" data-part="regional-links">
+                  {a.links.map((l) => (
+                    <li key={l.id} data-link-kind={l.kind} data-relation={l.relation} className="rounded-xl border border-navy-100 bg-white p-4">
+                      <p className="flex flex-wrap items-center gap-2">
+                        <Chip>{l.kindLabel}</Chip>
+                        <Chip>{l.relationLabel}</Chip>
+                        {l.underReview && <Chip>{UNDER_REVIEW_LABEL}</Chip>}
+                      </p>
+                      <p className="mt-2 text-[17px] font-bold break-words text-navy-900">
+                        {l.external ? (
+                          <a href={l.href} target="_blank" rel="noopener noreferrer" className={TEXT_LINK}>
+                            {l.title} (새 창)
+                          </a>
+                        ) : (
+                          <UiLink href={l.href} className={TEXT_LINK}>
+                            {l.title}
+                          </UiLink>
+                        )}
+                      </p>
+                      {l.meta && <p className="mt-1 font-mono text-[14px] text-navy-600">{l.meta}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </Part>
+            );
           case "next":
             return (
               <Part key={part} part={part} tone={tone(part)} rail={rail}>

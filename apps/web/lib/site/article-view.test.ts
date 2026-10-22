@@ -59,11 +59,17 @@ describe("부분 순서 (ART-02)", () => {
     expect(articleParts(base)).toEqual(["head", "body"]);
   });
   test("모두 있으면 고정 순서 — 알림은 본문 위, 「지방세로 읽기」는 본문 뒤·기자 소개 앞", () => {
-    const all = articleParts({ ...base, updates: [1], taxLens: {}, author: {}, product: {}, disclaimer: true, related: [1], nextActions: [1], policyLinks: [1] });
+    const all = articleParts({ ...base, updates: [1], taxLens: {}, author: {}, product: {}, disclaimer: true, related: [1], links: [1], nextActions: [1], policyLinks: [1] });
     expect(all).toEqual([...ARTICLE_PARTS]);
+    expect(all.indexOf("related")).toBeLessThan(all.indexOf("links"));
+    expect(all.indexOf("links")).toBeLessThan(all.indexOf("next"));
     expect(all.indexOf("notices")).toBeLessThan(all.indexOf("body"));
     expect(all.indexOf("body")).toBeLessThan(all.indexOf("tax-lens"));
     expect(all.indexOf("tax-lens")).toBeLessThan(all.indexOf("reporter"));
+  });
+  test("확인된 지역 연결(W4 13단계) — 있을 때만 '관련 기사' 뒤·다음 행동 띠 앞, 없으면 자리 0", () => {
+    expect(articleParts({ ...base, links: [] })).toEqual(["head", "body"]);
+    expect(articleParts({ ...base, links: [1] })).toEqual(["head", "body", "links"]);
   });
   test("정정 1건·갱신 배너만 있어도 알림 자리, 비슷한 사례만 있어도 다음 행동 띠", () => {
     expect(articleParts({ ...base, corrections: [1] })).toContain("notices");

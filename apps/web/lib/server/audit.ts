@@ -39,6 +39,9 @@ export const targetOf = {
   policy: (docKey: string, version: number | string) => `policy_versions:${docKey}:${version}`,
   synonym: (id: number | string) => `search_synonyms:${id}`,
   separateProduct: (id: number | string) => `separate_product_queue:${id}`,
+  regionalLink: (id: number | string) => `regional_links:${id}`,
+  /** 같은 지역 자동 후보 찾기 — 출발 끝 (W4 13단계) */
+  regionalLinkFrom: (type: string, id: string) => `regional_links:from:${type}:${id}`,
 };
 
 /** 감사 로그 한 줄. 실패하면 예외 — 감사 기록 없는 변경을 성공으로 알리지 않는다 */

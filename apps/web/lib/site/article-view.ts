@@ -27,7 +27,7 @@ export function sponsorText(sponsor: SponsorMarkView): string | null {
 }
 
 /** 기사 상세 부분 — 이 순서 고정 */
-export const ARTICLE_PARTS = ["head", "notices", "body", "tax-lens", "reporter", "product", "disclaimer", "related", "next", "policy"] as const;
+export const ARTICLE_PARTS = ["head", "notices", "body", "tax-lens", "reporter", "product", "disclaimer", "related", "links", "next", "policy"] as const;
 export type ArticlePart = (typeof ARTICLE_PARTS)[number];
 
 export interface ArticleShape {
@@ -39,6 +39,8 @@ export interface ArticleShape {
   product: unknown;
   disclaimer: boolean;
   related: readonly unknown[];
+  /** 확인된 지역 연결 (W4 13단계 — REG1-10). 없으면 자리 0 */
+  links?: readonly unknown[];
   similarCases: readonly unknown[];
   nextActions: readonly unknown[];
   policyLinks: readonly unknown[];
@@ -55,6 +57,7 @@ export function articleParts(a: ArticleShape): ArticlePart[] {
     product: Boolean(a.product),
     disclaimer: a.disclaimer,
     related: a.related.length > 0,
+    links: (a.links?.length ?? 0) > 0,
     next: a.similarCases.length > 0 || a.nextActions.length > 0,
     policy: a.policyLinks.length > 0,
   };

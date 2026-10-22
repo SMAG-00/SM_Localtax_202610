@@ -4,7 +4,7 @@ import { ArticleHeader, CorrectionsList, ReviewHistory, RevisionList } from "@/c
 import { ArticleWorkspace } from "@/components/admin/ArticleWorkspace";
 import { CorrectionDecisionForm, CorrectionRequestForm } from "@/components/admin/CorrectionForms";
 import { PlacementForm } from "@/components/admin/PlacementForm";
-import { Panel } from "@/components/admin/ui";
+import { Panel, TEXT_LINK } from "@/components/admin/ui";
 import type { EditorPermissions } from "@/components/admin/editor/types";
 import { can } from "@/lib/access";
 import { orNotFound, pageId, pageViewer, requirePage } from "@/lib/server/admin/pages";
@@ -71,6 +71,13 @@ export default async function ArticleEditorPage({ params }: Props) {
               canHot={perms.canHot}
               navAllowed={row.content_type === "reported_news" && row.editorial_status === "approved"}
             />
+          </Panel>
+        )}
+        {row.status !== "deleted" && can(viewer, "regional_link.confirm") && (
+          <Panel id="regional-links" title="지역 연결" description="이 기사에서 프로젝트·지역 허브·다른 기사·공식 자료로 가는 연결입니다. 확인된 연결만 공개 화면에 나옵니다 (REG1-10).">
+            <a className={TEXT_LINK} href={`/admin/regions/links?from=article:${id}`} data-testid="regional-links-link">
+              이 기사의 지역 연결 열기
+            </a>
           </Panel>
         )}
         <CorrectionsList view={view} />
