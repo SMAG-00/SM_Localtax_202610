@@ -23,7 +23,7 @@ PRD-01A 9장 W2-a를 구현할 때 DB(packages/db)·발행 판정(packages/edito
 | subtype | `general` · `solved_case` |
 | status (기사 게재 상태) | `draft` · `in_review` · `approved` · `scheduled` · `published` · `held` · `deleted` |
 | update_kind (발행 뒤 수정) | `substantive`(실질 수정) · `typo`(오탈자) · `correction`(정정) |
-| article_sources.kind | `official_doc` · `dataset` · `press_release` · `interview` · `field` · `photo` · `other` |
+| article_sources.kind (끝의 `sponsor_material`은 01B W4 17단계 — 시행사·분양대행사가 준 분양 홍보 원고, 이 출처가 있는 기사는 sponsored로만 발행 · W4 설계 2.1) | `official_doc` · `dataset` · `press_release` · `interview` · `field` · `photo` · `other` · `sponsor_material` |
 | article_evidence.evidence_type | `dataset` · `document` · `interview` · `field` · `photo` · `calculation` |
 | editorial_reviews.kind | `desk_edit`(편집 승인) · `tax_review`(세무 감수) · `sponsor_check` |
 | editorial_reviews.decision | `approve` · `reject` · `hold` |

@@ -45,6 +45,8 @@ export const targetOf = {
   /** 프로젝트 트래커 (W4 14단계) */
   project: (id: number | string) => `projects:${id}`,
   projectEvent: (id: number | string) => `project_events:${id}`,
+  /** 분양 정보 (W4 17단계) */
+  supplyNotice: (id: number | string) => `supply_notices:${id}`,
 };
 
 /** 감사 로그 한 줄. 실패하면 예외 — 감사 기록 없는 변경을 성공으로 알리지 않는다 */

@@ -14,7 +14,7 @@ import type { BreadcrumbView } from "@ltr/structured-data";
 import { isValidOn, regionHref, type RegionRouteRow } from "@/lib/site/region-route";
 import { SECTION_INFO } from "./constants";
 import type { HubTaxPoint } from "./hub-point-logic";
-import { regionHubBlocks, regionSourceLine, topicHasOwnArticles, type BlockArticles, type LocalBlockFields, type RegionHubBlock, type RegionProjects, type RegionSourceLine } from "./region-hub-logic";
+import { regionHubBlocks, regionSourceLine, topicHasOwnArticles, type BlockArticles, type LocalBlockFields, type RegionHubBlock, type RegionProjects, type RegionSourceLine, type RegionSupply } from "./region-hub-logic";
 import { regionDescription, regionNoindexReason, type NoindexReason } from "./region-index-logic";
 import type { RegionalOfficial, RegionTaxLinksView } from "./region-official-logic";
 
@@ -114,6 +114,8 @@ export function regionPage(input: {
   descriptionTitles?: readonly string[];
   /** ③ 프로젝트 카드 (W4 15단계 — 기능 키 realestate_projects 켜짐일 때만, 12장 #120) */
   projects?: RegionProjects;
+  /** ③ 분양 정보 카드 (W4 17단계 — 기능 키 supply_notices 켜짐일 때만, 청약 마감 전 항목) */
+  supply?: RegionSupply;
 }): RegionPage {
   const { sido, sigungu } = input;
   const sidoRef: RegionRef = { name: sido.name, href: regionHref(sido.slug) };
@@ -123,7 +125,7 @@ export function regionPage(input: {
   const topic = input.topic ?? null;
   const fields = input.fields ?? null;
   const own = input.own ?? {};
-  const blocks = regionHubBlocks({ fields, topic, sidoName: sido.name, sigunguName: sigungu?.name ?? null, own, parent: input.parent ?? {}, ...(input.official ? { official: input.official } : {}), ...(input.projects ? { projects: input.projects } : {}) });
+  const blocks = regionHubBlocks({ fields, topic, sidoName: sido.name, sigunguName: sigungu?.name ?? null, own, parent: input.parent ?? {}, ...(input.official ? { official: input.official } : {}), ...(input.projects ? { projects: input.projects } : {}), ...(input.supply ? { supply: input.supply } : {}) });
   const empty = input.total <= 0;
   const indexable = input.indexable === true;
   const noindexReason = regionNoindexReason({ empty, indexable, topicEmpty: topic !== null && !topicHasOwnArticles(fields, topic, own) });

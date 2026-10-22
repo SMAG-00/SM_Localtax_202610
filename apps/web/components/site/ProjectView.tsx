@@ -5,6 +5,7 @@ import type { ProjectDetailView, ProjectListView } from "@/lib/server/public/pro
 import { ArticleItem } from "./ArticleItem";
 import { OfficialLinkCard, linkSiteLabel } from "./OfficialLinkCard";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
+import { ProjectSupplySection } from "./SupplyView";
 
 // 프로젝트 트래커 화면 (W4 15단계 — PRD-01B 3.2 '프로젝트 트래커' · PR-01 · PR-02 · PR-03 · PR-05, docs/dev/W4_설계.md 5장 · 12장 120번~).
 //  · 목록 /realestate/projects — 거르개(지역·사업 유형·현재 단계 — 링크 칩, JS 없이) · 프로젝트 카드(지역 이름·코드·유형·현재 단계·출처·기준일·확인일) · 데이터 출처 줄
@@ -13,6 +14,8 @@ import { SiteSection, TEXT_LINK } from "./SiteSection";
 //  · 가격·분양가·분담금·수익률·시세 요소 0 (PR-05 — 공개 뷰에 칸이 없다). 원문 본문 전재 0(링크만 — #19). 이동 줄 = BreadcrumbList(같은 값)
 //  · 단계별 「지방세로 읽기」(16단계 — PR-08) — 서명된 템플릿이 있는 단계 카드 아래에만 박스(CORE-01 TaxLensBox — 세목·포인트·해설·도서·전문가 링크·감수·기준일)와
 //    SM 취득세 카드(공용 카드 — 새 창·noreferrer·저장 주소 그대로·입력값 0, 기능 키·주소가 있을 때만). 없는 단계는 요소 0('준비 중' 0). 측정은 24단계
+//  · 분양 정보(17단계 — PR-04) — 관련 기사 뒤 '분양 정보'(그 프로젝트에 이은 공개 항목, 청약이 끝난 항목도 '청약 마감' 기록). 0건이면 자리 0, 기능 키 supply_notices 꺼짐 → 0.
+//    데이터 출처 줄은 화면 맨 끝(5장 순서 — 관련 기사 · 분양 정보 · 데이터 출처 줄)
 
 /** 이동 줄 (홈 > 부동산 > 프로젝트 트래커 > 이름) — 구조화 데이터와 같은 값 */
 function Crumbs({ crumbs }: { crumbs: readonly ProjectCrumb[] }) {
@@ -193,6 +196,12 @@ export function timelineStages(timeline: readonly TimelineStage[], lenses: Proje
 
 export function ProjectDetail({ view }: { view: ProjectDetailView }) {
   const c = view.card;
+  const articlesTone = view.links.length > 0 ? "ivory-dark" : "ivory";
+  const source = (
+    <div data-project-part="source" className="mt-12">
+      <SourceLine source={c.source} baseDate={c.stage.noticeDate} checkedAt={c.verifiedOn} />
+    </div>
+  );
   return (
     <div data-ui="project-page" data-project={c.slug} data-project-stage={c.stage.key} data-source-recorded={String(view.coverage.recorded)} data-source-linked={String(view.coverage.linked)}>
       <JsonLd view={view} />
@@ -253,7 +262,7 @@ export function ProjectDetail({ view }: { view: ProjectDetailView }) {
           </ul>
         </SiteSection>
       )}
-      <SiteSection id="project-articles" tone={view.links.length > 0 ? "ivory-dark" : "ivory"} heading={{ eyebrow: "NEWS", title: "관련 기사" }} data={{ "data-project-part": "articles" }}>
+      <SiteSection id="project-articles" tone={articlesTone} heading={{ eyebrow: "NEWS", title: "관련 기사" }} data={{ "data-project-part": "articles" }}>
         {view.articles.length === 0 ? (
           <p className="mt-6 text-[17px] text-navy-600">이 프로젝트와 연결된 기사가 아직 없습니다.</p>
         ) : (
@@ -265,10 +274,9 @@ export function ProjectDetail({ view }: { view: ProjectDetailView }) {
             ))}
           </ul>
         )}
-        <div data-project-part="source" className="mt-12">
-          <SourceLine source={c.source} baseDate={c.stage.noticeDate} checkedAt={c.verifiedOn} />
-        </div>
+        {view.supply.length === 0 && source}
       </SiteSection>
+      <ProjectSupplySection cards={view.supply} tone={articlesTone === "ivory" ? "ivory-dark" : "ivory"} footer={source} />
     </div>
   );
 }

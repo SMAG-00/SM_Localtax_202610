@@ -84,6 +84,9 @@ export const FEATURE_KEYS = [
   // W4 15단계 — 프로젝트 트래커 /realestate/projects/[slug]·지역 허브 ③ 프로젝트 카드·검색 결과 프로젝트·확인된 연결의 프로젝트 링크
   // (사업 유형·단계 목록 감수 + 공개 프로젝트 1건 이상일 때 켠다 — W4 설계 2.4). 꺼지면 상세 404, 목록 /realestate/projects는 하위 분야 목록
   "realestate_projects",
+  // W4 17단계 — 분양 정보 목록 /realestate/supply·지역 허브 ③ 분양 정보 카드·프로젝트 화면 분양 정보 (분양 광고 표시 기준 법률 검토 기록(12장 #12) + 공개 항목 1건 이상일 때 켠다 —
+  // W4 설계 2.4). 꺼지면 /realestate/supply는 하위 분야 목록(W3 12장 #20과 같은 방식)·분양 정보 카드·공식 공고 링크 0
+  "supply_notices",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;

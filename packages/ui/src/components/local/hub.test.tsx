@@ -124,6 +124,28 @@ describe("지자체 허브 블록 (LG-08·REG1-02)", () => {
     expect(blockKeys(container)).toEqual(["localTax", "sources"]);
   });
 
+  it("묶음마다 더 보기 링크 — 그 묶음 카드 바로 아래, 더 보기가 없는 묶음·카드 0장 묶음은 링크 0 (부동산·개발 '프로젝트'·'분양 정보')", () => {
+    render(
+      <LocalHubBlocks
+        realEstate={{
+          items: [],
+          groups: [
+            { key: "projects", title: "프로젝트", items: [<p key="p">프로젝트 카드</p>], more: { href: "/realestate/projects?region=9900000000", label: "이 지역 프로젝트 더 보기" } },
+            { key: "supply", title: "분양 정보", items: [<p key="s">분양 카드</p>], more: { href: "/realestate/supply?region=9900000000", label: "이 지역 분양 정보 더 보기" } },
+            { key: "plain", title: "더 보기 없는 묶음", items: [<p key="x">카드</p>] },
+            { key: "empty", title: "빈 묶음", items: [], more: { href: "/x", label: "빈 묶음 더 보기" } },
+          ],
+        }}
+      />,
+    );
+    const groups = [...screen.getByRole("region", { name: "부동산·개발" }).querySelectorAll('[data-part="block-group"]')];
+    expect(groups.map((g) => g.getAttribute("data-group"))).toEqual(["projects", "supply", "plain"]);
+    expect(within(groups[0] as HTMLElement).getByRole("link", { name: "이 지역 프로젝트 더 보기" }).getAttribute("href")).toBe("/realestate/projects?region=9900000000");
+    expect(within(groups[1] as HTMLElement).getByRole("link", { name: "이 지역 분양 정보 더 보기" }).getAttribute("href")).toBe("/realestate/supply?region=9900000000");
+    expect(groups[2]!.querySelector('[data-part="group-more"]')).toBeNull();
+    expect(screen.queryByRole("link", { name: "빈 묶음 더 보기" })).toBeNull();
+  });
+
   it("금주 핫뉴스 블록은 주차·기간·발행일 줄을 고정폭으로, 더 보기 링크를 함께 보인다", () => {
     render(<LocalHubBlocks weekly={{ ...block("핫뉴스"), meta: "2026-42 · 10.12~10.18 · 발행 2026-10-16", more: { href: "/local/seoul/weekly/2026-42", label: "이번 주 핫뉴스 전체 보기" } }} />);
     expect(cls(screen.getByText("2026-42 · 10.12~10.18 · 발행 2026-10-16"))).toContain("font-mono");

@@ -38,6 +38,8 @@ import {
   type TimelineStage,
 } from "./project-logic";
 import { readLinkItems, safeLinkItems } from "./regional-links";
+import { readProjectSupply } from "./supply";
+import type { SupplyCard } from "./supply-logic";
 import type { PublicLinkRow, RegionalLinkItem } from "./regional-links-logic";
 import type { BreadcrumbView } from "@ltr/structured-data";
 import type { RegionRow } from "./rows";
@@ -47,6 +49,7 @@ import type { RegionRow } from "./rows";
 // public_regional_links(확인된 연결 — 두 끝이 지금 공개). 기능 키 realestate_projects가 꺼져 있으면 null → 상세 404·목록은 하위 분야 목록(W3 12장 #20과 같은 방식).
 // 16단계: public_project_stage_lenses(서명이 살아 있는 단계별 「지방세로 읽기」 — …50)와 SM 취득세 카드(official_links — 기능 키 sm_calculator·주소가 있을 때만).
 // 둘 다 읽지 못하면 박스·카드 0으로 그리고 서버 기록에만 남긴다(프로젝트 화면은 그대로 — 12장 #109와 같은 방식).
+// 17단계: public_supply_notices(그 프로젝트에 이은 공개 분양 정보 — …51, 기능 키 supply_notices). 읽지 못하면 0으로 그린다(같은 방식).
 
 export interface ProjectListView {
   today: string;
@@ -77,6 +80,8 @@ export interface ProjectDetailView {
   lenses: Record<string, StageLensView>;
   /** 박스 옆 SM 취득세 카드 (공용 카드 — 기능 키 sm_calculator가 켜지고 주소가 있을 때만, 끊김이면 대체 안내) */
   sm: { card: OfficialLinkCard; fallbacks: OfficialLinkCard[] } | null;
+  /** 분양 정보 (17단계 — 그 프로젝트에 이은 공개 항목, 청약이 끝난 항목도 기록. 기능 키 supply_notices 꺼짐 → 빈 목록) */
+  supply: SupplyCard[];
 }
 
 /** 읽기 실패를 0으로 — 박스·카드는 화면의 덧붙임이라 프로젝트 화면을 막지 않는다 */
@@ -129,7 +134,7 @@ export async function getProject(slug: string, now: Date = new Date()): Promise<
   const [row] = await rowsOf<PublicProjectRow>(db.from("public_projects").select(PUBLIC_PROJECT_COLUMNS).eq("slug", slug).limit(1), "공개 프로젝트");
   if (!row) return null;
   const id = Number(row.id);
-  const [regions, events, lists, fromRows, toRows, lensRows, sm] = await Promise.all([
+  const [regions, events, lists, fromRows, toRows, lensRows, sm, supply] = await Promise.all([
     readRegions(),
     rowsOf<PublicProjectEventRow>(db.from("public_project_events").select(PUBLIC_PROJECT_EVENT_COLUMNS).eq("project_id", id).order("stage_position").order("id"), "프로젝트 단계 기록"),
     rowsOf<StageListRow>(db.from("public_project_stage_lists").select(STAGE_LIST_COLUMNS).eq("project_type", row.project_type).order("stage_position"), "프로젝트 단계 목록"),
@@ -154,6 +159,7 @@ export async function getProject(slug: string, now: Date = new Date()): Promise<
       [] as PublicStageLensRow[],
     ),
     orEmpty("SM 취득세 카드", () => getSmCalculatorCard(LENS_SM_KEY, settings.features), null),
+    orEmpty("분양 정보", () => readProjectSupply(id, now), [] as SupplyCard[]),
   ]);
   const card = projectCard(row, projectRegion(row.region_code, regions, today, settings.features.region_hubs));
   if (!card) return null;
@@ -183,6 +189,7 @@ export async function getProject(slug: string, now: Date = new Date()): Promise<
     breadcrumb: projectBreadcrumb(crumbs, siteUrl()),
     lenses,
     sm: Object.keys(lenses).length > 0 ? sm : null,
+    supply,
   };
 }
 

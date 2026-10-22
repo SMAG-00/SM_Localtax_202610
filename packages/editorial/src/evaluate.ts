@@ -16,6 +16,7 @@ import { checkReviews } from "./checks/reviews";
 import { checkRevision } from "./checks/revision";
 import { checkSolvedCase } from "./checks/solved-case";
 import { checkSourcing } from "./checks/sourcing";
+import { checkSponsorMaterial } from "./checks/sponsor-material";
 import { checkTaxLens } from "./checks/tax-lens";
 import { sortFindings, type Finding } from "./findings";
 import type { ArticleForPublish, PublishContext } from "./model";
@@ -41,6 +42,7 @@ export const BUILT_IN_CHECKS: readonly PublishCheck[] = [
   checkPlainLanguage,
   checkPressure,
   checkPartnership,
+  checkSponsorMaterial,
   checkRevision,
   checkExternal,
 ];

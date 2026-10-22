@@ -30,8 +30,8 @@ export type Subtype = (typeof SUBTYPES)[number];
 export const UPDATE_KINDS = ["substantive", "typo", "correction"] as const;
 export type UpdateKind = (typeof UPDATE_KINDS)[number];
 
-/** `article_sources.kind` */
-export const SOURCE_KINDS = ["official_doc", "dataset", "press_release", "interview", "field", "photo", "other"] as const;
+/** `article_sources.kind` — W2-a 7개 + `sponsor_material`(시행사·분양대행사가 준 분양 홍보 원고 — 이 출처가 있는 기사는 sponsored로만 발행, 01B PR-04 · W4 17단계) */
+export const SOURCE_KINDS = ["official_doc", "dataset", "press_release", "interview", "field", "photo", "other", "sponsor_material"] as const;
 export type SourceKind = (typeof SOURCE_KINDS)[number];
 
 /** 공공누리 유형 `article_sources.license_type` · `media.license_type` (W4 설계 2.1 — PR-07). 제1~4유형 · 미표시 · 해당 없음(자체 촬영·자체 제작) */

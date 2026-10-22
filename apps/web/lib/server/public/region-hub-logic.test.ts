@@ -23,6 +23,7 @@ import {
   type LocalBlockFields,
 } from "./region-hub-logic";
 import type { ProjectCard } from "./project-logic";
+import type { SupplyCard } from "./supply-logic";
 import { regionPage } from "./region-logic";
 import { listItem } from "./test-items";
 
@@ -127,6 +128,22 @@ describe("지역 허브 블록 (LG-08 ②③⑤ · REG1-02 · REG-06)", () => {
     expect(regionHubBlocks({ ...sigungu, own: {}, parent: {}, projects: { cards: [], more: "/x" } })[1]).toMatchObject({ projects: [], projectsMore: null });
     expect(regionHubBlocks({ ...sigungu, topic: "local_tax", own: {}, parent: {}, projects }).flatMap((b) => b.projects)).toEqual([]);
     expect(regionHubBlocks({ ...sigungu, own: {}, parent: {} }).flatMap((b) => b.projects)).toEqual([]);
+  });
+
+  test("③ 분양 정보 카드 (W4 17단계) — 부동산·개발 블록에만 · 더 보기는 카드가 있을 때만 · 분야 필터로 ③이 빠지면 0 · 넘기지 않으면 0장 · 프로젝트와 함께", () => {
+    const card = { id: 11, name: "시험용 하늘마을 분양" } as unknown as SupplyCard;
+    const supply = { cards: [card], more: "/realestate/supply?region=9901100000" };
+    const blocks = regionHubBlocks({ ...sigungu, own: { local_tax: [], realestate: [] }, parent: {}, supply });
+    expect(blocks.map((b) => [b.key, b.supply.map((s) => s.id), b.supplyMore, b.projects.length])).toEqual([
+      ["local_tax", [], null, 0],
+      ["realestate", [11], "/realestate/supply?region=9901100000", 0],
+      ["official", [], null, 0],
+    ]);
+    expect(regionHubBlocks({ ...sigungu, own: {}, parent: {}, supply: { cards: [], more: "/x" } })[1]).toMatchObject({ supply: [], supplyMore: null });
+    expect(regionHubBlocks({ ...sigungu, topic: "local_tax", own: {}, parent: {}, supply }).flatMap((b) => b.supply)).toEqual([]);
+    expect(regionHubBlocks({ ...sigungu, own: {}, parent: {} }).flatMap((b) => b.supply)).toEqual([]);
+    const both = regionHubBlocks({ ...sigungu, own: {}, parent: {}, supply, projects: { cards: [{ id: 7 } as unknown as ProjectCard], more: null } })[1]!;
+    expect([both.projects.map((p) => p.id), both.supply.map((s) => s.id), both.empty]).toEqual([[7], [11], blockEmptyText("realestate", null)]);
   });
 
   test("블록에 대응 밖 기사가 넘어와도 0 — ②에 부동산 기사, ③에 지방세 기사를 넣어도 빠진다", () => {

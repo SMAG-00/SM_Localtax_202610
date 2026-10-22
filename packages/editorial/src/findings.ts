@@ -75,6 +75,8 @@ export const RULES = [
   { id: "pr07.license-required", ruleRef: "PR-07", level: "block", title: "공식 자료·보도자료·사진 출처에 공공누리 유형 없음" },
   { id: "pr07.photo-license", ruleRef: "PR-07", level: "block", title: "게시하지 않는 공공누리 유형의 사진(제4유형·미표시·법률 검토 전 제2·3유형)" },
   { id: "pr07.full-text", ruleRef: "PR-07", level: "block", title: "공공 자료 원문 본문을 그대로 옮김" },
+  // PR-04 분양 홍보 원고 (01B — W4 17단계)
+  { id: "pr04.sponsor-material-sponsored", ruleRef: "PR-04", level: "block", title: "분양 홍보 원고(시행사·분양대행사 제공)를 쓴 기사가 광고·협찬 유형이 아님" },
   // REG1-17 지역 기사 편집 게이트 (01B — W4 7단계)
   { id: "reg1_17.region-tag-required", ruleRef: "REG1-17", level: "block", title: "지자체뉴스 기사에 지역 태그 없음(새 발행)" },
   { id: "reg1_17.editorial-field", ruleRef: "REG1-17", level: "block", title: "지역 기사에 편집 분야 없음" },

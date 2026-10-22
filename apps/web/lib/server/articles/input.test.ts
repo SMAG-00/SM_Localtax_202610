@@ -118,7 +118,7 @@ describe("출처·근거 입력", () => {
       ok: true,
       value: { columns: { kind: "press_release", source_url: "https://x.example/p", source_name: "가온시", license_type: "kogl_1" }, snapshot: { text: "보도자료 원문", url: null, source: null } },
     });
-    expect(errorsOf(parseSourceInput({ kind: "blog" }))).toEqual(["source.kind: official_doc·dataset·press_release·interview·field·photo·other 중 하나여야 합니다"]);
+    expect(errorsOf(parseSourceInput({ kind: "blog" }))).toEqual(["source.kind: official_doc·dataset·press_release·interview·field·photo·other·sponsor_material 중 하나여야 합니다"]);
   });
   test("출처 — 공공누리 유형: 공식 자료·보도자료·사진은 필수, 6값만, 인터뷰는 없어도 된다 (PR-07)", () => {
     for (const kind of ["official_doc", "dataset", "press_release", "photo"]) {

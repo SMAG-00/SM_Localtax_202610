@@ -8,8 +8,8 @@ export type Axis = (typeof AXES)[number];
 /** 4대 분야 `articles.section` — tax(지방세) · realestate(부동산) · finance(부동산개발금융) · local(지자체뉴스) */
 export type Section = "tax" | "realestate" | "finance" | "local";
 
-/** `article_sources.kind` (PRD-01A 6.1) */
-export type SourceKind = "official_doc" | "dataset" | "press_release" | "interview" | "field" | "photo" | "other";
+/** `article_sources.kind` (PRD-01A 6.1 + 01B PR-04 분양 홍보 원고 `sponsor_material` — W4 17단계) */
+export type SourceKind = "official_doc" | "dataset" | "press_release" | "interview" | "field" | "photo" | "other" | "sponsor_material";
 
 /** `articles.label` — 없음 · 공동 기획 · 광고 (PRD-01A 6.1) */
 export type AdLabel = "없음" | "공동 기획" | "광고";

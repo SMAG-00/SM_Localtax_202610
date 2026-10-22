@@ -162,6 +162,24 @@ describe("분양 정보 카드 (PR-04)", () => {
     expect(container.innerHTML).toBe("");
   });
 
+  it("선택 칸 — 표준코드(고정폭)·청약 단계·출처·기준일(고정폭)·공공누리, 연결 프로젝트는 같은 창 링크 (PR-01 '지역·단계·출처·기준일')", () => {
+    render(<PresaleInfoCard {...props} regionCode="9901100000" phase="청약 접수 중" issuer="시험용 하늘구청" noticeDate="2026-10-26" license="공공누리 제1유형" projectHref="/realestate/projects/siheom-a" />);
+    expect(cls(screen.getByText("9901100000"))).toContain("font-mono");
+    expect(screen.getByText("청약 접수 중").getAttribute("data-part")).toBe("presale-phase");
+    expect(screen.getByText("시험용 하늘구청")).toBeTruthy();
+    expect(cls(screen.getByText("2026-10-26"))).toContain("font-mono");
+    expect(screen.getByText("공공누리 제1유형")).toBeTruthy();
+    const project = screen.getByRole("link", { name: "연결된 프로젝트 보기" });
+    expect(project.getAttribute("href")).toBe("/realestate/projects/siheom-a");
+    expect(project.getAttribute("target")).toBeNull();
+  });
+
+  it("선택 칸을 넘기지 않으면 출처·기준일·단계·공공누리 줄은 없다 (기존 모양 그대로)", () => {
+    const { container } = render(<PresaleInfoCard {...props} />);
+    expect(container.textContent).not.toMatch(/출처|기준일|공공누리|청약 예정|청약 접수 중|청약 마감/);
+    expect(container.querySelector('[data-part="presale-phase"]')).toBeNull();
+  });
+
   it("확인되지 않은 공급 규모·청약 일정은 추정하지 않고 '확인 필요'로 쓴다", () => {
     render(<PresaleInfoCard {...props} supply="" subscriptionStart="" subscriptionEnd="" />);
     expect(screen.getAllByText("확인 필요").length).toBe(2);

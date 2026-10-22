@@ -29,6 +29,8 @@ export type HubBlockGroup = {
   /** 묶음 제목 아래 한 줄 안내 */
   note?: string;
   items: ReactNode[];
+  /** 그 묶음의 더 보기 링크 (묶음 카드 아래 — 부동산·개발 블록의 '프로젝트'·'분양 정보'처럼 묶음마다 목록이 다를 때) */
+  more?: { href: string; label: string };
 };
 
 /**
@@ -105,6 +107,13 @@ function Block({ id, blockKey, eyebrow, title, content }: { id: string; blockKey
               <li key={i}>{item}</li>
             ))}
           </ul>
+          {g.more && (
+            <p data-part="group-more" className="mt-4">
+              <UiLink href={g.more.href} className={TEXT_LINK}>
+                {g.more.label}
+              </UiLink>
+            </p>
+          )}
         </section>
       ))}
       {content.more && (

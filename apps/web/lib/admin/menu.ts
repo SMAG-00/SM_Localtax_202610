@@ -42,6 +42,8 @@ const RULES: readonly MenuRule[] = [
   { id: "projects", label: "프로젝트", href: "/admin/projects", when: (a) => a.has("project.manage"), paths: ["/admin/projects"] },
   // 단계별 「지방세로 읽기」 감수 (PR-08 — W4 16단계) — 세무 감수위원의 서명 자리. 편집 책임자·관리자는 '프로젝트' 화면에서 같은 템플릿을 쓴다(메뉴 그대로)
   { id: "project-lenses", label: "단계 지방세로 읽기 감수", href: "/admin/projects/lenses", when: (a) => a.has("review.tax_review"), paths: ["/admin/projects/lenses"] },
+  // 분양 정보 — 공식 공고를 보고 넣는 정보 목록(기사 아님 — PR-04 · W4 17단계) — 편집 책임자·관리자
+  { id: "supply", label: "분양 정보", href: "/admin/supply", when: (a) => a.has("supply.manage"), paths: ["/admin/supply"] },
   {
     id: "situations",
     label: "상황 카드",

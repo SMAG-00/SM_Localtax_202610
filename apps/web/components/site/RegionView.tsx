@@ -6,6 +6,7 @@ import { ArticleItem } from "./ArticleItem";
 import { OfficialSourceCardView } from "./OfficialSourceCardView";
 import { ProjectCardView } from "./ProjectView";
 import { RegionTaxLinksBlock } from "./RegionTaxLinksBlock";
+import { SUPPLY_COPY, SupplyCardView } from "./SupplyView";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
 
 // 지역 화면 = 지자체 허브 (/local/[sido] · /local/[sido]/[sigungu] — W4 3·4단계 · LG-08 · REG1-02 · REG1-01 · REG1-12 · REG-10).
@@ -16,9 +17,12 @@ import { SiteSection, TEXT_LINK } from "./SiteSection";
 // W4 9단계 — ⑤ 공식 자료/해설 = 묶음 '공식 자료 원문'(검수 공식 자료 카드 — 원문 블록, 기사 상세와 같은 카드)과 '감수 해설'(해석 — 기사 카드).
 // 지역 세금 연결 블록은 RegionHubHead taxLinks 자리(⑤ 뒤). 3단계 자리(정비사업 현황·조례 원문)는 W4에 그릴 내용 0 — 요소 0.
 // W4 15단계 — ③ 부동산·개발 안 묶음 '프로젝트'(그 지역 범위의 공개 프로젝트 카드 ≤ 4 — 지역·단계·출처·기준일, 기능 키 realestate_projects 꺼짐 → 요소 0)와 더 보기(목록 지역 거르개).
+// W4 17단계 — ③ 안 묶음 '분양 정보'(그 지역 범위의 청약 마감 전 공개 항목 카드 ≤ 4 — 지역·청약 단계·출처·기준일, 기능 키 supply_notices 꺼짐 → 요소 0)와 묶음마다 더 보기.
 
 /** ③ 프로젝트 묶음 글자 (W4 15단계) */
 export const PROJECT_GROUP = { title: "프로젝트", note: "단계마다 고시 원문을 확인한 프로젝트입니다.", more: "이 지역 프로젝트 더 보기" } as const;
+/** ③ 분양 정보 묶음 글자 (W4 17단계 — 정보 목록, 기사 아님) */
+export const SUPPLY_GROUP = { title: "분양 정보", note: SUPPLY_COPY.groupNote, more: SUPPLY_COPY.groupMore } as const;
 
 /** ⑤ 묶음 글자 */
 export const OFFICIAL_GROUPS = {
@@ -57,10 +61,24 @@ function blockContent(block: RegionHubBlock | undefined): HubBlockContent | unde
         <ArticleItem item={a} withModified />
       </div>
     )),
-    ...(block.projects.length
+    ...(block.projects.length || block.supply.length
       ? {
-          groups: [{ key: "projects", title: PROJECT_GROUP.title, note: PROJECT_GROUP.note, items: block.projects.map((p) => <ProjectCardView key={p.id} card={p} />) }],
-          ...(block.projectsMore ? { more: { href: block.projectsMore, label: PROJECT_GROUP.more } } : {}),
+          groups: [
+            {
+              key: "projects",
+              title: PROJECT_GROUP.title,
+              note: PROJECT_GROUP.note,
+              items: block.projects.map((p) => <ProjectCardView key={p.id} card={p} />),
+              ...(block.projectsMore ? { more: { href: block.projectsMore, label: PROJECT_GROUP.more } } : {}),
+            },
+            {
+              key: "supply",
+              title: SUPPLY_GROUP.title,
+              note: SUPPLY_GROUP.note,
+              items: block.supply.map((c) => <SupplyCardView key={c.id} card={c} />),
+              ...(block.supplyMore ? { more: { href: block.supplyMore, label: SUPPLY_GROUP.more } } : {}),
+            },
+          ],
         }
       : {}),
     ...(block.fallbackNotice ? { fallbackNotice: block.fallbackNotice } : {}),

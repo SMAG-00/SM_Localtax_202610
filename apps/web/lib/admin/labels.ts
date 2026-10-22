@@ -44,6 +44,7 @@ export const SOURCE_KIND_LABELS = {
   field: "현장 취재",
   photo: "사진",
   other: "기타",
+  sponsor_material: "분양 홍보 원고(시행사·분양대행사 제공 — 광고·협찬으로만 발행)",
 } as const;
 
 export const EVIDENCE_TYPE_LABELS = {
