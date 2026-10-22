@@ -101,12 +101,14 @@ beforeAll(async () => {
     amendment_id: w.amendment.id,
     first_published_at: daysAgo(2),
   });
-  await insert("editorial_reviews", { article_id: w.report.id, kind: "desk_edit", reviewer_id: w.editor.id, decision: "approve" });
+  // 지역 태그 기사의 편집 승인은 근거·관계·광고 독립성 3항목 확인이 있어야 저장된다 (W4 7단계 REG1-17 — DB 트리거)
+  await insert("editorial_reviews", { article_id: w.report.id, kind: "desk_edit", reviewer_id: w.editor.id, decision: "approve", checklist: { evidence: true, relation: true, ad_independence: true } });
   w.reportPending = await art("report-pending", { content_type: "reported_news", reporting_method: "qualitative", category_id: w.interpretations });
   w.explainer = await art("explainer", { category_id: w.interpretations, first_published_at: daysAgo(3) });
   w.solved = await art("solved", { subtype: "solved_case", category_id: w.interpretations, first_published_at: daysAgo(20) });
   w.draft = await art("draft", { status: "draft", category_id: w.interpretations });
-  w.digest = await art("digest", { section: "local", content_type: "digest", digest_id: 1 });
+  // 금주 핫뉴스도 지자체뉴스 기사라 지역 태그·편집 분야·공익적 질문이 있어야 새로 발행된다 (W4 7단계 REG1-17)
+  w.digest = await art("digest", { section: "local", content_type: "digest", digest_id: 1, region_codes: ["1100000000"], editorial_field: "local_tax", public_question: "이번 주 서울 지방세 소식은 무엇인가" });
   // 지자체뉴스 — 편집 분야(editorial_field)별 기사: 지방세 · 도시정책 · 편집 분야 없음 (허브 탭·LG-08 블록)
   w.localTax = await art("local-tax", { section: "local", editorial_field: "local_tax", first_published_at: daysAgo(1) });
   w.localUrban = await art("local-urban", { section: "local", editorial_field: "urban_policy", first_published_at: daysAgo(4) });
