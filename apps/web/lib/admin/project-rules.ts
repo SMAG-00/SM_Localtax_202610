@@ -259,3 +259,224 @@ export function projectPublishErrors(
   if (!project.last_verified_at) errors.push("last_verified_at: 정보 확인일이 있어야 공개합니다 (PR-02 데이터 출처 줄)");
   return errors;
 }
+
+// ── 관리 API 입력 (W4 14단계 — /api/admin/projects · /admin/projects) ─────────────
+// 칸 이름은 DB 칸 이름과 같다(snake_case) — 오류 "칸: 문장"의 칸이 곧 요청 칸이고, 화면은 그 칸 옆에 문장을 보인다.
+
+/** 관리 API op (1장 14단계) */
+export const PROJECT_OPS = ["create", "event", "correct", "publish", "link"] as const;
+export type ProjectOp = (typeof PROJECT_OPS)[number];
+/** op=link 안의 연결 작업 — 13단계 지역 연결 API와 같은 작업(출발은 그 프로젝트로 고정) */
+export const PROJECT_LINK_OPS = ["suggest", "create", "confirm", "remove"] as const;
+export type ProjectLinkOp = (typeof PROJECT_LINK_OPS)[number];
+/** op=publish가 바꾸는 상태 — 공개 · 내리기 (초안으로 되돌리기 0) */
+export const PUBLISH_TARGETS = ["public", "hidden"] as const;
+export type PublishTarget = (typeof PUBLISH_TARGETS)[number];
+/** op=event가 적는 기록 종류 — 정정은 op=correct */
+export const EVENT_OP_KINDS = ["stage", "not_applicable"] as const;
+
+/** 2.10 가격 칸 검사 사전 — packages/db/scripts/check-price-fields.mjs PRICE_WORDS와 같다(시험이 설계 2.10 줄과 비교) */
+export const PRICE_WORDS = ["price", "cost", "contribution", "yield", "return", "profit", "premium", "market", "appraisal", "sale_amount", "bunyang", "분양가", "분담금", "수익", "시세", "프리미엄"] as const;
+const fold = (s: string) => s.toLowerCase().replaceAll("_", "");
+/** 글자에 든 사전 낱말 (소문자·밑줄 무시, 일부 일치 — check-price-fields.mjs priceWordsIn과 같다) */
+export function priceWordsIn(value: string): string[] {
+  const t = fold(value);
+  return PRICE_WORDS.filter((w) => t.includes(fold(w)));
+}
+/** 요청 본문에 가격·분양가·분담금·수익률·시세 칸 — 받는 칸이 없으므로 저장하지 않고 422 (PR-05) */
+export function priceKeyErrors(body: Record<string, unknown>): string[] {
+  return Object.keys(body)
+    .filter((k) => priceWordsIn(k).length > 0)
+    .map((k) => `${k}: 가격·분양가·분담금·수익률·시세는 프로젝트에 저장하지 않습니다 — 가격 정보는 편집 승인을 거친 기사로만 씁니다 (PR-05)`);
+}
+
+/** 단계 목록이 있는 사업 유형 [키, 글자] — 비면 프로젝트를 만들 수 없다(관리 화면 안내 · 12장 #10) */
+export function usableProjectTypes(types: ProjectTypes | null, lists: StageLists | null): [string, string][] {
+  if (!types) return [];
+  return Object.entries(types)
+    .filter(([k]) => stageKeysOf(lists, k).length > 0)
+    .map(([k, v]) => [k, v.label.trim()] as [string, string]);
+}
+export const NO_PROJECT_TYPES =
+  "사업 유형 목록이 아직 없습니다 — 편집국 초안 + 세무·법률 감수 뒤 관리자가 운영 설정 project_types·project_stage_lists에 넣으면 프로젝트를 만들 수 있습니다 (12장 #10)";
+
+type Parsed<T> = { ok: true; value: T } | { ok: false; errors: string[] };
+
+/** 1 이상 정수 — 숫자 또는 숫자 글자 (폼 글자도 받는다) */
+export function idOf(v: unknown): number | null {
+  const n = typeof v === "number" ? v : typeof v === "string" && /^[1-9]\d{0,15}$/.test(v.trim()) ? Number(v.trim()) : NaN;
+  return Number.isSafeInteger(n) && n > 0 ? n : null;
+}
+const isEmpty = (v: unknown) => v === undefined || v === null || (typeof v === "string" && v.trim() === "");
+function optionalText(v: unknown, field: string, errors: string[]): string | null {
+  if (v === undefined || v === null) return null;
+  if (typeof v !== "string") {
+    errors.push(`${field}: 글자입니다`);
+    return null;
+  }
+  return v.trim() || null;
+}
+function optionalBool(v: unknown, field: string, errors: string[], fallback: boolean): boolean {
+  if (v === undefined || v === null) return fallback;
+  if (typeof v !== "boolean") {
+    errors.push(`${field}: true 또는 false입니다`);
+    return fallback;
+  }
+  return v;
+}
+
+export interface ProjectCreateValue {
+  slug: string;
+  name: string;
+  region_code: string;
+  project_type: string;
+  landmark: boolean;
+  summary: string | null;
+  source_name: string | null;
+}
+
+/**
+ * op=create — 주소·이름·지역(오늘 유효)·사업 유형(단계 목록 있음)·대표 표시·요약·데이터 출처. 상태는 늘 초안(draft).
+ * ctx.region = region_code로 읽은 행정구역 행(없으면 null), ctx.today = KST 날짜. 사업 유형 목록이 비면 project_type 오류 하나(안내 문장)
+ */
+export function parseCreateProject(
+  body: Record<string, unknown>,
+  ctx: { types: ProjectTypes | null; lists: StageLists | null; region: Pick<RegionRouteRow, "valid_from" | "valid_to"> | null | undefined; today: string },
+): Parsed<ProjectCreateValue> {
+  const errors: string[] = [...priceKeyErrors(body)];
+  const slug = text(body.slug);
+  if (!PROJECT_SLUG_RE.test(slug)) errors.push("slug: 주소는 영문 소문자·숫자와 '-'만 씁니다 (예: siheom-project)");
+  const name = text(body.name);
+  if (!name) errors.push("name: 프로젝트 이름이 필요합니다");
+  errors.push(...projectRegionErrors(body.region_code, ctx.region, ctx.today));
+  if (usableProjectTypes(ctx.types, ctx.lists).length === 0) errors.push(`project_type: ${NO_PROJECT_TYPES}`);
+  else errors.push(...projectTypeErrors(body.project_type, ctx.types, ctx.lists));
+  const landmark = optionalBool(body.landmark, "landmark", errors, false);
+  const summary = optionalText(body.summary, "summary", errors);
+  const sourceName = optionalText(body.source_name, "source_name", errors);
+  if (errors.length) return { ok: false, errors };
+  return {
+    ok: true,
+    value: { slug, name, region_code: body.region_code as string, project_type: body.project_type as string, landmark, summary, source_name: sourceName },
+  };
+}
+
+export interface ProjectEventRequest {
+  projectId: number;
+  /** 저장할 값 — 번호 칸은 숫자로 바꿨다. 붙여 넣은 원문이면 snapshot_id는 null(저장 직전에 원본 스냅샷을 만든다) */
+  input: ProjectEventInput & { kind: ProjectEventKind };
+  /** 붙여 넣은 원문 글자 — 원본 스냅샷을 새로 만든다 (snapshot_id와 둘 중 하나) */
+  snapshotPayload: string | null;
+  /** 증거 6칸을 저장하는 기록인가 (단계 기록 · 바꿔 적는 정정). 해당 없음·거두는 정정은 증거 칸을 저장하지 않는다 */
+  evidence: boolean;
+  /** 메모 저장 경고 (막지 않음 — PR-05) */
+  warnings: string[];
+}
+
+/** 요청의 프로젝트 번호 (op=event·correct·publish·link) */
+export function projectIdErrors(body: Record<string, unknown>): string[] {
+  return idOf(body.project_id) === null ? ["project_id: 프로젝트 번호가 필요합니다"] : [];
+}
+
+/**
+ * op=event(단계 기록·해당 없음) · op=correct(정정) — 고시 번호·고시일·고시 기관·원문 주소·원본 스냅샷(번호 또는 원문 글자)·공공누리 유형(PR-03 · PR-07),
+ * 해당 없음·정정은 사유. 순서·같은 단계·정정 한 번은 projectEventErrors(ctx = 그 프로젝트의 단계 키·기록 전부)가 본다 — DB 트리거와 같은 규칙.
+ */
+export function parseEventRequest(
+  op: "event" | "correct",
+  body: Record<string, unknown>,
+  ctx: { stageKeys: readonly string[]; events: readonly ProjectEventRow[] },
+): Parsed<ProjectEventRequest> {
+  const errors: string[] = [...priceKeyErrors(body), ...projectIdErrors(body)];
+  let kind: ProjectEventKind;
+  if (op === "correct") {
+    if (!isEmpty(body.kind) && body.kind !== "correction") errors.push("kind: 정정(op correct)의 기록 종류는 correction입니다");
+    kind = "correction";
+  } else {
+    const k = isEmpty(body.kind) ? "stage" : body.kind;
+    if (typeof k !== "string" || !(EVENT_OP_KINDS as readonly string[]).includes(k)) {
+      errors.push(k === "correction" ? "kind: 정정은 op correct로 적습니다 (사유 필수)" : `kind: ${EVENT_OP_KINDS.join("·")} 중 하나입니다`);
+      return { ok: false, errors };
+    }
+    kind = k as ProjectEventKind;
+  }
+  const stage = isEmpty(body.stage) ? null : typeof body.stage === "string" ? body.stage.trim() : body.stage;
+  const evidence = stage !== null && kind !== "not_applicable";
+  const snapshotId = isEmpty(body.snapshot_id) ? null : idOf(body.snapshot_id);
+  if (!isEmpty(body.snapshot_id) && snapshotId === null) errors.push("snapshot_id: 원본 스냅샷 번호는 1 이상 정수입니다");
+  const payload = typeof body.snapshot_payload === "string" && body.snapshot_payload.trim() ? body.snapshot_payload : null;
+  if (evidence && snapshotId !== null && payload !== null) errors.push("snapshot_payload: 원본 스냅샷 번호와 원문 글자 중 하나만 넣으세요");
+  const correctionOf = isEmpty(body.correction_of) ? null : (idOf(body.correction_of) ?? body.correction_of);
+  const trimmed = (v: unknown) => (typeof v === "string" ? v.trim() : v);
+  const input: ProjectEventInput & { kind: ProjectEventKind } = {
+    kind,
+    stage,
+    notice_no: evidence ? trimmed(body.notice_no) : null,
+    notice_date: evidence ? trimmed(body.notice_date) : null,
+    issuer: evidence ? trimmed(body.issuer) : null,
+    source_url: evidence ? trimmed(body.source_url) : null,
+    // 붙여 넣은 원문이면 검사용 자리 번호 1 — 저장 직전에 실제 스냅샷을 만든다
+    snapshot_id: evidence ? (payload !== null && snapshotId === null ? 1 : snapshotId) : null,
+    license_type: evidence ? body.license_type : null,
+    note: isEmpty(body.note) ? null : trimmed(body.note),
+    correction_of: correctionOf,
+    reason: isEmpty(body.reason) ? null : trimmed(body.reason),
+    public: body.public,
+  };
+  const ruleErrors = projectEventErrors(input, ctx).map((e) =>
+    e.startsWith("snapshot_id:") && payload === null && snapshotId === null ? "snapshot_payload: 원본 스냅샷(원문 글자 붙여 넣기 또는 스냅샷 번호)이 필요합니다 (PR-03)" : e,
+  );
+  errors.push(...ruleErrors);
+  if (errors.length) return { ok: false, errors };
+  return {
+    ok: true,
+    value: {
+      projectId: idOf(body.project_id)!,
+      input: { ...input, snapshot_id: evidence ? snapshotId : null, public: input.public ?? true },
+      snapshotPayload: evidence ? payload : null,
+      evidence,
+      warnings: projectNoteWarnings(input.note),
+    },
+  };
+}
+
+export interface PublishRequest {
+  projectId: number;
+  status: PublishTarget;
+  /** 데이터 출처 — 비우면 지금 값 그대로 */
+  source_name: string | null;
+  /** 편집 책임자가 지금 원문과 대조해 확인했다 → 정보 확인일 = 지금 */
+  verified: boolean;
+}
+
+/** op=publish — 공개(public)·내리기(hidden). 공개 조건(공개 단계 1건·데이터 출처·정보 확인일)은 projectPublishErrors가 합친 값으로 본다 */
+export function parsePublish(body: Record<string, unknown>): Parsed<PublishRequest> {
+  const errors: string[] = [...priceKeyErrors(body), ...projectIdErrors(body)];
+  const status = body.status;
+  if (typeof status !== "string" || !(PUBLISH_TARGETS as readonly string[]).includes(status)) errors.push("status: public(공개) 또는 hidden(내리기)입니다");
+  const sourceName = optionalText(body.source_name, "source_name", errors);
+  const verified = optionalBool(body.verified, "verified", errors, false);
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, value: { projectId: idOf(body.project_id)!, status: status as PublishTarget, source_name: sourceName, verified } };
+}
+
+/** op=link — linkOp(suggest·create·confirm·remove)와 프로젝트 번호. 나머지 칸은 13단계 지역 연결 규칙(regional-link-rules)이 본다 */
+export function parseProjectLink(body: Record<string, unknown>): Parsed<{ projectId: number; linkOp: ProjectLinkOp }> {
+  const errors: string[] = [...projectIdErrors(body)];
+  const linkOp = body.linkOp;
+  if (typeof linkOp !== "string" || !(PROJECT_LINK_OPS as readonly string[]).includes(linkOp)) errors.push(`linkOp: ${PROJECT_LINK_OPS.join("·")} 중 하나입니다`);
+  if (body.fromType !== undefined && body.fromType !== "project") errors.push("fromType: 프로젝트 화면의 연결은 그 프로젝트에서 출발합니다");
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, value: { projectId: idOf(body.project_id)!, linkOp: linkOp as ProjectLinkOp } };
+}
+
+/** 오류 목록 → { 칸: 문장들 } (화면이 칸 옆에 보인다). "칸: 문장" 모양이 아니면 "" 칸 */
+export function errorsByField(errors: readonly string[]): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const e of errors) {
+    const m = /^([^\s:[\]]+)(?:\[\d+\])?: (.+)$/s.exec(e);
+    const key = m ? m[1]! : "";
+    (out[key] ??= []).push(m ? m[2]! : e);
+  }
+  return out;
+}

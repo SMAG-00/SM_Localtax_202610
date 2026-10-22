@@ -10,8 +10,23 @@ import {
   PROJECT_LIMITS,
   PROJECT_SETTING_SEEDS,
   PROJECT_STATUSES,
+  EVENT_OP_KINDS,
+  NO_PROJECT_TYPES,
+  PRICE_WORDS,
+  PROJECT_LINK_OPS,
+  PROJECT_OPS,
+  PUBLISH_TARGETS,
   currentStage,
   effectiveEvents,
+  errorsByField,
+  idOf,
+  parseCreateProject,
+  parseEventRequest,
+  parseProjectLink,
+  parsePublish,
+  priceKeyErrors,
+  priceWordsIn,
+  usableProjectTypes,
   parseProjectTypes,
   parseStageLists,
   projectEventErrors,
@@ -285,5 +300,159 @@ describe("메모 저장 경고 — 숫자 + 원·% (PR-05, 막지 않음 — DB 
     expect(projectNoteWarnings(3)).toEqual([]);
     expect(errs({ ...FULL, note: "시험용 3억 원" })).toEqual([]);
     expect(projectNoteWarnings("시험용 3억 원")[0]).toMatch(/PR-05 저장 경고/);
+  });
+});
+
+// ── 14단계 관리 API 입력 (/api/admin/projects — 1장 14단계 '칸별 오류(고시 번호·원문·스냅샷·단계) 422') ──
+
+const TODAY = "2026-10-23";
+const VALID_REGION = { valid_from: null, valid_to: null };
+const CREATE = { op: "create", slug: "siheom-project", name: "시험용 프로젝트", region_code: "9901100000", project_type: "siheom_redev" };
+const ctxCreate = (over: Partial<Parameters<typeof parseCreateProject>[1]> = {}) => ({ types: TYPES, lists: LISTS, region: VALID_REGION, today: TODAY, ...over });
+const fieldsOf = (errors: string[]) => Object.keys(errorsByField(errors)).sort();
+const errorsOf = (r: { ok: true } | { ok: false; errors: string[] }) => (r.ok ? [] : r.errors);
+const NOTICE = {
+  stage: "zone",
+  notice_no: "시험용 고시 제2026-1호",
+  notice_date: "2026-01-15",
+  issuer: "시험용 가상구청",
+  source_url: "https://gasang.example/notice/siheom-1",
+  snapshot_payload: "시험용 고시 원문",
+  license_type: "kogl_1",
+};
+const evReq = (op: "event" | "correct", body: Record<string, unknown>, events: ProjectEventRow[] = []) => parseEventRequest(op, { project_id: 5, ...body }, { stageKeys: KEYS, events });
+
+describe("관리 API 값 목록 (1장 14단계 op · 2.10 가격 사전)", () => {
+  test("op 5종 = 설계 1장 14단계 줄 · 연결 작업 4종 = 13단계 API · 공개 전환 2종 · op=event 기록 종류 2종", () => {
+    expect(row("| 14 프로젝트 관리 화면 |")).toContain(`op = ${PROJECT_OPS.join("·")}`);
+    expect([...PROJECT_LINK_OPS]).toEqual(["suggest", "create", "confirm", "remove"]);
+    expect([...PUBLISH_TARGETS]).toEqual(["public", "hidden"]);
+    expect([...EVENT_OP_KINDS]).toEqual(["stage", "not_applicable"]);
+  });
+  test("가격 사전 = 설계 2.10 낱말 16개 = check-price-fields.mjs PRICE_WORDS", () => {
+    const line = row("낱말(소문자, 밑줄 무시, 칸 이름 일부):").split(". 시험은")[0]!;
+    expect([...PRICE_WORDS]).toEqual([...line.matchAll(/`([^`]+)`/g)].map((m) => m[1]));
+    const script = fs.readFileSync(path.join(ROOT, "packages", "db", "scripts", "check-price-fields.mjs"), "utf8");
+    const list = /PRICE_WORDS = Object\.freeze\(\[([\s\S]*?)\]\)/.exec(script)![1]!;
+    expect([...list.matchAll(/"([^"]+)"/g)].map((m) => m[1])).toEqual([...PRICE_WORDS]);
+  });
+  test("낱말 맞추기 — 소문자·밑줄 무시·일부 일치, 관리 API 칸 이름은 0", () => {
+    expect(priceWordsIn("Sale_Price")).toEqual(["price"]);
+    expect(priceWordsIn("saleamount")).toEqual(["sale_amount"]);
+    expect(priceWordsIn("조합원분담금")).toEqual(["분담금"]);
+    for (const k of ["op", "slug", "name", "region_code", "project_type", "landmark", "summary", "source_name", "project_id", "kind", "stage", "notice_no", "notice_date", "issuer", "source_url", "snapshot_id", "snapshot_payload", "license_type", "note", "correction_of", "reason", "public", "status", "verified", "linkOp", "toType", "toId", "relation", "confirm", "linkId"]) {
+      expect(priceWordsIn(k)).toEqual([]);
+    }
+  });
+});
+
+describe("op=create — 칸별 422 · 빈 사업 유형 목록은 만들기 막음 (12장 #10)", () => {
+  test("시험용 목록·오늘 유효한 지역이면 초안 값", () => {
+    expect(parseCreateProject({ ...CREATE, summary: " 요약 ", source_name: "", landmark: true }, ctxCreate())).toEqual({
+      ok: true,
+      value: { slug: "siheom-project", name: "시험용 프로젝트", region_code: "9901100000", project_type: "siheom_redev", landmark: true, summary: "요약", source_name: null },
+    });
+  });
+  test("빈 씨앗({}) — project_type 칸에 안내 문장 하나, 다른 칸이 맞아도 거부", () => {
+    for (const settings of [{ types: {}, lists: {} }, { types: null, lists: null }, { types: TYPES, lists: {} }]) {
+      expect(errorsOf(parseCreateProject(CREATE, ctxCreate(settings)))).toEqual([`project_type: ${NO_PROJECT_TYPES}`]);
+    }
+    expect(NO_PROJECT_TYPES.startsWith("사업 유형 목록이 아직 없습니다")).toBe(true);
+    expect(usableProjectTypes({}, {})).toEqual([]);
+    expect(usableProjectTypes(TYPES, { siheom_small: LISTS.siheom_small })).toEqual([["siheom_small", "시험용 소규모"]]);
+  });
+  test("칸마다 사유 — 주소·이름·지역(모양·오늘 유효 아님·폐지 오늘은 받음)·목록 밖 유형·대표 표시 모양", () => {
+    expect(fieldsOf(errorsOf(parseCreateProject({ op: "create" }, ctxCreate({ region: null }))))).toEqual(["name", "project_type", "region_code", "slug"]);
+    expect(errorsOf(parseCreateProject({ ...CREATE, slug: "Siheom Project" }, ctxCreate()))).toEqual(["slug: 주소는 영문 소문자·숫자와 '-'만 씁니다 (예: siheom-project)"]);
+    expect(errorsOf(parseCreateProject({ ...CREATE, region_code: "99011" }, ctxCreate()))).toEqual(["region_code: 법정동코드 10자리가 필요합니다"]);
+    expect(errorsOf(parseCreateProject(CREATE, ctxCreate({ region: { valid_from: null, valid_to: "2026-10-22" } })))).toEqual(["region_code: 9901100000는 오늘 유효한 행정구역(regions)이 아닙니다"]);
+    expect(errorsOf(parseCreateProject(CREATE, ctxCreate({ region: { valid_from: null, valid_to: TODAY } })))).toEqual([]);
+    expect(fieldsOf(errorsOf(parseCreateProject({ ...CREATE, project_type: "siheom_none" }, ctxCreate())))).toEqual(["project_type"]);
+    expect(errorsOf(parseCreateProject({ ...CREATE, landmark: "yes" }, ctxCreate()))).toEqual(["landmark: true 또는 false입니다"]);
+  });
+  test("가격·분담금·수익률·시세 칸을 보내면 그 칸마다 422 (PR-05 — 받는 칸 0)", () => {
+    const errors = errorsOf(parseCreateProject({ ...CREATE, sale_price: 1, contribution_note: "x", 예상수익률: "y", market_value: 2 }, ctxCreate()));
+    expect(errors).toHaveLength(4);
+    expect(fieldsOf(errors)).toEqual(["contribution_note", "market_value", "sale_price", "예상수익률"]);
+    expect(errors).toContain("예상수익률: 가격·분양가·분담금·수익률·시세는 프로젝트에 저장하지 않습니다 — 가격 정보는 편집 승인을 거친 기사로만 씁니다 (PR-05)");
+    expect(priceKeyErrors({ slug: "a", stage: "zone" })).toEqual([]);
+  });
+});
+
+describe("op=event·correct — 고시 6칸·단계·사유 칸별 422 (PR-03 — DB 제약·트리거와 같은 규칙)", () => {
+  test("고시 6칸 + 붙여 넣은 원문 → 저장 값(스냅샷은 저장 직전에 만든다) · 스냅샷 번호도 받는다", () => {
+    const r = evReq("event", { ...NOTICE, note: "시험용 메모" });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value).toMatchObject({ projectId: 5, snapshotPayload: "시험용 고시 원문", evidence: true, warnings: [] });
+    expect(r.value.input).toMatchObject({ kind: "stage", stage: "zone", notice_no: "시험용 고시 제2026-1호", snapshot_id: null, license_type: "kogl_1", public: true, correction_of: null, note: "시험용 메모" });
+    const byId = evReq("event", { ...NOTICE, snapshot_payload: undefined, snapshot_id: "12" });
+    expect(byId.ok && byId.value.input.snapshot_id).toBe(12);
+  });
+  test.each([
+    ["고시 번호", { notice_no: " " }, "notice_no: 고시 번호가 필요합니다 (PR-03)"],
+    ["고시일", { notice_date: "2026-02-30" }, "notice_date: 고시일(YYYY-MM-DD)이 필요합니다 (PR-03)"],
+    ["고시 기관", { issuer: undefined }, "issuer: 고시 기관이 필요합니다 (PR-03)"],
+    ["원문 주소", { source_url: "gasang.example/notice" }, "source_url: 고시 원문 주소(http·https)가 필요합니다 (PR-03)"],
+    ["스냅샷", { snapshot_payload: "  " }, "snapshot_payload: 원본 스냅샷(원문 글자 붙여 넣기 또는 스냅샷 번호)이 필요합니다 (PR-03)"],
+    ["공공누리", { license_type: "kogl_9" }, "license_type: 원문의 공공누리 유형이 필요합니다 (PR-07)"],
+    ["단계(목록 밖)", { stage: "siheom_none" }, "stage: siheom_none는 이 사업 유형의 단계 목록에 없습니다"],
+    ["단계(없음)", { stage: "" }, "stage: 단계가 필요합니다"],
+  ])("%s 칸만 틀리면 그 칸 오류 하나", (_name, over, message) => {
+    expect(errorsOf(evReq("event", { ...NOTICE, ...over }))).toEqual([message]);
+  });
+  test("스냅샷 번호·원문 둘 다 · 번호 모양 · 프로젝트 번호 없음 · op=event로 정정 · 모르는 종류", () => {
+    expect(errorsOf(evReq("event", { ...NOTICE, snapshot_id: 3 }))).toEqual(["snapshot_payload: 원본 스냅샷 번호와 원문 글자 중 하나만 넣으세요"]);
+    expect(errorsOf(evReq("event", { ...NOTICE, snapshot_payload: undefined, snapshot_id: "0" }))).toEqual([
+      "snapshot_id: 원본 스냅샷 번호는 1 이상 정수입니다",
+      "snapshot_payload: 원본 스냅샷(원문 글자 붙여 넣기 또는 스냅샷 번호)이 필요합니다 (PR-03)",
+    ]);
+    expect(errorsOf(parseEventRequest("event", NOTICE, { stageKeys: KEYS, events: [] }))).toEqual(["project_id: 프로젝트 번호가 필요합니다"]);
+    expect(errorsOf(evReq("event", { ...NOTICE, kind: "correction" }))).toEqual(["kind: 정정은 op correct로 적습니다 (사유 필수)"]);
+    expect(errorsOf(evReq("event", { ...NOTICE, kind: "skip" }))).toEqual(["kind: stage·not_applicable 중 하나입니다"]);
+  });
+  test("같은 단계·앞 순서 — 칸 stage 사유 (DB 트리거와 같은 문장)", () => {
+    const events = [ev({ stage: "build" })];
+    expect(errorsOf(evReq("event", { ...NOTICE, stage: "build" }, events))).toEqual(["stage: 이미 기록된 단계입니다 (build) — 고치려면 정정 기록을 쓰세요"]);
+    expect(errorsOf(evReq("event", { ...NOTICE, stage: "plan" }, events))[0]).toMatch(/^stage: 앞 순서 단계로 돌아가는 기록은 거부합니다 \(현재 build → 새 기록 plan\)/);
+  });
+  test("해당 없음 — 사유 필수 · 증거 칸은 저장하지 않는다", () => {
+    expect(errorsOf(evReq("event", { kind: "not_applicable", stage: "plan" }))).toEqual(["reason: 이 단계가 없는 사유가 필요합니다"]);
+    const r = evReq("event", { kind: "not_applicable", stage: "plan", reason: "시험용 — 이 구역은 계획인가가 없다", notice_no: "무시" });
+    expect(r.ok && [r.value.evidence, r.value.input.notice_no, r.value.snapshotPayload, r.value.input.reason]).toEqual([false, null, null, "시험용 — 이 구역은 계획인가가 없다"]);
+  });
+  test("정정 — 사유 필수·대상 필수·한 번만 · 거두기(단계 없음)는 증거 없이 · 바꿔 적기는 고시 6칸 필수", () => {
+    const target = ev({ stage: "zone" });
+    expect(fieldsOf(errorsOf(evReq("correct", { correction_of: String(target.id) }, [target])))).toEqual(["reason"]);
+    expect(errorsOf(evReq("correct", { reason: "시험용 정정" }, [target]))).toEqual(["correction_of: 같은 프로젝트의 기록 번호가 필요합니다"]);
+    const withdraw = evReq("correct", { correction_of: String(target.id), reason: "시험용 — 잘못 적은 기록" }, [target]);
+    expect(withdraw.ok && [withdraw.value.input.kind, withdraw.value.input.stage, withdraw.value.input.correction_of, withdraw.value.evidence]).toEqual(["correction", null, target.id, false]);
+    expect(fieldsOf(errorsOf(evReq("correct", { correction_of: target.id, reason: "시험용 바꿔 적기", stage: "plan" }, [target])))).toEqual(["issuer", "license_type", "notice_date", "notice_no", "snapshot_payload", "source_url"]);
+    expect(evReq("correct", { ...NOTICE, stage: "plan", correction_of: target.id, reason: "시험용 바꿔 적기" }, [target]).ok).toBe(true);
+    const fixed = ev({ kind: "correction", stage: null, correction_of: target.id });
+    expect(errorsOf(evReq("correct", { correction_of: target.id, reason: "다시" }, [target, fixed]))[0]).toMatch(/^correction_of: 이미 정정된 기록\(\d+\)입니다 — 정정은 한 번만/);
+    expect(errorsOf(evReq("correct", { kind: "stage", correction_of: target.id, reason: "x" }, [target]))).toEqual(["kind: 정정(op correct)의 기록 종류는 correction입니다"]);
+  });
+  test("메모 숫자 + 원·% → 저장은 받고 경고 (PR-05)", () => {
+    const r = evReq("event", { ...NOTICE, note: "시험용 사업비 1,200억원 메모" });
+    expect(r.ok && r.value.warnings).toEqual(["note: 메모에 숫자 + 원·% 표현이 있습니다 — 가격 정보는 편집 승인을 거친 기사로만 씁니다 (PR-05 저장 경고)"]);
+  });
+});
+
+describe("op=publish · op=link 입력", () => {
+  test("공개·내리기 · 상태 값 목록 밖 · 확인 표시 모양 · 프로젝트 번호", () => {
+    expect(parsePublish({ project_id: "5", status: "public", source_name: " 시험용 출처 ", verified: true })).toEqual({ ok: true, value: { projectId: 5, status: "public", source_name: "시험용 출처", verified: true } });
+    expect(parsePublish({ project_id: 5, status: "hidden" })).toEqual({ ok: true, value: { projectId: 5, status: "hidden", source_name: null, verified: false } });
+    expect(fieldsOf(errorsOf(parsePublish({ status: "draft", verified: "yes" })))).toEqual(["project_id", "status", "verified"]);
+  });
+  test("공개 조건 미달 사유는 칸으로 나뉜다 (화면이 칸 옆에 보인다)", () => {
+    expect(fieldsOf(projectPublishErrors({ source_name: null, last_verified_at: null }, [], KEYS))).toEqual(["last_verified_at", "source_name", "status"]);
+    expect(errorsByField(["그냥 문장", "stage: 하나", "stage: 둘"])).toEqual({ "": ["그냥 문장"], stage: ["하나", "둘"] });
+  });
+  test("연결 작업 — 4종만 · 출발은 그 프로젝트 · 번호 모양", () => {
+    expect(parseProjectLink({ project_id: 5, linkOp: "suggest" })).toEqual({ ok: true, value: { projectId: 5, linkOp: "suggest" } });
+    expect(fieldsOf(errorsOf(parseProjectLink({ project_id: 5, linkOp: "publish", fromType: "article" })))).toEqual(["fromType", "linkOp"]);
+    expect(idOf("12")).toBe(12);
+    for (const bad of ["0", "-1", "1.5", "abc", "", null, 0, 1.5]) expect(idOf(bad)).toBeNull();
   });
 });

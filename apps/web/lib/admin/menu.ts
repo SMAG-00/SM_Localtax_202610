@@ -38,6 +38,8 @@ const RULES: readonly MenuRule[] = [
   { id: "source-review", label: "원문 검수", href: "/admin/source-review", when: (a) => a.has("source_review.resolve"), paths: ["/admin/source-review"] },
   // 지역 기사 판정판 — 별도 상품 검토 큐·편집 분야 승인 대기·보류 (REG1-14·17 — W4 8단계) — 편집 책임자·관리자
   { id: "regions", label: "지역 기사 판정", href: "/admin/regions", when: (a) => a.has("regional.judge"), paths: ["/admin/regions"] },
+  // 프로젝트 트래커 — 프로젝트·단계 기록·정정·공개 전환·지역 연결 (PR-02·03 — W4 14단계) — 편집 책임자·관리자
+  { id: "projects", label: "프로젝트", href: "/admin/projects", when: (a) => a.has("project.manage"), paths: ["/admin/projects"] },
   {
     id: "situations",
     label: "상황 카드",

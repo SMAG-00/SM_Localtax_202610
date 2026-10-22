@@ -67,6 +67,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "source_review.resolve":   [X, O, X, X, X, X, X, O, X], // W4 6단계 — 원문 검수 큐(다시 받기·해결)는 편집 책임자·관리자 (W4 설계 6장)
   "regional.judge":          [X, O, X, X, X, X, X, O, X], // W4 7단계 — 지역 기사 편집자 판정은 편집 책임자, 1인 체제면 관리자(PO) (12장 #7 권고안)
   "regional_link.confirm":   [X, O, X, X, X, X, X, O, X], // W4 13단계 — 지역 연결 후보 찾기·확인·지우기는 편집 책임자·관리자 (REG1-10 '편집자가 확인한 연결만 공개')
+  "project.manage":          [X, O, X, X, X, X, X, O, X], // W4 14단계 — 프로젝트 만들기·단계 기록·정정·공개 전환은 편집 책임자·관리자 (6장 '편집 책임자 이상', brand_ops 거부 감사)
   "article.regional_fields": [O, O, X, X, X, X, X, O, X], // W4 7단계 — 지역 기사 편집 칸(편집 분야·공익적 질문·소재·관계)은 기자·편집 책임자·관리자, 광고·협찬 담당 0
   "column.manage":           [X, O, X, X, X, X, X, X, X],
   "column.signature":        [X, O, X, X, X, X, X, X, X], // W3 8단계 — 시그니처 연재 회차·순서는 칼럼 정렬과 같은 편집 행위 (BR-08)
@@ -209,6 +210,17 @@ describe("지역 연결 확인 — 편집 책임자·관리자만, 그 밖은 �
     expect(can(viewer(["editor"]), "regional_link.confirm")).toBe(true);
     expect(can(viewer([], true), "regional_link.confirm")).toBe(true);
     expect(AUDITED_DENIALS.has("regional_link.confirm")).toBe(true);
+  });
+});
+
+describe("프로젝트 트래커 — 편집 책임자·관리자만, 그 밖은 거부 + 감사 (W4 14단계 · PR-02)", () => {
+  test("기자·감수위원·광고·브랜드·스토어·전문가 담당 → 거부 + 사유에 PR-02 + 감사 대상 · 편집 책임자·관리자 허용", () => {
+    for (const role of ["reporter", "reviewer", "ad_ops", "brand_ops", "store_ops", "expert_ops"] as const) {
+      expect(check(viewer([role]), "project.manage")).toEqual({ allowed: false, reason: expect.stringContaining("PR-02") });
+    }
+    expect(can(viewer(["editor"]), "project.manage")).toBe(true);
+    expect(can(viewer([], true), "project.manage")).toBe(true);
+    expect(AUDITED_DENIALS.has("project.manage")).toBe(true);
   });
 });
 

@@ -42,6 +42,9 @@ export const targetOf = {
   regionalLink: (id: number | string) => `regional_links:${id}`,
   /** 같은 지역 자동 후보 찾기 — 출발 끝 (W4 13단계) */
   regionalLinkFrom: (type: string, id: string) => `regional_links:from:${type}:${id}`,
+  /** 프로젝트 트래커 (W4 14단계) */
+  project: (id: number | string) => `projects:${id}`,
+  projectEvent: (id: number | string) => `project_events:${id}`,
 };
 
 /** 감사 로그 한 줄. 실패하면 예외 — 감사 기록 없는 변경을 성공으로 알리지 않는다 */

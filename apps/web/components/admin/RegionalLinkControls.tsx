@@ -10,19 +10,21 @@ import { useHydrated } from "./useHydrated";
 
 // 지역 연결 편집 폼 (W4 13단계 — PRD-01B REG1-10, /admin/regions/links). 서버 규칙(lib/admin/regional-link-rules.ts)과 같은 칸.
 // 관광 항목 종류(명소·음식점·관광 정보)는 고를 수 없다(PRD-X) — 고르기 목록은 기사·공식 자료·프로젝트·지역 허브뿐, 행사는 W6.
+// projectId를 주면(프로젝트 관리 화면 — 14단계) 같은 작업을 /api/admin/projects op=link로 보낸다(출발 = 그 프로젝트로 고정).
 
 const RELATION_OPTIONS = EDITOR_RELATIONS.map((r) => ({ value: r, label: LINK_RELATION_LABELS[r] }));
 const TYPE_OPTIONS = OPEN_LINK_TYPES.map((t) => ({ value: t, label: LINK_TYPE_LABELS[t] }));
 type Failure = { title: string; details: string[] } | null;
 
-function useSubmit() {
+function useSubmit(projectId?: number) {
   const router = useRouter();
   const [error, setError] = useState<Failure>(null);
   const [done, setDone] = useState<string | null>(null);
   async function send(body: Record<string, unknown>, ok: (b: Record<string, unknown>) => string) {
     setError(null);
     setDone(null);
-    const r = await adminApi("POST", "/api/admin/regional-links", body);
+    const { op, ...rest } = body;
+    const r = projectId ? await adminApi("POST", "/api/admin/projects", { op: "link", project_id: projectId, linkOp: op, ...rest }) : await adminApi("POST", "/api/admin/regional-links", body);
     if (r.status === 200 || r.status === 201) {
       setDone(ok(r.body));
       router.refresh();
@@ -32,9 +34,9 @@ function useSubmit() {
 }
 
 /** [같은 지역 후보 찾기] — 프로젝트·기사·지역 */
-export function SuggestLinksButton({ fromType, fromId }: { fromType: string; fromId: string }) {
+export function SuggestLinksButton({ fromType, fromId, projectId }: { fromType: string; fromId: string; projectId?: number }) {
   const hydrated = useHydrated();
-  const { error, done, send } = useSubmit();
+  const { error, done, send } = useSubmit(projectId);
   return (
     <form
       onSubmit={(e: FormEvent) => {
@@ -55,9 +57,9 @@ export function SuggestLinksButton({ fromType, fromId }: { fromType: string; fro
 }
 
 /** 후보 확인 — 이유 필수(확인 기록), 관계를 함께 고를 수 있다 */
-export function ConfirmLinkForm({ id, relation }: { id: number; relation: RegionalLinkRelation }) {
+export function ConfirmLinkForm({ id, relation, projectId }: { id: number; relation: RegionalLinkRelation; projectId?: number }) {
   const hydrated = useHydrated();
-  const { error, send } = useSubmit();
+  const { error, send } = useSubmit(projectId);
   const [reason, setReason] = useState("");
   const [rel, setRel] = useState<string>(relation === "related_event" ? "same_region" : relation);
   return (
@@ -88,9 +90,9 @@ export function ConfirmLinkForm({ id, relation }: { id: number; relation: Region
 }
 
 /** 지우기 — 이유 필수(감사) */
-export function RemoveLinkForm({ id }: { id: number }) {
+export function RemoveLinkForm({ id, projectId }: { id: number; projectId?: number }) {
   const hydrated = useHydrated();
-  const { error, send } = useSubmit();
+  const { error, send } = useSubmit(projectId);
   const [reason, setReason] = useState("");
   return (
     <form
@@ -113,9 +115,9 @@ export function RemoveLinkForm({ id }: { id: number }) {
 }
 
 /** 연결 만들기 — 바로 확인하면 이유 필수 */
-export function CreateLinkForm({ fromType, fromId }: { fromType: string; fromId: string }) {
+export function CreateLinkForm({ fromType, fromId, projectId }: { fromType: string; fromId: string; projectId?: number }) {
   const hydrated = useHydrated();
-  const { error, done, send } = useSubmit();
+  const { error, done, send } = useSubmit(projectId);
   const [toType, setToType] = useState<string>("article");
   const [toId, setToId] = useState("");
   const [relation, setRelation] = useState<string>("related_tax");

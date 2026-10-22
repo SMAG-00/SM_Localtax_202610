@@ -91,7 +91,7 @@ export async function describeRefs(db: SupabaseClient, refs: readonly LinkRef[])
     });
   }
   for (const p of (projects?.data ?? []) as { id: number; name: string; slug: string; status: string; region_code: string }[]) {
-    out.set(`project:${p.id}`, { exists: true, title: p.name, note: `프로젝트 · ${p.status} · 지역 ${p.region_code}`, adminHref: null });
+    out.set(`project:${p.id}`, { exists: true, title: p.name, note: `프로젝트 · ${p.status} · 지역 ${p.region_code}`, adminHref: `/admin/projects/${p.id}` });
   }
   for (const r of (regions?.data ?? []) as { code: string; name: string; level: string; valid_to: string | null }[]) {
     out.set(`region:${r.code}`, { exists: true, title: r.name, note: `지역 ${r.code} · ${r.level === "sido" ? "시·도" : "시·군·구"}${r.valid_to ? ` · 유효 끝 ${r.valid_to}` : ""}`, adminHref: null });
