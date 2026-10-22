@@ -23,13 +23,13 @@ export function TextAreaField({ id, label, required, hint, error, rows = 3, ...r
         {required && <span className="font-semibold text-navy-600"> (필수)</span>}
       </label>
       {hint && (
-        <p id={`${id}-hint`} className="text-[14px] text-navy-600">
+        <p id={`${id}-hint`} className="text-[14px] text-navy-600 [overflow-wrap:anywhere]">
           {hint}
         </p>
       )}
       <textarea id={id} rows={rows} required={required} aria-invalid={error ? true : undefined} aria-describedby={describedBy} className={CONTROL} {...rest} />
       {error && (
-        <p id={`${id}-error`} className="text-[14px] text-rose-700">
+        <p id={`${id}-error`} className="text-[14px] text-rose-700 [overflow-wrap:anywhere]">
           {error}
         </p>
       )}
@@ -40,7 +40,7 @@ export function TextAreaField({ id, label, required, hint, error, rows = 3, ...r
 /** 칸에 붙지 않는 오류(묶음 칸·서버 오류) — 칸 id를 주면 그 칸 오류와 같은 id 규칙 */
 export function FieldErrorText({ id, error }: { id: string; error?: string }) {
   return error ? (
-    <p id={`${id}-error`} className="text-[14px] text-rose-700">
+    <p id={`${id}-error`} className="text-[14px] text-rose-700 [overflow-wrap:anywhere]">
       {error}
     </p>
   ) : null;
@@ -79,7 +79,7 @@ export function FieldGroup({ legend, hint, children }: { legend: string; hint?: 
   return (
     <fieldset className="min-w-0 space-y-3 rounded-xl border border-navy-100 p-4">
       <legend className="px-1 text-[15px] font-black text-navy-900">{legend}</legend>
-      {hint && <p className="text-[14px] text-navy-600">{hint}</p>}
+      {hint && <p className="text-[14px] text-navy-600 [overflow-wrap:anywhere]">{hint}</p>}
       {children}
     </fieldset>
   );
