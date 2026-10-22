@@ -103,6 +103,12 @@ export async function lookupsFor(db: Db, rows: readonly { author_id: number | nu
 export interface ListFilter {
   section?: SectionKey;
   contentType?: string;
+  /** 기사 유형 가운데 하나 (W4 9단계 — 감수 해설·지역 기사 API) */
+  contentTypes?: readonly string[];
+  /** 편집 분야가 있는 기사만 (W4 9단계 — 지역 기사, REG1-17) */
+  hasEditorialField?: boolean;
+  /** 지역 태그가 하나라도 있는 기사만 (W4 9단계 — /local 전국 공식 자료) */
+  regionTagged?: boolean;
   /** 편집 승인된 보도기사만 (HOME-04 · 뉴스 전체) */
   reportedApproved?: boolean;
   categoryId?: number;
@@ -133,6 +139,9 @@ export async function readArticleList(db: Db, f: ListFilter): Promise<{ items: A
     .neq("content_type", "digest");
   if (f.section) q = q.eq("section", f.section);
   if (f.contentType) q = q.eq("content_type", f.contentType);
+  if (f.contentTypes?.length) q = q.in("content_type", [...f.contentTypes]);
+  if (f.hasEditorialField) q = q.filter("editorial_field", "not.is", null);
+  if (f.regionTagged) q = q.filter("region_codes", "neq", "{}");
   if (f.reportedApproved) q = q.eq("reported_approved", true);
   if (f.categoryId !== undefined) q = q.eq("category_id", f.categoryId);
   if (f.editorialFields?.length) q = q.in("editorial_field", [...f.editorialFields]);

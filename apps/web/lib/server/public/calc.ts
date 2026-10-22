@@ -73,6 +73,24 @@ export async function getOfficialLinkCard(id: number, features: { sm_calculator:
   return { card, fallbacks: cards.filter((c) => c.kind === "fallback" && c.id !== card.id) };
 }
 
+/**
+ * SM 계산기 카드 하나 — 계산기 키로 (W4 9단계 — 지역 세금 연결 블록의 SM 취득세 카드, 12장 #25). 기능 키 sm_calculator가 꺼졌거나
+ * 그 키의 주소가 비었으면 null(카드 0 — '준비 중' 0). 끊김이면 같은 자리에 대체 안내(위택스·국세청). 입력값·표식 값은 넘기지 않는다(저장 주소 그대로)
+ */
+export async function getSmCalculatorCard(calcKey: string, features: { sm_calculator: boolean }): Promise<{ card: OfficialLinkCard; fallbacks: OfficialLinkCard[] } | null> {
+  if (!features.sm_calculator || !/^[a-z_]+$/.test(calcKey)) return null;
+  const rows = await rowsOf<Row>(
+    publicDb().from("official_links").select(OFFICIAL_LINK_COLUMNS).not("url", "is", null).or(`and(kind.eq.sm_calculator,key.eq.${calcKey}),kind.eq.fallback`).order("sort").order("id"),
+    "SM 계산기 카드",
+  );
+  const cards = rows.flatMap((r) => {
+    const c = toLinkCard(r);
+    return c ? [c] : [];
+  });
+  const card = cards.find((c) => c.kind === "sm_calculator" && c.key === calcKey);
+  return card ? { card, fallbacks: cards.filter((c) => c.kind === "fallback") } : null;
+}
+
 export async function getCalcView(): Promise<CalcView | null> {
   const settings = await readPublicSettings();
   if (!settings.features.calc) return null;

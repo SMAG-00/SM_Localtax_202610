@@ -105,6 +105,13 @@ describe("지자체 허브 블록 (LG-08 ② 지방세·지방재정 ③ 부동�
     expect(localBlocks(FIELDS, [], [local("urban_policy")])).toMatchObject({ localTax: [], realEstate: [expect.objectContaining({ editorialField: "urban_policy" })] });
   });
 
+  test("⑤ 공식 자료/해설 (W4 9단계 — /local 전국) — 있을 때만, 0건이면 자리 0 · ②③이 0이어도 ⑤만으로 블록 자리", () => {
+    const ex = listItem({ id: 41, section: "local", contentType: "explainer", editorialField: "local_tax" });
+    expect(localBlocks(FIELDS, [], [], { cards: [], explainers: [] })).toBeNull();
+    expect(localBlocks(null, [local("local_tax")], [], { cards: [], explainers: [ex] })).toEqual({ localTax: [], realEstate: [], official: { cards: [], explainers: [ex] } });
+    expect(localBlocks(FIELDS, [local("local_tax", { id: 42 })], [], { cards: [], explainers: [] })?.official).toBeNull();
+  });
+
   test("대응 설정을 읽지 못하면(null) 블록 0 — 닫힌 쪽 · 대응을 바꾸면 그 대응대로 (도시정책을 ②로 옮기면 ③에서 빠진다)", () => {
     expect(localBlocks(null, [local("local_tax")], [local("realestate")])).toBeNull();
     const moved = { local_tax: ["local_tax", "urban_policy"], realestate: ["realestate"] } as const;

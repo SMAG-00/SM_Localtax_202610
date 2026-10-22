@@ -1,7 +1,7 @@
 // local 묶음 — 지자체·부동산·부동산개발금융 영역 컴포넌트 16종 (PRD-00 8.6)
 export { FieldHubHead, type FieldHubHeadProps, type FieldHub } from "./FieldHubHead";
 export { RegionHubHead, regionCrumbs, type RegionCrumb, type RegionHubHeadProps, type RegionRef } from "./RegionHubHead";
-export { LocalHubBlocks, type LocalHubBlocksProps, type HubBlockContent } from "./LocalHubBlocks";
+export { LocalHubBlocks, type LocalHubBlocksProps, type HubBlockContent, type HubBlockGroup } from "./LocalHubBlocks";
 export { TopicFilter, TOPIC_FILTER_ITEMS, type TopicFilterProps, type LocalTopic } from "./TopicFilter";
 export { RegionTaxLinks, type RegionTaxLink, type RegionTaxLinkKind } from "./RegionTaxLinks";
 export { OfficialSourceCard, OFFICIAL_SOURCE_KINDS, type OfficialSourceCardProps, type OfficialSourceKind } from "./OfficialSourceCard";

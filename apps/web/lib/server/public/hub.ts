@@ -8,7 +8,11 @@ import { ALL_TAB, hubTabs, localBlocks, newsTabs, pageNumber, type HubData, type
 import { getHotBlock, type HotBlock } from "./rankings";
 import { getHubTaxPoint } from "./hub-points";
 import { readLocalBlockFields } from "./region-hub";
-import { readArticleList, readCategories, readCategoryCounts, readPublicSettings, readTopicCounts } from "./reads";
+import { readArticleList, readCategories, readCategoryCounts, readPublicSettings, readRegions, readTopicCounts } from "./reads";
+import { isoToKstDate } from "@/lib/admin/form-utils";
+import { sourceLineOf } from "./region-hub-logic";
+import { readRegionalOfficial } from "./region-official";
+import { EMPTY_REGIONAL_OFFICIAL, sidoCards } from "./region-official-logic";
 import { GLOSSARY_COLUMNS, SITUATION_COLUMNS, num, type GlossaryRow, type SituationRow } from "./rows";
 import { hubSituationCards } from "./situation-logic";
 
@@ -17,6 +21,8 @@ import { hubSituationCards } from "./situation-logic";
 // 상담 사례 HOT(HOME-05 — W2-c 2단계)은 지방세 허브와 상담 사례 분야 목록(HOT_CATEGORY)의 첫 쪽에 둔다 (rankings.ts).
 // 지자체뉴스 허브는 분야 고유 블록 자리에 LG-08 순서의 지자체 허브 블록 중 데이터가 있는 ② 지방세·지방재정 ③ 부동산·개발을 둔다.
 // 블록과 편집 분야 대응은 설정 local_block_fields(W4 4단계 — 마이그레이션 …40). 읽지 못하거나 모양이 틀리면 블록 0(닫힌 쪽)
+// W4 9단계 — 지자체뉴스 허브 = /local 전국 화면: 시·도 카드(region_hubs가 켜졌을 때만 링크) · ⑤ 공식 자료/해설(전국 검수 공식 자료·감수 해설 — 있을 때만) ·
+// 데이터 출처 줄. 새 표·뷰는 읽지 않는다(region-official.ts — 마이그레이션 …08·…35·…41·…42 공개 읽기)
 
 export type { HubData, HubTab } from "./hub-logic";
 
@@ -35,7 +41,8 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
           return { fields, tax, realEstate };
         })
       : null;
-  const [settings, categories, counts, topicCounts, latest, situations, terms, blockReads, hot, taxPoint] = await Promise.all([
+  const localOfficial = section === "local" && !topic ? readRegionalOfficial(null) : null;
+  const [settings, categories, counts, topicCounts, latest, situations, terms, blockReads, hot, taxPoint, official, regions] = await Promise.all([
     readPublicSettings(),
     readCategories(),
     readCategoryCounts(),
@@ -46,7 +53,13 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     localBlockReads,
     section === HOT_CATEGORY.section ? getHotBlock() : null,
     getHubTaxPoint(section),
+    localOfficial,
+    section === "local" && !topic ? readRegions() : null,
   ]);
+  const blocks =
+    section === "local" && !topic
+      ? localBlocks(blockReads?.fields ?? null, blockReads?.tax.items ?? [], blockReads?.realEstate.items ?? [], official ?? EMPTY_REGIONAL_OFFICIAL)
+      : null;
   return {
     section,
     name: SECTION_INFO[section].name,
@@ -56,13 +69,20 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     tabs: hubTabs(section, categories, counts, topicCounts),
     currentTab: topic ?? ALL_TAB,
     topic,
-    blocks: blockReads ? localBlocks(blockReads.fields, blockReads.tax.items, blockReads.realEstate.items) : null,
+    blocks,
     latest: latest.items,
     hot,
     situations: hubSituationCards(situations, section, settings.hubSituationLimit),
     terms: terms.map((t) => termChip(t, settings.features)),
     taxPoint,
     noindex: topic !== null && latest.items.length === 0,
+    local:
+      section === "local"
+        ? {
+            sido: regions ? sidoCards(regions, isoToKstDate(new Date().toISOString()), settings.features.region_hubs) : [],
+            source: sourceLineOf(blocks?.official?.cards ?? [], [...(blocks?.localTax ?? []), ...(blocks?.realEstate ?? []), ...(blocks?.official?.explainers ?? []), ...latest.items]),
+          }
+        : null,
   };
 }
 

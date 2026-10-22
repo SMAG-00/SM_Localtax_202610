@@ -6,13 +6,14 @@
 //  · 구조화 데이터 BreadcrumbList = 화면 이동 줄 (regionCrumbs 한 함수). 사이트 주소(NEXT_PUBLIC_SITE_URL)가 없으면 내지 않는다(틀린 주소 0)
 //  · W4 4단계 — 머리 아래 지방세 포인트(hub_tax_points.local, 서명본만) · 분야 필터(?topic=) · LG-08 블록 ②③⑤(규칙은 region-hub-logic.ts) · 데이터 출처 줄.
 //    분야를 골랐는데 그 지역 범위에 그 분야 기사가 0이면 그 주소도 noindex. 폐지 지역 태그 기사는 후속 지역 화면에 넣지 않는다(자기 태그만 — 12장 #26·#36)
-// 지역 세금 연결 블록·⑤의 공식 자료/감수 해설은 9단계, 색인 최소선(9.2)·메타 설명은 11단계가 더한다.
+// W4 9단계 — ⑤ 공식 자료/해설(검수 공식 자료 카드·감수 해설)과 지역 세금 연결 블록(⑤ 뒤 — 규칙은 region-official-logic.ts). 색인 최소선(9.2)·메타 설명은 11단계가 더한다.
 import { regionCrumbs, type LocalTopic, type RegionCrumb, type RegionRef } from "@ltr/ui";
 import type { BreadcrumbView } from "@ltr/structured-data";
 import { isValidOn, regionHref, type RegionRouteRow } from "@/lib/site/region-route";
 import { SECTION_INFO } from "./constants";
 import type { HubTaxPoint } from "./hub-point-logic";
 import { regionHubBlocks, regionSourceLine, topicHasOwnArticles, type BlockArticles, type LocalBlockFields, type RegionHubBlock, type RegionSourceLine } from "./region-hub-logic";
+import type { RegionalOfficial, RegionTaxLinksView } from "./region-official-logic";
 
 export interface RegionGuide {
   text: string;
@@ -37,6 +38,8 @@ export interface RegionPage {
   taxPoint: HubTaxPoint | null;
   /** LG-08 블록 — ②③(고른 분야를 담는 블록만)·⑤ 순서 고정 (①④는 W6 — 요소 0) */
   blocks: RegionHubBlock[];
+  /** 지역 세금 연결 블록 (⑤ 뒤 — REG1-10) — 내용이 하나도 없으면 null(블록째 0) */
+  taxLinks: RegionTaxLinksView | null;
   /** 데이터 출처 줄 (REG-10) */
   source: RegionSourceLine;
   /** 그 지역 범위의 지자체뉴스 기사 수 (편집 분야와 상관없이) */
@@ -93,6 +96,9 @@ export function regionPage(input: {
   /** 상위 시·도 범위 블록 기사 (시·군·구 허브만) */
   parent?: BlockArticles;
   taxPoint?: HubTaxPoint | null;
+  /** ⑤ 검수 공식 자료·감수 해설 (그 지역 범위) */
+  official?: RegionalOfficial;
+  taxLinks?: RegionTaxLinksView | null;
 }): RegionPage {
   const { sido, sigungu } = input;
   const sidoRef: RegionRef = { name: sido.name, href: regionHref(sido.slug) };
@@ -102,7 +108,7 @@ export function regionPage(input: {
   const topic = input.topic ?? null;
   const fields = input.fields ?? null;
   const own = input.own ?? {};
-  const blocks = regionHubBlocks({ fields, topic, sidoName: sido.name, sigunguName: sigungu?.name ?? null, own, parent: input.parent ?? {} });
+  const blocks = regionHubBlocks({ fields, topic, sidoName: sido.name, sigunguName: sigungu?.name ?? null, own, parent: input.parent ?? {}, ...(input.official ? { official: input.official } : {}) });
   const empty = input.total <= 0;
   return {
     level: sigungu ? "sigungu" : "sido",
@@ -116,6 +122,7 @@ export function regionPage(input: {
     topic,
     taxPoint: input.taxPoint ?? null,
     blocks,
+    taxLinks: input.taxLinks ?? null,
     source: regionSourceLine(blocks),
     total: empty ? 0 : input.total,
     empty,

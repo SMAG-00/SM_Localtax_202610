@@ -3,11 +3,12 @@
 //    내용이 0건인 부분은 빠지고(빈 칸 0), 빠지지 않은 부분의 순서는 그대로다. 바탕은 보이는 순서대로 ivory ↔ ivory-dark (머리가 ivory)
 //  · 기사 0건인 목록(빈 하위 분야·기사 없는 편집 분야)은 상위 허브 안내 + noindex — 응답은 200 (설계 9장)
 //  · 쪽 넘김은 주소 쿼리 page (2쪽부터). 다른 쿼리(section·topic)는 그대로 둔다
+//  · 지자체뉴스 허브(/local 전국 화면 — W4 9단계)만 머리 뒤 시·도 카드(regions)와 맨 아래 데이터 출처 줄(source)이 더 있다 — 다른 허브의 골격은 그대로
 import { brand, type StepTimelineItem } from "@ltr/ui";
 import { sectionTones, type SectionTone } from "./home-view";
 
 /** 허브 본문 부분 — 이 순서 고정 */
-export const HUB_PARTS = ["head", "blocks", "latest", "hot", "situations", "terms"] as const;
+export const HUB_PARTS = ["head", "regions", "blocks", "latest", "hot", "situations", "terms", "source"] as const;
 export type HubPart = (typeof HUB_PARTS)[number];
 
 /** 부분 머리 — 아이브로(영문)와 제목 (분야 고유 블록은 블록마다 제목이 있어 머리가 없다) */
@@ -16,10 +17,13 @@ export const HUB_HEADINGS = {
   hot: { eyebrow: "HOT", title: "상담 사례 HOT" },
   situations: { eyebrow: "SITUATIONS", title: "상황으로 찾기" },
   terms: { eyebrow: "GLOSSARY", title: "관련 용어" },
+  regions: { eyebrow: "REGIONS", title: "시·도별 지자체 허브" },
 } as const;
 
 interface HubShape {
   blocks: unknown;
+  /** /local 전국 화면 (W4 9단계) — 시·도 카드·데이터 출처 줄. 다른 허브는 null·없음 */
+  local?: { sido: readonly unknown[] } | null;
   /** 상담 사례 HOT 블록 (HOME-05 — 지방세 허브) — 없으면 null */
   hot: unknown;
   latest: readonly unknown[];
@@ -32,11 +36,13 @@ interface HubShape {
 /** 보이는 허브 부분과 바탕 — 내용이 있는 부분만, 순서 고정 */
 export function hubParts(hub: HubShape): Array<{ key: HubPart; tone: SectionTone }> {
   const present: HubPart[] = ["head"];
+  if (hub.local && hub.local.sido.length > 0) present.push("regions");
   if (hub.blocks) present.push("blocks");
   if (hub.latest.length > 0 || hub.noindex) present.push("latest");
   if (hub.hot) present.push("hot");
   if (hub.situations.length > 0) present.push("situations");
   if (hub.terms.length > 0) present.push("terms");
+  if (hub.local) present.push("source");
   return sectionTones(present);
 }
 

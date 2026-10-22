@@ -7,7 +7,14 @@ const hub = (over: Partial<Parameters<typeof hubParts>[0]> = {}) => ({ blocks: n
 describe("허브 골격 (CAT-02 — 네 허브 같은 순서, 0건 부분은 빠짐)", () => {
   test("모두 있으면 머리 → 분야 고유 블록 → 최신 목록 → 상담 사례 HOT → 상황 카드 → 관련 용어, 바탕은 ivory부터 번갈아", () => {
     expect(hubParts(hub({ blocks: {}, hot: {} })).map((p) => `${p.key}:${p.tone}`)).toEqual(["head:ivory", "blocks:ivory-dark", "latest:ivory", "hot:ivory-dark", "situations:ivory", "terms:ivory-dark"]);
-    expect(hubParts(hub({ blocks: {}, hot: {} })).map((p) => p.key)).toEqual([...HUB_PARTS]);
+    expect(hubParts(hub({ blocks: {}, hot: {} })).map((p) => p.key)).toEqual(HUB_PARTS.filter((k) => k !== "regions" && k !== "source"));
+  });
+
+  test("/local 전국 화면(W4 9단계) — 머리 뒤 시·도 카드, 맨 아래 데이터 출처 줄. 시·도 카드 0장이면 그 자리만 빠지고 출처 줄은 남는다", () => {
+    expect(hubParts(hub({ blocks: {}, hot: {}, local: { sido: [1] } })).map((p) => p.key)).toEqual([...HUB_PARTS]);
+    expect(hubParts(hub({ blocks: {}, local: { sido: [1] } })).map((p) => p.key)).toEqual(["head", "regions", "blocks", "latest", "situations", "terms", "source"]);
+    expect(hubParts(hub({ latest: [], noindex: true, local: { sido: [] } })).map((p) => p.key)).toEqual(["head", "latest", "situations", "terms", "source"]);
+    expect(hubParts(hub({ local: null })).map((p) => p.key)).toEqual(["head", "latest", "situations", "terms"]);
   });
 
   test("상담 사례 HOT(HOME-05)은 블록이 있을 때만 — 최신 목록 뒤, 상황 카드 앞 (지방세 허브)", () => {

@@ -30,7 +30,8 @@ import { CardNewsSlider } from "./CardNewsSlider";
 import { popularClickItems } from "@/lib/site/popular-view";
 import { MeasureArticle, MeasureClicks, MeasureNextActions, MeasurePartnerContent } from "./Measure";
 import { ShareButton } from "./ShareButton";
-import { UNDER_REVIEW_LABEL, UNDER_REVIEW_NOTE, sourceCards } from "@/lib/site/source-cards";
+import { UNDER_REVIEW_LABEL, sourceCards } from "@/lib/site/source-cards";
+import { OfficialSourceCardView } from "./OfficialSourceCardView";
 import { TEXT_LINK } from "./SiteSection";
 
 // 기사 상세 (/news/[slug] — ART-02 · ART-03 · ART-04 · ART-05 · ART-06 · CAT-05 · CORE-01 · PRD-01A 3장 '기사 상세'·'해결 사례 상세')
@@ -251,16 +252,6 @@ function Body({ a, today, tips }: { a: ArticleDetail; today: string; tips: Reado
   );
 }
 
-/** 검토 중 표시 (W4 6단계 — REG1-13) — 원문 카드 안. 색에 더해 글자로 뜻을 전한다 */
-function ReviewMark() {
-  return (
-    <p data-part="source-review-mark" className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-navy-800">
-      <span className="inline-flex rounded-md border border-hermes-200 bg-hermes-50 px-2 py-0.5 text-[13px] font-bold text-hermes-900">{UNDER_REVIEW_LABEL}</span>
-      <span>{UNDER_REVIEW_NOTE}</span>
-    </p>
-  );
-}
-
 /**
  * 출처 (W4 5단계 — REG1-07 · REG1-09 · REG1-13 · PR-07): ① 공식 자료 원문 — 발표기관 자료의 사실만 담은 카드(원문 블록). 기자의 해석인 본문 블록과
  * 다른 구역이다 — 카드에 본문 글자 0. 칸이 모두 찬 공식 자료만(lib/site/source-cards.ts) ② 출처 줄 — 나머지 출처, 공공누리 유형 글자를 함께
@@ -277,53 +268,7 @@ function SourceSections({ sources }: { sources: ArticleDetail["sources"] }) {
           <p className="mt-1 text-[14px] text-navy-600">발표기관이 낸 원자료입니다. 이 자료에 대한 해석은 위 기사 본문이 편집국의 판단으로 씁니다.</p>
           <ul className="mt-3 space-y-3">
             {official.map((c) => (
-              <li key={c.id} data-part="official-source-card" data-source-id={c.id} className="rounded-2xl border border-navy-100 bg-white p-5">
-                <p data-part="official-source-type" className="text-[13px] font-bold text-hermes-800">
-                  {c.typeLabel}
-                </p>
-                {c.underReview && <ReviewMark />}
-                <p className="mt-1 text-[16px] font-black text-navy-900 [overflow-wrap:anywhere]">{c.title}</p>
-                <p className="mt-1 text-[14px] text-navy-700 [overflow-wrap:anywhere]">
-                  {c.issuer}
-                  {c.provider && <span className="text-navy-600">{` · 제공 ${c.provider}`}</span>}
-                </p>
-                <dl data-part="official-source-dates" className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[13px] tracking-wide text-navy-700">
-                  {c.publishedOn && (
-                    <div className="flex gap-1">
-                      <dt>발표일</dt>
-                      <dd>
-                        <time dateTime={c.publishedOn}>{c.publishedOn}</time>
-                      </dd>
-                    </div>
-                  )}
-                  <div className="flex gap-1">
-                    <dt>기준일</dt>
-                    <dd>
-                      <time dateTime={c.referenceDate}>{c.referenceDate}</time>
-                    </dd>
-                  </div>
-                  {c.regionUnit && (
-                    <div className="flex gap-1">
-                      <dt>지역 단위</dt>
-                      <dd>{c.regionUnit}</dd>
-                    </div>
-                  )}
-                  <div className="flex gap-1">
-                    <dt>확인일</dt>
-                    <dd>
-                      <time dateTime={c.verifiedOn}>{c.verifiedOn}</time>
-                    </dd>
-                  </div>
-                </dl>
-                <p data-part="license-badge" className="mt-2 inline-flex rounded-md border border-navy-200 bg-navy-50 px-2.5 py-0.5 text-[13px] font-bold text-navy-800">
-                  {c.license}
-                </p>
-                <p className="mt-2">
-                  <a href={c.href} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-[15px] font-bold underline underline-offset-4 hover:text-hermes-900">
-                    원문 보기 (새 창)
-                  </a>
-                </p>
-              </li>
+              <OfficialSourceCardView key={c.id} card={c} />
             ))}
           </ul>
         </section>

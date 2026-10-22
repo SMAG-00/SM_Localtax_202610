@@ -91,6 +91,39 @@ describe("지자체 허브 블록 (LG-08·REG1-02)", () => {
     expect(container.textContent).not.toContain("준비 중");
   });
 
+  it("블록 안 묶음 — 공식 자료 원문·감수 해설을 제목과 함께 나눠 보이고, 묶음마다 6장까지, 카드 0장 묶음은 빠진다 (REG1-07 원문 ≠ 해석)", () => {
+    const cards = (label: string, n: number) => Array.from({ length: n }, (_, i) => <p key={i}>{`${label} ${i + 1}`}</p>);
+    const { container } = render(
+      <LocalHubBlocks
+        sources={{
+          items: [],
+          empty: "아직 확인된 공식 자료·감수 해설이 없습니다.",
+          groups: [
+            { key: "official", title: "공식 자료 원문", note: "발표기관이 낸 원자료입니다", items: cards("원문", 8) },
+            { key: "explainers", title: "감수 해설", items: cards("해설", 2) },
+            { key: "empty", title: "빈 묶음", items: [] },
+          ],
+        }}
+      />,
+    );
+    const section = screen.getByRole("region", { name: "공식 자료/해설" });
+    const groups = [...section.querySelectorAll('[data-part="block-group"]')];
+    expect(groups.map((g) => g.getAttribute("data-group"))).toEqual(["official", "explainers"]);
+    expect(within(groups[0] as HTMLElement).getByRole("heading", { level: 3 }).textContent).toBe("공식 자료 원문");
+    expect(within(groups[0] as HTMLElement).getAllByRole("listitem")).toHaveLength(6);
+    expect(within(groups[1] as HTMLElement).getAllByRole("listitem")).toHaveLength(2);
+    expect(section.querySelector('[data-part="block-empty"]')).toBeNull();
+    expect(container.textContent).not.toContain("빈 묶음");
+  });
+
+  it("묶음 카드가 모두 0장이면 0건 문장 — 0건 문장도 없으면 블록째 빠진다", () => {
+    const { container } = render(<LocalHubBlocks localTax={block("지방세")} sources={{ items: [], empty: "아직 확인된 공식 자료·감수 해설이 없습니다.", groups: [{ key: "official", title: "공식 자료 원문", items: [] }] }} />);
+    expect(within(screen.getByRole("region", { name: "공식 자료/해설" })).getByText("아직 확인된 공식 자료·감수 해설이 없습니다.").getAttribute("data-part")).toBe("block-empty");
+    const hidden = render(<LocalHubBlocks localTax={block("지방세")} sources={{ items: [], groups: [{ key: "official", title: "공식 자료 원문", items: [] }] }} />);
+    expect(blockKeys(hidden.container)).toEqual(["localTax"]);
+    expect(blockKeys(container)).toEqual(["localTax", "sources"]);
+  });
+
   it("금주 핫뉴스 블록은 주차·기간·발행일 줄을 고정폭으로, 더 보기 링크를 함께 보인다", () => {
     render(<LocalHubBlocks weekly={{ ...block("핫뉴스"), meta: "2026-42 · 10.12~10.18 · 발행 2026-10-16", more: { href: "/local/seoul/weekly/2026-42", label: "이번 주 핫뉴스 전체 보기" } }} />);
     expect(cls(screen.getByText("2026-42 · 10.12~10.18 · 발행 2026-10-16"))).toContain("font-mono");

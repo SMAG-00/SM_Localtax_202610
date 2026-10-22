@@ -3,6 +3,8 @@ import { FieldTaxPoint, LocalHubBlocks, RegionHubHead, SourceLine, TopicFilter, 
 import type { RegionPage } from "@/lib/server/public";
 import type { RegionHubBlock } from "@/lib/server/public/region-hub-logic";
 import { ArticleItem } from "./ArticleItem";
+import { OfficialSourceCardView } from "./OfficialSourceCardView";
+import { RegionTaxLinksBlock } from "./RegionTaxLinksBlock";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
 
 // 지역 화면 = 지자체 허브 (/local/[sido] · /local/[sido]/[sigungu] — W4 3·4단계 · LG-08 · REG1-02 · REG1-01 · REG1-12 · REG-10).
@@ -10,11 +12,40 @@ import { SiteSection, TEXT_LINK } from "./SiteSection";
 // → LG-08 블록 ② 지방세·지방재정 ③ 부동산·개발 ⑤ 공식 자료/해설(①④는 W6 — 요소 0, 순서는 @ltr/ui LocalHubBlocks 코드 고정) → 데이터 출처 줄.
 // 그 지역 기사가 0건이면 블록 위에 상위 지역 안내(noindex는 화면 metadata가 정한다). 빈 카드·'준비 중' 0. 명소·맛집·지도 0.
 // 구조화 데이터 BreadcrumbList는 화면 이동 줄과 같은 값(regionCrumbs)으로 생성기가 만든다 (OPT-02).
-// 지역 세금 연결 블록(⑤ 뒤)은 9단계가 RegionHubHead taxLinks 자리에 더한다.
+// W4 9단계 — ⑤ 공식 자료/해설 = 묶음 '공식 자료 원문'(검수 공식 자료 카드 — 원문 블록, 기사 상세와 같은 카드)과 '감수 해설'(해석 — 기사 카드).
+// 지역 세금 연결 블록은 RegionHubHead taxLinks 자리(⑤ 뒤). 3단계 자리(정비사업 현황·조례 원문)는 W4에 그릴 내용 0 — 요소 0.
+
+/** ⑤ 묶음 글자 */
+export const OFFICIAL_GROUPS = {
+  sources: { title: "공식 자료 원문", note: "발표기관이 낸 원자료입니다. 해석은 아래 감수 해설과 각 기사에서 읽습니다." },
+  explainers: { title: "감수 해설" },
+} as const;
 
 /** 블록 한 칸 — 기사 카드(기자·발행/수정일), 상위 시·도 대체 문장, 0건 문장 */
 function blockContent(block: RegionHubBlock | undefined): HubBlockContent | undefined {
   if (!block) return undefined;
+  if (block.key === "official") {
+    return {
+      items: [],
+      groups: [
+        {
+          key: "sources",
+          ...OFFICIAL_GROUPS.sources,
+          items: block.sources.map((c) => <OfficialSourceCardView key={c.id} card={c} as="article" articles={c.articles} />),
+        },
+        {
+          key: "explainers",
+          ...OFFICIAL_GROUPS.explainers,
+          items: block.items.map((a) => (
+            <div key={a.id} data-article-id={a.id} className="flex h-full">
+              <ArticleItem item={a} withModified />
+            </div>
+          )),
+        },
+      ],
+      ...(block.empty ? { empty: block.empty } : {}),
+    };
+  }
   return {
     items: block.items.map((a) => (
       <div key={a.id} data-article-id={a.id} className="flex h-full">
@@ -24,6 +55,11 @@ function blockContent(block: RegionHubBlock | undefined): HubBlockContent | unde
     ...(block.fallbackNotice ? { fallbackNotice: block.fallbackNotice } : {}),
     ...(block.empty ? { empty: block.empty } : {}),
   };
+}
+
+/** 데이터 출처 줄 (REG-10) — 공식 자료가 있으면 출처·기준일·정보 확인일, 없으면 출처 편집국·최신 발행일 */
+export function RegionSourceLineView({ line }: { line: RegionPage["source"] }) {
+  return "latestPublished" in line ? <SourceLine source={line.source} latestPublished={line.latestPublished} /> : <SourceLine source={line.source} baseDate={line.baseDate} checkedAt={line.checkedAt} />;
 }
 
 export function RegionView({ page }: { page: RegionPage }) {
@@ -66,9 +102,10 @@ export function RegionView({ page }: { page: RegionPage }) {
               <LocalHubBlocks localTax={blockContent(find("local_tax"))} realEstate={blockContent(find("realestate"))} sources={blockContent(find("official"))} />
             </div>
           }
+          taxLinks={page.taxLinks ? <RegionTaxLinksBlock view={page.taxLinks} /> : undefined}
         />
         <div data-region-part="source" className="mt-20">
-          <SourceLine source={page.source.source} latestPublished={page.source.latestPublished} />
+          <RegionSourceLineView line={page.source} />
         </div>
       </SiteSection>
     </div>

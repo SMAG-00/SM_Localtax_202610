@@ -181,7 +181,7 @@ test("a) 블록 순서 — 360×740·1280×800 DOM 순서 = 화면 위치 = ②�
       await ctx.close();
     }
   }
-  // 지자체뉴스 허브(/local — W2-b)는 데이터가 있는 ②③만 (⑤는 9단계가 채울 때까지 0)
+  // 지자체뉴스 허브(/local — W2-b)는 데이터가 있는 블록만 — 이 시험 자료에는 검수 공식 자료·감수 해설이 없어 ②③ (⑤가 채워진 화면은 9단계 w4-local-blocks가 본다)
   const { page, ctx } = await open("/local");
   assert.deepEqual((await blocksOf(page)).map((b) => b.key), ["localTax", "realEstate"]);
   await ctx.close();
@@ -216,7 +216,7 @@ test("c) 블록 내용 — ②·③은 대응 편집 분야 기사만, 카드마
   const [tax, estate, sources] = await blocksOf(page);
   assert.deepEqual(tax.ids, [fx.tax.id, fx.finance.id], "② = 그 시·군·구의 지방세·지방재정 기사, 최신 순 (다른 시·군·구·상위 태그 0)");
   assert.deepEqual(estate.ids, [fx.estate.id], "③ = 부동산 기사만");
-  assert.deepEqual(sources.ids, [], "⑤ — 공식 자료·감수 해설은 9단계");
+  assert.deepEqual(sources.ids, [], "⑤ — 이 시험 자료에는 감수 해설 0 (채워진 ⑤는 9단계 w4-local-blocks)");
   assert.equal(sources.empty, "아직 확인된 공식 자료·감수 해설이 없습니다.");
   assert.deepEqual([tax.fallback, estate.fallback], [null, null], "자기 기사 — 대체 문장 0");
   const cards = await page.$$eval("[data-hub-block] [data-article-id]", (els) =>

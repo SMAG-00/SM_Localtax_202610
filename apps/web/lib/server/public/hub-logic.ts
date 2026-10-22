@@ -3,12 +3,15 @@
 //  · 하위 분야가 하나도 없으면 [전체] 하나뿐인 탭은 두지 않는다 (빈 탭 0)
 //  · 지자체뉴스 허브의 분야 고유 블록은 LG-08 순서 — 지금 데이터가 있는 ② 지방세·지방재정 ③ 부동산·개발만 (① 금주 핫뉴스·④ 행사안내는 01B W6, ⑤ 공식 자료/해설은 01B W4 9단계).
 //    블록과 편집 분야 대응은 설정 local_block_fields (W4 4단계 — region-hub-logic.ts가 지역 허브와 같은 함수로 고른다)
+//  · W4 9단계 — 지자체뉴스 허브 = /local 전국 화면: 머리 뒤 시·도 카드(오늘 유효한 시·도 — region_hubs가 켜졌을 때만 링크), 블록에 ⑤ 공식 자료/해설(있을 때만),
+//    맨 아래 데이터 출처 줄(REG-10 — 전국 지자체 허브도). 분야를 고르면 시·도 카드·블록 0(목록 하나), 출처 줄은 그대로
 import type { LocalTopic } from "@ltr/ui";
 import type { ArticleListItem } from "./cards";
 import { subsectionLinks } from "./chrome-logic";
 import { NEWS_TAB_LABELS, SECTION_INFO, SECTION_KEYS, type SectionKey } from "./constants";
 import type { TermChip } from "./glossary-logic";
-import type { LocalBlocks } from "./region-hub-logic";
+import type { LocalBlocks, RegionSourceLine } from "./region-hub-logic";
+import type { SidoCard } from "./region-official-logic";
 import type { PublicCategoryRow } from "./rows";
 import type { HotBlock } from "./rankings";
 import type { HubTaxPoint } from "./hub-point-logic";
@@ -46,6 +49,14 @@ export function pageNumber(page: number | undefined): number {
   return page !== undefined && Number.isSafeInteger(page) && page >= 1 ? page : 1;
 }
 
+/** /local 전국 화면 값 (W4 9단계) */
+export interface LocalIndexView {
+  /** 시·도 카드 — 분야를 골랐으면 빈 목록 */
+  sido: SidoCard[];
+  /** 데이터 출처 줄 (REG-10) */
+  source: RegionSourceLine;
+}
+
 export interface HubData {
   section: SectionKey;
   name: string;
@@ -72,6 +83,8 @@ export interface HubData {
   taxPoint: HubTaxPoint | null;
   /** 고른 편집 분야에 기사가 0건 — 허브 안내 + noindex (CAT-02 '빈 목록 색인 0') */
   noindex: boolean;
+  /** /local 전국 화면 (W4 9단계) — 지자체뉴스 허브만, 다른 허브·닫힌 허브는 null */
+  local: LocalIndexView | null;
   /** 공개 데이터를 읽지 못해 닫힌 허브(머리만)를 보이는 중 */
   unavailable?: true;
 }
@@ -94,6 +107,7 @@ export function closedHubData(section: SectionKey): HubData {
     terms: [],
     taxPoint: null,
     noindex: false,
+    local: null,
     unavailable: true,
   };
 }

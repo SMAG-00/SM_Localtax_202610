@@ -5,11 +5,13 @@
 //  · ②③에 담는 편집 분야는 설정 local_block_fields (REG1-02 초기값 — DB 트리거와 같은 검사). 모양이 틀리면 닫힌 쪽(블록 ②③ 0)
 //  · 분야 필터 ?topic= — 고른 분야를 담는 블록에 그 분야 기사만, 그 분야를 담지 않는 기사 블록은 0. 목록 밖 값은 전체
 //  · 시·군·구 블록이 0건이면 상위 시·도 기사 + "○○ 기사가 없어 ○○ 기사를 보입니다", 상위도 0이면 0건 문장 (빈 카드·'준비 중' 0)
-//  · ⑤ 공식 자료/해설은 9단계가 채운다 — 그 전에는 0건 문장(블록째 0건 문장 — 2.8)
-//  · 데이터 출처 줄 — 블록에 쓰인 공식 자료가 0이면 "출처 편집국" + 블록 기사의 최신 발행일
+//  · ⑤ 공식 자료/해설 (9단계) — 검수 공식 자료 카드(≤ 6, 묶음 '공식 자료 원문') + 감수 해설(≤ 3, 묶음 '감수 해설'). 둘 다 0이면 블록째 0건 문장(2.8).
+//    분야 필터와 상관없이 그대로(4단계 #37). 고르는 규칙은 region-official-logic.ts
+//  · 데이터 출처 줄 — 블록에 공식 자료 카드가 있으면 "출처 ○○ · 기준일 · 정보 확인일"(가장 이른 기준일·확인일), 0이면 "출처 편집국" + 블록 기사의 최신 발행일
 import type { LocalTopic } from "@ltr/ui";
 import type { ArticleListItem } from "./cards";
 import { LIMITS, LOCAL_TOPICS } from "./constants";
+import { issuerSummary, type RegionOfficialCard } from "./region-official-logic";
 
 /** 블록 다섯 자리 (설계 2.1 local_hub.block — 순서 고정) */
 export const LOCAL_HUB_BLOCKS = ["weekly", "local_tax", "realestate", "events", "official"] as const;
@@ -90,8 +92,10 @@ export function blockEmptyText(block: ArticleBlock | "official", topic: LocalTop
 export interface RegionHubBlock {
   key: Exclude<LocalHubBlock, "weekly" | "events">;
   title: string;
-  /** 보이는 기사 카드 — 0이면 empty 문장 */
+  /** 보이는 기사 카드 — 0이면 empty 문장. ⑤는 감수 해설 */
   items: ArticleListItem[];
+  /** ⑤ 검수 공식 자료 카드 (기사 블록은 빈 목록) */
+  sources: RegionOfficialCard[];
   /** 상위 시·도 기사를 보이는 중 — 그 사실 문장 */
   fallbackNotice: string | null;
   /** 0건 문장 */
@@ -112,6 +116,8 @@ export function regionHubBlocks(input: {
   sigunguName: string | null;
   own: BlockArticles;
   parent: BlockArticles;
+  /** ⑤ 검수 공식 자료 카드·감수 해설 — 없으면 0건 문장 */
+  official?: { cards: readonly RegionOfficialCard[]; explainers: readonly ArticleListItem[] };
 }): RegionHubBlock[] {
   const out: RegionHubBlock[] = [];
   if (input.fields) {
@@ -125,13 +131,23 @@ export function regionHubBlocks(input: {
         key: block,
         title: LOCAL_HUB_BLOCK_LABELS[block],
         items,
+        sources: [],
         fallbackNotice: own.length === 0 && parent.length > 0 ? fallbackNotice(input.sigunguName!, input.sidoName) : null,
         empty: items.length === 0 ? blockEmptyText(block, input.topic) : null,
       });
     }
   }
-  // ⑤ 공식 자료/해설 — 검수 공식 자료 카드·감수 해설은 9단계. 지금은 블록째 0건 문장 (2.8)
-  out.push({ key: "official", title: LOCAL_HUB_BLOCK_LABELS.official, items: [], fallbackNotice: null, empty: blockEmptyText("official", input.topic) });
+  // ⑤ 공식 자료/해설 — 검수 공식 자료 카드 + 감수 해설. 둘 다 0이면 블록째 0건 문장 (2.8)
+  const sources = [...(input.official?.cards ?? [])];
+  const explainers = [...(input.official?.explainers ?? [])];
+  out.push({
+    key: "official",
+    title: LOCAL_HUB_BLOCK_LABELS.official,
+    items: explainers,
+    sources,
+    fallbackNotice: null,
+    empty: sources.length || explainers.length ? null : blockEmptyText("official", input.topic),
+  });
   return out;
 }
 
@@ -141,15 +157,38 @@ export function topicHasOwnArticles(fields: LocalBlockFields | null, topic: Loca
   return ARTICLE_BLOCKS.some((b) => blockTopics(fields, b, topic).length > 0 && pickBlock(own[b] ?? [], [topic]).length > 0);
 }
 
-export interface RegionSourceLine {
-  source: string;
-  /** 블록 기사의 최신 발행일 (한국 날짜) — 기사도 0이면 null */
-  latestPublished: string | null;
+/** 데이터 출처 줄 — 편집국 기사만(최신 발행일) 또는 공식 자료(가장 이른 기준일·확인일) */
+export type RegionSourceLine =
+  | {
+      source: string;
+      /** 블록 기사의 최신 발행일 (한국 날짜) — 기사도 0이면 null */
+      latestPublished: string | null;
+    }
+  | {
+      source: string;
+      /** 블록에 쓰인 공식 자료 중 가장 이른 기준일 */
+      baseDate: string;
+      /** 블록에 쓰인 공식 자료 중 가장 이른 확인일 (REG-10 '정보 확인일') */
+      checkedAt: string;
+    };
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const earliest = (dates: readonly string[]) => dates.reduce((a, b) => (b < a ? b : a));
+
+/** 데이터 출처 줄 (REG-10 · 2.8) — 공식 자료 카드가 있으면 그 발표기관·가장 이른 기준일·확인일, 없으면 편집국 + 블록 기사의 최신 발행일 */
+export function regionSourceLine(blocks: readonly RegionHubBlock[]): RegionSourceLine {
+  return sourceLineOf(
+    blocks.flatMap((b) => b.sources),
+    blocks.flatMap((b) => b.items),
+  );
 }
 
-/** 데이터 출처 줄 (REG-10 · 2.8) — 공식 자료 카드는 9단계라 지금은 늘 편집국 + 블록 기사의 최신 발행일 */
-export function regionSourceLine(blocks: readonly RegionHubBlock[]): RegionSourceLine {
-  const dates = blocks.flatMap((b) => b.items.map((a) => a.publishedOn)).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d));
+/** 데이터 출처 줄 — 화면에 쓰인 공식 자료 카드와 기사 카드로 (지역 허브·/local 전국 화면이 같은 규칙) */
+export function sourceLineOf(cards: readonly RegionOfficialCard[], items: readonly Pick<ArticleListItem, "publishedOn">[]): RegionSourceLine {
+  if (cards.length) {
+    return { source: issuerSummary(cards), baseDate: earliest(cards.map((c) => c.referenceDate)), checkedAt: earliest(cards.map((c) => c.verifiedOn)) };
+  }
+  const dates = items.map((a) => a.publishedOn).filter((d) => ISO_DATE.test(d));
   return { source: "편집국", latestPublished: dates.length ? dates.reduce((a, b) => (b > a ? b : a)) : null };
 }
 
@@ -158,11 +197,24 @@ export interface LocalBlocks {
   localTax: ArticleListItem[];
   /** ③ 부동산·개발 */
   realEstate: ArticleListItem[];
+  /** ⑤ 공식 자료/해설 (W4 9단계 — 전국 검수 공식 자료·감수 해설). 둘 다 0이면 null — /local은 0건 블록을 숨긴다 */
+  official: { cards: RegionOfficialCard[]; explainers: ArticleListItem[] } | null;
 }
 
-/** 지자체뉴스 허브(/local — W2-b) 블록 ②③ — 대응 설정의 편집 분야 기사만, 블록마다 4장. 설정이 없거나 둘 다 0건이면 null (블록 자리째 없다) */
-export function localBlocks(fields: LocalBlockFields | null, localTax: readonly ArticleListItem[], realEstate: readonly ArticleListItem[]): LocalBlocks | null {
-  if (!fields) return null;
-  const blocks = { localTax: pickBlock(localTax, fields.local_tax), realEstate: pickBlock(realEstate, fields.realestate) };
-  return blocks.localTax.length || blocks.realEstate.length ? blocks : null;
+/**
+ * 지자체뉴스 허브(/local — W2-b · W4 9단계 전국 화면) 블록 ②③⑤ — ②③은 대응 설정의 편집 분야 기사만, 블록마다 4장(설정이 없으면 ②③ 0 — 닫힌 쪽),
+ * ⑤는 검수 공식 자료·감수 해설(있을 때만). 셋 다 0건이면 null (블록 자리째 없다)
+ */
+export function localBlocks(
+  fields: LocalBlockFields | null,
+  localTax: readonly ArticleListItem[],
+  realEstate: readonly ArticleListItem[],
+  official?: { cards: readonly RegionOfficialCard[]; explainers: readonly ArticleListItem[] } | null,
+): LocalBlocks | null {
+  const blocks: LocalBlocks = {
+    localTax: fields ? pickBlock(localTax, fields.local_tax) : [],
+    realEstate: fields ? pickBlock(realEstate, fields.realestate) : [],
+    official: official && (official.cards.length || official.explainers.length) ? { cards: [...official.cards], explainers: [...official.explainers] } : null,
+  };
+  return blocks.localTax.length || blocks.realEstate.length || blocks.official ? blocks : null;
 }
