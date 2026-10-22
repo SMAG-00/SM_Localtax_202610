@@ -20,6 +20,9 @@ export interface RefetchResult {
   unchanged: number;
   alreadyQueued: number;
   noSnapshot: number;
+  /** 같은 원문 주소를 쓴 프로젝트 단계 기록 (W4 12단계 — 정정되지 않은 단계 기록) */
+  projectTargets: number;
+  projectOpened: number;
 }
 
 interface SourceRow {
@@ -75,6 +78,8 @@ export async function refetchSource(db: SupabaseClient, input: RefetchInput, act
     unchanged: Number(r.unchanged),
     alreadyQueued: Number(r.alreadyQueued),
     noSnapshot: Number(r.noSnapshot),
+    projectTargets: Number(r.projectTargets ?? 0),
+    projectOpened: Number(r.projectOpened ?? 0),
   };
 }
 

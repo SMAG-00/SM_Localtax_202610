@@ -5,7 +5,7 @@
 //    새 스냅샷은 한 번만(같은 주소·해시는 기존 행), 출처 행은 그대로
 //  · 시점 만료 — 확인일(한국 날짜)부터 365일째 0건 · 366일째 1건(00:30 KST 확인 = 전날 15:30 UTC도 한국 날짜로), 초안·대체된 판 0,
 //    같은 날 두 번 = 한 벌, 해결 뒤 같은 확인일로는 다시 0, 확인일을 새로 적으면 그 날부터 다시 잰다, 설정을 바꾸면 다음 실행부터
-//  · 해결 — 열린 항목만 해결(사람·시각 필수), 다른 칸 고치기·다시 열기 거부 · 대상 검사(공식 자료만·기사 번호 일치·아직 없는 대상 종류 거부)
+//  · 해결 — 열린 항목만 해결(사람·시각 필수), 다른 칸 고치기·다시 열기 거부 · 대상 검사(공식 자료만·기사 번호 일치·없는 단계 기록·아직 없는 대상 종류(개발방법 사실 행) 거부)
 //  · 권한 — 큐는 anon·authenticated 0(권한 거부), 함수 실행 0 · 공개 뷰는 공개 기사의 열린 항목의 출처 번호만(사유·해시 칸 0)
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -153,7 +153,7 @@ test("원문 다시 받기 — 해시가 다르면 그 주소를 쓴 기사마�
 
     // 같은 원문(같은 해시) → 0건, 새 스냅샷 0 (기존 행을 쓴다)
     const same = await refetch(url, OLD);
-    assert.deepEqual({ ...same, snapshotId: undefined }, { snapshotId: undefined, targets: 4, opened: 0, unchanged: 3, alreadyQueued: 0, noSnapshot: 1 });
+    assert.deepEqual({ ...same, snapshotId: undefined }, { snapshotId: undefined, targets: 4, opened: 0, unchanged: 3, alreadyQueued: 0, noSnapshot: 1, projectTargets: 0, projectOpened: 0, projectUnchanged: 0, projectAlreadyQueued: 0 });
     assert.equal(Number(same.snapshotId), Number(snap.id), "같은 주소·같은 해시는 기존 스냅샷");
     assert.deepEqual(await queueOf([s1.id, s2.id, s3.id, s3old.id, sGone.id, press.id, other.id, noSnap.id]), [], "같은 해시 → 큐 0");
 
@@ -282,13 +282,15 @@ test("해결 — 열린 항목만, 해결한 사람·시각 필수, 다른 칸 �
     assert.match((await attempt("update public.source_review_queue set status = 'open', resolved_by = null, resolved_at = null where id = $1", [id])).message, /해결된 검수 항목/, "다시 열기 거부");
     assert.match((await attempt("update public.source_review_queue set resolution_note = '고침' where id = $1", [id])).message, /해결된 검수 항목/);
 
-    // 대상 검사 — 보도자료 출처 · 다른 기사 번호 · 없는 출처 · 아직 표가 없는 대상 종류
+    // 대상 검사 — 보도자료 출처 · 다른 기사 번호 · 없는 출처 · 없는 단계 기록 · 아직 표가 없는 대상 종류
     const press = (await client.query("insert into public.article_sources (article_id, kind, title, license_type) values ($1, 'press_release', '시험용 보도자료', 'kogl_1') returning id", [a.id])).rows[0];
     assert.match((await ins({ target_id: press.id, basis_on: "2026-10-01" })).message, /공식 자료\(official_doc·dataset\) 출처만/);
     const b = await article();
     assert.match((await ins({ article_id: b.id, basis_on: "2026-10-02" })).message, /기사 번호/);
     assert.equal((await ins({ target_id: 999999999, basis_on: "2026-10-03" })).code, "23503");
-    for (const t of ["project_event", "dev_method_fact"]) assert.match((await ins({ target_type: t, article_id: null, basis_on: "2026-10-04" })).message, /아직 받지 않습니다/, t);
+    // 프로젝트 단계 기록은 12단계(…47)가 열었다 — 없는 단계 기록은 거부(받는 경우는 w4-projects.test.mjs). 개발방법 사실 행은 18단계까지 거부
+    assert.equal((await ins({ target_type: "project_event", target_id: 999999999, article_id: null, basis_on: "2026-10-04" })).code, "23503", "없는 단계 기록");
+    assert.match((await ins({ target_type: "dev_method_fact", article_id: null, basis_on: "2026-10-04" })).message, /아직 받지 않습니다/, "dev_method_fact");
     // 사유별 필수 칸
     assert.equal((await ins({ reason: "snapshot_changed", basis_on: null, run_key: null })).code, "23514", "원문 변경은 옛·새 해시·새 스냅샷 필수");
     assert.equal((await ins({ basis_on: null })).code, "23514", "만료는 확인일 필수");

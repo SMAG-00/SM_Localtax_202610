@@ -18,6 +18,7 @@ import { localBlockFieldsErrors } from "@/lib/server/public/region-hub-logic";
 import { searchTopicsErrors } from "@/lib/server/public/search-classify";
 import { REGION_INDEX_LIMITS, pilotRegionsErrors, regionIndexThresholdErrors } from "@/lib/server/public/region-index-logic";
 import { phraseError } from "./dictionary-rules";
+import { PROJECT_LIMITS, projectStageListsErrors, projectTypesErrors } from "./project-rules";
 import { EXPIRY_DAYS_DEFAULT, EXPIRY_DAYS_MAX, EXPIRY_DAYS_MIN, expiryDaysErrors } from "@/lib/source-review/rules";
 
 const SEARCH_CHIP_RANGE = [SEARCH_CHIPS_MIN, SEARCH_CHIPS_MAX] as const;
@@ -314,6 +315,18 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "시범 취재 지역 (PRD-01B 9.2)",
     guide: `["1100000000", "2600000000"] — 법정동코드 0~${REGION_INDEX_LIMITS.pilots}개(새로 넣는 코드는 오늘 유효한 행정구역). 최소선 판정 리포트(/admin/regions/report)가 지역마다 수와 최소선, 서로 다른 시·도 2곳 이상인지를 보입니다. /local 시·도 카드에 '시범 지역' 표시`,
     check: (value) => pilotRegionsErrors(value),
+  },
+  // ── W4 12단계 프로젝트 사업 유형·표준 단계 목록 (docs/dev/W4_설계.md 2.2 · 12장 #10) — DB 트리거(…47 project_settings_guard)와 같은 검사.
+  //    두 키 사이(단계 목록의 유형은 project_types에 있어야)는 설정 API가 다른 키를 읽어 projectSettingsCrossErrors로, 쓰는 유형·단계 빼기는 DB가 거부(409) ──
+  project_types: {
+    label: "프로젝트 사업 유형 (PR-02)",
+    guide: `{ "유형 키": { "label": "화면 글자" } } — 편집국 초안 + 세무·법률 감수 뒤 넣습니다. 유형 키는 영문 소문자·숫자·_ 2~40자, 글자 1~${PROJECT_LIMITS.label}자, ${PROJECT_LIMITS.types}개까지. 단계 목록(project_stage_lists)이 있는 유형·프로젝트가 쓰는 유형은 뺄 수 없습니다. 비면({}) 프로젝트를 만들 수 없습니다`,
+    check: (value) => projectTypesErrors(value),
+  },
+  project_stage_lists: {
+    label: "사업 유형별 표준 단계 목록 (PR-02)",
+    guide: `{ "유형 키": [{ "key": "단계 키", "label": "화면 글자" }, …] } — 배열 순서 = 단계 순서(첫 단계 … 마지막 단계), 유형마다 ${PROJECT_LIMITS.stagesMin}~${PROJECT_LIMITS.stagesMax}단계, 키·글자 중복 0. 유형은 project_types에 먼저 넣습니다. 단계 기록이 쓰는 단계는 뺄 수 없고 글자·순서는 바꿀 수 있습니다(현재 단계는 다음 읽기부터 새 순서로)`,
+    check: (value) => projectStageListsErrors(value),
   },
   next_action_priority: {
     label: "다음 행동 버튼 우선순위 (ART-06)",

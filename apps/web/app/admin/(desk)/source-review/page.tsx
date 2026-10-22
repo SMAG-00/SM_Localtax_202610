@@ -78,10 +78,15 @@ export default async function SourceReviewPage() {
   const articleMap = new Map(((articles.data ?? []) as ArticleRow[]).map((a) => [Number(a.id), a]));
   const superseded = new Set(((newer.data ?? []) as { supersedes_id: number }[]).map((r) => Number(r.supersedes_id)));
 
+  // 대상 종류마다 번호 앞머리 — 공식 자료 출처 src:N · 프로젝트 단계 기록 pe:N (W4 12단계 — 단계 기록 화면은 14단계 /admin/projects)
   const describe = (r: QueueRow) => {
+    if (r.target_type !== "article_source") {
+      return { s: undefined, a: undefined, ref: `pe:${r.target_id}`, sourceName: "프로젝트 단계 기록", superseded: false };
+    }
     const s = sourceMap.get(Number(r.target_id));
     const a = r.article_id === null ? undefined : articleMap.get(Number(r.article_id));
-    return { s, a, sourceName: s ? (s.title ?? s.source_name ?? `src:${r.target_id}`) : `src:${r.target_id}` };
+    const ref = `src:${r.target_id}`;
+    return { s, a, ref, sourceName: s ? (s.title ?? s.source_name ?? ref) : ref, superseded: superseded.has(Number(r.target_id)) };
   };
 
   return (
@@ -101,16 +106,16 @@ export default async function SourceReviewPage() {
           ) : (
             <ul className="space-y-6" data-testid="source-review-open">
               {openRows.map((r) => {
-                const { s, a, sourceName } = describe(r);
+                const { s, a, ref, sourceName, superseded: replaced } = describe(r);
                 return (
-                  <li key={r.id} data-queue-id={r.id} data-source-id={r.target_id} data-reason={r.reason} className="rounded-xl border border-navy-100 p-4">
+                  <li key={r.id} data-queue-id={r.id} data-source-id={r.target_id} data-target-type={r.target_type} data-reason={r.reason} className="rounded-xl border border-navy-100 p-4">
                     <p className="text-[15px] font-bold text-navy-900">
-                      <ToneChip tone={r.reason === "snapshot_changed" ? "rose" : "amber"}>{REASON_LABELS[r.reason] ?? r.reason}</ToneChip> <span className={MONO}>src:{r.target_id}</span> {sourceName}
-                      {superseded.has(Number(r.target_id)) && <span className="ml-2 text-[14px] font-normal text-navy-600">(새 버전으로 대체됨 — 해결만 하면 됩니다)</span>}
+                      <ToneChip tone={r.reason === "snapshot_changed" ? "rose" : "amber"}>{REASON_LABELS[r.reason] ?? r.reason}</ToneChip> <span className={MONO}>{ref}</span> {sourceName}
+                      {replaced && <span className="ml-2 text-[14px] font-normal text-navy-600">(새 버전으로 대체됨 — 해결만 하면 됩니다)</span>}
                     </p>
                     <p className="mt-1 text-[14px] text-navy-700">
-                      기사{" "}
-                      {a ? (
+                      {r.target_type !== "article_source" ? "고시 원문을 다시 확인한 뒤 단계 기록을 정정하거나 해결하세요" : "기사 "}
+                      {r.target_type !== "article_source" ? null : a ? (
                         <a className={TEXT_LINK} href={`/admin/articles/${a.id}`}>
                           {a.title}
                         </a>
@@ -131,7 +136,7 @@ export default async function SourceReviewPage() {
                         ? `옛 해시 ${short(r.old_hash)} → 새 해시 ${short(r.new_hash)} · 연 날 ${isoToKstDateTime(r.opened_at)}`
                         : `확인일 ${r.basis_on ?? "—"} · 만료 ${r.basis_on ? expiresOn(`${r.basis_on}T00:00:00+09:00`, days) : "—"} · 실행 ${r.run_key ?? "—"}`}
                     </p>
-                    <ResolveForm id={Number(r.id)} reason={superseded.has(Number(r.target_id)) ? "snapshot_changed" : r.reason} />
+                    <ResolveForm id={Number(r.id)} reason={replaced ? "snapshot_changed" : r.reason} />
                   </li>
                 );
               })}
@@ -145,10 +150,10 @@ export default async function SourceReviewPage() {
           ) : (
             <ul className="space-y-2 text-[14px] text-navy-800" data-testid="source-review-resolved">
               {doneRows.map((r) => {
-                const { sourceName } = describe(r);
+                const { ref, sourceName } = describe(r);
                 return (
                   <li key={r.id} data-queue-id={r.id}>
-                    <span className={MONO}>{isoToKstDate(r.resolved_at)}</span> {REASON_LABELS[r.reason] ?? r.reason} · <span className={MONO}>src:{r.target_id}</span> {sourceName}
+                    <span className={MONO}>{isoToKstDate(r.resolved_at)}</span> {REASON_LABELS[r.reason] ?? r.reason} · <span className={MONO}>{ref}</span> {sourceName}
                     {r.resolution_note && <span className="text-navy-600">{` · ${r.resolution_note}`}</span>}
                   </li>
                 );

@@ -6,6 +6,7 @@ import { mailEnv } from "@/lib/server/env";
 import { mailConfigured } from "@/lib/server/mail/config";
 import { parseFeatures } from "@/lib/server/public/settings";
 import { pilotRegionsRegionErrors } from "@/lib/server/public/region-index-logic";
+import { projectSettingsCrossErrors } from "@/lib/admin/project-rules";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import type { RegionRouteRow } from "@/lib/site/region-route";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
@@ -58,6 +59,13 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
     if (error) throw dbError(error, "regions 읽기");
     const regionErrors = pilotRegionsRegionErrors(value as string[], current.value, (data ?? []) as RegionRouteRow[], isoToKstDate(new Date().toISOString()));
     if (regionErrors.length) return errorJson(422, "설정 값이 규칙에 맞지 않습니다", { errors: regionErrors });
+  }
+  // 프로젝트 사업 유형·단계 목록: 단계 목록의 유형은 project_types에 있어야 한다 (W4 12단계 — DB 트리거 …47과 같은 규칙, 422로 칸마다 사유).
+  //   프로젝트가 쓰는 유형·단계 기록이 쓰는 단계를 빼는 저장은 DB 트리거가 거부한다(409 + 사유 문장)
+  if (key === "project_types" || key === "project_stage_lists") {
+    const other = await readSetting(db, key === "project_types" ? "project_stage_lists" : "project_types");
+    const crossErrors = projectSettingsCrossErrors(key, value, other?.value);
+    if (crossErrors.length) return errorJson(422, "설정 값이 규칙에 맞지 않습니다", { errors: crossErrors });
   }
   // 기능 키를 새로 켜는 경우: 게시본·메일 설정 의존을 채우지 못하면 거부하고 사유를 보인다 (W2-e 설계 2.3 · 6.3)
   if (key === "feature_flags") {
