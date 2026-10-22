@@ -75,7 +75,7 @@ export function articleRow(over: Partial<ArticleRow> = {}): ArticleRow {
 
 /** media 행 — 출처·이용 조건·크기는 비운 사진 (시험이 한 칸씩 채운다) */
 export function mediaRow(over: Partial<MediaRow> & Pick<MediaRow, "id">): MediaRow {
-  return { path: `media/${over.id}.jpg`, alt: null, rights_status: "unconfirmed", credit: null, photographer: null, license: null, kind: "photo", width: null, height: null, ...over };
+  return { path: `media/${over.id}.jpg`, alt: null, rights_status: "unconfirmed", credit: null, photographer: null, license: null, kind: "photo", width: null, height: null, license_type: "not_applicable", crop_allowed: true, ...over };
 }
 
 export function graph(over: Partial<ArticleGraph> = {}, article: Partial<ArticleRow> = {}): ArticleGraph {
@@ -99,6 +99,13 @@ export function graph(over: Partial<ArticleGraph> = {}, article: Partial<Article
         license_status: "공공누리 제1유형",
         snapshot_id: null,
         supersedes_id: null,
+        // W4 5단계 — 공식 자료 필수 칸 (REG1-09 · PR-07)
+        license_type: "kogl_1",
+        source_type: "local_tax_revenue",
+        published_on: "2026-07-15",
+        reference_date: "2026-06-30",
+        region_unit: "시·구",
+        collected_at: "2026-10-07T01:00:00+00:00",
       },
     ],
     snapshots: [],

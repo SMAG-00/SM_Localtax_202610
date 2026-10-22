@@ -284,3 +284,77 @@ describe("형식 콘텐츠 — media 기록에서 읽는 칸(권리·출처·이
     expect(failedOf(graph({ media: [full] }, { format: "photo", body: photoBody })).filter((id) => id.startsWith("art09"))).toEqual([]);
   });
 });
+
+describe("W4 5단계 공식 자료·공공누리 — DB 칸 → 발행 판정 (REG1-07 · REG1-09 · PR-07)", () => {
+  const base = graph();
+  const src = base.sources[0]!;
+  const PRESS = "시험용 가상구는 상반기 지방세 세수가 집계됐다고 밝혔다. 구는 거래 감소가 원인이라고 설명했다.";
+
+  test("공식 자료의 기준일·지역 단위가 비면 칸마다 reg1_09.official-fields — 위치에 API 칸 이름", () => {
+    const g = graph({ sources: [{ ...src, reference_date: null, region_unit: "  " }] });
+    const r = runGate(g, SETTINGS, GATE_OPTIONS);
+    expect(r.failed).toContain("reg1_09.official-fields");
+    expect(r.evaluation.blockers.filter((f) => f.id === "reg1_09.official-fields").map((f) => f.location?.field)).toEqual(["sources.referenceDate", "sources.regionUnit"]);
+  });
+
+  test("공공누리 유형이 목록 밖이거나 비면 pr07.license-required (공식 자료·보도자료)", () => {
+    expect(failedOf(graph({ sources: [{ ...src, license_type: "kogl_9" }] }))).toContain("pr07.license-required");
+    expect(failedOf(graph({ sources: [src, { ...src, id: 4, kind: "press_release", license_type: null, source_type: null }] }))).toContain("pr07.license-required");
+    expect(failedOf(graph({ sources: [src, { ...src, id: 4, kind: "interview", license_type: null, source_type: null }] }))).not.toContain("pr07.license-required");
+  });
+
+  test("자료 종류 — 차단 4종은 설정 목록에 있어도 reg1_07.source-type, 설정 목록 밖도 차단, 설정에 더하면 통과", () => {
+    expect(failedOf(graph({ sources: [{ ...src, source_type: "tourism" }] }))).toContain("reg1_07.source-type");
+    const opened = { ...SETTINGS, officialSourceTypes: ["tourism", "public_property"] };
+    expect(runGate(graph({ sources: [{ ...src, source_type: "tourism" }] }), opened, GATE_OPTIONS).failed).toContain("reg1_07.source-type");
+    expect(failedOf(graph({ sources: [{ ...src, source_type: "public_property" }] }))).toContain("reg1_07.source-type");
+    expect(runGate(graph({ sources: [{ ...src, source_type: "public_property" }] }), opened, GATE_OPTIONS).failed).not.toContain("reg1_07.source-type");
+  });
+
+  test("보도자료(제1유형) 문장을 그대로 옮기면 pr07.full-text — 기본값 전재 0, 설정이 연 유형·해당 없음은 통과", () => {
+    const copied = (licenseType: string) =>
+      graph(
+        { sources: [src, { ...src, id: 4, kind: "press_release", license_type: licenseType, source_type: null, snapshot_id: 51 }], snapshots: [{ id: 51, payload: PRESS }] },
+        { summary: null, body: { blocks: [{ type: "paragraph", text: PRESS }], claims: [] } },
+      );
+    const blocked = runGate(copied("kogl_1"), SETTINGS, GATE_OPTIONS);
+    expect(blocked.failed).toContain("pr07.full-text");
+    expect(blocked.evaluation.blockers.find((f) => f.id === "pr07.full-text")?.location).toMatchObject({ field: "blocks", sentenceIndex: 0, phrase: "src:4" });
+    const open = { ...SETTINGS, kogl: { photoTypes: ["kogl_1", "not_applicable"] as const, fullTextTypes: ["kogl_1"] as const } };
+    expect(runGate(copied("kogl_1"), open, GATE_OPTIONS).failed).not.toContain("pr07.full-text");
+    expect(runGate(copied("kogl_4"), open, GATE_OPTIONS).failed).toContain("pr07.full-text");
+    expect(runGate(copied("not_applicable"), SETTINGS, GATE_OPTIONS).failed).not.toContain("pr07.full-text");
+  });
+
+  test("대표 사진 — 권리 확인 + 제2유형은 기본값에서 pr07.photo-license, 설정이 열면 통과, 미표시는 늘 차단", () => {
+    const lead = (licenseType: string) =>
+      graph({ media: [mediaRow({ id: 61, rights_status: "confirmed", credit: "시험용 가상구청", photographer: "시험 촬영자", license: "공공누리", license_type: licenseType })] }, { lead_media_id: 61 });
+    expect(failedOf(lead("kogl_2"))).toContain("pr07.photo-license");
+    expect(failedOf(lead("kogl_1"))).not.toContain("pr07.photo-license");
+    const open = { ...SETTINGS, kogl: { photoTypes: ["kogl_1", "kogl_2", "not_applicable"] as const, fullTextTypes: [] as const } };
+    expect(runGate(lead("kogl_2"), open, GATE_OPTIONS).failed).not.toContain("pr07.photo-license");
+    expect(runGate(lead("unmarked"), open, GATE_OPTIONS).failed).toContain("pr07.photo-license");
+  });
+
+  test("대체된 옛 판은 판정에 넣지 않는다 — 새 판만 보고, 새 판이 칸을 채우면 통과", () => {
+    // loadArticleGraph가 대체된 행을 뺀 뒤의 모양: 옛 판(3, 칸 빔)은 없고 새 판(9)만
+    const r = runGate(graph({ sources: [{ ...src, id: 9, supersedes_id: 3, revision_reason: "기준일 정정" }] }), SETTINGS, GATE_OPTIONS);
+    expect(r.failed).toEqual([]);
+  });
+
+  test("설정 읽기 — kogl_usage·official_source_types가 없으면 권고 기본값·씨앗, 모양이 틀리면 문제로 알리고 닫힌 쪽", () => {
+    const dict = [
+      { key: "forbidden_phrases", value: { version: "v1", phrases: ["절세 보장"] } },
+      { key: "fear_phrases", value: { version: "v1", phrases: ["큰일"] } },
+    ];
+    const none = parseGateSettings(dict, []);
+    expect(none.settings.kogl).toEqual({ photoTypes: ["kogl_1", "not_applicable"], fullTextTypes: [] });
+    expect(none.settings.officialSourceTypes).toEqual(["ordinance", "notice", "budget_settlement", "local_tax_revenue", "realestate_transaction", "redevelopment"]);
+    const bad = parseGateSettings([...dict, { key: "kogl_usage", value: { photoTypes: ["kogl_4"], fullTextTypes: [] } }, { key: "official_source_types", value: ["tourism"] }], []);
+    expect(bad.problems).toEqual(expect.arrayContaining(["settings.kogl_usage 형식이 틀립니다", "settings.official_source_types 형식이 틀립니다"]));
+    expect(bad.settings.kogl).toEqual({ photoTypes: ["kogl_1", "not_applicable"], fullTextTypes: [] });
+    const set = parseGateSettings([...dict, { key: "kogl_usage", value: { photoTypes: ["kogl_1", "kogl_2"], fullTextTypes: ["kogl_1"] } }, { key: "official_source_types", value: ["notice", "public_property"] }], []);
+    expect(set.settings.kogl).toEqual({ photoTypes: ["kogl_1", "kogl_2"], fullTextTypes: ["kogl_1"] });
+    expect(set.settings.officialSourceTypes).toEqual(["notice", "public_property"]);
+  });
+});

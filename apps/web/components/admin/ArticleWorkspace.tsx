@@ -177,7 +177,7 @@ export function ArticleWorkspace({
         </Panel>
 
         <Panel id="sources" title="출처 (공개)" description="독자에게 보이는 출처입니다.">
-          <SourcesPanel articleId={view.article.id} sources={view.sources} readOnly={readOnly} />
+          <SourcesPanel articleId={view.article.id} sources={view.sources} readOnly={readOnly} officialSourceTypes={view.officialSourceTypes} />
         </Panel>
 
         <Panel id="evidence" title="취재 근거 (비공개)" description="원자료 재현 정보와 인터뷰 기록을 남깁니다.">

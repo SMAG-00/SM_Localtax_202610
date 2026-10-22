@@ -94,6 +94,7 @@ describe("NAV-10 묶음 안의 칸", () => {
       alt: "구별 거래량 막대그래프",
       caption: "구별 아파트 매매 거래량",
       rightsStatus: "confirmed" as const,
+      licenseType: "not_applicable" as const,
       chart: table.chart,
       template: "compare" as const,
       data: { kind: "table" as const, columns: ["구", "거래량"], rows: [["가온구", "120건"]] },

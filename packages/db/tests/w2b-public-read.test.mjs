@@ -59,7 +59,7 @@ async function world(fn) {
     const editor = await insert("people", { slug: uniq("p"), name: "편집자", roles: ["editor"] });
     const reviewer = await insert("people", { slug: uniq("p"), name: "감수위원", roles: ["reviewer"] });
     const photo = (path, confirmed = true) =>
-      insert("media", confirmed ? { path, kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", checked_at: new Date() } : { path, kind: "photo" });
+      insert("media", confirmed ? { path, kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", license_type: "not_applicable", checked_at: new Date() } : { path, kind: "photo" });
     const bodyImage = await photo("body.jpg");
     const draftImage = await photo("draft-body.jpg");
     const unconfirmedImage = await photo("u-body.jpg", false);

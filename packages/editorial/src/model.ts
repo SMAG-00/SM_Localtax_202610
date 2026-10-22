@@ -34,6 +34,41 @@ export type UpdateKind = (typeof UPDATE_KINDS)[number];
 export const SOURCE_KINDS = ["official_doc", "dataset", "press_release", "interview", "field", "photo", "other"] as const;
 export type SourceKind = (typeof SOURCE_KINDS)[number];
 
+/** 공공누리 유형 `article_sources.license_type` · `media.license_type` (W4 설계 2.1 — PR-07). 제1~4유형 · 미표시 · 해당 없음(자체 촬영·자체 제작) */
+export const LICENSE_TYPES = ["kogl_1", "kogl_2", "kogl_3", "kogl_4", "unmarked", "not_applicable"] as const;
+export type LicenseType = (typeof LICENSE_TYPES)[number];
+
+/** 공식 자료 — 발표일·기준일·지역 단위·수집일·확인일·공공누리 유형이 모두 있어야 그 자료를 쓴 기사가 발행된다 (REG1-09) */
+export const OFFICIAL_SOURCE_KINDS = ["official_doc", "dataset"] as const satisfies readonly SourceKind[];
+/** 공공누리 유형이 필수인 출처 종류 — 공식 자료·보도자료·사진 (PR-07) */
+export const LICENSE_REQUIRED_KINDS = ["official_doc", "dataset", "press_release", "photo"] as const satisfies readonly SourceKind[];
+/** 공식 자료 종류 허용 목록 씨앗 `settings.official_source_types` (W4 설계 2.1 — REG1-07): 조례 · 고시 · 예산/결산 · 지방세 세수 · 부동산 거래/공시 · 정비/개발 */
+export const OFFICIAL_SOURCE_TYPES = ["ordinance", "notice", "budget_settlement", "local_tax_revenue", "realestate_transaction", "redevelopment"] as const;
+/** 차단 4종 — 교통 · 관광(명소) · 음식점 · 생활 안내. 출처에도 설정에도 넣을 수 없다 (REG1-07 코드 고정 — DB 트리거와 같다) */
+export const BLOCKED_OFFICIAL_SOURCE_TYPES = ["transport", "tourism", "restaurant", "living_guide"] as const;
+/** 이 자료를 쓴 해설(explainer·guide)은 세무 감수 승인이 있어야 발행된다 — 고시 · 조례 (REG1-07) */
+export const TAX_REVIEW_SOURCE_TYPES = ["notice", "ordinance"] as const;
+/** 설정으로도 열 수 없는 공공누리 유형 — 제4유형 · 미표시 (PR-07 코드 고정 — 링크·요약만) */
+export const KOGL_NEVER = ["kogl_4", "unmarked"] as const satisfies readonly LicenseType[];
+
+/** 공공누리 이용 범위 `settings.kogl_usage` — photoTypes 게시하는 사진 유형 · fullTextTypes 원문 본문을 옮겨도 되는 유형 */
+export interface KoglUsage {
+  photoTypes: readonly LicenseType[];
+  fullTextTypes: readonly LicenseType[];
+}
+/** W4 12장 #13 권고 기본값(설정 씨앗과 같다) — 사진은 제1유형·자체 촬영만, 원문 전재는 모든 유형 0. 설정을 못 읽으면 이 값(가장 닫힌 쪽) */
+export const KOGL_USAGE_DEFAULT: KoglUsage = { photoTypes: ["kogl_1", "not_applicable"], fullTextTypes: [] };
+
+/** 공공누리 유형 배지 글자 — 공식 자료 카드·사진 출처 줄 (PR-07 '자료 카드에 유형별 출처 표시') */
+export const LICENSE_TYPE_LABELS: Readonly<Record<LicenseType, string>> = {
+  kogl_1: "공공누리 제1유형 (출처표시)",
+  kogl_2: "공공누리 제2유형 (출처표시·상업적 이용금지)",
+  kogl_3: "공공누리 제3유형 (출처표시·변경금지)",
+  kogl_4: "공공누리 제4유형 (출처표시·상업적 이용금지·변경금지)",
+  unmarked: "공공누리 표시 없음",
+  not_applicable: "공공누리 해당 없음",
+};
+
 /** `article_evidence.evidence_type` (NAV-12) */
 export const EVIDENCE_TYPES = ["dataset", "document", "interview", "field", "photo", "calculation"] as const;
 export type EvidenceType = (typeof EVIDENCE_TYPES)[number];
@@ -153,6 +188,8 @@ export interface ImageBlock extends BlockBase {
   caption: string;
   /** `media`의 권리 확인 (NAV-04 사진 권리) */
   rightsStatus: RightsStatus;
+  /** `media.license_type` (PR-07) — 판정 입력이 media 표에서 채운다. 없으면 null */
+  licenseType?: LicenseType | null;
   /**
    * `media`의 출처(credit)·이용 조건(license)·대체 텍스트(alt) — 판정 입력이 media 표에서 채운다(저장하지 않는다).
    * 포토 기사(ART-09)는 사진마다 셋이 있어야 발행된다. 없으면(undefined·null·빈 글자) 빈 것으로 본다
@@ -195,6 +232,8 @@ export interface InfographicBlock extends BlockBase {
   alt: string;
   caption: string;
   rightsStatus: RightsStatus;
+  /** `media.license_type` (PR-07) — 판정 입력이 media 표에서 채운다. 없으면 null */
+  licenseType?: LicenseType | null;
   chart: ChartLabels | null;
   /** 템플릿 — 절차 흐름 · 비교 · 핵심 숫자 */
   template: InfographicTemplate;
@@ -205,6 +244,8 @@ export interface InfographicBlock extends BlockBase {
 /** 동영상 썸네일의 media 기록 — 판정 입력이 media 표에서 채운다(저장하지 않는다). 크기를 모르면 null */
 export interface ThumbnailFacts {
   rightsStatus: RightsStatus;
+  /** `media.license_type` (PR-07) — 없으면 null */
+  licenseType?: LicenseType | null;
   width: number | null;
   height: number | null;
 }
@@ -286,6 +327,15 @@ export interface ArticleSource {
   provider: string | null;
   accessedAt: string | null;
   rightsStatus: RightsStatus;
+  /** 공공누리 유형 (PR-07) — 공식 자료·보도자료·사진은 필수. 없으면 null(빈 것) */
+  licenseType?: LicenseType | null;
+  /** 공식 자료 종류 (REG1-07 — 허용 목록 값). 비면 검사하지 않는다(법령 출처 등) */
+  sourceType?: string | null;
+  /** 발표일 · 기준일 YYYY-MM-DD, 지역 단위, 수집일 (REG1-09 — 공식 자료는 필수) */
+  publishedOn?: string | null;
+  referenceDate?: string | null;
+  regionUnit?: string | null;
+  collectedAt?: string | null;
 }
 
 /** 비공개 취재 근거 `article_evidence` (NAV-12) */
@@ -386,6 +436,8 @@ export interface LeadImage {
   mediaId: string;
   alt: string;
   rightsStatus: RightsStatus;
+  /** `media.license_type` (PR-07) — 없으면 null */
+  licenseType?: LicenseType | null;
 }
 
 /** 정량형 확인 목록 (NAV-10) — 비면 null 또는 빈 글자 */
@@ -528,6 +580,13 @@ export interface PublishContext {
   thresholds: Thresholds;
   /** packages/seo-lint 결과의 차단·경고 항목 ID. 점검을 돌리지 않았으면 null */
   seoLint: { blockers: readonly string[]; warnings: readonly string[] } | null;
-  /** packages/similarity 결과. 검사를 돌리지 않았으면 null */
-  similarity: { status: SimilarityStatus } | null;
+  /**
+   * packages/similarity 결과. 검사를 돌리지 않았으면 null.
+   * copied — 원문 문장과 기준 이상 같은 본문 문장(직접 인용 블록 제외)과 그 원문 `sources[].id` (PR-07 원문 전재 검사)
+   */
+  similarity: { status: SimilarityStatus; copied?: readonly { sourceId: string; sentenceIndex: number }[] } | null;
+  /** 공공누리 이용 범위 `settings.kogl_usage` — 없으면 KOGL_USAGE_DEFAULT (PR-07 · W4 12장 #13) */
+  kogl?: KoglUsage;
+  /** 공식 자료 종류 허용 목록 `settings.official_source_types` — 없으면 씨앗 OFFICIAL_SOURCE_TYPES (REG1-07) */
+  officialSourceTypes?: readonly string[];
 }

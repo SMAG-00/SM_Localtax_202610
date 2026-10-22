@@ -122,6 +122,9 @@ describe("고르기 칸·재생 시간 칸", () => {
   test("이미지 고르기 글자 — 번호·설명·크기·권리 상태", () => {
     expect(mediaOptionLabel(media(1, { alt: "창구" }))).toBe("1 · 창구 · 1920×1080 (권리 확인)");
     expect(mediaOptionLabel(media(3, { width: null, height: null, rights_status: "rejected" }))).toBe("3 · media/3.jpg (사용 불가)");
+    // W4 5단계 — 공공누리 유형·자르기 불가를 함께 (PR-07 · REG1-09)
+    expect(mediaOptionLabel(media(4, { alt: "구청", license_type: "kogl_2", crop_allowed: false }))).toBe("4 · 구청 · 1920×1080 (권리 확인 · 공공누리 제2유형 (출처표시·상업적 이용금지) · 자르기 불가)");
+    expect(mediaOptionLabel(media(5, { alt: "자체", license_type: "not_applicable", crop_allowed: true }))).toBe("5 · 자체 · 1920×1080 (권리 확인 · 공공누리 해당 없음)");
   });
 
   test.each([

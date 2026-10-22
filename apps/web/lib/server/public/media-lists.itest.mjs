@@ -41,7 +41,7 @@ async function insert(table, cols, bucket) {
   return row;
 }
 const media = (label, over = {}) =>
-  insert("media", { path: `it/${RUN}/${label}.png`, alt: label, kind: "thumbnail", rights_status: "confirmed", credit: "편집국", license: "자체 제작", checked_at: new Date(), width: 1280, height: 720, ...over }, "media");
+  insert("media", { path: `it/${RUN}/${label}.png`, alt: label, kind: "thumbnail", rights_status: "confirmed", credit: "편집국", license: "자체 제작", license_type: "not_applicable", checked_at: new Date(), width: 1280, height: 720, ...over }, "media");
 const videoBody = (thumbId, embedUrl = NOCOOKIE) =>
   JSON.stringify({ blocks: [{ type: "video", embedUrl, caption: "", summary: "요약", captions: true, thumbnailMediaId: thumbId === null ? null : String(thumbId), durationSeconds: 75 }], claims: [] });
 const article = (label, over) =>

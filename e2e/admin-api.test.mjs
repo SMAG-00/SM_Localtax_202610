@@ -7,6 +7,9 @@ import crypto from "node:crypto";
 import { buildWeb, localSupabase, startServer } from "./lib/local.mjs";
 import { StaffFixture } from "./lib/staff.mjs";
 
+// W4 5단계 (REG1-09 · PR-07) — 공식 자료는 공공누리 유형·발표일·기준일·지역 단위·수집일이 있어야 발행된다 (시험용 값)
+const OFFICIAL_W4 = { licenseType: "kogl_1", publishedOn: "2026-10-01", referenceDate: "2026-10-01", regionUnit: "전국", collectedAt: "2026-10-10T09:00:00+09:00" };
+
 const ADMIN_EMAIL = "admin-e2e@example.test";
 const SITE = "https://e2e.example.test";
 const NON_NEWSROOM = ["ad_ops", "store_ops", "brand_ops", "expert_ops"];
@@ -224,19 +227,28 @@ test("기자가 정량형 보도기사 초안을 쓰고 출처·근거를 붙인
     sourceName: "가온시 세정과",
     lastVerifiedAt: "2026-10-07T10:00:00+09:00",
     licenseStatus: "공공누리 제1유형",
+    ...OFFICIAL_W4,
+    sourceType: "local_tax_revenue",
+    referenceDate: "2026-06-30",
+    regionUnit: "시·구",
   });
   assert.equal(official.status, 201, show(official));
   ids.quantSource = official.body.source.ref;
 
-  const incompleteOfficial = await api("POST", `/articles/${ids.quant}/sources`, u.reporter, { kind: "official_doc", title: "URL 없는 공식 문서" });
+  const incompleteOfficial = await api("POST", `/articles/${ids.quant}/sources`, u.reporter, { kind: "official_doc", title: "URL 없는 공식 문서", licenseType: "kogl_1" });
   assert.equal(incompleteOfficial.status, 422, show(incompleteOfficial));
   assert.match(incompleteOfficial.body.error, /FND-04/);
+  // 공공누리 유형이 없으면 DB 전에 칸 이름으로 422 (W4 5단계 PR-07)
+  const noLicense = await api("POST", `/articles/${ids.quant}/sources`, u.reporter, { kind: "press_release", title: "유형 없는 보도자료" });
+  assert.equal(noLicense.status, 422, show(noLicense));
+  assert.ok(noLicense.body.errors.some((e) => e.startsWith("source.licenseType:")), show(noLicense));
 
   const press = await api("POST", `/articles/${ids.quant}/sources`, u.reporter, {
     kind: "press_release",
     title: "가온시, 상반기 지방세 징수 동향 발표",
     url: "https://www.gaon-si.example/news/press/2026-0715",
     sourceName: "가온시 대변인실",
+    licenseType: "kogl_1",
     snapshot: { text: PRESS_RELEASE },
   });
   assert.equal(press.status, 201, show(press));
@@ -390,6 +402,7 @@ test("세법 해설 — 편집 승인만 있으면 422(세무 감수 없음), �
     sourceName: "법제처 국가법령정보센터",
     lastVerifiedAt: "2026-10-10T09:00:00+09:00",
     licenseStatus: "공공저작물 자유이용",
+    ...OFFICIAL_W4,
   });
   assert.equal(law.status, 201, show(law));
   const withClaims = await api("PATCH", `/articles/${ids.explainer}`, u.reporter, {

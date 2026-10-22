@@ -79,7 +79,7 @@ const snapshot = () => insert("raw_snapshots", { source: "시험", url: "https:/
 async function article(over = {}) {
   return insert("articles", { slug: uniq("a"), title: "시험 기사", section: "tax", content_type: "explainer", ...over });
 }
-const OFFICIAL = { source_url: "https://example.go.kr/doc", source_name: "행정안전부", last_verified_at: new Date(), license_status: "공공누리 제1유형" };
+const OFFICIAL = { source_url: "https://example.go.kr/doc", source_name: "행정안전부", last_verified_at: new Date(), license_status: "공공누리 제1유형", license_type: "kogl_1" };
 
 /** 칸마다: 값 → 그 값으로 행 하나를 넣는 시도 */
 const TARGETS = [
@@ -228,7 +228,7 @@ const TARGETS = [
     column: "rights_status",
     // 권리 확인(confirmed)은 출처·이용 조건·확인일·촬영자가 있어야 한다 — 모두 채워 값 자체만 시험한다
     make: (v) =>
-      tryInsert("media", { path: uniq("m"), credit: "가온시", license: "공공누리 제1유형", checked_at: new Date(), photographer: "시험 촬영자", rights_status: v }),
+      tryInsert("media", { path: uniq("m"), credit: "가온시", license: "공공누리 제1유형", license_type: "kogl_1", checked_at: new Date(), photographer: "시험 촬영자", rights_status: v }),
   },
   {
     list: "article_evidence.verification_status",

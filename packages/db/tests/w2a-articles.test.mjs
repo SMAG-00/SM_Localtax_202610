@@ -164,7 +164,7 @@ test("대표 이미지 권리가 확인되지 않으면 기사의 공개 가능 
     assert.equal(a.lead_media_cleared, false);
     assert.equal((await article()).lead_media_cleared, true, "대표 이미지가 없으면 켜짐");
     await client.query(
-      "update public.media set rights_status = 'confirmed', credit = '시험일보', photographer = '홍길동', license = '자체 촬영', checked_at = now() where id = $1",
+      "update public.media set rights_status = 'confirmed', credit = '시험일보', photographer = '홍길동', license = '자체 촬영', license_type = 'not_applicable', checked_at = now() where id = $1",
       [m.id],
     );
     assert.equal((await client.query("select lead_media_cleared from public.articles where id = $1", [a.id])).rows[0].lead_media_cleared, true);
@@ -176,9 +176,9 @@ test("대표 이미지 권리가 확인되지 않으면 기사의 공개 가능 
 
 test("사진 권리 확인(confirmed)은 출처·촬영자·이용 조건·확인일이 모두 있어야 한다 (REG1-09)", () =>
   tx(async () => {
-    const full = { path: "p.jpg", kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", checked_at: new Date() };
+    const full = { path: "p.jpg", kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", license_type: "not_applicable", checked_at: new Date() };
     assert.ok((await tryInsert("media", full)).ok);
-    for (const k of ["credit", "photographer", "license", "checked_at"]) {
+    for (const k of ["credit", "photographer", "license", "checked_at", "license_type"]) {
       assert.equal((await tryInsert("media", { ...full, [k]: null })).ok, false, k);
     }
     assert.equal((await tryInsert("media", { ...full, credit: "  " })).ok, false, "공백 출처");

@@ -84,7 +84,7 @@ export const QUALITATIVE_NEWS: ArticleForPublish = {
   legalBasisDate: "2026-10-15",
   digestId: null,
   amendmentId: null,
-  leadImage: { mediaId: "media-0102-lead", alt: "누리구 상가 거리", rightsStatus: "confirmed" },
+  leadImage: { mediaId: "media-0102-lead", alt: "누리구 상가 거리", rightsStatus: "confirmed", licenseType: "not_applicable" },
   sources: [
     {
       id: "src-ordinance",
@@ -94,6 +94,11 @@ export const QUALITATIVE_NEWS: ArticleForPublish = {
       provider: "가온시",
       accessedAt: "2026-10-14",
       rightsStatus: "confirmed",
+      licenseType: "kogl_1",
+      publishedOn: "2026-10-01",
+      referenceDate: "2026-06-30",
+      regionUnit: "시·군·구",
+      collectedAt: "2026-10-09",
     },
     {
       id: "src-notice",
@@ -103,6 +108,11 @@ export const QUALITATIVE_NEWS: ArticleForPublish = {
       provider: "가온시 세정과",
       accessedAt: "2026-10-14",
       rightsStatus: "confirmed",
+      licenseType: "kogl_1",
+      publishedOn: "2026-10-01",
+      referenceDate: "2026-06-30",
+      regionUnit: "시·군·구",
+      collectedAt: "2026-10-09",
     },
     {
       id: "src-press",
@@ -112,6 +122,7 @@ export const QUALITATIVE_NEWS: ArticleForPublish = {
       provider: "가온시 대변인실",
       accessedAt: "2026-10-15",
       rightsStatus: "confirmed",
+      licenseType: "kogl_1",
     },
   ],
   evidence: [

@@ -4,6 +4,7 @@ import { checkArticleBasics } from "./checks/article-basics";
 import { checkCardNews } from "./checks/card-news";
 import { checkExternal } from "./checks/external";
 import { checkMediaFormats } from "./checks/media-formats";
+import { checkOfficialSources } from "./checks/official-sources";
 import { checkPartnership } from "./checks/partnership";
 import { checkPlainLanguage } from "./checks/plain-language";
 import { checkPressure } from "./checks/pressure";
@@ -26,6 +27,7 @@ export const BUILT_IN_CHECKS: readonly PublishCheck[] = [
   checkCardNews,
   checkMediaFormats,
   checkSourcing,
+  checkOfficialSources,
   checkReviews,
   checkQuantitative,
   checkQualitative,

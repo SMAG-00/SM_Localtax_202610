@@ -1,6 +1,6 @@
 // 출처(article_sources)·취재 근거(article_evidence + article_datasets·article_interviews) 입력 검사 — 순수 함수
 // 칸 이름은 camelCase → DB snake_case. 모르는 칸은 거부한다.
-import { ANONYMITIES, EVIDENCE_TYPES, QUOTE_CONSENTS, SOURCE_KINDS } from "@ltr/editorial";
+import { ANONYMITIES, EVIDENCE_TYPES, LICENSE_REQUIRED_KINDS, LICENSE_TYPES, OFFICIAL_SOURCE_TYPES, QUOTE_CONSENTS, SOURCE_KINDS, sourceTypeProblem, type SourceKind } from "@ltr/editorial";
 import type { Result } from "./content";
 
 type Obj = Record<string, unknown>;
@@ -71,6 +71,7 @@ const SOURCE_SPEC: Spec = [
   ["provider", "provider", "text"],
   ["lastVerifiedAt", "last_verified_at", "instant"],
   ["licenseStatus", "license_status", "text"],
+  ["licenseType", "license_type", LICENSE_TYPES],
   ["sourceType", "source_type", "text"],
   ["publishedOn", "published_on", "date"],
   ["referenceDate", "reference_date", "date"],
@@ -87,10 +88,30 @@ export interface SourceInput {
   snapshot: { text: string; url: string | null; source: string | null } | null;
 }
 
-export function parseSourceInput(raw: Obj): Result<SourceInput> {
+/**
+ * 출처 칸 규칙 (W4 5단계 — DB 트리거·발행 판정과 같다): 공식 자료·보도자료·사진은 공공누리 유형 필수(PR-07),
+ * 자료 종류는 공식 자료 행에만·허용 목록 값만·차단 4종 거부(REG1-07). 오류는 칸 이름(source.<API 칸>)으로
+ */
+export function sourceRuleErrors(columns: Obj, allowedTypes: readonly string[]): string[] {
+  const errors: string[] = [];
+  const kind = columns.kind as SourceKind | undefined;
+  if (kind && (LICENSE_REQUIRED_KINDS as readonly string[]).includes(kind) && (columns.license_type === undefined || columns.license_type === null)) {
+    errors.push("source.licenseType: 공식 자료·보도자료·사진은 공공누리 유형이 필요합니다 — 자체 자료는 '해당 없음'(not_applicable) (PR-07)");
+  }
+  if (kind && typeof columns.source_type === "string") {
+    const problem = sourceTypeProblem(kind, columns.source_type, allowedTypes);
+    if (problem) errors.push(`source.sourceType: ${problem}`);
+  }
+  return errors;
+}
+
+export function parseSourceInput(raw: Obj, allowedTypes: readonly string[] = OFFICIAL_SOURCE_TYPES): Result<SourceInput> {
   const errors: string[] = [];
   const { snapshot: snapRaw, ...rest } = raw;
   const columns = parseFields(rest, SOURCE_SPEC, "source", errors, ["kind"]);
+  if (typeof columns.source_type === "string" && columns.source_type.trim() === "") columns.source_type = null;
+  if (typeof columns.region_unit === "string" && columns.region_unit.trim() === "") columns.region_unit = null;
+  errors.push(...sourceRuleErrors(columns, allowedTypes));
   let snapshot: SourceInput["snapshot"] = null;
   if (snapRaw !== undefined && snapRaw !== null) {
     if (!isObj(snapRaw)) errors.push("source.snapshot: 객체여야 합니다");
@@ -101,6 +122,52 @@ export function parseSourceInput(raw: Obj): Result<SourceInput> {
     }
   }
   return errors.length ? { ok: false, errors } : { ok: true, value: { columns, snapshot } };
+}
+
+/** 원자료 새 버전으로 고칠 수 있는 칸 — 종류·대체·스냅샷은 그대로 잇는다 (REG1-09 '스냅샷 그대로') */
+const REVISION_SPEC: Spec = SOURCE_SPEC.filter(([k]) => k !== "kind" && k !== "supersedesId" && k !== "revisionReason");
+
+/** 새 버전 행에 옮겨 적는 칸 (DB 이름) */
+export const SOURCE_COPY_COLUMNS = [
+  "kind",
+  "title",
+  "source_url",
+  "source_name",
+  "provider",
+  "last_verified_at",
+  "license_status",
+  "license_type",
+  "source_type",
+  "published_on",
+  "reference_date",
+  "region_code",
+  "region_unit",
+  "collected_at",
+  "snapshot_id",
+] as const;
+
+export interface SourceRevisionInput {
+  /** 새 버전 행 — 지금 행 칸 + 고친 칸 + supersedes_id + 수정 사유 (article_id·version은 부르는 쪽이 채운다) */
+  row: Obj;
+  /** 바뀐 칸 (DB 이름) — 감사 로그 */
+  changed: string[];
+}
+
+/** 원자료 고치기 = 새 버전 행 (REG1-09) — 수정 사유 필수, 바뀐 칸 1개 이상, 같은 칸 규칙(공공누리·자료 종류) */
+export function parseSourceRevision(raw: Obj, current: Obj, allowedTypes: readonly string[] = OFFICIAL_SOURCE_TYPES): Result<SourceRevisionInput> {
+  const errors: string[] = [];
+  const { revisionReason, ...rest } = raw;
+  const changes = parseFields(rest, REVISION_SPEC, "source", errors);
+  if (typeof changes.source_type === "string" && changes.source_type.trim() === "") changes.source_type = null;
+  if (typeof revisionReason !== "string" || revisionReason.trim() === "") errors.push("source.revisionReason: 수정 사유가 필요합니다 — 원자료를 고치면 새 버전과 사유가 남습니다 (REG1-09)");
+  else if (revisionReason.length > 500) errors.push("source.revisionReason: 500자 이하로 적습니다");
+  const row: Obj = {};
+  for (const c of SOURCE_COPY_COLUMNS) row[c] = current[c] ?? null;
+  const changed = Object.keys(changes).filter((c) => JSON.stringify(changes[c] ?? null) !== JSON.stringify(current[c] ?? null));
+  if (errors.length === 0 && changed.length === 0) errors.push("source: 바뀐 칸이 없습니다 — 고칠 칸을 적으세요");
+  Object.assign(row, changes, { supersedes_id: current.id, revision_reason: typeof revisionReason === "string" ? revisionReason.trim() : null });
+  errors.push(...sourceRuleErrors(row, allowedTypes));
+  return errors.length ? { ok: false, errors } : { ok: true, value: { row, changed } };
 }
 
 const EVIDENCE_SPEC: Spec = [

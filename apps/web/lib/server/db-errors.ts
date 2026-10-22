@@ -31,6 +31,11 @@ const CHECK_CONSTRAINTS: Record<string, [number, string]> = {
     "공식 문서·데이터 출처는 출처 URL·발표기관·확인일·권리 상태가 모두 있어야 합니다 (FND-04)",
   ],
   article_sources_revision_reason: [422, "원자료 새 버전은 수정 사유가 필요합니다 (REG1-09)"],
+  // W4 5단계 (20261022000041)
+  article_sources_license_required: [422, "공식 자료·보도자료·사진 출처는 공공누리 유형(licenseType)이 필요합니다 (PR-07)"],
+  article_sources_license_type_check: [422, "공공누리 유형은 kogl_1~4·unmarked·not_applicable 중 하나입니다 (PR-07)"],
+  media_license_required: [422, "권리 확인 이미지는 공공누리 유형이 필요합니다 — 자체 촬영은 '해당 없음' (PR-07)"],
+  media_license_type_check: [422, "공공누리 유형은 kogl_1~4·unmarked·not_applicable 중 하나입니다 (PR-07)"],
   article_corrections_versions: [422, "정정·제목 변경은 전후 버전이, 삭제는 전 버전이 있어야 합니다 (NAV-06)"],
   story_assignments_assigned_ready: [
     409,
@@ -75,6 +80,7 @@ const UNIQUE_CONSTRAINTS: Record<string, string> = {
   situations_slug_key: "같은 주소(slug)의 상황이 이미 있습니다 — 다른 주소를 적으세요",
   situations_hub_slot_unique: "이 분야 허브의 그 자리에 이미 다른 상황 카드가 있습니다 (UX-05)",
   search_synonyms_term_key_unique: "같은 낱말이 이미 동의어 사전에 있습니다 (띄어쓰기·기호만 다른 것 포함) — 그 줄을 고치세요",
+  article_sources_supersedes_once: "이 출처에는 이미 새 버전이 있습니다 — 최신 판을 고치세요 (REG1-09)",
 };
 
 const FK_CONSTRAINTS: Record<string, string> = {

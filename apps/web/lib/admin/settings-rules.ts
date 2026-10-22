@@ -2,6 +2,7 @@
 //  · 아는 키만 고친다. 검사 규칙이 없는 키는 화면에서 고칠 수 없다 (잘못된 모양이 발행 판정을 멈추지 않게 닫힌 쪽으로).
 //  · 검사를 지난 값은 발행 판정 설정 읽기(lib/server/articles/gate.ts parseGateSettings)를 그대로 통과한다 — 같은 키·같은 모양.
 //  · 버전이 있는 값(사전·유사도 기준)은 내용을 바꾸면 버전도 바꿔야 한다 — 점검 기록에 남는 버전이 값과 어긋나지 않게.
+import { koglUsageErrors, officialSourceTypesErrors } from "./official-source-rules";
 import { normalizeText } from "@ltr/editorial";
 import { checkDomainCutover } from "@/lib/analytics/metrics";
 import { checkQueryTermsSettings } from "@/lib/analytics/query-terms";
@@ -259,6 +260,19 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     guide:
       '{ "local_tax": ["local_tax", "local_finance"], "realestate": ["realestate", "urban_policy"] } — ② 지방세·지방재정(local_tax)·③ 부동산·개발(realestate) 블록마다 담는 편집 분야(local_tax·local_finance·realestate·urban_policy) 1개 이상, 한 편집 분야는 한 블록에만. 블록 순서는 바꾸지 못합니다(코드 고정). 바꾸면 배포 없이 다음 요청부터',
     check: (value) => localBlockFieldsErrors(value),
+  },
+  // ── W4 5단계 공식 자료·공공누리 (docs/dev/W4_설계.md 2.1 · 2.2 · 12장 #13) — 발행 판정(gate.ts parseGateSettings)·출처 저장 API·DB 트리거(…41)와 같은 검사 ──
+  official_source_types: {
+    label: "공식 자료 종류 허용 목록 (REG1-07)",
+    guide:
+      '["ordinance", "notice", "budget_settlement", "local_tax_revenue", "realestate_transaction", "redevelopment"] — 조례·고시·예산/결산·지방세 세수·부동산 거래/공시·정비/개발. 영문 소문자·숫자·_ 2~40자, 1~50개. 교통·관광·음식점·생활 안내(transport·tourism·restaurant·living_guide)는 넣을 수 없습니다(코드 고정). 바꾸면 배포 없이 다음 저장·발행 판정부터',
+    check: (value) => officialSourceTypesErrors(value),
+  },
+  kogl_usage: {
+    label: "공공누리 이용 범위 (PR-07)",
+    guide:
+      '{ "photoTypes": ["kogl_1", "not_applicable"], "fullTextTypes": [] } — photoTypes 게시하는 사진 유형(kogl_1~3·not_applicable), fullTextTypes 원문 본문을 옮겨도 되는 유형(kogl_1~3). 1단계 권고는 사진 제1유형·자체 촬영만, 전재 0 — 제2·3유형은 법률 검토 기록 뒤에 엽니다. 제4유형·미표시(kogl_4·unmarked)는 넣을 수 없습니다(코드 고정)',
+    check: (value) => koglUsageErrors(value),
   },
   next_action_priority: {
     label: "다음 행동 버튼 우선순위 (ART-06)",

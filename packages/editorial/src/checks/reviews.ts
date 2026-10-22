@@ -1,6 +1,6 @@
 // NAV-03 편집 승인과 세무 감수는 서로 다른 상태 · NAV-12 작성 기자 본인 승인 거부 · 세무 감수 대상(ART-01·NAV-11·NAV-12·CAT-05)
 import { finding, type Finding } from "../findings";
-import type { ArticleForPublish, ReviewKind } from "../model";
+import { TAX_REVIEW_SOURCE_TYPES, type ArticleForPublish, type ReviewKind } from "../model";
 import { isBlank } from "../text";
 
 /** 세무 감수 서명이 필요한 이유 — 빈 목록이면 감수 대상이 아니다 */
@@ -12,6 +12,12 @@ export function taxReviewReasons(article: ArticleForPublish): string[] {
   }
   if (article.isTaxIssue) reasons.push("세금 쟁점 원고 (NAV-11)");
   if (article.subtype === "solved_case") reasons.push("해결 사례의 결과·교훈 (CAT-05)");
+  if (
+    (article.contentType === "explainer" || article.contentType === "guide") &&
+    article.sources.some((s) => (TAX_REVIEW_SOURCE_TYPES as readonly string[]).includes(s.sourceType ?? ""))
+  ) {
+    reasons.push("고시·조례 자료를 쓴 해설 (REG1-07)");
+  }
   return reasons;
 }
 

@@ -1,10 +1,13 @@
 // 공개 출처(article_sources)·비공개 취재 근거(article_evidence + 재현 정보·인터뷰 기록) 폼 → API 본문. 순수 함수 (시험: records-form.test.ts)
 //  · 공식 문서·공공 데이터 출처는 URL·발표기관·확인일·이용 조건이 모두 있어야 한다 (FND-04 — DB도 거부한다)
+//  · W4 5단계 — 공식 자료·보도자료·사진은 공공누리 유형 필수(PR-07). 공식 자료는 발표일·기준일·지역 단위·수집일도 적는다(REG1-09 — 비면 발행 거부),
+//    자료 종류는 허용 목록(settings.official_source_types)에서 고른다(REG1-07). 원자료 고치기는 새 버전 + 수정 사유(sourceRevisionPayload)
 //  · 인터뷰 기록은 연락처·녹취 원문을 받지 않는다 — 보존 위치만 (NAV-12)
-import { SOURCE_KINDS } from "@ltr/editorial";
+import { LICENSE_REQUIRED_KINDS, LICENSE_TYPES, SOURCE_KINDS } from "@ltr/editorial";
 import { blank, isValidDate, isoToKstDate, kstDateToIso, textOrNull, type FieldErrors } from "./form-utils";
 
 const OFFICIAL = new Set(["official_doc", "dataset"]);
+const LICENSED = new Set<string>(LICENSE_REQUIRED_KINDS);
 const HTTP = /^https?:\/\/\S+$/i;
 
 export interface SourceForm {
@@ -17,36 +20,143 @@ export interface SourceForm {
   lastVerifiedDate: string;
   /** 이용 조건 (공공누리 유형 등) */
   licenseStatus: string;
+  /** 공공누리 유형 (PR-07) — LICENSE_TYPES 값 */
+  licenseType: string;
+  /** 공식 자료 종류 (REG1-07) — 허용 목록 값, 비우면 없음(법령 출처 등) */
+  sourceType: string;
+  /** 발표일 · 기준일 · 수집일 (한국 날짜), 지역 단위 (REG1-09) */
+  publishedOn: string;
+  referenceDate: string;
+  regionUnit: string;
+  collectedDate: string;
   /** 비교 원문 — 보도자료·원자료 원본 글 (유사도 비교, OPT-06) */
   snapshotText: string;
 }
 
-export const EMPTY_SOURCE_FORM: SourceForm = { kind: "official_doc", title: "", url: "", sourceName: "", lastVerifiedDate: "", licenseStatus: "", snapshotText: "" };
+export const EMPTY_SOURCE_FORM: SourceForm = {
+  kind: "official_doc",
+  title: "",
+  url: "",
+  sourceName: "",
+  lastVerifiedDate: "",
+  licenseStatus: "",
+  licenseType: "",
+  sourceType: "",
+  publishedOn: "",
+  referenceDate: "",
+  regionUnit: "",
+  collectedDate: "",
+  snapshotText: "",
+};
 
-export function validateSource(f: SourceForm): FieldErrors {
+/** 날짜 칸 — [폼 칸, 화면 칸 id, 이름] */
+const DATE_FIELDS = [
+  ["lastVerifiedDate", "src-verified", "확인일"],
+  ["publishedOn", "src-published", "발표일"],
+  ["referenceDate", "src-reference", "기준일"],
+  ["collectedDate", "src-collected", "수집일"],
+] as const;
+
+export function validateSource(f: SourceForm, allowedTypes: readonly string[] = []): FieldErrors {
   const e: FieldErrors = {};
   if (!(SOURCE_KINDS as readonly string[]).includes(f.kind)) e["src-kind"] = "출처 종류를 골라 주세요";
   if (blank(f.title)) e["src-title"] = "출처 이름을 적어 주세요";
   if (!blank(f.url) && !HTTP.test(f.url.trim())) e["src-url"] = "주소는 http:// 또는 https://로 시작해야 합니다";
-  if (!blank(f.lastVerifiedDate) && !isValidDate(f.lastVerifiedDate.trim())) e["src-verified"] = "확인일은 YYYY-MM-DD 날짜로 적어 주세요";
+  for (const [key, id, name] of DATE_FIELDS) if (!blank(f[key]) && !isValidDate(f[key].trim())) e[id] = `${name}은 YYYY-MM-DD 날짜로 적어 주세요`;
+  if (!blank(f.licenseType) && !(LICENSE_TYPES as readonly string[]).includes(f.licenseType)) e["src-license-type"] = "공공누리 유형을 목록에서 골라 주세요";
+  if (LICENSED.has(f.kind) && blank(f.licenseType)) e["src-license-type"] = "공공누리 유형을 골라 주세요 — 공식 자료·보도자료·사진에 필요합니다 (PR-07)";
+  if (!blank(f.sourceType)) {
+    if (!OFFICIAL.has(f.kind)) e["src-source-type"] = "자료 종류는 공식 문서·공공 데이터 출처에만 고릅니다 (REG1-07)";
+    else if (!allowedTypes.includes(f.sourceType)) e["src-source-type"] = "자료 종류는 허용 목록에서 골라 주세요 (REG1-07)";
+  }
   if (OFFICIAL.has(f.kind)) {
     const why = "공식 문서·공공 데이터 출처에 필요합니다 (FND-04)";
     if (blank(f.url)) e["src-url"] = `원문 URL이 ${why}`;
     if (blank(f.sourceName)) e["src-source-name"] = `발표기관이 ${why}`;
     if (blank(f.lastVerifiedDate)) e["src-verified"] = `확인일이 ${why}`;
     if (blank(f.licenseStatus)) e["src-license"] = `이용 조건이 ${why}`;
+    const pub = "공식 자료에 필요합니다 — 비면 이 자료를 쓴 기사를 발행할 수 없습니다 (REG1-09)";
+    if (blank(f.publishedOn)) e["src-published"] ??= `발표일이 ${pub}`;
+    if (blank(f.referenceDate)) e["src-reference"] ??= `기준일이 ${pub}`;
+    if (blank(f.regionUnit)) e["src-region-unit"] = `지역 단위가 ${pub}`;
+    if (blank(f.collectedDate)) e["src-collected"] ??= `수집일이 ${pub}`;
   }
   if (!blank(f.snapshotText) && blank(f.url)) e["src-url"] ??= "원문을 붙이려면 원문 주소가 필요합니다";
   return e;
 }
 
-export function sourcePayload(f: SourceForm): Record<string, unknown> {
-  const p: Record<string, unknown> = { kind: f.kind, title: f.title.trim() };
+/** 폼 칸 → API 칸 (빈 칸은 보내지 않는다) */
+function sourceFields(f: Omit<SourceForm, "kind" | "snapshotText">): Record<string, unknown> {
+  const p: Record<string, unknown> = { title: f.title.trim() };
   if (!blank(f.url)) p.url = f.url.trim();
   if (!blank(f.sourceName)) p.sourceName = f.sourceName.trim();
   if (!blank(f.lastVerifiedDate)) p.lastVerifiedAt = kstDateToIso(f.lastVerifiedDate.trim());
   if (!blank(f.licenseStatus)) p.licenseStatus = f.licenseStatus.trim();
+  if (!blank(f.licenseType)) p.licenseType = f.licenseType;
+  if (!blank(f.sourceType)) p.sourceType = f.sourceType;
+  if (!blank(f.publishedOn)) p.publishedOn = f.publishedOn.trim();
+  if (!blank(f.referenceDate)) p.referenceDate = f.referenceDate.trim();
+  if (!blank(f.regionUnit)) p.regionUnit = f.regionUnit.trim();
+  if (!blank(f.collectedDate)) p.collectedAt = kstDateToIso(f.collectedDate.trim());
+  return p;
+}
+
+export function sourcePayload(f: SourceForm): Record<string, unknown> {
+  const p: Record<string, unknown> = { kind: f.kind, ...sourceFields(f) };
   if (!blank(f.snapshotText)) p.snapshot = { text: f.snapshotText.trim() };
+  return p;
+}
+
+/** 저장된 출처 행 → 고치기 폼 (새 버전의 시작 값) */
+export interface StoredSource {
+  kind: string;
+  title: string | null;
+  source_url: string | null;
+  source_name: string | null;
+  last_verified_at: string | null;
+  license_status: string | null;
+  license_type?: string | null;
+  source_type?: string | null;
+  published_on?: string | null;
+  reference_date?: string | null;
+  region_unit?: string | null;
+  collected_at?: string | null;
+}
+
+export function sourceFormOf(s: StoredSource): SourceForm {
+  return {
+    kind: s.kind,
+    title: s.title ?? "",
+    url: s.source_url ?? "",
+    sourceName: s.source_name ?? "",
+    lastVerifiedDate: isoToKstDate(s.last_verified_at),
+    licenseStatus: s.license_status ?? "",
+    licenseType: s.license_type ?? "",
+    sourceType: s.source_type ?? "",
+    publishedOn: s.published_on ?? "",
+    referenceDate: s.reference_date ?? "",
+    regionUnit: s.region_unit ?? "",
+    collectedDate: isoToKstDate(s.collected_at),
+    snapshotText: "",
+  };
+}
+
+/** 원자료 고치기(새 버전) 폼 검사 — 출처 폼 검사 + 수정 사유 필수 + 바뀐 칸 1개 이상. 오류 칸 id는 앞머리(prefix)를 붙인다 */
+export function validateSourceRevision(f: SourceForm, before: SourceForm, reason: string, prefix: string, allowedTypes: readonly string[] = []): FieldErrors {
+  const e: FieldErrors = {};
+  for (const [id, msg] of Object.entries(validateSource(f, allowedTypes))) e[id.replace(/^src-/, `${prefix}-`)] = msg;
+  if (blank(reason)) e[`${prefix}-reason`] = "수정 사유를 적어 주세요 — 원자료를 고치면 새 버전과 사유가 남습니다 (REG1-09)";
+  else if (Object.keys(sourceRevisionPayload(f, before, reason)).length === 1) e[`${prefix}-reason`] = "바뀐 칸이 없습니다 — 고칠 칸을 바꾼 뒤 저장하세요";
+  return e;
+}
+
+/** 고치기 API 본문 — 바뀐 칸만 + 수정 사유 (PATCH /api/admin/articles/{id}/sources/{번호}) */
+export function sourceRevisionPayload(f: SourceForm, before: SourceForm, reason: string): Record<string, unknown> {
+  const now = sourceFields(f);
+  const old = sourceFields(before);
+  const p: Record<string, unknown> = { revisionReason: reason.trim() };
+  for (const [k, v] of Object.entries(now)) if (JSON.stringify(v) !== JSON.stringify(old[k])) p[k] = v;
+  for (const k of Object.keys(old)) if (!(k in now)) p[k] = null;
   return p;
 }
 

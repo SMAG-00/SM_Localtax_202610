@@ -46,6 +46,12 @@ const FULL = {
   source_name: "행정안전부",
   last_verified_at: "2026-10-16T10:00:00+09:00",
   license_status: "공공누리 제1유형",
+  // W4 5단계 (REG1-09 · PR-07) — 공개 기사의 공식 자료는 발표일·기준일·지역 단위·수집일·공공누리 유형도 있어야 한다
+  license_type: "kogl_1",
+  published_on: "2026-10-01",
+  reference_date: "2026-06-30",
+  region_unit: "전국",
+  collected_at: "2026-10-16T09:00:00+09:00",
 };
 function insertSource(articleId, kind, cols, role = "service_role") {
   const all = { article_id: articleId, kind, ...cols };
@@ -92,7 +98,8 @@ for (const kind of ["official_doc", "dataset"]) {
 for (const kind of ["press_release", "interview", "field", "photo", "other"]) {
   test(`${kind} — 출처 URL·발표기관·확인일·권리 상태 없이도 저장된다`, () =>
     tx(async () => {
-      const r = await insertSource(await publishedArticle(), kind, { title: "자료" });
+      // 보도자료·사진은 공공누리 유형만 필수 (W4 5단계 PR-07)
+      const r = await insertSource(await publishedArticle(), kind, kind === "press_release" || kind === "photo" ? { title: "자료", license_type: "kogl_1" } : { title: "자료" });
       assert.ok(r.ok, r.message);
     }));
 }

@@ -1,6 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { OFFICIAL_SOURCE_TYPES } from "@ltr/editorial";
 import type { ArticleResource } from "@/lib/access";
+import { parseOfficialSourceTypes } from "@/lib/admin/official-source-rules";
 import { HttpError, dbError } from "../http";
 import { readStoredBody } from "./content";
 import { parseGateSettings, type GateSettings } from "./gate";
@@ -21,7 +23,11 @@ import type {
 } from "./rows";
 
 /** 판정·편집 화면이 읽는 media 칸 (rows.ts MediaRow) */
-export const MEDIA_ROW_COLUMNS = "id, path, alt, rights_status, credit, photographer, license, kind, width, height";
+export const MEDIA_ROW_COLUMNS = "id, path, alt, rights_status, credit, photographer, license, kind, width, height, license_type, crop_allowed";
+
+/** 판정·편집 화면이 읽는 출처 칸 (rows.ts SourceRow — W4 5단계 칸 포함) */
+export const SOURCE_ROW_COLUMNS =
+  "id, article_id, version, kind, title, source_url, source_name, provider, last_verified_at, license_status, snapshot_id, supersedes_id, license_type, source_type, published_on, reference_date, region_unit, collected_at, revision_reason";
 
 // 기사 저장소 — service_role로 기사 한 판의 연결 기록을 읽는다 (접근 판정은 부르는 쪽이 먼저 한다)
 
@@ -102,7 +108,7 @@ export async function loadArticleGraph(db: Db, idOrRow: number | ArticleRow): Pr
     rows<SourceRow>(
       db
         .from("article_sources")
-        .select("id, article_id, version, kind, title, source_url, source_name, provider, last_verified_at, license_status, snapshot_id, supersedes_id")
+        .select(SOURCE_ROW_COLUMNS)
         .eq("article_id", article.id)
         .order("id"),
       "article_sources 읽기",
@@ -139,7 +145,7 @@ export async function loadArticleGraph(db: Db, idOrRow: number | ArticleRow): Pr
 export async function loadGateSettings(db: Db): Promise<GateSettings> {
   const [settingRows, glossary] = await Promise.all([
     rows<{ key: string; value: unknown }>(
-      db.from("settings").select("key, value").in("key", ["forbidden_phrases", "fear_phrases", "similarity_internal"]),
+      db.from("settings").select("key, value").in("key", ["forbidden_phrases", "fear_phrases", "similarity_internal", "official_source_types", "kogl_usage"]),
       "settings 읽기",
     ),
     rows<{ term: string; plain: string | null }>(db.from("glossary_terms").select("term, plain").eq("jargon", true), "glossary_terms 읽기"),
@@ -150,6 +156,12 @@ export async function loadGateSettings(db: Db): Promise<GateSettings> {
     throw new HttpError(503, "발행 판정 설정(금지 표현·공포 표현 사전)을 읽지 못했습니다 — 관리자에게 알려 주세요");
   }
   return settings;
+}
+
+/** 공식 자료 종류 허용 목록 (settings.official_source_types — REG1-07). 없거나 모양이 틀리면 씨앗(닫힌 쪽 — DB 트리거도 같은 목록을 본다) */
+export async function loadOfficialSourceTypes(db: Db): Promise<string[]> {
+  const list = await rows<{ value: unknown }>(db.from("settings").select("value").eq("key", "official_source_types"), "settings 읽기");
+  return parseOfficialSourceTypes(list[0]?.value) ?? [...OFFICIAL_SOURCE_TYPES];
 }
 
 /** 같은 제목의 다른 공개 기사 — 고유 제목 점검 문맥 (공동 기획은 제휴사 이름까지 — 화면 제목 '[공동 기획 ○○] 제목') */

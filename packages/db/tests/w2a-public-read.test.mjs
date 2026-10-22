@@ -43,8 +43,8 @@ async function world(fn) {
     const hidden = await insert("people", { slug: uniq("p"), name: "비공개 인물", roles: ["writer"] });
     const editor = await insert("people", { slug: uniq("p"), name: "편집자", roles: ["editor"] });
     const unconfirmed = await insert("media", { path: "u.jpg", kind: "photo" });
-    const confirmed = await insert("media", { path: "c.jpg", kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", checked_at: new Date() });
-    const confirmedLoose = await insert("media", { path: "draft.jpg", alt: "엠바고 사진", kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", checked_at: new Date() });
+    const confirmed = await insert("media", { path: "c.jpg", kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", license_type: "not_applicable", checked_at: new Date() });
+    const confirmedLoose = await insert("media", { path: "draft.jpg", alt: "엠바고 사진", kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", license_type: "not_applicable", checked_at: new Date() });
     const art = (over) => insert("articles", { slug: uniq("a"), title: "기사", section: "local", content_type: "reported_news", author_id: reporter.id, check_log: JSON.stringify({ x: 1 }), ...over });
     const pub = await art({ status: "published" });
     const pubConfirmed = await art({ status: "published", lead_media_id: confirmed.id });
@@ -55,7 +55,7 @@ async function world(fn) {
     const visiblePartner = await insert("partners", { name: "공개 제휴사", kind: "media", visible: true, contract_from: "2026-01-01", contract_to: "2026-12-31" });
     const hiddenPartner = await insert("partners", { name: "비공개 제휴사", kind: "media" });
     const hiddenCategory = await insert("categories", { section: "tax", slug: uniq("hidden"), name: uniq("숨긴 분야"), visible: false });
-    const SRC = { kind: "official_doc", source_url: "https://www.mois.go.kr/a", source_name: "행정안전부", last_verified_at: new Date(), license_status: "공공누리 제1유형" };
+    const SRC = { kind: "official_doc", source_url: "https://www.mois.go.kr/a", source_name: "행정안전부", last_verified_at: new Date(), license_status: "공공누리 제1유형", license_type: "kogl_1", published_on: "2026-10-01", reference_date: "2026-06-30", region_unit: "전국", collected_at: new Date() };
     const pubSource = await insert("article_sources", { article_id: pub.id, ...SRC });
     const draftSource = await insert("article_sources", { article_id: draft.id, ...SRC });
     const ev = await insert("article_evidence", { article_id: pub.id, evidence_type: "interview", location: "녹취 보관함 B-3" });

@@ -17,6 +17,8 @@ export type { ScreenCopy } from "./checks/plain-language";
 export { YOUTUBE_EMBED_HOST, YOUTUBE_EMBED_PREFIX, infographicSaveProblems, isSixteenByNine, parseYoutubeEmbed } from "./checks/media-formats";
 export type { BlockProblem, EmbedParse } from "./checks/media-formats";
 export { infographicTexts } from "./text";
+// REG1-07·09 · PR-07 — 공식 자료 종류·공공누리 판정 (편집 화면·출처 저장 API·발행 판정 공용, W4 5단계)
+export { OFFICIAL_REQUIRED_FIELDS, photoLicenseAllowed, photoLicenseProblem, sourceTypeProblem } from "./checks/official-sources";
 
 // 판정 보조 — 편집 화면이 상태 표시에 쓴다
 export { isApproved, taxReviewReasons } from "./checks/reviews";

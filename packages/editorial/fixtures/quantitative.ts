@@ -93,7 +93,7 @@ export const QUANTITATIVE_NEWS: ArticleForPublish = {
   legalBasisDate: "2026-10-01",
   digestId: null,
   amendmentId: null,
-  leadImage: { mediaId: "media-0101-lead", alt: "가온시청 세정과 민원 창구", rightsStatus: "confirmed" },
+  leadImage: { mediaId: "media-0101-lead", alt: "가온시청 세정과 민원 창구", rightsStatus: "confirmed", licenseType: "not_applicable" },
   sources: [
     {
       id: "src-collection",
@@ -103,6 +103,11 @@ export const QUANTITATIVE_NEWS: ArticleForPublish = {
       provider: "가온시 세정과",
       accessedAt: "2026-10-07",
       rightsStatus: "confirmed",
+      licenseType: "kogl_1",
+      publishedOn: "2026-10-01",
+      referenceDate: "2026-06-30",
+      regionUnit: "시·군·구",
+      collectedAt: "2026-10-09",
     },
     {
       id: "src-apt-trade",
@@ -112,6 +117,11 @@ export const QUANTITATIVE_NEWS: ArticleForPublish = {
       provider: "국토교통부",
       accessedAt: "2026-10-07",
       rightsStatus: "confirmed",
+      licenseType: "kogl_1",
+      publishedOn: "2026-10-01",
+      referenceDate: "2026-06-30",
+      regionUnit: "시·군·구",
+      collectedAt: "2026-10-09",
     },
     {
       id: "src-press",
@@ -121,6 +131,7 @@ export const QUANTITATIVE_NEWS: ArticleForPublish = {
       provider: "가온시 대변인실",
       accessedAt: "2026-10-07",
       rightsStatus: "confirmed",
+      licenseType: "kogl_1",
     },
   ],
   evidence: [

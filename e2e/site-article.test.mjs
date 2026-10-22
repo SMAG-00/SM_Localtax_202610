@@ -25,6 +25,9 @@ import { importSource } from "./lib/ts-source.mjs";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 
+// W4 5단계 (REG1-09 · PR-07) — 공식 자료는 공공누리 유형·발표일·기준일·지역 단위·수집일이 있어야 발행된다 (시험용 값)
+const OFFICIAL_W4 = { licenseType: "kogl_1", publishedOn: "2026-10-01", referenceDate: "2026-10-01", regionUnit: "전국", collectedAt: "2026-10-10T09:00:00+09:00" };
+
 const ADMIN_EMAIL = "site-article-e2e@example.test";
 const SITE = "https://e2e.example.test";
 
@@ -158,7 +161,7 @@ before(async () => {
   const columns = await categoryId("tax", "columns");
   const projects = await categoryId("realestate", "projects");
   const media = await one(
-    "insert into public.media (path, alt, kind, rights_status, credit, photographer, license, checked_at) values ($1, '취득세 신고 절차를 그린 그림', 'photo', 'confirmed', '편집국', '김가온', '자체 제작', now()) returning id, path",
+    "insert into public.media (path, alt, kind, rights_status, credit, photographer, license, checked_at, license_type) values ($1, '취득세 신고 절차를 그린 그림', 'photo', 'confirmed', '편집국', '김가온', '자체 제작', now(), 'not_applicable') returning id, path",
     [`e2e/${staff.run}/lead.png`],
   );
   staff.trackRow("media", media.id);
@@ -185,6 +188,7 @@ before(async () => {
     sourceName: "법제처 국가법령정보센터",
     lastVerifiedAt: "2026-10-10T09:00:00+09:00",
     licenseStatus: "공공저작물 자유이용",
+    ...OFFICIAL_W4,
   });
   assert.equal(law.status, 201, show(law));
   fx.mainBlocks = [
@@ -254,7 +258,7 @@ before(async () => {
     const id = made.body.article.id;
     fx[label] = { id, href: `/news/${slugOf(label)}` };
     staff.trackArticle(id);
-    const src = await api("POST", `/articles/${id}/sources`, u.reporter, { kind: "official_doc", title: "지방세법 제20조(신고 및 납부)", url: "https://www.law.go.kr/법령/지방세법/제20조", sourceName: "법제처 국가법령정보센터", lastVerifiedAt: "2026-10-10T09:00:00+09:00", licenseStatus: "공공저작물 자유이용" });
+    const src = await api("POST", `/articles/${id}/sources`, u.reporter, { kind: "official_doc", title: "지방세법 제20조(신고 및 납부)", url: "https://www.law.go.kr/법령/지방세법/제20조", sourceName: "법제처 국가법령정보센터", lastVerifiedAt: "2026-10-10T09:00:00+09:00", licenseStatus: "공공저작물 자유이용", ...OFFICIAL_W4 });
     assert.equal(src.status, 201, show(src));
     const headBlocks = (text) => [fx.mainBlocks[0], { type: "paragraph", text }];
     const written = await api("PATCH", `/articles/${id}`, u.reporter, {
@@ -367,7 +371,9 @@ test("a) ART-02 — 머리·본문 블록·면책·기자 소개, 유형 배지 
   assert.match(await page.locator('[data-part="blocks"] figure[data-block="image"]').textContent(), /사진·그림 편집국/);
   assert.deepEqual(await page.$$eval('[data-part="blocks"] [data-ui="status-box"]', (els) => els.map((e) => e.getAttribute("data-kind"))), ["tip", "mistake"]);
   assert.equal(await page.locator('[data-part="blocks"] [data-ui="faq-block"] [data-part="question"]').count(), 2);
-  assert.equal(await page.locator('[data-part="sources"] a').getAttribute("target"), "_blank");
+  // 칸이 모두 찬 공식 자료는 공식 자료 원문 카드로 (W4 5단계 — 원문 링크 새 창 · 공공누리 유형 글자)
+  assert.equal(await page.locator('[data-part="official-sources"] a').getAttribute("target"), "_blank");
+  assert.equal(await page.locator('[data-part="official-sources"] [data-part="license-badge"]').innerText(), "공공누리 제1유형 (출처표시)");
   // 면책(면책 대상 하위 분야 '해석') · 기자 소개 → /people, 평문 이메일 0 · 정정 이력 0
   assert.equal(await page.locator('[data-part="disclaimer"]').count(), 1);
   assert.equal(await page.locator('[data-ui="reporter-block"] a').first().getAttribute("href"), `/people/${fx.reporterSlug}`);

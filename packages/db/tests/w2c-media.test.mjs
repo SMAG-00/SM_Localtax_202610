@@ -50,7 +50,7 @@ async function insert(table, cols) {
   const { sql, params } = insertSql(table, cols);
   return (await client.query(sql, params)).rows[0];
 }
-const confirmed = (over = {}) => ({ path: `${uniq("m")}.jpg`, kind: "photo", rights_status: "confirmed", credit: "가온시청", photographer: "김가온", license: "공공누리 제1유형", checked_at: new Date(), ...over });
+const confirmed = (over = {}) => ({ path: `${uniq("m")}.jpg`, kind: "photo", rights_status: "confirmed", credit: "가온시청", photographer: "김가온", license: "공공누리 제1유형", license_type: "kogl_1", checked_at: new Date(), ...over });
 
 test("media 크기 — 가로·세로는 함께 있거나 함께 없고, 1~20000 픽셀만", () =>
   tx(async () => {

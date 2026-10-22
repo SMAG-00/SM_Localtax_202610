@@ -86,7 +86,7 @@ export const TAX_EXPLAINER: ArticleForPublish = {
   legalBasisDate: "2026-10-01",
   digestId: null,
   amendmentId: null,
-  leadImage: { mediaId: "media-0103-lead", alt: "주택 취득세 신고 절차 4단계 그림", rightsStatus: "confirmed" },
+  leadImage: { mediaId: "media-0103-lead", alt: "주택 취득세 신고 절차 4단계 그림", rightsStatus: "confirmed", licenseType: "not_applicable" },
   sources: [
     {
       id: "src-law-20",
@@ -96,6 +96,11 @@ export const TAX_EXPLAINER: ArticleForPublish = {
       provider: "법제처 국가법령정보센터",
       accessedAt: "2026-10-10",
       rightsStatus: "confirmed",
+      licenseType: "kogl_1",
+      publishedOn: "2026-10-01",
+      referenceDate: "2026-06-30",
+      regionUnit: "전국",
+      collectedAt: "2026-10-09",
     },
     {
       id: "src-decree-20",
@@ -105,6 +110,11 @@ export const TAX_EXPLAINER: ArticleForPublish = {
       provider: "법제처 국가법령정보센터",
       accessedAt: "2026-10-10",
       rightsStatus: "confirmed",
+      licenseType: "kogl_1",
+      publishedOn: "2026-10-01",
+      referenceDate: "2026-06-30",
+      regionUnit: "전국",
+      collectedAt: "2026-10-09",
     },
   ],
   evidence: [],

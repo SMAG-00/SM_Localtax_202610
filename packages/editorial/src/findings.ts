@@ -69,6 +69,12 @@ export const RULES = [
   { id: "nav04.sources-required", ruleRef: "NAV-04", level: "block", title: "보도기사에 출처 없음" },
   { id: "nav04.own-evidence-required", ruleRef: "NAV-04", level: "block", title: "자체 취재 근거 없음" },
   { id: "nav04.image-rights", ruleRef: "NAV-04", level: "block", title: "사진 권리 미확인" },
+  // REG1-07·REG1-09·PR-07 공식 자료·공공누리 (01B — W4 5단계)
+  { id: "reg1_07.source-type", ruleRef: "REG1-07", level: "block", title: "공식 자료 종류가 허용 목록 밖(교통·관광·음식점·생활 안내 차단)" },
+  { id: "reg1_09.official-fields", ruleRef: "REG1-09", level: "block", title: "공식 자료의 발표일·기준일·지역 단위·수집일·확인일 빔" },
+  { id: "pr07.license-required", ruleRef: "PR-07", level: "block", title: "공식 자료·보도자료·사진 출처에 공공누리 유형 없음" },
+  { id: "pr07.photo-license", ruleRef: "PR-07", level: "block", title: "게시하지 않는 공공누리 유형의 사진(제4유형·미표시·법률 검토 전 제2·3유형)" },
+  { id: "pr07.full-text", ruleRef: "PR-07", level: "block", title: "공공 자료 원문 본문을 그대로 옮김" },
   // NAV-10 정량형 필수 7묶음 + 인과 단정 없음
   { id: "nav10.source-data", ruleRef: "NAV-10", level: "block", title: "원자료(파일/URL·제공기관·수집일·이용권리) 빔" },
   { id: "nav10.indicator-definition", ruleRef: "NAV-10", level: "block", title: "지표 정의(정의·기간·단위·지역 단위·분모·제외값) 빔" },

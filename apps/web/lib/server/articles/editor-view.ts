@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dbError } from "../http";
 import { readChecklists, readStoredBody, readStoredSolvedCase, readStoredTaxLens } from "./content";
-import { loadArticleGraph } from "./repository";
+import { loadArticleGraph, loadOfficialSourceTypes } from "./repository";
 import type { ArticleRow } from "./rows";
 import { articleSummary } from "./writes";
 
@@ -31,7 +31,8 @@ export interface CorrectionView {
 }
 
 export async function loadEditorView(db: SupabaseClient, row: ArticleRow) {
-  const graph = await loadArticleGraph(db, row);
+  // 공식 자료 종류 허용 목록 — 출처 칸의 고르기 목록 (W4 5단계 REG1-07, 운영 설정)
+  const [graph, officialSourceTypes] = await Promise.all([loadArticleGraph(db, row), loadOfficialSourceTypes(db)]);
   const [revisionsRes, correctionsRes] = await Promise.all([
     db.from("article_revisions").select("id, version, edited_by, edited_at, reason, update_kind").eq("article_id", row.id).order("version"),
     db
@@ -109,6 +110,7 @@ export async function loadEditorView(db: SupabaseClient, row: ArticleRow) {
     },
     author: graph.author,
     sources: graph.sources,
+    officialSourceTypes,
     evidence: graph.evidence.map((e) => ({
       ...e,
       dataset: graph.datasets.find((d) => d.evidence_id === e.id) ?? null,

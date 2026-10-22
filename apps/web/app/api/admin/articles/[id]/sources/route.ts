@@ -2,12 +2,14 @@ import { createHash } from "node:crypto";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { sourceRef } from "@/lib/server/articles/content";
 import { parseSourceInput } from "@/lib/server/articles/records-input";
-import { articleResource, loadArticle } from "@/lib/server/articles/repository";
+import { articleResource, loadArticle, loadOfficialSourceTypes } from "@/lib/server/articles/repository";
 import { serviceDb } from "@/lib/server/articles/service";
 import { authorize, requireViewer } from "@/lib/server/dal";
 import { dbError, errorJson, handle, json, parseId, readJson } from "@/lib/server/http";
 
 // 공개 출처 추가 (NAV-03 · FND-04 · OPT-06) — official_doc·dataset은 출처 URL·발표기관·확인일·권리 상태가 없으면 DB가 거부한다.
+// W4 5단계 — 공식 자료·보도자료·사진은 공공누리 유형(licenseType) 필수, 자료 종류(sourceType)는 허용 목록(settings.official_source_types) 값만·
+// 차단 4종 거부 — 422 { errors: ["source.<칸>: 문장"] } (DB 트리거와 같은 규칙). 원자료 고치기는 PATCH …/sources/{번호}(새 버전 + 사유).
 // snapshot.text를 주면 원본 스냅샷(raw_snapshots)을 만들어 잇는다 — 보도자료 출처의 스냅샷은 유사도 비교 원문이 된다.
 // 응답의 ref("src:<번호>")를 핵심 주장·인용 블록의 근거 참조로 쓴다.
 export const dynamic = "force-dynamic";
@@ -25,7 +27,7 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   if (denied) return denied;
   if (article.status === "deleted") return errorJson(409, "삭제된 기사입니다");
 
-  const parsed = parseSourceInput(await readJson(request));
+  const parsed = parseSourceInput(await readJson(request), await loadOfficialSourceTypes(db));
   if (!parsed.ok) return errorJson(422, "입력값을 확인하세요", { errors: parsed.errors });
   const { columns, snapshot } = parsed.value;
 

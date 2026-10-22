@@ -16,6 +16,7 @@ const infographic = (over: Partial<InfographicBlock> = {}): InfographicBlock => 
   alt: "취득세 신고 4단계를 화살표로 이은 그림",
   caption: "취득세 신고 절차",
   rightsStatus: "confirmed",
+  licenseType: "not_applicable",
   chart: null,
   template: "flow",
   data: { kind: "list", items: ["계약", "잔금", "신고", "납부"] },
@@ -30,7 +31,7 @@ const video = (over: Partial<VideoBlock> = {}): VideoBlock => ({
   captions: true,
   thumbnailMediaId: "media-thumb-1",
   durationSeconds: 95,
-  thumbnail: { rightsStatus: "confirmed", width: 1920, height: 1080 },
+  thumbnail: { rightsStatus: "confirmed", licenseType: "not_applicable", width: 1920, height: 1080 },
   ...over,
 });
 
@@ -40,6 +41,7 @@ const photo = (n: number, over: Partial<ImageBlock> = {}): ImageBlock => ({
   alt: `${n}번째 사진 — 구청 세무과 창구`,
   caption: `사진 ${n}`,
   rightsStatus: "confirmed",
+  licenseType: "not_applicable",
   credit: "가온시청",
   license: "공공누리 제1유형",
   mediaAlt: null,
@@ -210,8 +212,8 @@ describe("ART-08 발행 판정 — 동영상 (요약 · 자막 확인 · 썸네�
     ["요약 텍스트 빔", { summary: "  " }, "art08.summary-required"],
     ["'자막 있음' 체크 안 함", { captions: false }, "art08.captions-unconfirmed"],
     ["썸네일 안 고름", { thumbnailMediaId: null, thumbnail: null }, "art08.thumbnail-required"],
-    ["썸네일 4:3", { thumbnail: { rightsStatus: "confirmed", width: 1200, height: 900 } }, "art08.thumbnail-ratio"],
-    ["썸네일 크기 모름", { thumbnail: { rightsStatus: "confirmed", width: null, height: null } }, "art08.thumbnail-ratio"],
+    ["썸네일 4:3", { thumbnail: { rightsStatus: "confirmed", licenseType: "not_applicable", width: 1200, height: 900 } }, "art08.thumbnail-ratio"],
+    ["썸네일 크기 모름", { thumbnail: { rightsStatus: "confirmed", licenseType: "not_applicable", width: null, height: null } }, "art08.thumbnail-ratio"],
     ["썸네일 권리 미확인", { thumbnail: { rightsStatus: "unconfirmed", width: 1920, height: 1080 } }, "nav04.image-rights"],
     ["youtube.com 주소(직접 넣은 행)", { embedUrl: `https://www.youtube.com/embed/${ID}` }, "art08.embed-url"],
   ])("%s → 그 항목 하나로 발행 불가", (_name, over, id) => {
@@ -221,7 +223,7 @@ describe("ART-08 발행 판정 — 동영상 (요약 · 자막 확인 · 썸네�
   });
 
   it("4:3 썸네일 문장은 지금 크기를 알려 준다, 썸네일 항목에는 media 번호가 붙는다", () => {
-    const f = checkMediaFormats(draft("video", video({ thumbnail: { rightsStatus: "confirmed", width: 1200, height: 900 } })));
+    const f = checkMediaFormats(draft("video", video({ thumbnail: { rightsStatus: "confirmed", licenseType: "not_applicable", width: 1200, height: 900 } })));
     expect(f).toEqual([expect.objectContaining({ id: "art08.thumbnail-ratio", location: { field: "blocks", blockIndex: base, phrase: "media-thumb-1" } })]);
     expect(f[0]!.message).toContain("1200×900");
   });

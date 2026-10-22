@@ -221,9 +221,15 @@ export interface PublicSourceRow {
   published_on: string | null;
   reference_date: string | null;
   supersedes_id: number | null;
+  /** W4 5단계 — 공공누리 유형(PR-07 배지, 마이그레이션 …41) · 자료 종류(REG1-07) · 지역 단위·수집일(REG1-09) */
+  license_type: string | null;
+  source_type: string | null;
+  region_unit: string | null;
+  collected_at: string | null;
 }
+/** 공개 출처 칸 — license_type은 마이그레이션 …41의 칸이다(원격 DB에 …41이 있어야 기사 상세가 읽힌다) */
 export const SOURCE_COLUMNS =
-  "id, article_id, kind, title, source_url, source_name, provider, last_verified_at, license_status, published_on, reference_date, supersedes_id";
+  "id, article_id, kind, title, source_url, source_name, provider, last_verified_at, license_status, published_on, reference_date, supersedes_id, license_type, source_type, region_unit, collected_at";
 
 /** 용어사전 공개 칸 — 공개 읽기(RLS)는 공개 상태(visible) 용어만 준다 (W2-d 3단계) */
 export interface GlossaryRow {

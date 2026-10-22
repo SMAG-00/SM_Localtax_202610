@@ -7,6 +7,7 @@ import {
   EVIDENCE_TYPES,
   FORMATS,
   LABELS,
+  LICENSE_TYPES,
   QUOTE_CONSENTS,
   REPORTING_METHODS,
   REVIEW_DECISIONS,
@@ -21,6 +22,7 @@ import {
   taxReviewReasons,
   type ArticleBlock,
   type ArticleForPublish,
+  type LicenseType,
   type RightsStatus,
   type TaxLens,
 } from "@ltr/editorial";
@@ -88,18 +90,27 @@ export function toTaxLens(json: unknown): TaxLens | null {
  * 저장한 블록 + media 기록 → 판정 블록. media에서만 읽는 칸(권리 · 출처 · 이용 조건 · media 대체 텍스트 · 썸네일 크기)을 채운다 —
  * 작성자가 본문에 적어 넣을 수 없다 (NAV-04 · ART-08 · ART-09)
  */
-export function withMediaFacts(b: StoredBlock, media: ReadonlyMap<string, Pick<MediaRow, "rights_status" | "alt" | "credit" | "license" | "width" | "height">>): ArticleBlock {
+export function withMediaFacts(
+  b: StoredBlock,
+  media: ReadonlyMap<string, Pick<MediaRow, "rights_status" | "alt" | "credit" | "license" | "width" | "height" | "license_type">>,
+): ArticleBlock {
   if (b.type === "image") {
     const m = media.get(b.mediaId);
-    return { ...b, rightsStatus: rights(m?.rights_status), credit: m?.credit ?? null, license: m?.license ?? null, mediaAlt: m?.alt ?? null };
+    return { ...b, rightsStatus: rights(m?.rights_status), credit: m?.credit ?? null, license: m?.license ?? null, mediaAlt: m?.alt ?? null, licenseType: licenseOf(m?.license_type) };
   }
-  if (b.type === "infographic") return { ...b, rightsStatus: rights(media.get(b.mediaId)?.rights_status) };
+  if (b.type === "infographic") {
+    const m = media.get(b.mediaId);
+    return { ...b, rightsStatus: rights(m?.rights_status), licenseType: licenseOf(m?.license_type) };
+  }
   if (b.type === "video") {
     const m = b.thumbnailMediaId === null ? undefined : media.get(b.thumbnailMediaId);
-    return { ...b, thumbnail: m ? { rightsStatus: rights(m.rights_status), width: m.width ?? null, height: m.height ?? null } : null };
+    return { ...b, thumbnail: m ? { rightsStatus: rights(m.rights_status), width: m.width ?? null, height: m.height ?? null, licenseType: licenseOf(m.license_type) } : null };
   }
   return b;
 }
+
+/** 공공누리 유형 — 목록 밖·빈 값은 null(빈 것으로 판정 — PR-07) */
+export const licenseOf = (v: string | null | undefined): LicenseType | null => pick(LICENSE_TYPES, v ?? null);
 
 export function toArticleForPublish(graph: ArticleGraph): ArticleForPublish {
   const a = graph.article;
@@ -137,7 +148,9 @@ export function toArticleForPublish(graph: ArticleGraph): ArticleForPublish {
     digestId: a.digest_id === null ? null : String(a.digest_id),
     amendmentId: a.amendment_id === null ? null : String(a.amendment_id),
     leadImage:
-      a.lead_media_id === null ? null : { mediaId: String(a.lead_media_id), alt: lead?.alt ?? "", rightsStatus: rights(lead?.rights_status) },
+      a.lead_media_id === null
+        ? null
+        : { mediaId: String(a.lead_media_id), alt: lead?.alt ?? "", rightsStatus: rights(lead?.rights_status), licenseType: licenseOf(lead?.license_type) },
     sources: graph.sources.flatMap((s) => {
       const kind = pick(SOURCE_KINDS, s.kind);
       if (!kind) return [];
@@ -151,6 +164,13 @@ export function toArticleForPublish(graph: ArticleGraph): ArticleForPublish {
           accessedAt: s.last_verified_at,
           // 출처의 권리 상태 = license_status(이용 조건)가 적혀 있음 — 사진 출처 판정(NAV-04)에만 쓰인다
           rightsStatus: blank(s.license_status) ? "unconfirmed" : "confirmed",
+          // W4 5단계 — 공공누리 유형(PR-07) · 자료 종류(REG1-07) · 공식 자료 필수 칸(REG1-09). 대체된 옛 판은 graph.sources에 없다
+          licenseType: licenseOf(s.license_type),
+          sourceType: s.source_type ?? null,
+          publishedOn: s.published_on ?? null,
+          referenceDate: s.reference_date ?? null,
+          regionUnit: s.region_unit ?? null,
+          collectedAt: s.collected_at ?? null,
         },
       ];
     }),

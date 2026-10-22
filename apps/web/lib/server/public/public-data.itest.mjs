@@ -116,7 +116,7 @@ beforeAll(async () => {
   const photo = (path, confirmed) =>
     insert(
       "media",
-      confirmed ? { path, kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", checked_at: new Date() } : { path, kind: "photo" },
+      confirmed ? { path, kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", license_type: "not_applicable", checked_at: new Date() } : { path, kind: "photo" },
       "media",
     );
   w.mediaOk = await photo(`it-ok-${RUN}.jpg`, true);

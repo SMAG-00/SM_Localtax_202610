@@ -2,6 +2,7 @@
 //  · 인포그래픽: 템플릿 고르기 → 같은 내용 칸의 틀(표 머리 칸·목록), 칸 글자 ↔ 같은 내용(InfographicData)
 //  · 동영상·포토: 블록마다 '발행 전 확인' 줄 — 발행 판정(@ltr/editorial)과 같은 조건을 화면에서 미리 보인다(최종 판정은 점검 패널)
 import { infographicSaveProblems, isSixteenByNine, parseYoutubeEmbed, type InfographicData, type InfographicTemplate } from "@ltr/editorial";
+import { licenseBadge } from "./official-source-rules";
 import { textToRows } from "./table-text";
 
 /** 편집 화면이 받는 이미지 기록 (media 표 — 서버가 service_role로 읽어 넘긴다) */
@@ -16,15 +17,20 @@ export interface EditorMedia {
   kind: string;
   width: number | null;
   height: number | null;
+  /** 공공누리 유형 · 자르기 허용 (W4 5단계 PR-07 · REG1-09) */
+  license_type?: string | null;
+  crop_allowed?: boolean;
 }
 
 /** 이미지 기록의 권리 상태 글자 (media.rights_status — W2-a 설계 §2) */
 export const MEDIA_RIGHTS_LABELS: Readonly<Record<string, string>> = { unconfirmed: "권리 미확인", confirmed: "권리 확인", rejected: "사용 불가" };
 
-/** 이미지 고르기 칸의 글자 — 번호 · 설명(없으면 경로) · 크기 · 권리 상태 */
+/** 이미지 고르기 칸의 글자 — 번호 · 설명(없으면 경로) · 크기 · 권리 상태 · 공공누리 유형(있을 때 — 제2·3유형·제4유형·미표시 사진은 발행 판정이 막는다, PR-07) · 자르기 불가 */
 export function mediaOptionLabel(m: EditorMedia): string {
   const size = m.width && m.height ? ` · ${m.width}×${m.height}` : "";
-  return `${m.id} · ${m.alt || m.path}${size} (${MEDIA_RIGHTS_LABELS[m.rights_status] ?? m.rights_status})`;
+  const license = licenseBadge(m.license_type);
+  const extra = [license, m.crop_allowed === false ? "자르기 불가" : null].filter(Boolean).map((x) => ` · ${x}`).join("");
+  return `${m.id} · ${m.alt || m.path}${size} (${MEDIA_RIGHTS_LABELS[m.rights_status] ?? m.rights_status}${extra})`;
 }
 
 // ── 인포그래픽 ────────────────────────────────────────────

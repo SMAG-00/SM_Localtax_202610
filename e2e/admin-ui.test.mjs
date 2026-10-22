@@ -154,6 +154,9 @@ async function writeFromAssignment(page, assignmentId, { title, slug, template }
   return id;
 }
 
+// W4 5단계 — 공식 자료 칸 (시험용 값)
+const OFFICIAL_UI = { licenseType: "kogl_1", published: "2026-10-01", reference: "2026-10-01", regionUnit: "시·군·구", collected: "2026-10-10" };
+
 async function addSource(page, s) {
   const form = page.getByRole("form", { name: "출처 더하기" });
   await form.locator("#src-kind").selectOption(s.kind);
@@ -162,6 +165,12 @@ async function addSource(page, s) {
   await form.locator("#src-source-name").fill(s.sourceName ?? "");
   await form.locator("#src-verified").fill(s.verified ?? "");
   await form.locator("#src-license").fill(s.license ?? "");
+  // W4 5단계 — 공공누리 유형(PR-07) · 자료 종류(REG1-07) · 공식 자료 발표일·기준일·지역 단위·수집일(REG1-09)
+  if (s.licenseType) await form.locator("#src-license-type").selectOption(s.licenseType);
+  if (s.sourceType) await form.locator("#src-source-type").selectOption(s.sourceType);
+  for (const [field, key] of [["src-published", "published"], ["src-reference", "reference"], ["src-region-unit", "regionUnit"], ["src-collected", "collected"]]) {
+    if (s[key] !== undefined) await form.locator(`#${field}`).fill(s[key]);
+  }
   await form.getByRole("button", { name: "출처 더하기" }).click();
   const note = form.getByRole("status").filter({ hasText: "출처를 더했습니다" });
   await note.waitFor();
@@ -354,6 +363,10 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
     sourceName: "가온시 세정과",
     verified: "2026-10-07",
     license: "공공누리 제1유형",
+    ...OFFICIAL_UI,
+    sourceType: "local_tax_revenue",
+    reference: "2026-06-30",
+    regionUnit: "시·구",
   });
 
   const ev = await addEvidence(reporter, {
@@ -476,6 +489,8 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
     sourceName: "가온시",
     verified: "2026-10-14",
     license: "공공저작물 자유이용",
+    ...OFFICIAL_UI,
+    sourceType: "ordinance",
   });
   const interview = (role, n) => ({
     type: "interview",

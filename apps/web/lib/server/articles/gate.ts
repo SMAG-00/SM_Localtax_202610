@@ -1,6 +1,17 @@
 // 발행 판정 한 번 — 유사도(@ltr/similarity) → 구조화 데이터 대조(@ltr/structured-data) → 최적화 점검(@ltr/seo-lint) →
 // 편집 판정(@ltr/editorial). 순수 함수: 입력(기사 한 판·설정·시각)이 같으면 결과가 같다. 발행 API와 점검 패널(GET check)이 같이 쓴다.
-import { evaluatePublish, R8_THRESHOLDS, type ArticleForPublish, type Dictionaries, type Finding, type PublishEvaluation } from "@ltr/editorial";
+import {
+  evaluatePublish,
+  KOGL_USAGE_DEFAULT,
+  OFFICIAL_SOURCE_TYPES,
+  R8_THRESHOLDS,
+  type ArticleForPublish,
+  type Dictionaries,
+  type Finding,
+  type KoglUsage,
+  type PublishEvaluation,
+} from "@ltr/editorial";
+import { parseKoglUsage, parseOfficialSourceTypes } from "@/lib/admin/official-source-rules";
 import { RULES_V1, lintArticle, type LintResult } from "@ltr/seo-lint";
 import { INTERNAL_SIMILARITY_RULES, checkSimilarity, selectThresholds, type InternalSimilaritySettings, type SimilarityResult } from "@ltr/similarity";
 import { compareRendered, newsArticle } from "@ltr/structured-data";
@@ -10,6 +21,10 @@ import { lintContext, renderedFacts, similarityDraft, similaritySources, toArtic
 export interface GateSettings {
   dictionaries: Dictionaries;
   similarity: InternalSimilaritySettings;
+  /** 공공누리 이용 범위 settings.kogl_usage (PR-07 — 없거나 틀리면 KOGL_USAGE_DEFAULT, 가장 닫힌 쪽) */
+  kogl?: KoglUsage;
+  /** 공식 자료 종류 허용 목록 settings.official_source_types (REG1-07 — 없거나 틀리면 씨앗) */
+  officialSourceTypes?: readonly string[];
 }
 
 export interface GateOptions {
@@ -69,7 +84,13 @@ export function runGate(graph: ArticleGraph, settings: GateSettings, opts: GateO
     dictionaries: settings.dictionaries,
     thresholds: R8_THRESHOLDS,
     seoLint: { blockers: lint.blockers, warnings: lint.warnings },
-    similarity: { status: similarity.status },
+    // 원문 전재 검사(PR-07) — 원문 문장과 기준 이상 같은 본문 문장(직접 인용 블록 제외)과 그 원문
+    similarity: {
+      status: similarity.status,
+      copied: similarity.perSentence.flatMap((m) => (m.similar && !m.inQuote && m.bestSourceId ? [{ sourceId: m.bestSourceId, sentenceIndex: m.index }] : [])),
+    },
+    kogl: settings.kogl ?? KOGL_USAGE_DEFAULT,
+    officialSourceTypes: settings.officialSourceTypes ?? OFFICIAL_SOURCE_TYPES,
   });
 
   return {
@@ -139,5 +160,20 @@ export function parseGateSettings(
   }
 
   const jargonTerms = glossary.flatMap((g) => (g.term.trim() && g.plain && g.plain.trim() ? [{ term: g.term, plain: g.plain }] : []));
-  return { settings: { dictionaries: { forbiddenPhrases, fearPhrases, jargonTerms }, similarity }, problems };
+  // W4 5단계 — 공공누리 이용 범위·자료 종류 허용 목록. 없으면 권고 기본값·씨앗(닫힌 쪽), 모양이 틀리면 문제 목록에 적는다
+  const koglRaw = byKey.get("kogl_usage");
+  const kogl = parseKoglUsage(koglRaw);
+  if (koglRaw !== undefined && !kogl) problems.push("settings.kogl_usage 형식이 틀립니다");
+  const typesRaw = byKey.get("official_source_types");
+  const officialSourceTypes = parseOfficialSourceTypes(typesRaw);
+  if (typesRaw !== undefined && !officialSourceTypes) problems.push("settings.official_source_types 형식이 틀립니다");
+  return {
+    settings: {
+      dictionaries: { forbiddenPhrases, fearPhrases, jargonTerms },
+      similarity,
+      kogl: kogl ?? KOGL_USAGE_DEFAULT,
+      officialSourceTypes: officialSourceTypes ?? [...OFFICIAL_SOURCE_TYPES],
+    },
+    problems,
+  };
 }

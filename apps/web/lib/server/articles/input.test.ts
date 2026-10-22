@@ -2,7 +2,7 @@
 import { describe, expect, test } from "vitest";
 import { EMPTY_CHECKLISTS, parseBodyInput, parseChecklistsInput, readChecklists, readStoredBody, withChecklists } from "./content";
 import { parseArticleInput } from "./input";
-import { parseEvidenceInput, parseSourceInput } from "./records-input";
+import { parseEvidenceInput, parseSourceInput, parseSourceRevision } from "./records-input";
 
 const errorsOf = (r: { ok: boolean; errors?: string[] }) => (r.ok ? [] : (r as { errors: string[] }).errors);
 
@@ -113,9 +113,79 @@ describe("확인 목록 (check_log.checklists)", () => {
 
 describe("출처·근거 입력", () => {
   test("출처 — 종류 필수, camelCase → DB 칸, 스냅샷 글", () => {
-    const r = parseSourceInput({ kind: "press_release", url: "https://x.example/p", sourceName: "가온시", snapshot: { text: "보도자료 원문" } });
-    expect(r).toEqual({ ok: true, value: { columns: { kind: "press_release", source_url: "https://x.example/p", source_name: "가온시" }, snapshot: { text: "보도자료 원문", url: null, source: null } } });
+    const r = parseSourceInput({ kind: "press_release", url: "https://x.example/p", sourceName: "가온시", licenseType: "kogl_1", snapshot: { text: "보도자료 원문" } });
+    expect(r).toEqual({
+      ok: true,
+      value: { columns: { kind: "press_release", source_url: "https://x.example/p", source_name: "가온시", license_type: "kogl_1" }, snapshot: { text: "보도자료 원문", url: null, source: null } },
+    });
     expect(errorsOf(parseSourceInput({ kind: "blog" }))).toEqual(["source.kind: official_doc·dataset·press_release·interview·field·photo·other 중 하나여야 합니다"]);
+  });
+  test("출처 — 공공누리 유형: 공식 자료·보도자료·사진은 필수, 6값만, 인터뷰는 없어도 된다 (PR-07)", () => {
+    for (const kind of ["official_doc", "dataset", "press_release", "photo"]) {
+      expect(errorsOf(parseSourceInput({ kind, title: "자료" }))).toContain(
+        "source.licenseType: 공식 자료·보도자료·사진은 공공누리 유형이 필요합니다 — 자체 자료는 '해당 없음'(not_applicable) (PR-07)",
+      );
+    }
+    expect(errorsOf(parseSourceInput({ kind: "press_release", licenseType: "kogl_5" }))).toEqual([
+      "source.licenseType: kogl_1·kogl_2·kogl_3·kogl_4·unmarked·not_applicable 중 하나여야 합니다",
+      "source.licenseType: 공식 자료·보도자료·사진은 공공누리 유형이 필요합니다 — 자체 자료는 '해당 없음'(not_applicable) (PR-07)",
+    ]);
+    expect(errorsOf(parseSourceInput({ kind: "interview", title: "관계자 통화" }))).toEqual([]);
+  });
+  test("출처 — 자료 종류: 허용 목록 값만·차단 4종 거부·공식 자료 행에만, 빈 글자는 없음으로 (REG1-07)", () => {
+    const official = { kind: "official_doc", title: "시험용 고시", licenseType: "kogl_1" };
+    expect(errorsOf(parseSourceInput({ ...official, sourceType: "notice" }))).toEqual([]);
+    expect(errorsOf(parseSourceInput({ ...official, sourceType: "tourism" }))).toEqual([
+      "source.sourceType: 자료 종류 tourism는 교통·관광·음식점·생활 안내라 지역정보(공식 자료)에 넣지 않습니다 (REG1-07 코드 고정)",
+    ]);
+    expect(errorsOf(parseSourceInput({ ...official, sourceType: "festival_guide" }))).toEqual(["source.sourceType: 자료 종류 festival_guide는 허용 목록(official_source_types)에 없습니다 (REG1-07)"]);
+    // 차단 4종은 설정 목록에 있어도 거부 (코드 고정)
+    expect(errorsOf(parseSourceInput({ ...official, sourceType: "restaurant" }, ["restaurant"]))).toHaveLength(1);
+    expect(errorsOf(parseSourceInput({ kind: "press_release", licenseType: "kogl_1", sourceType: "notice" }))).toEqual([
+      "source.sourceType: 자료 종류는 공식 자료(official_doc·dataset) 출처에만 씁니다 (REG1-07)",
+    ]);
+    const blank = parseSourceInput({ ...official, sourceType: "  ", regionUnit: " " });
+    expect(blank.ok && blank.value.columns).toMatchObject({ source_type: null, region_unit: null });
+  });
+  test("원자료 새 버전 — 사유 필수·500자·바뀐 칸 1개 이상, 종류·대체·스냅샷은 바꿀 수 없고 그대로 잇는다 (REG1-09)", () => {
+    const current = {
+      id: 41,
+      kind: "dataset",
+      title: "시험용 가상구 세수 결산",
+      source_url: "https://gasang.example/open/1",
+      source_name: "시험용 가상구청",
+      provider: null,
+      last_verified_at: "2026-10-20T01:00:00+00:00",
+      license_status: "공공누리 제1유형",
+      license_type: "kogl_1",
+      source_type: "local_tax_revenue",
+      published_on: "2026-10-01",
+      reference_date: "2026-06-30",
+      region_code: null,
+      region_unit: "시·군·구",
+      collected_at: "2026-10-19T01:00:00+00:00",
+      snapshot_id: 9,
+    };
+    const ok = parseSourceRevision({ revisionReason: " 발표기관 정정 ", title: "시험용 가상구 세수 결산(정정)" }, current);
+    expect(ok).toEqual({
+      ok: true,
+      value: {
+        changed: ["title"],
+        row: { ...Object.fromEntries(Object.entries(current).filter(([k]) => k !== "id")), title: "시험용 가상구 세수 결산(정정)", supersedes_id: 41, revision_reason: "발표기관 정정" },
+      },
+    });
+    expect(errorsOf(parseSourceRevision({ title: "새 제목" }, current))).toEqual(["source.revisionReason: 수정 사유가 필요합니다 — 원자료를 고치면 새 버전과 사유가 남습니다 (REG1-09)"]);
+    expect(errorsOf(parseSourceRevision({ revisionReason: "   ", title: "새 제목" }, current))).toHaveLength(1);
+    expect(errorsOf(parseSourceRevision({ revisionReason: "가".repeat(501), title: "새 제목" }, current))).toEqual(["source.revisionReason: 500자 이하로 적습니다"]);
+    expect(errorsOf(parseSourceRevision({ revisionReason: "사유", title: current.title }, current))).toEqual(["source: 바뀐 칸이 없습니다 — 고칠 칸을 적으세요"]);
+    expect(errorsOf(parseSourceRevision({ revisionReason: "사유", kind: "press_release" }, current))).toContain("source.kind: 모르는 칸입니다");
+    expect(errorsOf(parseSourceRevision({ revisionReason: "사유", supersedesId: 1 }, current))).toContain("source.supersedesId: 모르는 칸입니다");
+    expect(errorsOf(parseSourceRevision({ revisionReason: "사유", sourceType: "living_guide" }, current))).toEqual([
+      "source.sourceType: 자료 종류 living_guide는 교통·관광·음식점·생활 안내라 지역정보(공식 자료)에 넣지 않습니다 (REG1-07 코드 고정)",
+    ]);
+    expect(errorsOf(parseSourceRevision({ revisionReason: "사유", licenseType: null }, current))).toEqual([
+      "source.licenseType: 공식 자료·보도자료·사진은 공공누리 유형이 필요합니다 — 자체 자료는 '해당 없음'(not_applicable) (PR-07)",
+    ]);
   });
   test("근거 — 유형 6종, 인터뷰 기록은 interview 유형에만, 연락처 칸은 없다", () => {
     expect(errorsOf(parseEvidenceInput({ evidenceType: "rumor", location: "x" }, "create"))).toEqual([

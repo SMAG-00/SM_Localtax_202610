@@ -289,7 +289,7 @@ test("읽기 함수 — [p_from, p_to) 경계, 기사마다 근거·권리·승�
       )
     ).rows[0].id;
     await client.query("insert into public.story_assignments (section, kind, status, reporter_id, editor_id, conflicts, relevance) values ('tax', 'general', 'reporting', $1, $2, '없음', '세수')", [reporter, editor]);
-    const confirmed = (await client.query("insert into public.media (path, kind, rights_status, credit, license, checked_at, photographer) values ('f/ok.png', 'photo', 'confirmed', '편집국', '자체', now(), '김') returning id")).rows[0].id;
+    const confirmed = (await client.query("insert into public.media (path, kind, rights_status, credit, license, license_type, checked_at, photographer) values ('f/ok.png', 'photo', 'confirmed', '편집국', '자체', 'not_applicable', now(), '김') returning id")).rows[0].id;
     const unconfirmed = (await client.query("insert into public.media (path, kind) values ('f/no.png', 'photo') returning id")).rows[0].id;
 
     const before = await article({ first_published_at: at(FROM, -1), author_id: reporter });

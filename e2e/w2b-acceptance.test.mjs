@@ -131,6 +131,8 @@ const publish = (a) => expectStatus(api("POST", `/articles/${a.id}/publish`, u.e
 /** 「지방세로 읽기」 생략 사유 — 편집 책임자만 (CORE-01) */
 const skipTaxLens = (a, reason) => patchArticle(a, u.editor, { taxLens: { topics: [], points: [], links: [], omissionReason: reason } });
 
+// W4 5단계 (REG1-09 · PR-07) — 공식 자료는 공공누리 유형·발표일·기준일·지역 단위·수집일이 있어야 발행된다 (시험용 값)
+const OFFICIAL_W4 = { licenseType: "kogl_1", publishedOn: "2026-10-01", referenceDate: "2026-10-01", regionUnit: "전국", collectedAt: "2026-10-10T09:00:00+09:00" };
 const LAW_SOURCE = {
   kind: "official_doc",
   title: "지방세법 제20조(신고 및 납부)",
@@ -138,6 +140,7 @@ const LAW_SOURCE = {
   sourceName: "법제처 국가법령정보센터",
   lastVerifiedAt: "2026-10-10T09:00:00+09:00",
   licenseStatus: "공공저작물 자유이용",
+  ...OFFICIAL_W4,
 };
 const interview = (role, n) => ({
   evidenceType: "interview",
@@ -177,6 +180,10 @@ async function seedQuantReport() {
     sourceName: "가온시 세정과",
     lastVerifiedAt: "2026-10-07T10:00:00+09:00",
     licenseStatus: "공공누리 제1유형",
+    ...OFFICIAL_W4,
+    sourceType: "local_tax_revenue",
+    referenceDate: "2026-06-30",
+    regionUnit: "시·구",
   });
   const ev = await addEvidence(a, u.reporter2, {
     evidenceType: "dataset",

@@ -499,7 +499,9 @@ test("4) SRCH-01 결과마다 유형 표시(기사 유형 배지·상황·용어
 });
 
 // ── 5) 편집국 → 공개 → 검색 → 내림 ────────────────────────
-const LAW = { kind: "official_doc", title: "지방세법 제20조(신고 및 납부)", url: "https://www.law.go.kr/법령/지방세법/제20조", sourceName: "법제처 국가법령정보센터", lastVerifiedAt: "2026-10-10T09:00:00+09:00", licenseStatus: "공공저작물 자유이용" };
+// W4 5단계 (REG1-09 · PR-07) — 공식 자료는 공공누리 유형·발표일·기준일·지역 단위·수집일이 있어야 발행된다 (시험용 값)
+const OFFICIAL_W4 = { licenseType: "kogl_1", publishedOn: "2026-10-01", referenceDate: "2026-10-01", regionUnit: "전국", collectedAt: "2026-10-10T09:00:00+09:00" };
+const LAW = { kind: "official_doc", title: "지방세법 제20조(신고 및 납부)", url: "https://www.law.go.kr/법령/지방세법/제20조", sourceName: "법제처 국가법령정보센터", lastVerifiedAt: "2026-10-10T09:00:00+09:00", licenseStatus: "공공저작물 자유이용", ...OFFICIAL_W4 };
 test("5) SRCH-01 편집국 API로 쓴 기사 — 발행 판정을 지나 공개하면 검색에 나오고, 삭제 정정하면 바로 빠지며 주소는 410", async () => {
   const category = Number((await one("select id from public.categories where section = 'tax' and slug = 'interpretations'")).id);
   const title = `${M} 편집국발 신고기한`;

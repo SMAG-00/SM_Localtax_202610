@@ -216,12 +216,13 @@ function png(width, height) {
   row[0] = 0;
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(Buffer.concat(Array.from({ length: height }, () => row)))), chunk("IEND", Buffer.alloc(0))]);
 }
-async function insertMedia(label, { width, height, kind = "photo", confirmed = true, credit = "가온시청", photographer = kind === "photo" ? "김가온" : null, license = "공공누리 제1유형", alt = `${label} 그림` }) {
+async function insertMedia(label, { width, height, kind = "photo", confirmed = true, credit = "가온시청", photographer = kind === "photo" ? "김가온" : null, license = "공공누리 제1유형", licenseType = "kogl_1", alt = `${label} 그림` }) {
   const p = `e2e/${staff.run}/${label}.png`;
+  // 공공누리 유형(W4 5단계 PR-07) — 권리 확인 이미지는 필수, 미확인 이미지는 비운다
   const row = await one(
-    `insert into public.media (path, alt, kind, rights_status, credit, photographer, license, checked_at, width, height)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
-    [p, alt, kind, confirmed ? "confirmed" : "unconfirmed", credit, photographer, license, confirmed ? new Date() : null, width ?? null, height ?? null],
+    `insert into public.media (path, alt, kind, rights_status, credit, photographer, license, checked_at, width, height, license_type)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id`,
+    [p, alt, kind, confirmed ? "confirmed" : "unconfirmed", credit, photographer, license, confirmed ? new Date() : null, width ?? null, height ?? null, confirmed ? licenseType : null],
   );
   staff.trackRow("media", row.id);
   if (width && height) IMAGES.set(`/${p}`, { width, height });
@@ -314,7 +315,9 @@ async function waitForEvents(name, article, expected, since) {
 
 // ── 편집국 API로 쓰는 형식 기사 (발행 판정을 지나는 세법 해설 — 출처·핵심 요약·문단·표·인용·상자·FAQ·핵심 주장) ──
 
-const LAW = { kind: "official_doc", title: "지방세법 제20조(신고 및 납부)", url: "https://www.law.go.kr/법령/지방세법/제20조", sourceName: "법제처 국가법령정보센터", lastVerifiedAt: "2026-10-10T09:00:00+09:00", licenseStatus: "공공저작물 자유이용" };
+// W4 5단계 (REG1-09 · PR-07) — 공식 자료는 공공누리 유형·발표일·기준일·지역 단위·수집일이 있어야 발행된다 (시험용 값)
+const OFFICIAL_W4 = { licenseType: "kogl_1", publishedOn: "2026-10-01", referenceDate: "2026-10-01", regionUnit: "전국", collectedAt: "2026-10-10T09:00:00+09:00" };
+const LAW = { kind: "official_doc", title: "지방세법 제20조(신고 및 납부)", url: "https://www.law.go.kr/법령/지방세법/제20조", sourceName: "법제처 국가법령정보센터", lastVerifiedAt: "2026-10-10T09:00:00+09:00", licenseStatus: "공공저작물 자유이용", ...OFFICIAL_W4 };
 const baseBlocks = (srcRef) => [
   { type: "key_summary", lines: ["주택을 사면 취득일부터 60일 안에 신고합니다.", "취득일은 잔금일과 등기일 중 빠른 날입니다.", "신고와 납부는 함께 합니다."] },
   { type: "paragraph", text: "취득일은 잔금을 치른 날과 등기를 마친 날 중 빠른 날이다. 자세한 흐름은 [지방세 허브](/tax)에서 볼 수 있다." },

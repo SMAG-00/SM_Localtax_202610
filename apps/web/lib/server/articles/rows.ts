@@ -82,6 +82,9 @@ export interface MediaRow {
   /** 원본 가로·세로(픽셀) — 동영상 썸네일 16:9 판정 (ART-08). 모르면 null */
   width: number | null;
   height: number | null;
+  /** 공공누리 유형 · 자르기 허용 (PR-07 · REG1-09 — W4 5단계) */
+  license_type?: string | null;
+  crop_allowed?: boolean;
 }
 
 export interface SourceRow {
@@ -97,6 +100,14 @@ export interface SourceRow {
   license_status: string | null;
   snapshot_id: number | null;
   supersedes_id: number | null;
+  /** W4 5단계 — 공공누리 유형(PR-07) · 자료 종류(REG1-07) · 발표일·기준일·지역 단위·수집일(REG1-09) · 수정 사유 */
+  license_type?: string | null;
+  source_type?: string | null;
+  published_on?: string | null;
+  reference_date?: string | null;
+  region_unit?: string | null;
+  collected_at?: string | null;
+  revision_reason?: string | null;
 }
 
 export interface SnapshotRow {

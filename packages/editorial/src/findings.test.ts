@@ -13,7 +13,10 @@ describe("규칙 목록", () => {
   it("항목 ID 앞머리가 근거 PRD ID와 맞는다 (nav10.* → NAV-10)", () => {
     for (const rule of RULES) {
       const prefix = rule.id.split(".")[0]!;
-      const expected = prefix.replace(/^([a-z]+)(\d+)$/, (_m, letters: string, digits: string) => `${letters.toUpperCase()}-${digits}`);
+      // nav10 → NAV-10 · reg1_07 → REG1-07 (01B 지역 요구사항 ID)
+      const expected = prefix
+        .replace(/^([a-z]+)(\d+)_(\d+)$/, (_m, letters: string, group: string, digits: string) => `${letters.toUpperCase()}${group}-${digits}`)
+        .replace(/^([a-z]+)(\d+)$/, (_m, letters: string, digits: string) => `${letters.toUpperCase()}-${digits}`);
       expect(rule.ruleRef).toBe(expected);
     }
   });
@@ -22,7 +25,7 @@ describe("규칙 목록", () => {
     const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
     const rows = readme
       .split(/\r?\n/)
-      .filter((line) => /^\| `[a-z0-9.-]+` \|/.test(line))
+      .filter((line) => /^\| `[a-z0-9._-]+` \|/.test(line))
       .map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));
     const expected = RULES.map((r) => [`\`${r.id}\``, r.ruleRef, r.level === "block" ? "차단" : "경고", r.title]);
     expect(rows).toEqual(expected);

@@ -82,6 +82,11 @@ result.warnings;    // 발행 기록(check_log)에 남긴다
 | `nav04.sources-required` | NAV-04 | 차단 | 보도기사에 출처 없음 |
 | `nav04.own-evidence-required` | NAV-04 | 차단 | 자체 취재 근거 없음 |
 | `nav04.image-rights` | NAV-04 | 차단 | 사진 권리 미확인 |
+| `reg1_07.source-type` | REG1-07 | 차단 | 공식 자료 종류가 허용 목록 밖(교통·관광·음식점·생활 안내 차단) |
+| `reg1_09.official-fields` | REG1-09 | 차단 | 공식 자료의 발표일·기준일·지역 단위·수집일·확인일 빔 |
+| `pr07.license-required` | PR-07 | 차단 | 공식 자료·보도자료·사진 출처에 공공누리 유형 없음 |
+| `pr07.photo-license` | PR-07 | 차단 | 게시하지 않는 공공누리 유형의 사진(제4유형·미표시·법률 검토 전 제2·3유형) |
+| `pr07.full-text` | PR-07 | 차단 | 공공 자료 원문 본문을 그대로 옮김 |
 | `nav10.source-data` | NAV-10 | 차단 | 원자료(파일/URL·제공기관·수집일·이용권리) 빔 |
 | `nav10.indicator-definition` | NAV-10 | 차단 | 지표 정의(정의·기간·단위·지역 단위·분모·제외값) 빔 |
 | `nav10.calculation` | NAV-10 | 차단 | 계산 과정(수식·재현 파일) 빔 |
@@ -160,6 +165,7 @@ PO 확인이 필요하면 고치고 이 절과 시험을 함께 바꾼다.
 - **ART-10**: 공동 기획에는 제휴사(이름 포함)가, 제휴사를 지정했으면 표기가 있어야 한다. 계약 종료일 당일까지 유효, 첫 발행 전 기사에만 적용. '공동 기획과 광고 함께 지정'은 표기 칸이 하나라 입력에서 생길 수 없다. 배지 글자는 `sponsorBadge(label, partnerName)` — 광고 `광고`, 공동 기획 `공동 기획 ○○`(PRD 글자 그대로, packages/structured-data `sponsorLabelText`·packages/seo-lint `badgeFormats`와 같다). 제휴사 이름이 비면 배지가 없어(null) `art10.co-planned-partner-required`로 막는다.
 - **ART-05**: 이미 발행된 기사(`firstPublishedAt` 있음)를 다시 발행할 때 수정 종류·사유를 요구한다.
 - **OPT-06**: 유사도 `no_sources`·`no_body`는 경고(seo-lint rules.v1과 같은 등급). seo-lint·유사도 결과가 없으면(null) 차단.
+- **REG1-07·REG1-09·PR-07 공식 자료·공공누리 (01B — W4 5단계, `docs/dev/W4_설계.md` 1장 5단계 · 12장 #13)**: 공식 자료 = 출처 종류 `official_doc`·`dataset`(대체되지 않은 최신 판만 — 판정 입력이 고른다). 발표일·기준일·지역 단위·수집일·확인일이 하나라도 비면 칸마다 `reg1_09.official-fields`(위치 `sources.<API 칸>` — 422가 빈 칸을 이름으로 알린다). 공공누리 유형은 공식 자료·보도자료·사진 출처의 필수 칸(`pr07.license-required`). 자료 종류(`sourceType`)는 비면 보지 않고(국세·지방세 법령 출처는 6종 밖), 적었으면 허용 목록(`ctx.officialSourceTypes`, 없으면 씨앗 `OFFICIAL_SOURCE_TYPES`) 안이고 차단 4종(`BLOCKED_OFFICIAL_SOURCE_TYPES`) 밖이며 공식 자료 행이어야 한다(`reg1_07.source-type`). 고시·조례(`TAX_REVIEW_SOURCE_TYPES`) 자료를 쓴 해설·가이드는 세무 감수 대상 이유에 '고시·조례 자료를 쓴 해설 (REG1-07)'이 더해져 `nav03.tax-review-required`로 막힌다. 사진은 권리가 확인된 것만 유형을 본다 — 유형이 `ctx.kogl.photoTypes`(없으면 `KOGL_USAGE_DEFAULT` = 제1유형·해당 없음) 밖이면 `pr07.photo-license`, 제4유형·미표시는 설정과 상관없이 막는다(`KOGL_NEVER`). 원문 전재는 `ctx.similarity.copied`(유사도 검사기가 기준 이상 같다고 본 본문 문장 — 직접 인용 블록 제외)의 원문이 '해당 없음'이 아니고 `kogl.fullTextTypes` 밖이면 원문마다 `pr07.full-text`(기본값 = 모든 유형 전재 0). 유형 배지 글자는 `LICENSE_TYPE_LABELS`.
 - **권리·검증 상태 값**: PRD 6.1이 값 목록을 정하지 않아 `rights_status`는 `confirmed`·`unconfirmed`, `verification_status`는 `verified`·`unverified`로 두었다 — W2-a 설계 §2에 더해 DB와 맞춰야 한다.
 
 ## 이 패키지가 하지 않는 것 (뒤로 미룬 것)

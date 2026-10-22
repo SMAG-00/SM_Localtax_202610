@@ -91,6 +91,7 @@ describe("NAV-04 사진 권리 — 유형과 상관없이 미확인이면 발행
       provider: "가온시",
       accessedAt: "2026-10-10",
       rightsStatus: "unconfirmed" as const,
+      licenseType: "kogl_1" as const,
     };
     expect(run({ ...TAX_EXPLAINER, sources: [...TAX_EXPLAINER.sources, photo] }).blockers).toEqual([
       expect.objectContaining({ id: "nav04.image-rights", location: { field: "sources", phrase: "src-photo-1" } }),
@@ -104,6 +105,7 @@ describe("NAV-04 사진 권리 — 유형과 상관없이 미확인이면 발행
       alt: "구청 세무과 창구",
       caption: "취득세 신고 창구",
       rightsStatus: "confirmed",
+      licenseType: "not_applicable",
     });
     expect(blockers(article)).toEqual([]);
   });
