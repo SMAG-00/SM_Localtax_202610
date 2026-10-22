@@ -61,7 +61,7 @@ let seq = 0;
 const uniq = (p) => `${p}-${process.pid}-${++seq}`;
 
 async function article(over = {}) {
-  const row = { slug: uniq("w4os"), title: "시험용 공식 자료 기사", section: "local", content_type: "reported_news", status: "draft", ...over };
+  const row = { slug: uniq("w4os"), title: "시험용 공식 자료 기사", section: "local", content_type: "reported_news", status: "draft", region_codes: ["1100000000"], editorial_field: "local_tax", public_question: "시험용 공익적 질문", ...over };
   const keys = Object.keys(row);
   return (await client.query(`insert into public.articles (${keys.join(", ")}) values (${keys.map((_, i) => `$${i + 1}`).join(", ")}) returning *`, keys.map((k) => row[k]))).rows[0];
 }

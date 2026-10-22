@@ -64,7 +64,7 @@ const hashOf = (text) => `sha256:${createHash("sha256").update(text).digest("hex
 const one = async (sql, params) => (await client.query(sql, params)).rows[0];
 
 async function article(over = {}) {
-  const row = { slug: uniq("w4sr"), title: "시험용 검수 큐 기사", section: "local", content_type: "reported_news", status: "draft", ...over };
+  const row = { slug: uniq("w4sr"), title: "시험용 검수 큐 기사", section: "local", content_type: "reported_news", status: "draft", region_codes: ["1100000000"], editorial_field: "local_tax", public_question: "시험용 공익적 질문", ...over };
   const keys = Object.keys(row);
   return (await client.query(`insert into public.articles (${keys.join(", ")}) values (${keys.map((_, i) => `$${i + 1}`).join(", ")}) returning *`, keys.map((k) => row[k]))).rows[0];
 }

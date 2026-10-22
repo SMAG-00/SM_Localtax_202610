@@ -30,6 +30,10 @@ const DIRECT: [keyof ArticleInput, keyof ArticleRow][] = [
   ["regionCodes", "region_codes"],
   ["editorialField", "editorial_field"],
   ["publicQuestion", "public_question"],
+  ["subjectKind", "subject_kind"],
+  ["relationTypes", "relation_types"],
+  ["coveredPartnerIds", "covered_partner_ids"],
+  ["interestDisclosure", "interest_disclosure"],
   ["seriesTitle", "series_title"],
   ["seriesEpisode", "series_episode"],
 ];

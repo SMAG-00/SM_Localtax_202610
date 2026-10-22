@@ -3,7 +3,7 @@ import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { parseChecklistsInput, readChecklists } from "@/lib/server/articles/content";
 import { loadEditorView } from "@/lib/server/articles/editor-view";
 import { POST_PUBLISH_BLOCKERS } from "@/lib/server/articles/gate";
-import { parseArticleInput } from "@/lib/server/articles/input";
+import { REGIONAL_INPUT_KEYS, parseArticleInput } from "@/lib/server/articles/input";
 import { expiredPartnerError } from "@/lib/server/articles/partner-check";
 import { toArticleForPublish } from "@/lib/server/articles/mapping";
 import { planEdit } from "@/lib/server/articles/plan";
@@ -92,6 +92,11 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   const now = nowIso();
   const plan = planEdit(before, input, { now, updateKind, reason, checklists });
   if (plan.changed.length === 0) return json({ article: articleSummary(before), unchanged: true });
+  // 지역 기사 편집 칸을 바꾸면 편집국만 — 광고·협찬 담당 등은 403 + 감사 (REG1-17 · W4 7단계 · PRD_최종 §9.1)
+  if (plan.changed.some((k) => (REGIONAL_INPUT_KEYS as readonly string[]).includes(k))) {
+    const regionalDenied = await authorize(viewer, "article.regional_fields", target, resource);
+    if (regionalDenied) return regionalDenied;
+  }
   if (plan.omissionReasonChanged) {
     const skipDenied = await authorize(viewer, "article.tax_lens_skip", target);
     if (skipDenied) return skipDenied;

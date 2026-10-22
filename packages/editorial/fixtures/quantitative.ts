@@ -230,6 +230,7 @@ export const QUANTITATIVE_NEWS: ArticleForPublish = {
       reviewerUserId: "user-editor-01",
       signedAt: "2026-10-12T16:00:00+09:00",
       forVersion: 3,
+      checklist: { evidence: true, relation: true, ad_independence: true },
     },
   ],
   taxLens: {
@@ -257,4 +258,15 @@ export const QUANTITATIVE_NEWS: ArticleForPublish = {
     noCausalClaim: true,
   },
   qualitativeChecklist: null,
+  // 지역 기사 게이트 (REG1-17) — 가상 지역 코드(접두 99, 법정동코드에 없는 값)
+  regional: {
+    regionCodes: ["9900100000"],
+    editorialField: "local_finance",
+    publicQuestion: "거래 감소가 가온시 취득세 세수에 어떤 영향을 주는가",
+    subjectKind: "general",
+    relationTypes: [],
+    judgement: null,
+    contractedPartners: [],
+    interestDisclosure: null,
+  },
 };

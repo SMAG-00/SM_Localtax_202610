@@ -219,6 +219,7 @@ export const QUALITATIVE_NEWS: ArticleForPublish = {
       reviewerUserId: "user-editor-02",
       signedAt: "2026-10-15T18:00:00+09:00",
       forVersion: 2,
+      checklist: { evidence: true, relation: true, ad_independence: true },
     },
     {
       kind: "tax_review",
@@ -256,5 +257,16 @@ export const QUALITATIVE_NEWS: ArticleForPublish = {
     fieldRecord: "2026-10-13 누리구 상가 3곳 방문, 임대인 2명·임차인 1명 면담(취재 노트 ev-field-1)",
     counterPerspective: "시는 신청 절차가 간단하다고 설명 — 임대인·세무사의 증빙 부담 관점을 함께 실음",
     conflictsOfInterest: "취재 대상과 SM 사이 광고·제휴·자문 관계 없음(2026-10-14 확인)",
+  },
+  // 지역 기사 게이트 (REG1-17) — 가상 지역 코드(접두 99, 법정동코드에 없는 값)
+  regional: {
+    regionCodes: ["9900100000"],
+    editorialField: "local_tax",
+    publicQuestion: "상가 임대인 재산세 감면이 왜 덜 쓰이는가",
+    subjectKind: "general",
+    relationTypes: [],
+    judgement: null,
+    contractedPartners: [],
+    interestDisclosure: null,
   },
 };

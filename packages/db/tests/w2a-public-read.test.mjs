@@ -45,7 +45,7 @@ async function world(fn) {
     const unconfirmed = await insert("media", { path: "u.jpg", kind: "photo" });
     const confirmed = await insert("media", { path: "c.jpg", kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", license_type: "not_applicable", checked_at: new Date() });
     const confirmedLoose = await insert("media", { path: "draft.jpg", alt: "엠바고 사진", kind: "photo", rights_status: "confirmed", credit: "시험일보", photographer: "홍길동", license: "자체 촬영", license_type: "not_applicable", checked_at: new Date() });
-    const art = (over) => insert("articles", { slug: uniq("a"), title: "기사", section: "local", content_type: "reported_news", author_id: reporter.id, check_log: JSON.stringify({ x: 1 }), ...over });
+    const art = (over) => insert("articles", { slug: uniq("a"), title: "기사", section: "local", content_type: "reported_news", region_codes: ["1100000000"], editorial_field: "local_tax", public_question: "시험용 공익적 질문", author_id: reporter.id, check_log: JSON.stringify({ x: 1 }), ...over });
     const pub = await art({ status: "published" });
     const pubConfirmed = await art({ status: "published", lead_media_id: confirmed.id });
     const pubUnconfirmed = await art({ status: "published", lead_media_id: unconfirmed.id });
@@ -62,7 +62,7 @@ async function world(fn) {
     await insert("article_interviews", { evidence_id: ev.id, subject_role: "구청 세무과 직원", record_location: "녹취 보관함 B-3", quote_consent: "full", anonymity: "named" });
     const evData = await insert("article_evidence", { article_id: pub.id, evidence_type: "dataset", location: "data/tax.csv" });
     await insert("article_datasets", { evidence_id: evData.id, definition: "취득세 세수", repro_file_hash: "abc" });
-    await insert("editorial_reviews", { article_id: pub.id, kind: "desk_edit", reviewer_id: editor.id, decision: "approve" });
+    await insert("editorial_reviews", { article_id: pub.id, kind: "desk_edit", reviewer_id: editor.id, decision: "approve", checklist: JSON.stringify({ evidence: true, relation: true, ad_independence: true }) });
     await insert("staff_roles", { user_id: user, role: "reporter", granted_by: "admin:a" });
     const story = await insert("story_assignments", { section: "tax" });
     await insert("article_revisions", { article_id: pub.id, version: 1, title: "t", body: "[]", edited_by: "user:기자" });

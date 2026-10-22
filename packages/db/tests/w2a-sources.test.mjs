@@ -38,7 +38,7 @@ async function attempt(sql, params = [], role = null) {
 let seq = 0;
 const uniq = (p) => `${p}-${process.pid}-${++seq}`;
 async function publishedArticle() {
-  return (await client.query("insert into public.articles (slug, title, section, content_type, status) values ($1, 't', 'local', 'reported_news', 'published') returning id", [uniq("a")])).rows[0].id;
+  return (await client.query("insert into public.articles (slug, title, section, content_type, status, region_codes, editorial_field, public_question) values ($1, 't', 'local', 'reported_news', 'published', '{1100000000}', 'local_tax', '시험용 공익적 질문') returning id", [uniq("a")])).rows[0].id;
 }
 const FULL = {
   title: "2026 지방세 세수 결산",

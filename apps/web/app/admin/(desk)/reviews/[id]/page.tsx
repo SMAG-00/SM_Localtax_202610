@@ -9,7 +9,7 @@ import { MONO, Panel, TEXT_LINK, ToneChip } from "@/components/admin/ui";
 import { can } from "@/lib/access";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { EVIDENCE_TYPE_LABELS, SOURCE_KIND_LABELS, VERIFICATION_LABELS, labelOf } from "@/lib/admin/labels";
-import { ownArticleNote, reviewKindsFor } from "@/lib/admin/review-form";
+import { isRegionalRow, ownArticleNote, reviewKindsFor } from "@/lib/admin/review-form";
 import { orNotFound, pageId, pageViewer, requirePage } from "@/lib/server/admin/pages";
 import { peopleNames } from "@/lib/server/admin/queries";
 import { loadEditorView } from "@/lib/server/articles/editor-view";
@@ -76,7 +76,7 @@ export default async function ReviewArticlePage({ params }: Props) {
           />
           {kinds.includes("desk_edit") && !closed && (
             <Panel id="desk-edit" title="편집 승인">
-              {own ? <Callout>{own}</Callout> : <ReviewDecisionForm articleId={id} kind="desk_edit" reportingMethod={row.reporting_method} version={row.version} />}
+              {own ? <Callout>{own}</Callout> : <ReviewDecisionForm articleId={id} kind="desk_edit" reportingMethod={row.reporting_method} version={row.version} regional={isRegionalRow(row)} />}
             </Panel>
           )}
           {kinds.includes("tax_review") && !closed && (

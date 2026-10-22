@@ -74,6 +74,13 @@ const FIELD_NAMES: Record<string, string> = {
   leadImage: "대표 이미지",
   reviews: "검토 기록",
   partner: "제휴사",
+  // W4 7단계 지역 기사 게이트 (REG1-17)
+  regionCodes: "지역 코드",
+  editorialField: "편집 분야",
+  publicQuestion: "공익적 질문",
+  relationTypes: "관계 유형",
+  editorialJudgement: "편집자 판정",
+  interestDisclosure: "이해관계 표시",
 };
 
 /** 위치 글자 — blockTypes는 본문 블록 종류(저장된 순서) */

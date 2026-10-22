@@ -36,6 +36,13 @@ const CHECK_CONSTRAINTS: Record<string, [number, string]> = {
   article_sources_license_type_check: [422, "공공누리 유형은 kogl_1~4·unmarked·not_applicable 중 하나입니다 (PR-07)"],
   media_license_required: [422, "권리 확인 이미지는 공공누리 유형이 필요합니다 — 자체 촬영은 '해당 없음' (PR-07)"],
   media_license_type_check: [422, "공공누리 유형은 kogl_1~4·unmarked·not_applicable 중 하나입니다 (PR-07)"],
+  // W4 7단계 (20261022000043)
+  articles_subject_kind_check: [422, "소재 종류는 general·festival·attraction·commerce(일반·축제·명소·상권) 중 하나입니다 (REG1-17)"],
+  articles_relation_types_check: [422, "관계 유형은 budget·tax_revenue·public_property·development·transaction·housing(예산·세수·공유재산·개발·거래·주거 영향) 중에서 고릅니다 (REG1-17)"],
+  articles_editorial_judgement_check: [422, "편집자 판정은 news_candidate·travel_review·restaurant_pick·event_promo 중 하나입니다 (REG1-17)"],
+  articles_judgement_record: [422, "편집자 판정에는 판정자와 판정 시각이 함께 있어야 합니다 (REG1-17)"],
+  story_assignments_subject_kind_values: [422, "기획의 소재 종류는 general·festival·attraction·commerce 중 하나입니다 (REG1-17)"],
+  story_assignments_relation_types_values: [422, "기획의 관계 유형은 예산·세수·공유재산·개발·거래·주거 영향 6종 안에서 고릅니다 (REG1-17)"],
   article_corrections_versions: [422, "정정·제목 변경은 전후 버전이, 삭제는 전 버전이 있어야 합니다 (NAV-06)"],
   story_assignments_assigned_ready: [
     409,

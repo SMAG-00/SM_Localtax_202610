@@ -65,6 +65,8 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "hub_point.edit":          [X, O, X, X, X, X, X, X, X], // W3 9단계 — 허브 지방세 포인트 초안은 편집 책임자, 감수 서명은 review.tax_review(감수위원)
   "legal_doc.manage":        [X, O, X, X, X, X, X, X, X],
   "source_review.resolve":   [X, O, X, X, X, X, X, O, X], // W4 6단계 — 원문 검수 큐(다시 받기·해결)는 편집 책임자·관리자 (W4 설계 6장)
+  "regional.judge":          [X, O, X, X, X, X, X, O, X], // W4 7단계 — 지역 기사 편집자 판정은 편집 책임자, 1인 체제면 관리자(PO) (12장 #7 권고안)
+  "article.regional_fields": [O, O, X, X, X, X, X, O, X], // W4 7단계 — 지역 기사 편집 칸(편집 분야·공익적 질문·소재·관계)은 기자·편집 책임자·관리자, 광고·협찬 담당 0
   "column.manage":           [X, O, X, X, X, X, X, X, X],
   "column.signature":        [X, O, X, X, X, X, X, X, X], // W3 8단계 — 시그니처 연재 회차·순서는 칼럼 정렬과 같은 편집 행위 (BR-08)
   "correction.request":     [O, O, X, X, X, X, X, X, X],
@@ -180,6 +182,22 @@ describe("칼럼 필자 = 발행 승인자 거부 · 브랜드 관리 담당의 
       expect(AUDITED_DENIALS.has(action)).toBe(true);
     });
   }
+});
+
+describe("지역 기사 판정·편집 분야 — 광고·협찬 담당 거부 + 감사 (W4 7단계 · REG1-17 · PRD_최종 §9.1)", () => {
+  for (const action of ["regional.judge", "article.regional_fields"] as const) {
+    test(`ad_ops·brand_ops → ${action} 거부 + 사유에 REG1-17 + 감사 대상`, () => {
+      for (const role of ["ad_ops", "brand_ops"] as const) {
+        const decision = check(viewer([role]), action, article({ contentType: "sponsored" }));
+        expect(decision).toEqual({ allowed: false, reason: expect.stringContaining("REG1-17") });
+      }
+      expect(AUDITED_DENIALS.has(action)).toBe(true);
+    });
+  }
+  test("기자는 편집 분야 칸은 적지만 판정은 못 한다", () => {
+    expect(can(viewer(["reporter"]), "article.regional_fields")).toBe(true);
+    expect(can(viewer(["reporter"]), "regional.judge")).toBe(false);
+  });
 });
 
 describe("작성자와 승인자는 다른 사람 (NAV-12)", () => {

@@ -84,6 +84,8 @@ export const ACTIONS = {
   "link.manage": "바깥 연결 — 주소·이용 조건 편집, 수동 점검 기록 (편집 책임자)",
   "hub_point.edit": "허브 지방세 포인트 — 초안(문구 1~3줄·기준일·해설 링크) 저장·지우기 (편집 책임자 — 감수 서명은 review.tax_review)",
   "source_review.resolve": "원문 검수 큐 — 공식 자료 원문 다시 받기·검수 항목 해결(확인일 다시 적기 포함) (편집 책임자·관리자, W4 6단계 REG1-13)",
+  "regional.judge": "지역 기사 편집자 판정 — 기사 후보·여행 후기·맛집 추천·행사 홍보 (편집 책임자, 1인 체제면 관리자·PO — W4 7단계 REG1-17 · 12장 #7)",
+  "article.regional_fields": "지역 기사 편집 칸 — 편집 분야·공익적 질문·소재·관계 유형·다룬 제휴사·이해관계 표시 (기자·편집 책임자·관리자 — 편집국 외 역할 403 + 감사, W4 7단계)",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
@@ -117,6 +119,9 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "hub_point.edit",
   // W4 6단계 — 원문 검수 큐(다시 받기·해결). 공개 기사의 '검토 중' 표시를 바꾸는 일이라 거부도 감사 (REG1-13)
   "source_review.resolve",
+  // W4 7단계 — 지역 기사 편집자 판정·편집 분야 칸. 광고·협찬 담당 등 편집국 외 역할의 시도는 거부 + 감사 (REG1-17 · PRD_최종 §9.1)
+  "regional.judge",
+  "article.regional_fields",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -252,6 +257,15 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     // 원문 검수 큐 (W4 6단계) — 편집 책임자·관리자 (W4 설계 6장 '편집 책임자 이상')
     case "source_review.resolve":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("원문 검수(다시 받기·해결)는 편집 책임자와 관리자만 합니다 (REG1-13)");
+
+    // 지역 기사 편집자 판정 (W4 7단계 · 12장 #7 권고안) — 편집 책임자, 1인 체제면 관리자(PO)
+    case "regional.judge":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("지역 기사 판정은 편집 책임자(editor)와 관리자(PO)만 합니다 — 광고·협찬 등 편집국 외 역할은 판정을 바꿀 수 없습니다 (REG1-17)");
+    // 지역 기사 편집 칸 (편집 분야·공익적 질문·소재·관계 유형·다룬 제휴사·이해관계 표시) — 기자·편집 책임자·관리자
+    case "article.regional_fields":
+      return has(viewer, "reporter", "editor") || viewer.isAdmin
+        ? ALLOW
+        : deny("지역 기사의 편집 분야·공익적 질문·소재·관계 유형·이해관계 표시는 기자·편집 책임자·관리자만 적습니다 — 광고·협찬 등 편집국 외 역할은 바꿀 수 없습니다 (REG1-17)");
 
     case "correction.request":
       return has(viewer, "reporter", "editor") ? ALLOW : deny("정정·반론 요청은 기자·편집 책임자가 작성합니다");

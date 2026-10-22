@@ -5,6 +5,8 @@ import {
   KOGL_USAGE_DEFAULT,
   OFFICIAL_SOURCE_TYPES,
   R8_THRESHOLDS,
+  REGIONAL_JUDGE_FIELDS_DEFAULT,
+  type EditorialField,
   type ArticleForPublish,
   type Dictionaries,
   type Finding,
@@ -12,6 +14,7 @@ import {
   type PublishEvaluation,
 } from "@ltr/editorial";
 import { parseKoglUsage, parseOfficialSourceTypes } from "@/lib/admin/official-source-rules";
+import { parseRegionalJudgeFields } from "@/lib/admin/regional-rules";
 import { RULES_V1, lintArticle, type LintResult } from "@ltr/seo-lint";
 import { INTERNAL_SIMILARITY_RULES, checkSimilarity, selectThresholds, type InternalSimilaritySettings, type SimilarityResult } from "@ltr/similarity";
 import { compareRendered, newsArticle } from "@ltr/structured-data";
@@ -25,7 +28,10 @@ export interface GateSettings {
   kogl?: KoglUsage;
   /** 공식 자료 종류 허용 목록 settings.official_source_types (REG1-07 — 없거나 틀리면 씨앗) */
   officialSourceTypes?: readonly string[];
+  /** 판정 책임자가 있는 편집 분야 settings.regional_judge_fields (REG1-17 · W4 12장 #7 — 행이 없으면 씨앗, 모양이 틀리면 빈 목록 = 모든 분야 보류) */
+  regionalJudgeFields?: readonly EditorialField[];
 }
+
 
 export interface GateOptions {
   /** 판정 시각 ISO 8601 — 발행 전 기사는 이 시각을 발행 시각으로 본다 */
@@ -91,6 +97,7 @@ export function runGate(graph: ArticleGraph, settings: GateSettings, opts: GateO
     },
     kogl: settings.kogl ?? KOGL_USAGE_DEFAULT,
     officialSourceTypes: settings.officialSourceTypes ?? OFFICIAL_SOURCE_TYPES,
+    regionalJudgeFields: settings.regionalJudgeFields ?? REGIONAL_JUDGE_FIELDS_DEFAULT,
   });
 
   return {
@@ -167,12 +174,16 @@ export function parseGateSettings(
   const typesRaw = byKey.get("official_source_types");
   const officialSourceTypes = parseOfficialSourceTypes(typesRaw);
   if (typesRaw !== undefined && !officialSourceTypes) problems.push("settings.official_source_types 형식이 틀립니다");
+  // W4 7단계 — 판정 책임자가 있는 편집 분야. 행이 없으면 씨앗, 모양이 틀리면 빈 목록(모든 지역 기사 보류 — 닫힌 쪽, 문제로 적지 않는다: 발행 판정이 이유를 보인다)
+  const judgeRaw = byKey.get("regional_judge_fields");
+  const regionalJudgeFields = judgeRaw === undefined ? [...REGIONAL_JUDGE_FIELDS_DEFAULT] : (parseRegionalJudgeFields(judgeRaw) ?? []);
   return {
     settings: {
       dictionaries: { forbiddenPhrases, fearPhrases, jargonTerms },
       similarity,
       kogl: kogl ?? KOGL_USAGE_DEFAULT,
       officialSourceTypes: officialSourceTypes ?? [...OFFICIAL_SOURCE_TYPES],
+      regionalJudgeFields,
     },
     problems,
   };

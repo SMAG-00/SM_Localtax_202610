@@ -1,8 +1,10 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { R8_THRESHOLDS, regionalState } from "@ltr/editorial";
 import { dbError } from "../http";
 import { readChecklists, readStoredBody, readStoredSolvedCase, readStoredTaxLens } from "./content";
-import { loadArticleGraph, loadOfficialSourceTypes } from "./repository";
+import { toArticleForPublish } from "./mapping";
+import { loadArticleGraph, loadOfficialSourceTypes, loadRegionalJudgeFields } from "./repository";
 import type { ArticleRow } from "./rows";
 import { articleSummary } from "./writes";
 
@@ -32,7 +34,16 @@ export interface CorrectionView {
 
 export async function loadEditorView(db: SupabaseClient, row: ArticleRow) {
   // 공식 자료 종류 허용 목록 — 출처 칸의 고르기 목록 (W4 5단계 REG1-07, 운영 설정)
-  const [graph, officialSourceTypes] = await Promise.all([loadArticleGraph(db, row), loadOfficialSourceTypes(db)]);
+  const [graph, officialSourceTypes, regionalJudgeFields] = await Promise.all([loadArticleGraph(db, row), loadOfficialSourceTypes(db), loadRegionalJudgeFields(db)]);
+  // 지역 기사 판정 상태 (REG1-17 — 발행 판정과 같은 검사, 편집 화면 '지역 기사 판정' 줄)
+  const regional = regionalState(toArticleForPublish(graph), {
+    today: new Date().toISOString().slice(0, 10),
+    dictionaries: { forbiddenPhrases: [], fearPhrases: [], jargonTerms: [] },
+    thresholds: R8_THRESHOLDS,
+    seoLint: null,
+    similarity: null,
+    regionalJudgeFields,
+  });
   const [revisionsRes, correctionsRes] = await Promise.all([
     db.from("article_revisions").select("id, version, edited_by, edited_at, reason, update_kind").eq("article_id", row.id).order("version"),
     db
@@ -102,6 +113,13 @@ export async function loadEditorView(db: SupabaseClient, row: ArticleRow) {
       regionCodes: row.region_codes,
       editorialField: row.editorial_field,
       publicQuestion: row.public_question,
+      subjectKind: row.subject_kind ?? "general",
+      relationTypes: row.relation_types ?? [],
+      editorialJudgement: row.editorial_judgement ?? null,
+      judgedBy: row.judged_by ?? null,
+      judgedAt: row.judged_at ?? null,
+      coveredPartnerIds: row.covered_partner_ids ?? [],
+      interestDisclosure: row.interest_disclosure ?? null,
       seriesTitle: row.series_title ?? null,
       seriesEpisode: row.series_episode ?? null,
       navCandidate: row.nav_candidate,
@@ -111,6 +129,8 @@ export async function loadEditorView(db: SupabaseClient, row: ArticleRow) {
     author: graph.author,
     sources: graph.sources,
     officialSourceTypes,
+    regional,
+    regionalJudgeFields,
     evidence: graph.evidence.map((e) => ({
       ...e,
       dataset: graph.datasets.find((d) => d.evidence_id === e.id) ?? null,

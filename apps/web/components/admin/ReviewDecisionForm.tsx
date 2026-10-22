@@ -6,7 +6,7 @@ import { CheckboxField, DarkButton, RadioField } from "@ltr/ui";
 import { adminApi, apiErrorMessage } from "@/lib/admin/api-client";
 import type { FieldErrors } from "@/lib/admin/form-utils";
 import { REVIEW_DECISION_LABELS, REVIEW_KIND_LABELS, optionsOf } from "@/lib/admin/labels";
-import { checksFor, reviewPayload, type ReviewForm, type ReviewKind } from "@/lib/admin/review-form";
+import { checksFor, reviewErrorsFromServer, reviewPayload, type ReviewForm, type ReviewKind } from "@/lib/admin/review-form";
 import { ErrorSummary, FieldErrorText, StatusNote, TextAreaField } from "./fields";
 import { useHydrated } from "./useHydrated";
 
@@ -14,7 +14,20 @@ import { useHydrated } from "./useHydrated";
  * 검토 결정 — 편집 승인(편집 책임자, 작성자와 다른 사람) · 세무 감수(세무 감수위원). 승인은 확인 항목을 모두 체크해야 하고,
  * 반려·보류는 사유가 필요하다. 정량형 편집 승인의 '인과 단정 없음'이 checklist.noCausalClaim으로 남는다 (NAV-10).
  */
-export function ReviewDecisionForm({ articleId, kind, reportingMethod, version }: { articleId: number; kind: ReviewKind; reportingMethod: string | null; version: number }) {
+export function ReviewDecisionForm({
+  articleId,
+  kind,
+  reportingMethod,
+  version,
+  regional = false,
+}: {
+  articleId: number;
+  kind: ReviewKind;
+  reportingMethod: string | null;
+  version: number;
+  /** 지역 기사 — 편집 승인에 근거·관계·광고 독립성 3항목이 더해진다 (REG1-17) */
+  regional?: boolean;
+}) {
   const hydrated = useHydrated();
   const router = useRouter();
   const [form, setForm] = useState<ReviewForm>({ kind, decision: "", reason: "", checks: {} });
@@ -23,13 +36,15 @@ export function ReviewDecisionForm({ articleId, kind, reportingMethod, version }
   const [done, setDone] = useState("");
   const [pending, setPending] = useState(false);
   const p = `review-${kind}`;
-  const items = checksFor(kind, reportingMethod);
+  const items = checksFor(kind, reportingMethod, regional);
+  const [details, setDetails] = useState<string[]>([]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setDone("");
     setFailure("");
-    const r0 = reviewPayload(form, reportingMethod);
+    setDetails([]);
+    const r0 = reviewPayload(form, reportingMethod, regional);
     if (!r0.ok) {
       setErrors(r0.errors);
       return;
@@ -44,6 +59,9 @@ export function ReviewDecisionForm({ articleId, kind, reportingMethod, version }
       router.refresh();
       return;
     }
+    const server = reviewErrorsFromServer(kind, Array.isArray(r.body.errors) ? (r.body.errors as string[]) : undefined);
+    setErrors(server.fields);
+    setDetails(server.rest);
     setFailure(apiErrorMessage(r));
   }
 
@@ -74,7 +92,7 @@ export function ReviewDecisionForm({ articleId, kind, reportingMethod, version }
         error={errors[`${p}-decision`]}
       />
       <TextAreaField id={`${p}-reason`} label="사유 (반려·보류는 필수)" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} error={errors[`${p}-reason`]} />
-      {failure && <ErrorSummary title={failure} messages={[]} />}
+      {failure && <ErrorSummary title={failure} messages={details} />}
       {done && <StatusNote>{done}</StatusNote>}
       <DarkButton type="submit" disabled={pending || !hydrated}>
         {pending ? "남기는 중" : "결정 남기기"}

@@ -151,6 +151,11 @@ async function writeFromAssignment(page, assignmentId, { title, slug, template }
   staff.trackArticle(id);
   const row = await one("select story_assignment_id, content_type, reporting_method, status from public.articles where id = $1", [id]);
   assert.equal(Number(row.story_assignment_id), assignmentId, "기사가 기획에 이어진다");
+  // 지역 기사 게이트 (REG1-17 — W4 7단계): 지자체뉴스 기사는 지역 태그 + 편집 분야 + 공익적 질문이 있어야 발행된다.
+  // 시험 자료로 채우고(버전은 그대로) 편집 화면을 다시 연다 — 뒤의 저장이 같은 값을 그대로 보낸다
+  await one("update public.articles set region_codes = '{1100000000}', editorial_field = 'local_finance', public_question = '거래 변화가 가온시 지방세 세수에 어떤 영향을 주는가' where id = $1 returning id", [id]);
+  await page.reload();
+  await interactive(page);
   return id;
 }
 

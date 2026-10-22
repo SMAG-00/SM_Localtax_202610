@@ -4,17 +4,21 @@
 import {
   ANONYMITIES,
   CONTENT_TYPES,
+  EDITORIAL_FIELDS,
+  EDITORIAL_JUDGEMENTS,
   EVIDENCE_TYPES,
   FORMATS,
   LABELS,
   LICENSE_TYPES,
   QUOTE_CONSENTS,
+  RELATION_TYPES,
   REPORTING_METHODS,
   REVIEW_DECISIONS,
   REVIEW_KINDS,
   RIGHTS_STATUSES,
   SECTIONS,
   SOURCE_KINDS,
+  SUBJECT_KINDS,
   SUBTYPES,
   UPDATE_KINDS,
   VERIFICATION_STATUSES,
@@ -23,6 +27,8 @@ import {
   type ArticleBlock,
   type ArticleForPublish,
   type LicenseType,
+  type RegionalFacts,
+  type RelationType,
   type RightsStatus,
   type TaxLens,
 } from "@ltr/editorial";
@@ -107,6 +113,26 @@ export function withMediaFacts(
     return { ...b, thumbnail: m ? { rightsStatus: rights(m.rights_status), width: m.width ?? null, height: m.height ?? null, licenseType: licenseOf(m.license_type) } : null };
   }
   return b;
+}
+
+/**
+ * 지역 기사 편집 게이트 입력 (REG1-17 — W4 7단계). 목록 밖 값은 빈 것으로(편집 분야 null · 소재 일반 · 관계 유형에서 뺀다).
+ * 광고·협찬 계약 기록 = 다룬 제휴사의 계약 시작일·종료일 중 하나라도 있음 (DB 트리거 editorial_reviews_regional_guard와 같다)
+ */
+export function regionalFactsOf(graph: ArticleGraph): RegionalFacts {
+  const a = graph.article;
+  return {
+    regionCodes: a.region_codes ?? [],
+    editorialField: pick(EDITORIAL_FIELDS, a.editorial_field),
+    publicQuestion: a.public_question,
+    subjectKind: pick(SUBJECT_KINDS, a.subject_kind) ?? "general",
+    relationTypes: (a.relation_types ?? []).flatMap((t) => (pick(RELATION_TYPES, t) ? [t as RelationType] : [])),
+    judgement: pick(EDITORIAL_JUDGEMENTS, a.editorial_judgement ?? null),
+    contractedPartners: (graph.coveredPartners ?? [])
+      .filter((p) => p.contract_from !== null || p.contract_to !== null)
+      .map((p) => ({ id: String(p.id), name: p.name })),
+    interestDisclosure: a.interest_disclosure ?? null,
+  };
 }
 
 /** 공공누리 유형 — 목록 밖·빈 값은 null(빈 것으로 판정 — PR-07) */
@@ -218,7 +244,8 @@ export function toArticleForPublish(graph: ArticleGraph): ArticleForPublish {
     reviews: graph.reviews.flatMap((r) => {
       const kind = pick(REVIEW_KINDS, r.kind);
       const decision = pick(REVIEW_DECISIONS, r.decision);
-      return kind && decision ? [{ kind, decision, reviewerUserId: personRef(r.reviewer_id), signedAt: r.at, forVersion: r.version }] : [];
+      const checklist = typeof r.checklist === "object" && r.checklist !== null && !Array.isArray(r.checklist) ? (r.checklist as Record<string, unknown>) : null;
+      return kind && decision ? [{ kind, decision, reviewerUserId: personRef(r.reviewer_id), signedAt: r.at, forVersion: r.version, checklist }] : [];
     }),
     taxLens: toTaxLens(a.tax_lens),
     hasTaxOrLegalClaims: checklists.hasTaxOrLegalClaims,
@@ -235,6 +262,7 @@ export function toArticleForPublish(graph: ArticleGraph): ArticleForPublish {
       noCausalClaim: noCausalClaimConfirmed(graph),
     },
     qualitativeChecklist: checklists.qualitative,
+    regional: regionalFactsOf(graph),
   };
 }
 

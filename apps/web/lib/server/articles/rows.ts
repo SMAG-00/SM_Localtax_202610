@@ -35,6 +35,14 @@ export interface ArticleRow {
   region_codes: string[];
   editorial_field: string | null;
   public_question: string | null;
+  /** W4 7단계 (…43) — 소재 종류 · 관계 유형 · 편집자 판정(판정자·시각) · 다룬 제휴사 · 이해관계 표시 (REG1-17) */
+  subject_kind?: string;
+  relation_types?: string[];
+  editorial_judgement?: string | null;
+  judged_by?: string | null;
+  judged_at?: string | null;
+  covered_partner_ids?: number[];
+  interest_disclosure?: string | null;
   amendment_id: number | null;
   series_title: string | null;
   series_episode: number | null;
@@ -183,4 +191,6 @@ export interface ArticleGraph {
   interviews: InterviewRow[];
   /** 시각 순서 */
   reviews: ReviewRow[];
+  /** 원고가 다룬 제휴사(covered_partner_ids) — 광고·협찬 계약 기록 판정 (REG1-17 · NAV-06). 없으면 빈 목록 */
+  coveredPartners?: PartnerRow[];
 }

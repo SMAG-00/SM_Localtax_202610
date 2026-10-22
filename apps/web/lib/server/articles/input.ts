@@ -1,10 +1,36 @@
 // 기사 작성·수정 요청 본문 검사 — 순수 함수 (시험: input.test.ts). 칸 이름은 camelCase, DB 칸은 snake_case.
 // 모르는 칸은 거부한다(오타가 조용히 무시되지 않게). 값 목록은 W2-a 설계 §2 = DB check 제약과 같다.
-import { CONTENT_TYPES, FORMATS, LABELS, REPORTING_METHODS, SECTIONS, SUBTYPES, UPDATE_KINDS, headLengthProblem, type SolvedCase } from "@ltr/editorial";
+import {
+  CONTENT_TYPES,
+  EDITORIAL_FIELDS,
+  FORMATS,
+  LABELS,
+  RELATION_TYPES,
+  REPORTING_METHODS,
+  SECTIONS,
+  SUBJECT_KINDS,
+  SUBTYPES,
+  UPDATE_KINDS,
+  headLengthProblem,
+  type SolvedCase,
+} from "@ltr/editorial";
 import { freeSeriesTitleErrors } from "@/lib/brand/claim";
 import { parseBodyInput, parseSolvedCaseInput, parseTaxLensInput, type Result, type StoredBody, type TaxLensInput } from "./content";
 
-export const EDITORIAL_FIELDS = ["local_tax", "realestate", "local_finance", "urban_policy"] as const;
+export { EDITORIAL_FIELDS };
+
+/** 지역 기사 편집 칸 (REG1-17 — W4 7단계). 편집국(기자·편집 책임자·관리자)만 바꾼다 — 광고·협찬 담당 등 편집국 외 역할은 403 + 감사 */
+export const REGIONAL_INPUT_KEYS = ["editorialField", "publicQuestion", "subjectKind", "relationTypes", "coveredPartnerIds", "interestDisclosure"] as const;
+
+/** 새 원고가 지역 기사 편집 칸에 값을 넣는가 — 빈 값(null·빈 목록·소재 일반)은 기본값과 같아 넣지 않은 것으로 본다 */
+export function setsRegionalFields(input: ArticleInput): boolean {
+  return REGIONAL_INPUT_KEYS.some((k) => {
+    const v = input[k];
+    if (v === undefined || v === null) return false;
+    if (Array.isArray(v)) return v.length > 0;
+    return !(k === "subjectKind" && v === "general");
+  });
+}
 
 /** 정규화한 입력 — undefined = 보내지 않은 칸(수정 때 그대로 둔다) */
 export interface ArticleInput {
@@ -30,6 +56,11 @@ export interface ArticleInput {
   regionCodes?: string[];
   editorialField?: string | null;
   publicQuestion?: string | null;
+  /** 소재 종류 · 관계 유형 · 다룬 제휴사 · 이해관계 표시 (REG1-17 · NAV-06 — W4 7단계). 편집자 판정은 /api/admin/regions(op judge)에서만 */
+  subjectKind?: string;
+  relationTypes?: string[];
+  coveredPartnerIds?: number[];
+  interestDisclosure?: string | null;
   /** 칼럼 연재 이름·회차 (ART-04) — 칼럼(opinion)만, 둘 다 있거나 둘 다 null */
   seriesTitle?: string | null;
   seriesEpisode?: number | null;
@@ -65,6 +96,10 @@ const COMMON_KEYS = [
   "regionCodes",
   "editorialField",
   "publicQuestion",
+  "subjectKind",
+  "relationTypes",
+  "coveredPartnerIds",
+  "interestDisclosure",
   "seriesTitle",
   "seriesEpisode",
   "checklists",
@@ -134,6 +169,22 @@ export function parseArticleInput(raw: Record<string, unknown>, mode: "create" |
   oneOf("label", LABELS);
   oneOf("editorialField", EDITORIAL_FIELDS, { nullable: true });
   text("publicQuestion", { nullable: true, max: 1000 });
+  oneOf("subjectKind", SUBJECT_KINDS);
+  if (has("relationTypes")) {
+    const v = raw.relationTypes;
+    if (!Array.isArray(v) || !v.every((x) => typeof x === "string" && (RELATION_TYPES as readonly string[]).includes(x))) {
+      errors.push(`relationTypes: ${RELATION_TYPES.join("·")} 중에서 고른 목록이어야 합니다`);
+    } else if (new Set(v).size !== v.length) errors.push("relationTypes: 같은 관계 유형을 두 번 고를 수 없습니다");
+    else out.relationTypes = v as string[];
+  }
+  if (has("coveredPartnerIds")) {
+    const v = raw.coveredPartnerIds;
+    if (!Array.isArray(v) || !v.every((x) => typeof x === "number" && Number.isSafeInteger(x) && x >= 1) || v.length > 20) {
+      errors.push("coveredPartnerIds: 제휴사 번호(1 이상) 목록이어야 합니다 (20개까지)");
+    } else if (new Set(v).size !== v.length) errors.push("coveredPartnerIds: 같은 제휴사를 두 번 고를 수 없습니다");
+    else out.coveredPartnerIds = v as number[];
+  }
+  text("interestDisclosure", { nullable: true, max: 500 });
   for (const k of ["categoryId", "partnerId", "storyAssignmentId", "leadMediaId", "digestId", "amendmentId"] as const) id(k);
   // 칼럼 연재 (ART-04) — 이름·회차는 함께 보낸다. 칼럼이 아닌 기사·한쪽만 있는 값은 DB도 거부한다(articles_series_*)
   text("seriesTitle", { nullable: true, max: 100 });

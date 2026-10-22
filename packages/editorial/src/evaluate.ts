@@ -10,6 +10,7 @@ import { checkPlainLanguage } from "./checks/plain-language";
 import { checkPressure } from "./checks/pressure";
 import { checkQualitative } from "./checks/qualitative";
 import { checkQuantitative } from "./checks/quantitative";
+import { checkRegional } from "./checks/regional";
 import { checkReviews } from "./checks/reviews";
 import { checkRevision } from "./checks/revision";
 import { checkSolvedCase } from "./checks/solved-case";
@@ -28,6 +29,7 @@ export const BUILT_IN_CHECKS: readonly PublishCheck[] = [
   checkMediaFormats,
   checkSourcing,
   checkOfficialSources,
+  checkRegional,
   checkReviews,
   checkQuantitative,
   checkQualitative,
@@ -43,7 +45,7 @@ export const BUILT_IN_CHECKS: readonly PublishCheck[] = [
 
 export interface PublishOptions {
   /**
-   * 확장 자리 — 후속 게이트(01B REG1-17 지역 기사 편집 분야·공익적 질문 등)를 여기에 붙인다.
+   * 확장 자리 — 후속 게이트를 여기에 붙인다 (01B REG1-17 지역 기사 게이트는 W4 7단계에서 내장 검사 checkRegional이 되었다).
    * 추가 검사의 항목 ID는 규칙 목록 밖이라 같은 등급 안에서 내장 항목 뒤에 ID 글자순으로 온다.
    */
   extraChecks?: readonly PublishCheck[];

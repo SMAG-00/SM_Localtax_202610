@@ -24,6 +24,7 @@ import type { EvidenceRowView } from "@/lib/admin/records-form";
 import { CheckPanel } from "./CheckPanel";
 import { EvidencePanel } from "./EvidencePanel";
 import { ErrorSummary, StatusNote, TextAreaField } from "./fields";
+import { RegionalJudgePanel } from "./RegionalJudgePanel";
 import { SourcesPanel } from "./SourcesPanel";
 import { SubmitForReview } from "./SubmitForReview";
 import { Panel, TEXT_LINK } from "./ui";
@@ -167,6 +168,18 @@ export function ArticleWorkspace({
             canReadPartners={perms.canReadPartners}
           />
         </Panel>
+
+        {view.regional.state !== "not_regional" && (
+          <Panel id="regional" title="지역 기사 판정" description="지역 태그 기사는 편집 분야·공익적 질문, 축제·명소·상권 소재는 관계 유형과 근거가 있어야 기사 후보가 됩니다 (REG1-17).">
+            <RegionalJudgePanel
+              articleId={view.article.id}
+              regional={view.regional}
+              judgement={view.article.editorialJudgement}
+              judgedAt={view.article.judgedAt}
+              canJudge={perms.canJudgeRegional === true}
+            />
+          </Panel>
+        )}
 
         <Panel id="blocks" title="본문 블록" description="블록을 더하고, 지우고, 위아래로 옮깁니다.">
           <BlockEditor state={state} update={update} errors={errors} readOnly={readOnly} refs={refs} media={media} makeKey={makeKey} />

@@ -14,6 +14,9 @@ const ADMIN_EMAIL = "admin-e2e@example.test";
 const SITE = "https://e2e.example.test";
 const NON_NEWSROOM = ["ad_ops", "store_ops", "brand_ops", "expert_ops"];
 
+/** 지역 기사 편집 승인 3항목 (REG1-17 — W4 7단계) */
+const REGIONAL_CHECKS = { evidence: true, relation: true, ad_independence: true };
+
 let sb, server, staff, db;
 const u = {};
 const categories = {};
@@ -201,6 +204,10 @@ test("기자가 정량형 보도기사 초안을 쓰고 출처·근거를 붙인
     categoryId: categories["local/reporting"],
     contentType: "reported_news",
     reportingMethod: "quantitative",
+    // 지역 기사 게이트 (REG1-17 — W4 7단계): 지자체뉴스 새 발행은 지역 태그 + 편집 분야 + 공익적 질문
+    regionCodes: ["1100000000"],
+    editorialField: "local_finance",
+    publicQuestion: "거래 감소가 가온시 취득세 세수에 어떤 영향을 주는가",
     body: { blocks: QUANT_BLOCKS, claims: [] },
     checklists: {
       quantitative: {
@@ -310,7 +317,7 @@ test("editor 없는 관리자의 발행은 403 — 편집 신뢰 규칙은 관�
 });
 
 test("다른 편집자의 편집 승인 → 불완전한 정량형 원고는 422, 빠진 NAV-10 묶음이 실패 항목에 있다", async () => {
-  const review = await api("POST", `/articles/${ids.quant}/reviews`, u.editorA, { kind: "desk_edit", decision: "approve", checklist: { noCausalClaim: true } });
+  const review = await api("POST", `/articles/${ids.quant}/reviews`, u.editorA, { kind: "desk_edit", decision: "approve", checklist: { noCausalClaim: true, ...REGIONAL_CHECKS } });
   assert.equal(review.status, 201, show(review));
   assert.equal(review.body.article.editorialStatus, "approved");
   assert.equal(review.body.article.status, "approved");
@@ -358,7 +365,7 @@ test("빠진 칸을 채우면 편집 승인을 다시 받아야 하고, 승인 �
   assert.ok(stale.body.failed.includes("nav03.desk-edit-required"), "이전 버전의 승인은 세지 않는다");
   assert.ok(!stale.body.failed.includes("nav10.related-party-check"));
 
-  const again = await api("POST", `/articles/${ids.quant}/reviews`, u.editorA, { kind: "desk_edit", decision: "approve", checklist: { noCausalClaim: true } });
+  const again = await api("POST", `/articles/${ids.quant}/reviews`, u.editorA, { kind: "desk_edit", decision: "approve", checklist: { noCausalClaim: true, ...REGIONAL_CHECKS } });
   assert.equal(again.status, 201, show(again));
   const r = await api("POST", `/articles/${ids.quant}/publish`, u.editorA);
   assert.equal(r.status, 200, show(r));

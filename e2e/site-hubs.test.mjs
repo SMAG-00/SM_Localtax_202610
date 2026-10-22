@@ -75,7 +75,13 @@ async function article(label, over = {}) {
   return id;
 }
 
-const approve = (articleId) => db.query("insert into public.editorial_reviews (article_id, kind, reviewer_id, decision) values ($1, 'desk_edit', $2, 'approve')", [articleId, u.editor.personId]);
+// 지역 기사 편집 승인은 근거·관계·광고 독립성 3항목 확인이 있어야 들어간다 (REG1-17 — W4 7단계 DB 트리거)
+const approve = (articleId) =>
+  db.query("insert into public.editorial_reviews (article_id, kind, reviewer_id, decision, checklist) values ($1, 'desk_edit', $2, 'approve', $3)", [
+    articleId,
+    u.editor.personId,
+    { evidence: true, relation: true, ad_independence: true },
+  ]);
 const categoryId = async (section, slug) => Number((await one("select id from public.categories where section = $1 and slug = $2", [section, slug])).id);
 
 const CHECKS = [

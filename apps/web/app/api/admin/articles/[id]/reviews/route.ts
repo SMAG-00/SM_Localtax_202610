@@ -1,5 +1,6 @@
 import { REVIEW_DECISIONS, REVIEW_KINDS, hasTaxLensContent, type ReviewDecision, type ReviewKind } from "@ltr/editorial";
 import type { Action } from "@/lib/access";
+import { contractedPartners, regionalChecklistErrors } from "@/lib/admin/regional-rules";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { readStoredTaxLens } from "@/lib/server/articles/content";
 import { toTaxLens } from "@/lib/server/articles/mapping";
@@ -59,6 +60,20 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   const resourceDenied = await authorize(viewer, action, target, await articleResource(db, article));
   if (resourceDenied) return resourceDenied;
   if (article.status === "deleted") return errorJson(409, "삭제된 기사는 검토할 수 없습니다");
+  // 지역 기사 편집 승인 (REG1-17 — W4 7단계): 근거·관계·광고 독립성 3항목 확인, 광고·협찬 계약 제휴사를 다룬 원고는 이해관계 표시 (DB 트리거도 막는다)
+  if (kind === "desk_edit" && decision === "approve" && article.content_type !== "sponsored" && (article.region_codes.length > 0 || article.section === "local")) {
+    const errors = regionalChecklistErrors(checklist as Record<string, unknown>);
+    const covered = article.covered_partner_ids ?? [];
+    if (covered.length > 0 && !(article.interest_disclosure ?? "").trim()) {
+      const { data: partners, error: partnerError } = await db.from("partners").select("id, name, contract_from, contract_to").in("id", covered);
+      if (partnerError) throw dbError(partnerError, "partners 읽기");
+      const contracted = contractedPartners((partners ?? []) as { id: number; name: string; contract_from: string | null; contract_to: string | null }[]);
+      if (contracted.length > 0) {
+        errors.push(`interestDisclosure: 광고·협찬 계약 기록이 있는 제휴사(${contracted.map((p) => p.name).join("·")})를 다룬 원고는 이해관계 표시가 있어야 승인됩니다 (REG1-17 · NAV-06)`);
+      }
+    }
+    if (errors.length) return errorJson(422, "지역 기사 편집 승인 조건을 채우세요 (REG1-17)", { errors });
+  }
   const reviewer = await requirePersonForUser(db, viewer.userId);
 
   const { data, error } = await db

@@ -1,8 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { OFFICIAL_SOURCE_TYPES } from "@ltr/editorial";
+import { OFFICIAL_SOURCE_TYPES, REGIONAL_JUDGE_FIELDS_DEFAULT, type EditorialField } from "@ltr/editorial";
 import type { ArticleResource } from "@/lib/access";
 import { parseOfficialSourceTypes } from "@/lib/admin/official-source-rules";
+import { parseRegionalJudgeFields } from "@/lib/admin/regional-rules";
 import { HttpError, dbError } from "../http";
 import { readStoredBody } from "./content";
 import { parseGateSettings, type GateSettings } from "./gate";
@@ -138,14 +139,21 @@ export async function loadArticleGraph(db: Db, idOrRow: number | ArticleRow): Pr
       : rows<InterviewRow>(db.from("article_interviews").select("*").in("evidence_id", evidenceIds), "article_interviews 읽기"),
   ]);
 
-  return { article, author, category, partner, media, sources, snapshots, evidence, datasets, interviews, reviews };
+  // 다룬 제휴사 (REG1-17 · NAV-06 — 광고·협찬 계약 기록이 있는 곳을 다루면 이해관계 표시 필수)
+  const coveredIds = article.covered_partner_ids ?? [];
+  const coveredPartners =
+    coveredIds.length === 0
+      ? []
+      : await rows<PartnerRow>(db.from("partners").select("id, name, contract_from, contract_to").in("id", coveredIds).order("id"), "partners 읽기");
+
+  return { article, author, category, partner, media, sources, snapshots, evidence, datasets, interviews, reviews, coveredPartners };
 }
 
 /** 판정 설정 — 금지·공포 표현 사전·유사도 기준(settings)과 쉬운 말 사전(glossary_terms). 사전이 없으면 503 */
 export async function loadGateSettings(db: Db): Promise<GateSettings> {
   const [settingRows, glossary] = await Promise.all([
     rows<{ key: string; value: unknown }>(
-      db.from("settings").select("key, value").in("key", ["forbidden_phrases", "fear_phrases", "similarity_internal", "official_source_types", "kogl_usage"]),
+      db.from("settings").select("key, value").in("key", ["forbidden_phrases", "fear_phrases", "similarity_internal", "official_source_types", "kogl_usage", "regional_judge_fields"]),
       "settings 읽기",
     ),
     rows<{ term: string; plain: string | null }>(db.from("glossary_terms").select("term, plain").eq("jargon", true), "glossary_terms 읽기"),
@@ -156,6 +164,12 @@ export async function loadGateSettings(db: Db): Promise<GateSettings> {
     throw new HttpError(503, "발행 판정 설정(금지 표현·공포 표현 사전)을 읽지 못했습니다 — 관리자에게 알려 주세요");
   }
   return settings;
+}
+
+/** 판정 책임자가 있는 편집 분야 (settings.regional_judge_fields — REG1-17 · W4 12장 #7). 행이 없으면 씨앗, 모양이 틀리면 빈 목록(닫힌 쪽) */
+export async function loadRegionalJudgeFields(db: Db): Promise<EditorialField[]> {
+  const list = await rows<{ value: unknown }>(db.from("settings").select("value").eq("key", "regional_judge_fields"), "settings 읽기");
+  return list.length === 0 ? [...REGIONAL_JUDGE_FIELDS_DEFAULT] : (parseRegionalJudgeFields(list[0]!.value) ?? []);
 }
 
 /** 공식 자료 종류 허용 목록 (settings.official_source_types — REG1-07). 없거나 모양이 틀리면 씨앗(닫힌 쪽 — DB 트리거도 같은 목록을 본다) */

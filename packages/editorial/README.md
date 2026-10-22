@@ -87,6 +87,15 @@ result.warnings;    // 발행 기록(check_log)에 남긴다
 | `pr07.license-required` | PR-07 | 차단 | 공식 자료·보도자료·사진 출처에 공공누리 유형 없음 |
 | `pr07.photo-license` | PR-07 | 차단 | 게시하지 않는 공공누리 유형의 사진(제4유형·미표시·법률 검토 전 제2·3유형) |
 | `pr07.full-text` | PR-07 | 차단 | 공공 자료 원문 본문을 그대로 옮김 |
+| `reg1_17.region-tag-required` | REG1-17 | 차단 | 지자체뉴스 기사에 지역 태그 없음(새 발행) |
+| `reg1_17.editorial-field` | REG1-17 | 차단 | 지역 기사에 편집 분야 없음 |
+| `reg1_17.public-question` | REG1-17 | 차단 | 지역 기사에 공익적 질문 없음 |
+| `reg1_17.field-judge-missing` | REG1-17 | 차단 | 판정 책임자가 없는 편집 분야(보류) |
+| `reg1_17.non-news-judgement` | REG1-17 | 차단 | 여행 후기·맛집 추천·행사 홍보 판정 원고를 보도·해설로 발행 |
+| `reg1_17.relation-required` | REG1-17 | 차단 | 축제·명소·상권 소재에 관계 유형 없음(보류) |
+| `reg1_17.relation-evidence` | REG1-17 | 차단 | 축제·명소·상권 소재에 관계 근거 없음(보류) |
+| `reg1_17.desk-checklist` | REG1-17 | 차단 | 지역 기사 편집 승인에 근거·관계·광고 독립성 확인 없음 |
+| `reg1_17.interest-disclosure` | REG1-17 | 차단 | 광고·협찬 계약 제휴사를 다룬 원고에 이해관계 표시 없음 |
 | `nav10.source-data` | NAV-10 | 차단 | 원자료(파일/URL·제공기관·수집일·이용권리) 빔 |
 | `nav10.indicator-definition` | NAV-10 | 차단 | 지표 정의(정의·기간·단위·지역 단위·분모·제외값) 빔 |
 | `nav10.calculation` | NAV-10 | 차단 | 계산 과정(수식·재현 파일) 빔 |
@@ -166,11 +175,11 @@ PO 확인이 필요하면 고치고 이 절과 시험을 함께 바꾼다.
 - **ART-05**: 이미 발행된 기사(`firstPublishedAt` 있음)를 다시 발행할 때 수정 종류·사유를 요구한다.
 - **OPT-06**: 유사도 `no_sources`·`no_body`는 경고(seo-lint rules.v1과 같은 등급). seo-lint·유사도 결과가 없으면(null) 차단.
 - **REG1-07·REG1-09·PR-07 공식 자료·공공누리 (01B — W4 5단계, `docs/dev/W4_설계.md` 1장 5단계 · 12장 #13)**: 공식 자료 = 출처 종류 `official_doc`·`dataset`(대체되지 않은 최신 판만 — 판정 입력이 고른다). 발표일·기준일·지역 단위·수집일·확인일이 하나라도 비면 칸마다 `reg1_09.official-fields`(위치 `sources.<API 칸>` — 422가 빈 칸을 이름으로 알린다). 공공누리 유형은 공식 자료·보도자료·사진 출처의 필수 칸(`pr07.license-required`). 자료 종류(`sourceType`)는 비면 보지 않고(국세·지방세 법령 출처는 6종 밖), 적었으면 허용 목록(`ctx.officialSourceTypes`, 없으면 씨앗 `OFFICIAL_SOURCE_TYPES`) 안이고 차단 4종(`BLOCKED_OFFICIAL_SOURCE_TYPES`) 밖이며 공식 자료 행이어야 한다(`reg1_07.source-type`). 고시·조례(`TAX_REVIEW_SOURCE_TYPES`) 자료를 쓴 해설·가이드는 세무 감수 대상 이유에 '고시·조례 자료를 쓴 해설 (REG1-07)'이 더해져 `nav03.tax-review-required`로 막힌다. 사진은 권리가 확인된 것만 유형을 본다 — 유형이 `ctx.kogl.photoTypes`(없으면 `KOGL_USAGE_DEFAULT` = 제1유형·해당 없음) 밖이면 `pr07.photo-license`, 제4유형·미표시는 설정과 상관없이 막는다(`KOGL_NEVER`). 원문 전재는 `ctx.similarity.copied`(유사도 검사기가 기준 이상 같다고 본 본문 문장 — 직접 인용 블록 제외)의 원문이 '해당 없음'이 아니고 `kogl.fullTextTypes` 밖이면 원문마다 `pr07.full-text`(기본값 = 모든 유형 전재 0). 유형 배지 글자는 `LICENSE_TYPE_LABELS`.
+- **REG1-17 지역 기사 편집 게이트 (01B — W4 7단계, `docs/dev/W4_설계.md` 1장 7단계 · 2.1 · 12장 #7·#30)**: 입력은 `article.regional`(`RegionalFacts` — 지역 태그·편집 분야·공익적 질문·소재·관계 유형·편집자 판정·광고 계약 제휴사·이해관계 표시, 없으면 지역 태그 0). 지자체뉴스(`section = local`) 새 발행(`firstPublishedAt` 없음)에 지역 태그 0 → `reg1_17.region-tag-required`. 지역 태그 기사(광고·협찬 제외)는 편집 분야(`reg1_17.editorial-field`)·공익적 질문(`reg1_17.public-question`), 편집 분야가 `ctx.regionalJudgeFields`(없으면 씨앗 4종) 밖이면 판정 책임자 없음 → 보류(`reg1_17.field-judge-missing`). 판정 여행 후기·맛집 추천·행사 홍보(`NON_NEWS_JUDGEMENTS`) + 보도·해설 → `reg1_17.non-news-judgement`. 축제·명소·상권 소재(광고·협찬 제외)는 관계 유형 1개 이상(`reg1_17.relation-required`)·반려 아닌 취재 근거 1건 이상(`reg1_17.relation-evidence`). 지역 기사(지역 태그 또는 지자체뉴스, 광고·협찬 제외)의 최근 편집 승인 checklist에 `evidence`·`relation`·`ad_independence`가 모두 true가 아니면 `reg1_17.desk-checklist`, 광고 계약 제휴사를 다뤘는데 이해관계 표시가 비면 `reg1_17.interest-disclosure`. 편집 화면 상태는 `regionalState`(후보·보류·별도 상품·지역 기사 아님). DB 트리거(`…43`)가 같은 규칙을 다시 본다.
 - **권리·검증 상태 값**: PRD 6.1이 값 목록을 정하지 않아 `rights_status`는 `confirmed`·`unconfirmed`, `verification_status`는 `verified`·`unverified`로 두었다 — W2-a 설계 §2에 더해 DB와 맞춰야 한다.
 
 ## 이 패키지가 하지 않는 것 (뒤로 미룬 것)
 
-- **01B REG1-17 지역 기사 게이트** — 편집 분야(4종)·공익적 질문, 축제·명소·상권 소재의 관계 유형·근거, 여행 후기·맛집·행사 홍보 판정, 승인 checklist 3항목(근거·관계·광고 독립성). `evaluatePublish`의 `extraChecks`에 검사 함수를 붙이는 자리만 있다.
 - **digest 규칙** — CORE-01의 digest 적용 방식(결정 안건), 01B LG-02~04(편집자 요약·원문 링크, digest → reported_news 변경 거부 — 이전 값이 필요한 변경 검사).
 - **입출력이 필요한 것** — NAV-10 재현 파일 해시로 수치 재계산, CORE-01 박스 링크 전수(404·비공개·미공개 기능 0), 트래커 현재 단계 읽기(CAT-04 배지), 감사 로그·403 역할 검사(서버 기능 3단계), RLS·보존 기간 삭제(DB 1단계).
 - 핵심 주장마다 근거 연결은 seo-lint(OPT-03 「핵심 주장마다 근거」)가 차단하고, 그 결과를 `seoLint.blockers`로 받는다.

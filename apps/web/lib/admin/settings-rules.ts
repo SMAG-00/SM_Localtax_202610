@@ -3,6 +3,7 @@
 //  · 검사를 지난 값은 발행 판정 설정 읽기(lib/server/articles/gate.ts parseGateSettings)를 그대로 통과한다 — 같은 키·같은 모양.
 //  · 버전이 있는 값(사전·유사도 기준)은 내용을 바꾸면 버전도 바꿔야 한다 — 점검 기록에 남는 버전이 값과 어긋나지 않게.
 import { koglUsageErrors, officialSourceTypesErrors } from "./official-source-rules";
+import { regionalJudgeFieldsErrors } from "./regional-rules";
 import { normalizeText } from "@ltr/editorial";
 import { checkDomainCutover } from "@/lib/analytics/metrics";
 import { checkQueryTermsSettings } from "@/lib/analytics/query-terms";
@@ -280,6 +281,13 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "공식 자료 시점 만료 기준 (REG1-13)",
     guide: `${EXPIRY_DAYS_MIN}~${EXPIRY_DAYS_MAX} 정수 하나 (초기값 ${EXPIRY_DAYS_DEFAULT}) — 공식 자료의 확인일(한국 날짜)부터 이 일수를 넘기면 다음 만료 배치가 검수 큐에 1건씩 올립니다. 기준 당일은 0건, 하루 넘긴 날 1건`,
     check: (value) => expiryDaysErrors(value),
+  },
+  // ── W4 7단계 지역 기사 판정 책임자 (docs/dev/W4_설계.md 2.2 · 12장 #7) — 발행 판정(gate.ts)·DB 트리거(…43 regional_settings_guard)와 같은 검사 ──
+  regional_judge_fields: {
+    label: "지역 기사 판정 책임자가 있는 편집 분야 (REG1-17)",
+    guide:
+      '["local_tax", "realestate", "local_finance", "urban_policy"] — 판정 책임자(편집 책임자 역할)가 있는 편집 분야. 목록에서 뺀 분야의 지역 기사는 보류(held)이고 발행되지 않습니다. 0~4개, 같은 분야 두 번 0. 바꾸면 배포 없이 다음 발행 판정부터',
+    check: (value) => regionalJudgeFieldsErrors(value),
   },
   next_action_priority: {
     label: "다음 행동 버튼 우선순위 (ART-06)",

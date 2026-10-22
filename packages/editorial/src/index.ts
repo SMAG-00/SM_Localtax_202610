@@ -20,6 +20,10 @@ export { infographicTexts } from "./text";
 // REG1-07·09 · PR-07 — 공식 자료 종류·공공누리 판정 (편집 화면·출처 저장 API·발행 판정 공용, W4 5단계)
 export { OFFICIAL_REQUIRED_FIELDS, photoLicenseAllowed, photoLicenseProblem, sourceTypeProblem } from "./checks/official-sources";
 
+// REG1-17 — 지역 기사 편집 게이트 판정 (편집 화면 판정 상태·편집 승인 API·발행 판정 공용, W4 7단계)
+export { isNonNewsJudgement, isRegionalArticle, missingRegionalChecks, regionalFacts, regionalState } from "./checks/regional";
+export type { RegionalState } from "./checks/regional";
+
 // 판정 보조 — 편집 화면이 상태 표시에 쓴다
 export { isApproved, taxReviewReasons } from "./checks/reviews";
 export { AMENDMENT_CATEGORY_SLUG, isAmendmentBriefing } from "./checks/amendment";

@@ -41,6 +41,11 @@ export interface EditorArticle {
   regionCodes: string[];
   editorialField: string | null;
   publicQuestion: string | null;
+  /** 지역 기사 편집 칸 (REG1-17 — W4 7단계). 편집자 판정은 따로(판정 줄) */
+  subjectKind?: string;
+  relationTypes?: string[];
+  coveredPartnerIds?: number[];
+  interestDisclosure?: string | null;
   /** 칼럼 연재 (ART-04) — 칼럼만 */
   seriesTitle: string | null;
   seriesEpisode: number | null;
@@ -110,6 +115,11 @@ export interface EditorState {
   regionCodesText: string;
   editorialField: string;
   publicQuestion: string;
+  /** 소재 종류 · 관계 유형 · 다룬 제휴사(번호 글자) · 이해관계 표시 (REG1-17 · NAV-06) */
+  subjectKind: string;
+  relationTypes: string[];
+  coveredPartnerIds: string[];
+  interestDisclosure: string;
   /** 칼럼 연재 이름·회차 (ART-04) — 둘 다 적거나 둘 다 비운다 */
   seriesTitle: string;
   seriesEpisodeText: string;
@@ -337,6 +347,10 @@ export function editorStateFromArticle(a: EditorArticle, makeKey: () => string):
     regionCodesText: a.regionCodes.join(", "),
     editorialField: textOf(a.editorialField),
     publicQuestion: textOf(a.publicQuestion),
+    subjectKind: a.subjectKind ?? "general",
+    relationTypes: [...(a.relationTypes ?? [])],
+    coveredPartnerIds: (a.coveredPartnerIds ?? []).map(String),
+    interestDisclosure: textOf(a.interestDisclosure),
     seriesTitle: textOf(a.seriesTitle),
     seriesEpisodeText: a.seriesEpisode === null ? "" : String(a.seriesEpisode),
     blocks,
@@ -419,6 +433,10 @@ export function editorPayload(s: EditorState, ctx: { published: boolean; version
     regionCodes: splitList(s.regionCodesText),
     editorialField: blank(s.editorialField) ? null : s.editorialField,
     publicQuestion: textOrNull(s.publicQuestion),
+    subjectKind: s.subjectKind,
+    relationTypes: [...s.relationTypes],
+    coveredPartnerIds: s.coveredPartnerIds.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0),
+    interestDisclosure: textOrNull(s.interestDisclosure),
     body: { blocks, claims },
     checklists: cleanChecklists(s.checklists),
     taxLens: taxLensPayload(s),
@@ -522,6 +540,10 @@ const FIELD_OF: Record<string, string> = {
   regionCodes: "meta-region-codes",
   editorialField: "meta-editorial-field",
   publicQuestion: "meta-public-question",
+  subjectKind: "meta-subject-kind",
+  relationTypes: "meta-relation-types",
+  coveredPartnerIds: "meta-covered-partners",
+  interestDisclosure: "meta-interest-disclosure",
   seriesTitle: "meta-series-title",
   seriesEpisode: "meta-series-episode",
   updateKind: "save-update-kind",
@@ -531,6 +553,14 @@ const FIELD_OF: Record<string, string> = {
 const FAILED_FIELD: Record<string, [string, string]> = {
   "art05.update-kind-required": ["save-update-kind", "수정 종류를 골라 주세요 (ART-05)"],
   "art05.reason-required": ["save-reason", "수정 사유를 적어 주세요 (ART-05)"],
+  // 지역 기사 게이트 (REG1-17 — 발행 판정 차단 ID → 칸)
+  "reg1_17.region-tag-required": ["meta-region-codes", "지자체뉴스 기사는 지역 코드를 적어야 발행됩니다 (REG1-17)"],
+  "reg1_17.editorial-field": ["meta-editorial-field", "지역 태그 기사는 편집 분야를 골라야 발행됩니다 (REG1-17)"],
+  "reg1_17.field-judge-missing": ["meta-editorial-field", "이 편집 분야에 판정 책임자가 없어 보류(held)입니다 (REG1-17)"],
+  "reg1_17.public-question": ["meta-public-question", "지역 태그 기사는 공익적 질문을 적어야 발행됩니다 (REG1-17)"],
+  "reg1_17.relation-required": ["meta-relation-types", "축제·명소·상권 소재는 관계 유형을 1개 이상 골라야 기사 후보가 됩니다 (REG1-17)"],
+  "reg1_17.relation-evidence": ["meta-subject-kind", "축제·명소·상권 소재는 관계를 뒷받침하는 취재 근거가 1건 이상 있어야 합니다 (REG1-17)"],
+  "reg1_17.interest-disclosure": ["meta-interest-disclosure", "광고·협찬 계약 제휴사를 다룬 원고는 이해관계 표시를 적어야 합니다 (REG1-17 · NAV-06)"],
 };
 
 function fieldOfPath(path: string, blockKeys: readonly string[]): string | null {

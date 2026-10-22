@@ -69,6 +69,61 @@ export const LICENSE_TYPE_LABELS: Readonly<Record<LicenseType, string>> = {
   not_applicable: "공공누리 해당 없음",
 };
 
+/** 편집 분야 `articles.editorial_field` (W2-a 값 — 지자체 허브 분야 필터 `topic`과 같다, REG1-17): 지방세 · 부동산 세금 · 지방재정 · 도시/부동산 정책 */
+export const EDITORIAL_FIELDS = ["local_tax", "realestate", "local_finance", "urban_policy"] as const;
+export type EditorialField = (typeof EDITORIAL_FIELDS)[number];
+/** 소재 종류 `articles.subject_kind` (W4 설계 2.1 — REG1-17): 일반 · 축제 · 명소 · 상권 */
+export const SUBJECT_KINDS = ["general", "festival", "attraction", "commerce"] as const;
+export type SubjectKind = (typeof SUBJECT_KINDS)[number];
+/** 관계 유형 + 근거가 있어야 기사 후보가 되는 소재 — 축제 · 명소 · 상권 (REG1-17) */
+export const RELATION_SUBJECT_KINDS = ["festival", "attraction", "commerce"] as const satisfies readonly SubjectKind[];
+/** 관계 유형 `articles.relation_types` (W4 설계 2.1 · 12장 #9 — PRD 6종): 예산 · 세수 · 공유재산 · 개발 · 거래 · 주거 영향 */
+export const RELATION_TYPES = ["budget", "tax_revenue", "public_property", "development", "transaction", "housing"] as const;
+export type RelationType = (typeof RELATION_TYPES)[number];
+/** 편집자 판정 `articles.editorial_judgement` (W4 설계 2.1 — REG1-17): 기사 후보 · 여행 후기 · 맛집 추천 · 행사 홍보 */
+export const EDITORIAL_JUDGEMENTS = ["news_candidate", "travel_review", "restaurant_pick", "event_promo"] as const;
+export type EditorialJudgement = (typeof EDITORIAL_JUDGEMENTS)[number];
+/** 뉴스·자체 취재 기사로 발행하지 않는 판정 — 여행 후기 · 맛집 추천 · 행사 홍보 (보류 또는 별도 상품 검토 큐) */
+export const NON_NEWS_JUDGEMENTS = ["travel_review", "restaurant_pick", "event_promo"] as const satisfies readonly EditorialJudgement[];
+/** 비보도 판정 원고로 발행할 수 없는 기사 유형 — 보도기사 · 해설 (REG1-17) */
+export const NON_NEWS_BLOCKED_TYPES = ["reported_news", "explainer"] as const satisfies readonly ContentType[];
+/** 지역 기사 편집 승인(desk_edit) checklist 3항목 (W4 설계 2.1 regional_review.checklist): 근거 · 관계 · 광고 독립성 */
+export const REGIONAL_DESK_CHECKLIST = ["evidence", "relation", "ad_independence"] as const;
+export type RegionalDeskCheck = (typeof REGIONAL_DESK_CHECKLIST)[number];
+
+export const EDITORIAL_FIELD_NAMES: Readonly<Record<EditorialField, string>> = {
+  local_tax: "지방세",
+  realestate: "부동산 세금",
+  local_finance: "지방재정",
+  urban_policy: "도시·부동산 정책",
+};
+export const SUBJECT_KIND_LABELS: Readonly<Record<SubjectKind, string>> = { general: "일반", festival: "축제", attraction: "명소", commerce: "상권" };
+export const RELATION_TYPE_LABELS: Readonly<Record<RelationType, string>> = {
+  budget: "예산",
+  tax_revenue: "세수",
+  public_property: "공유재산",
+  development: "개발",
+  transaction: "거래",
+  housing: "주거 영향",
+};
+export const EDITORIAL_JUDGEMENT_LABELS: Readonly<Record<EditorialJudgement, string>> = {
+  news_candidate: "기사 후보",
+  travel_review: "여행 후기",
+  restaurant_pick: "맛집 추천",
+  event_promo: "행사 홍보",
+};
+export const REGIONAL_DESK_CHECKLIST_LABELS: Readonly<Record<RegionalDeskCheck, string>> = {
+  evidence: "근거 — 지역 수치·주장마다 공식 자료·취재 근거를 확인했습니다",
+  relation: "관계 — 소재와 지방세·지방재정·부동산·도시정책의 관계가 검증 가능합니다",
+  ad_independence: "광고 독립성 — 광고·협찬 관계가 기사 판단에 영향을 주지 않았습니다",
+};
+
+/**
+ * 판정 책임자가 있는 편집 분야 `settings.regional_judge_fields` 씨앗 (W4 12장 #7 권고안 — 편집 책임자 역할이 네 분야 모두 판정).
+ * 목록에 없는 분야의 지역 기사는 보류(held) — 설정을 못 읽으면 판정 입력이 빈 목록(가장 닫힌 쪽)을 넘긴다
+ */
+export const REGIONAL_JUDGE_FIELDS_DEFAULT: readonly EditorialField[] = EDITORIAL_FIELDS;
+
 /** `article_evidence.evidence_type` (NAV-12) */
 export const EVIDENCE_TYPES = ["dataset", "document", "interview", "field", "photo", "calculation"] as const;
 export type EvidenceType = (typeof EVIDENCE_TYPES)[number];
@@ -388,6 +443,26 @@ export interface EditorialReview {
   signedAt: string | null;
   /** 승인한 기사 버전 `editorial_reviews.version` — 현재 버전과 같아야 승인으로 센다 */
   forVersion: number;
+  /** 확인 항목 `editorial_reviews.checklist` — 지역 기사 편집 승인은 근거·관계·광고 독립성 3항목이 true여야 한다 (REG1-17) */
+  checklist?: Readonly<Record<string, unknown>> | null;
+}
+
+/**
+ * 지역 기사 편집 게이트 입력 (REG1-17 — W4 7단계). 판정 입력(`lib/server/articles/mapping.ts`)이 기사 칸·partners에서 채운다.
+ * 없으면(undefined) 지역 태그 0·편집 분야 없음·소재 일반으로 본다
+ */
+export interface RegionalFacts {
+  /** 지역 태그 `region_codes` (법정동코드) */
+  regionCodes: readonly string[];
+  editorialField: EditorialField | null;
+  publicQuestion: string | null;
+  subjectKind: SubjectKind;
+  relationTypes: readonly RelationType[];
+  judgement: EditorialJudgement | null;
+  /** 원고가 다룬 제휴사 중 광고·협찬 계약 기록이 있는 곳 (`covered_partner_ids` × partners 계약 기간) */
+  contractedPartners: readonly { id: string; name: string }[];
+  /** 이해관계 표시 `interest_disclosure` (NAV-06) */
+  interestDisclosure: string | null;
 }
 
 /** 「지방세로 읽기」 `articles.tax_lens` (01B CORE-01) */
@@ -525,6 +600,8 @@ export interface ArticleForPublish {
   inheritanceGiftChecks: { consent: boolean; deidentified: boolean };
   quantitativeChecklist: QuantitativeChecklist | null;
   qualitativeChecklist: QualitativeChecklist | null;
+  /** 지역 기사 편집 게이트 입력 (REG1-17) — 없으면 지역 태그 0으로 본다 */
+  regional?: RegionalFacts | null;
 }
 
 // ── 판정 문맥 ───────────────────────────────────────────────
@@ -589,4 +666,6 @@ export interface PublishContext {
   kogl?: KoglUsage;
   /** 공식 자료 종류 허용 목록 `settings.official_source_types` — 없으면 씨앗 OFFICIAL_SOURCE_TYPES (REG1-07) */
   officialSourceTypes?: readonly string[];
+  /** 판정 책임자가 있는 편집 분야 `settings.regional_judge_fields` — 없으면 씨앗 REGIONAL_JUDGE_FIELDS_DEFAULT (REG1-17 · W4 12장 #7) */
+  regionalJudgeFields?: readonly EditorialField[];
 }

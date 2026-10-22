@@ -1,13 +1,13 @@
 "use client";
 
-import { ARTICLE_HEAD_LIMITS, headCharCount } from "@ltr/editorial";
+import { ARTICLE_HEAD_LIMITS, RELATION_TYPES, RELATION_TYPE_LABELS, SUBJECT_KIND_LABELS, headCharCount } from "@ltr/editorial";
 import { SelectField, TextField } from "@ltr/ui";
 import { withMethodChecklists } from "@/lib/admin/editor-state";
 import { idOrNull } from "@/lib/admin/form-utils";
 import { partnerChoices } from "@/lib/admin/partner-rules";
 import { CONTENT_TYPE_LABELS, EDITORIAL_FIELD_LABELS, FORMAT_LABELS, LABEL_LABELS, REPORTING_METHOD_LABELS, SECTION_LABELS, optionsOf } from "@/lib/admin/labels";
 import { mediaOptionLabel, type EditorMedia } from "@/lib/admin/media-blocks";
-import { FieldGroup, TextAreaField } from "../fields";
+import { FieldErrorText, FieldGroup, TextAreaField } from "../fields";
 import { TEXT_LINK } from "../ui";
 import type { SectionProps } from "./types";
 
@@ -188,7 +188,7 @@ export function MetaFields({
           </div>
         </FieldGroup>
       )}
-      <FieldGroup legend="지역" hint="지역 태그를 달면 편집 분야와 공익적 질문을 함께 적습니다">
+      <FieldGroup legend="지역" hint="지역 태그를 달면 편집 분야와 공익적 질문을 함께 적습니다 — 지자체뉴스 기사는 지역 태그가 있어야 새로 발행됩니다 (REG1-17)">
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
             id="meta-region-codes"
@@ -210,7 +210,76 @@ export function MetaFields({
             error={errors["meta-editorial-field"]}
           />
         </div>
-        <TextAreaField id="meta-public-question" label="공익적 질문" disabled={readOnly} value={state.publicQuestion} onChange={(e) => update({ publicQuestion: e.target.value })} />
+        <TextAreaField
+          id="meta-public-question"
+          label="공익적 질문"
+          disabled={readOnly}
+          value={state.publicQuestion}
+          onChange={(e) => update({ publicQuestion: e.target.value })}
+          error={errors["meta-public-question"]}
+        />
+        {/* 지역 기사 편집 게이트 (REG1-17 — W4 7단계): 축제·명소·상권 소재는 관계 유형 1개 이상 + 취재 근거 1건 이상이어야 기사 후보 */}
+        <SelectField
+          id="meta-subject-kind"
+          label="소재 종류"
+          hint="축제·명소·상권은 예산·세수·공유재산·개발·거래·주거 영향 중 검증 가능한 관계와 근거가 있어야 기사 후보가 됩니다"
+          disabled={readOnly}
+          options={optionsOf(SUBJECT_KIND_LABELS)}
+          value={state.subjectKind}
+          onChange={(e) => update({ subjectKind: e.target.value })}
+          error={errors["meta-subject-kind"]}
+        />
+        <fieldset className="text-[15px] text-navy-800" aria-describedby={errors["meta-relation-types"] ? "meta-relation-types-error" : undefined}>
+          <legend className="font-bold">관계 유형 (복수 선택)</legend>
+          <div id="meta-relation-types" tabIndex={-1} className="mt-1 flex flex-wrap gap-3">
+            {RELATION_TYPES.map((t) => (
+              <label key={t} className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  data-relation={t}
+                  disabled={readOnly}
+                  checked={state.relationTypes.includes(t)}
+                  onChange={() => update({ relationTypes: state.relationTypes.includes(t) ? state.relationTypes.filter((x) => x !== t) : [...state.relationTypes, t] })}
+                />
+                {RELATION_TYPE_LABELS[t]}
+              </label>
+            ))}
+          </div>
+          <FieldErrorText id="meta-relation-types" error={errors["meta-relation-types"]} />
+        </fieldset>
+        {canReadPartners && partners.length > 0 && (
+          <fieldset className="text-[15px] text-navy-800">
+            <legend className="font-bold">다룬 제휴사 (광고·협찬 계약 기록이 있으면 이해관계 표시 필수)</legend>
+            <div id="meta-covered-partners" tabIndex={-1} className="mt-1 flex flex-wrap gap-3">
+              {partners.map((p) => (
+                <label key={p.id} className="inline-flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    data-covered-partner={p.id}
+                    disabled={readOnly}
+                    checked={state.coveredPartnerIds.includes(String(p.id))}
+                    onChange={() =>
+                      update({
+                        coveredPartnerIds: state.coveredPartnerIds.includes(String(p.id)) ? state.coveredPartnerIds.filter((x) => x !== String(p.id)) : [...state.coveredPartnerIds, String(p.id)],
+                      })
+                    }
+                  />
+                  {p.name}
+                </label>
+              ))}
+            </div>
+            <FieldErrorText id="meta-covered-partners" error={errors["meta-covered-partners"]} />
+          </fieldset>
+        )}
+        <TextAreaField
+          id="meta-interest-disclosure"
+          label="이해관계 표시"
+          hint="다룬 지역 사업자와 이 매체의 광고·협찬 관계를 독자에게 밝히는 문장 (NAV-06)"
+          disabled={readOnly}
+          value={state.interestDisclosure}
+          onChange={(e) => update({ interestDisclosure: e.target.value })}
+          error={errors["meta-interest-disclosure"]}
+        />
       </FieldGroup>
     </div>
   );

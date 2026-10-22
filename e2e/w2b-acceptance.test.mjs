@@ -125,7 +125,9 @@ async function createArticle(label, user, input) {
 const addSource = async (a, user, s) => (await expectStatus(api("POST", `/articles/${a.id}/sources`, user, s), 201, `출처 ${a.slug}`)).body.source.ref;
 const addEvidence = async (a, user, e) => (await expectStatus(api("POST", `/articles/${a.id}/evidence`, user, e), 201, `근거 ${a.slug}`)).body.evidence.ref;
 const patchArticle = (a, user, body) => expectStatus(api("PATCH", `/articles/${a.id}`, user, body), 200, `고치기 ${a.slug}`);
-const deskApprove = (a, checklist) => expectStatus(api("POST", `/articles/${a.id}/reviews`, u.editor, { kind: "desk_edit", decision: "approve", ...(checklist ? { checklist } : {}) }), 201, `편집 승인 ${a.slug}`);
+// 지역 기사 편집 승인은 근거·관계·광고 독립성 3항목을 함께 남긴다 (REG1-17 — W4 7단계, 지역 기사가 아니면 서버가 보지 않는다)
+const REGIONAL_CHECKS = { evidence: true, relation: true, ad_independence: true };
+const deskApprove = (a, checklist) => expectStatus(api("POST", `/articles/${a.id}/reviews`, u.editor, { kind: "desk_edit", decision: "approve", checklist: { ...REGIONAL_CHECKS, ...(checklist ?? {}) } }), 201, `편집 승인 ${a.slug}`);
 const taxApprove = (a) => expectStatus(api("POST", `/articles/${a.id}/reviews`, u.reviewer, { kind: "tax_review", decision: "approve" }), 201, `세무 감수 ${a.slug}`);
 const publish = (a) => expectStatus(api("POST", `/articles/${a.id}/publish`, u.editor), 200, `발행 ${a.slug}`);
 /** 「지방세로 읽기」 생략 사유 — 편집 책임자만 (CORE-01) */
@@ -165,6 +167,7 @@ async function seedQuantReport() {
     reportingMethod: "quantitative",
     editorialField: "local_tax",
     regionCodes: [GYEONGGI],
+    publicQuestion: "거래 감소가 가온시 취득세 세수에 어떤 영향을 주는가",
     checklists: {
       quantitative: {
         sourceCrossCheck: "징수 실적 파일 구별 합계를 재정공시 화면 값과 2026-10-09에 대조함",
@@ -224,7 +227,7 @@ async function seedQuantReport() {
 }
 
 /** 정성형 보도 — 인터뷰 2·문서 근거·인용 기록·필수 기록 4 → 생략 사유(박스 대상 분야) → 편집 승인 → 발행 */
-async function seedQualReport(label, { user, section, categoryKey, title, summary, regionCodes = [], paragraphs, quote, needsTaxLens }) {
+async function seedQualReport(label, { user, section, categoryKey, title, summary, regionCodes = [], editorialField, publicQuestion, paragraphs, quote, needsTaxLens }) {
   const a = await createArticle(label, user, {
     title: `${title} ${staff.run}`,
     summary,
@@ -234,6 +237,9 @@ async function seedQualReport(label, { user, section, categoryKey, title, summar
     reportingMethod: "qualitative",
     legalBasisDate: "2026-10-01",
     regionCodes,
+    // 지역 태그 기사는 편집 분야·공익적 질문 (REG1-17)
+    ...(editorialField ? { editorialField } : {}),
+    ...(publicQuestion ? { publicQuestion } : {}),
     checklists: {
       qualitative: {
         interviewQuestions: "① 무엇이 어려운지 ② 준비에 걸리는 시간 ③ 기관의 안내 방식",
@@ -331,6 +337,8 @@ before(async () => {
     section: "realestate",
     categoryKey: "realestate/projects",
     regionCodes: [SEOUL],
+    editorialField: "realestate",
+    publicQuestion: "재건축 조합원은 취득세 안내를 어디서 찾는가",
     needsTaxLens: true,
     title: "재건축 조합원, 취득세 안내 찾기 어렵다",
     summary: "조합원들은 입주권을 산 뒤 취득세 안내를 찾기 어렵다고 말했습니다.",
@@ -392,6 +400,8 @@ before(async () => {
     contentType: "explainer",
     legalBasisDate: "2026-10-01",
     regionCodes: [SEOUL],
+    editorialField: "realestate",
+    publicQuestion: "입주권을 산 사람은 취득세를 언제 내는가",
     body: { blocks: [{ type: "paragraph", text: "입주권은 토지에 대한 권리로 봅니다. 준공 뒤에는 건물분 취득세를 따로 냅니다." }], claims: [] },
     taxLens: { topics: ["취득세"], points: ["입주권 취득은 토지분 취득세 대상입니다.", "준공 뒤 건물분은 따로 신고합니다."], links: [{ kind: "explainer", label: "취득세 신고 해설", url: explainer.href }], omissionReason: null },
   });

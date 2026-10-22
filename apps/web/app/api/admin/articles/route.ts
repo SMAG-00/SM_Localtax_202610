@@ -2,7 +2,7 @@ import { validateSolvedCaseForSave, validateTaxLensForSave } from "@ltr/editoria
 import type { ArticleResource } from "@/lib/access";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { EMPTY_CHECKLISTS, parseChecklistsInput } from "@/lib/server/articles/content";
-import { parseArticleInput } from "@/lib/server/articles/input";
+import { parseArticleInput, setsRegionalFields } from "@/lib/server/articles/input";
 import { expiredPartnerError } from "@/lib/server/articles/partner-check";
 import { planCreate } from "@/lib/server/articles/plan";
 import { loadGateSettings, requirePersonForUser } from "@/lib/server/articles/repository";
@@ -27,6 +27,11 @@ export const POST = handle(async (request: Request) => {
   const resource: ArticleResource = { kind: "article", authorUserId: viewer.userId, contentType: input.contentType ?? null, published: false };
   const denied = await authorize(viewer, "article.create", target, resource);
   if (denied) return denied;
+  // 지역 기사 편집 칸(편집 분야·공익적 질문·소재·관계 유형·다룬 제휴사·이해관계 표시) — 편집국만, 광고·협찬 담당은 403 + 감사 (REG1-17 · W4 7단계)
+  if (setsRegionalFields(input)) {
+    const regionalDenied = await authorize(viewer, "article.regional_fields", target, resource);
+    if (regionalDenied) return regionalDenied;
+  }
   if (input.taxLens?.omissionReason) {
     const skipDenied = await authorize(viewer, "article.tax_lens_skip", target);
     if (skipDenied) return skipDenied;

@@ -186,7 +186,7 @@ test("비공개 행은 결과 0 — anon·authenticated·service_role·소유자
     const unconfirmed = await insert("media", { path: "u.jpg", kind: "photo" });
     priv.push(`article:${(await f.article({ title: `${M} 권리 미확인 이미지`, lead_media_id: unconfirmed.id })).id}`);
     priv.push(`article:${(await f.article({ title: `${M} 유료`, is_paid: true })).id}`);
-    const digest = await f.article({ title: `${M} 금주 핫뉴스`, section: "local", content_type: "digest", digest_id: 1 });
+    const digest = await f.article({ title: `${M} 금주 핫뉴스`, section: "local", content_type: "digest", digest_id: 1, region_codes: ["1100000000"], editorial_field: "local_tax", public_question: "시험용 공익적 질문" });
     priv.push(`article:${digest.id}`);
     // 취재 근거·운영 설정의 글은 검색 대상이 아니다
     await insert("article_evidence", { article_id: pub.article.id, article_version: 1, evidence_type: "document", location: `${M} 근거 보관함`, rights_status: "confirmed" });
@@ -208,7 +208,7 @@ test("비공개 행은 결과 0 — anon·authenticated·service_role·소유자
     priv.push(`category:${hiddenCat.id}`);
     priv.push(`category:${(await insert("categories", { section: "tax", slug: uniq("ec").replace(/[^a-z0-9-]/g, ""), name: `${M} 빈 분야`, visible: true })).id}`);
     const localCat = await insert("categories", { section: "local", slug: uniq("lc").replace(/[^a-z0-9-]/g, ""), name: `${M} 지자체 분야`, visible: true });
-    await f.article({ title: "지자체 기사", section: "local", category_id: localCat.id });
+    await f.article({ title: "지자체 기사", section: "local", category_id: localCat.id, region_codes: ["1100000000"], editorial_field: "local_tax", public_question: "시험용 공익적 질문" });
     priv.push(`category:${localCat.id}`);
     pub.glossary = await f.term({ term: `${M} 용어` });
     pub.region = await f.sigungu({ name: `${M}구` });
@@ -331,9 +331,9 @@ test("지역 거르개 — 시·도를 고르면 그 아래 시·군·구 태그
     const M = "지역표식";
     const gu = await f.sigungu({ name: `${M}동구` });
     const sibling = await f.sigungu({ name: `${M}서구` });
-    const inGu = await f.article({ title: `${M} 동구 기사`, section: "local", region_codes: [gu.code] });
-    const inSido = await f.article({ title: `${M} 서울 기사`, section: "local", region_codes: ["1100000000"] });
-    const busan = await f.article({ title: `${M} 부산 기사`, section: "local", region_codes: ["2600000000"] });
+    const inGu = await f.article({ title: `${M} 동구 기사`, section: "local", region_codes: [gu.code], editorial_field: "local_tax", public_question: "시험용 공익적 질문" });
+    const inSido = await f.article({ title: `${M} 서울 기사`, section: "local", region_codes: ["1100000000"], editorial_field: "local_tax", public_question: "시험용 공익적 질문" });
+    const busan = await f.article({ title: `${M} 부산 기사`, section: "local", region_codes: ["2600000000"], editorial_field: "local_tax", public_question: "시험용 공익적 질문" });
     await f.situation({ title: `${M} 상황` });
     assert.deepEqual(keys(await search(M, { p_region: "1100000000" })), [`article:${inGu.id}`, `article:${inSido.id}`, `region:${gu.code}`, `region:${sibling.code}`].sort());
     assert.deepEqual(keys(await search(M, { p_region: gu.code })), [`article:${inGu.id}`, `region:${gu.code}`].sort());

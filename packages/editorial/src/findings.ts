@@ -75,6 +75,16 @@ export const RULES = [
   { id: "pr07.license-required", ruleRef: "PR-07", level: "block", title: "공식 자료·보도자료·사진 출처에 공공누리 유형 없음" },
   { id: "pr07.photo-license", ruleRef: "PR-07", level: "block", title: "게시하지 않는 공공누리 유형의 사진(제4유형·미표시·법률 검토 전 제2·3유형)" },
   { id: "pr07.full-text", ruleRef: "PR-07", level: "block", title: "공공 자료 원문 본문을 그대로 옮김" },
+  // REG1-17 지역 기사 편집 게이트 (01B — W4 7단계)
+  { id: "reg1_17.region-tag-required", ruleRef: "REG1-17", level: "block", title: "지자체뉴스 기사에 지역 태그 없음(새 발행)" },
+  { id: "reg1_17.editorial-field", ruleRef: "REG1-17", level: "block", title: "지역 기사에 편집 분야 없음" },
+  { id: "reg1_17.public-question", ruleRef: "REG1-17", level: "block", title: "지역 기사에 공익적 질문 없음" },
+  { id: "reg1_17.field-judge-missing", ruleRef: "REG1-17", level: "block", title: "판정 책임자가 없는 편집 분야(보류)" },
+  { id: "reg1_17.non-news-judgement", ruleRef: "REG1-17", level: "block", title: "여행 후기·맛집 추천·행사 홍보 판정 원고를 보도·해설로 발행" },
+  { id: "reg1_17.relation-required", ruleRef: "REG1-17", level: "block", title: "축제·명소·상권 소재에 관계 유형 없음(보류)" },
+  { id: "reg1_17.relation-evidence", ruleRef: "REG1-17", level: "block", title: "축제·명소·상권 소재에 관계 근거 없음(보류)" },
+  { id: "reg1_17.desk-checklist", ruleRef: "REG1-17", level: "block", title: "지역 기사 편집 승인에 근거·관계·광고 독립성 확인 없음" },
+  { id: "reg1_17.interest-disclosure", ruleRef: "REG1-17", level: "block", title: "광고·협찬 계약 제휴사를 다룬 원고에 이해관계 표시 없음" },
   // NAV-10 정량형 필수 7묶음 + 인과 단정 없음
   { id: "nav10.source-data", ruleRef: "NAV-10", level: "block", title: "원자료(파일/URL·제공기관·수집일·이용권리) 빔" },
   { id: "nav10.indicator-definition", ruleRef: "NAV-10", level: "block", title: "지표 정의(정의·기간·단위·지역 단위·분모·제외값) 빔" },

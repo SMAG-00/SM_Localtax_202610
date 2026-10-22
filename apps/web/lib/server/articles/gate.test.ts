@@ -43,7 +43,8 @@ describe("NAV-10 정량형 묶음 — DB 칸 하나만 비워도 그 묶음 ID�
   });
   test("'인과 단정 없음'은 현재 버전의 독립 편집 승인 checklist에서만 읽는다", () => {
     const base = graph();
-    const noCheck = { ...base.reviews[0]!, checklist: {} };
+    // 지역 기사 3항목(REG1-17)은 그대로 두고 '인과 단정 없음'만 뺀다
+    const noCheck = { ...base.reviews[0]!, checklist: { evidence: true, relation: true, ad_independence: true } };
     expect(failedOf({ ...base, reviews: [noCheck] })).toEqual(["nav10.no-causal-claim"]);
     // 확인 목록(check_log)에 기자가 적어 넣어도 세지 않는다
     const forged = graph({ reviews: [noCheck] }, {
@@ -356,5 +357,52 @@ describe("W4 5단계 공식 자료·공공누리 — DB 칸 → 발행 판정 (R
     const set = parseGateSettings([...dict, { key: "kogl_usage", value: { photoTypes: ["kogl_1", "kogl_2"], fullTextTypes: ["kogl_1"] } }, { key: "official_source_types", value: ["notice", "public_property"] }], []);
     expect(set.settings.kogl).toEqual({ photoTypes: ["kogl_1", "kogl_2"], fullTextTypes: ["kogl_1"] });
     expect(set.settings.officialSourceTypes).toEqual(["notice", "public_property"]);
+  });
+});
+
+describe("W4 7단계 지역 기사 게이트 — DB 칸 → 발행 판정 (REG1-17)", () => {
+  const regionalFailed = (g: ReturnType<typeof graph>, settings = SETTINGS) => runGate(g, settings, GATE_OPTIONS).failed.filter((id) => id.startsWith("reg1_17."));
+  test("견본(지역 태그·편집 분야·공익적 질문·3항목 승인)은 지역 게이트 차단 0", () => {
+    expect(regionalFailed(graph())).toEqual([]);
+  });
+  test("지자체뉴스 새 원고의 지역 태그 0 → region-tag-required, 한 번 발행된 기사는 그대로", () => {
+    expect(regionalFailed(graph({}, { region_codes: [] }))).toEqual(["reg1_17.region-tag-required"]);
+    expect(regionalFailed(graph({}, { region_codes: [], first_published_at: "2026-09-01T00:00:00+00:00", update_kind: "substantive", updated_reason: "갱신" }))).toEqual([]);
+  });
+  test("편집 분야·공익적 질문 칸 → 차단 ID, 목록 밖 편집 분야는 빈 것으로", () => {
+    expect(regionalFailed(graph({}, { editorial_field: null, public_question: " " }))).toEqual(["reg1_17.editorial-field", "reg1_17.public-question"]);
+    expect(regionalFailed(graph({}, { editorial_field: "tourism" }))).toEqual(["reg1_17.editorial-field"]);
+  });
+  test("소재·관계 유형·근거 — 축제 + 관계 0 → relation-required, 목록 밖 관계 유형은 빼고 센다, 근거 0 → relation-evidence", () => {
+    expect(regionalFailed(graph({}, { subject_kind: "festival", relation_types: [] }))).toEqual(["reg1_17.relation-required"]);
+    expect(regionalFailed(graph({}, { subject_kind: "festival", relation_types: ["tourism"] }))).toEqual(["reg1_17.relation-required"]);
+    expect(regionalFailed(graph({ evidence: [] }, { subject_kind: "commerce", relation_types: ["budget"] }))).toEqual(["reg1_17.relation-evidence"]);
+    expect(regionalFailed(graph({}, { subject_kind: "festival", relation_types: ["budget"] }))).toEqual([]);
+  });
+  test("편집자 판정 여행 후기 + 보도기사 → non-news-judgement", () => {
+    expect(regionalFailed(graph({}, { editorial_judgement: "travel_review", judged_by: "user:x", judged_at: "2026-10-20T00:00:00Z" }))).toEqual(["reg1_17.non-news-judgement"]);
+  });
+  test("편집 승인 checklist는 DB 칸(checklist)에서 읽는다 — 3항목 하나 빠지면 desk-checklist", () => {
+    const base = graph();
+    const partial = { ...base.reviews[0]!, checklist: { noCausalClaim: true, evidence: true, relation: true } };
+    expect(regionalFailed({ ...base, reviews: [partial] })).toEqual(["reg1_17.desk-checklist"]);
+  });
+  test("다룬 제휴사 중 계약 기록이 있는 곳만 이해관계 표시를 요구한다", () => {
+    const contracted = { id: 7, name: "시험용 가상상회", contract_from: "2026-01-01", contract_to: null };
+    const noContract = { id: 8, name: "시험용 가상기관", contract_from: null, contract_to: null };
+    expect(regionalFailed(graph({ coveredPartners: [noContract] }, { covered_partner_ids: [8] }))).toEqual([]);
+    expect(regionalFailed(graph({ coveredPartners: [contracted] }, { covered_partner_ids: [7] }))).toEqual(["reg1_17.interest-disclosure"]);
+    expect(regionalFailed(graph({ coveredPartners: [contracted] }, { covered_partner_ids: [7], interest_disclosure: "시험용 가상상회는 광고주입니다" }))).toEqual([]);
+  });
+  test("판정 책임자 설정 — 행이 없으면 씨앗 4종, 모양이 틀리면 빈 목록(모든 분야 보류), 고친 목록 밖 분야 → field-judge-missing", () => {
+    const dict = [
+      { key: "forbidden_phrases", value: { phrases: ["절세 보장"] } },
+      { key: "fear_phrases", value: { phrases: ["큰일"] } },
+    ];
+    expect(parseGateSettings(dict, []).settings.regionalJudgeFields).toEqual(["local_tax", "realestate", "local_finance", "urban_policy"]);
+    expect(parseGateSettings([...dict, { key: "regional_judge_fields", value: ["local_tax", "local_tax"] }], []).settings.regionalJudgeFields).toEqual([]);
+    const narrowed = parseGateSettings([...dict, { key: "regional_judge_fields", value: ["local_tax"] }], []);
+    expect(narrowed.problems).toEqual([]);
+    expect(regionalFailed(graph(), { ...SETTINGS, regionalJudgeFields: narrowed.settings.regionalJudgeFields })).toEqual(["reg1_17.field-judge-missing"]);
   });
 });

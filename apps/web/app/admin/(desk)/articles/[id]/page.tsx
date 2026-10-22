@@ -42,6 +42,7 @@ export default async function ArticleEditorPage({ params }: Props) {
     canPlace: can(viewer, "article.sort"),
     canHot: can(viewer, "article.hot"),
     canReadPartners: can(viewer, "partner.read"),
+    canJudgeRegional: can(viewer, "regional.judge"),
     contentTypes: CONTENT_TYPES.filter((t) => can(viewer, "article.edit", { ...resource, contentType: t })),
   };
   const requests = published && perms.canDecideCorrection ? await pendingCorrectionRequests(db, id) : [];

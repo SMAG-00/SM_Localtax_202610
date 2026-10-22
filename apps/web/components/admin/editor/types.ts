@@ -26,6 +26,8 @@ export interface EditorPermissions {
   canHot: boolean;
   /** 제휴사 목록 화면(/admin/partners)을 열 수 있다 — 편집 책임자는 읽기만 */
   canReadPartners: boolean;
+  /** 지역 기사 편집자 판정 (regional.judge — 편집 책임자·관리자, W4 7단계) */
+  canJudgeRegional?: boolean;
   /** 이 사람이 고를 수 있는 기사 유형 (광고·협찬은 광고 담당만) */
   contentTypes: string[];
 }
