@@ -22,6 +22,7 @@ import {
   topicHasOwnArticles,
   type LocalBlockFields,
 } from "./region-hub-logic";
+import type { ProjectCard } from "./project-logic";
 import { regionPage } from "./region-logic";
 import { listItem } from "./test-items";
 
@@ -112,6 +113,20 @@ describe("지역 허브 블록 (LG-08 ②③⑤ · REG1-02 · REG-06)", () => {
     expect(blocks.some((b) => (b.key as string) === "weekly" || (b.key as string) === "events")).toBe(false);
     expect(blocks.map((b) => b.items.map((a) => a.id))).toEqual([[1], [2], []]);
     expect(blocks.map((b) => b.fallbackNotice)).toEqual([null, null, null]);
+  });
+
+  test("③ 프로젝트 카드 (W4 15단계) — 부동산·개발 블록에만 · 더 보기는 카드가 있을 때만 · 분야 필터로 ③이 빠지면 카드 0 · 넘기지 않으면 0장", () => {
+    const card = { id: 7, slug: "siheom-p", name: "시험용 프로젝트" } as unknown as ProjectCard;
+    const projects = { cards: [card], more: "/realestate/projects?region=9901100000" };
+    const blocks = regionHubBlocks({ ...sigungu, own: { local_tax: [], realestate: [] }, parent: {}, projects });
+    expect(blocks.map((b) => [b.key, b.projects.map((p) => p.id), b.projectsMore])).toEqual([
+      ["local_tax", [], null],
+      ["realestate", [7], "/realestate/projects?region=9901100000"],
+      ["official", [], null],
+    ]);
+    expect(regionHubBlocks({ ...sigungu, own: {}, parent: {}, projects: { cards: [], more: "/x" } })[1]).toMatchObject({ projects: [], projectsMore: null });
+    expect(regionHubBlocks({ ...sigungu, topic: "local_tax", own: {}, parent: {}, projects }).flatMap((b) => b.projects)).toEqual([]);
+    expect(regionHubBlocks({ ...sigungu, own: {}, parent: {} }).flatMap((b) => b.projects)).toEqual([]);
   });
 
   test("블록에 대응 밖 기사가 넘어와도 0 — ②에 부동산 기사, ③에 지방세 기사를 넣어도 빠진다", () => {

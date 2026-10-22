@@ -1,5 +1,6 @@
-// 공개 지역 연결 모양 (W4 13단계 — PRD-01B REG1-10, docs/dev/W4_설계.md 12장 103번·104번) — 화면이 있는 도착만 링크, 404 링크 0, 순서·한도
+// 공개 지역 연결 모양 (W4 13단계 — PRD-01B REG1-10, docs/dev/W4_설계.md 12장 103번·104번 · 15단계 프로젝트 도착) — 화면이 있는 도착만 링크, 404 링크 0, 순서·한도
 import { describe, expect, test } from "vitest";
+import { LINK_RELATION_LABELS } from "@/lib/admin/regional-link-rules";
 import { PUBLIC_LINK_LIMIT, RENDERED_LINK_TYPES, regionalLinkItems, type LinkTargets, type PublicLinkRow } from "./regional-links-logic";
 
 const row = (id: number, to_type: string, to_id: string, over: Partial<PublicLinkRow> = {}): PublicLinkRow => ({
@@ -39,8 +40,8 @@ describe("화면이 있는 도착만 링크 (404 링크 0)", () => {
     expect(items[2]).toMatchObject({ kindLabel: "지역 허브", relationLabel: "같은 지역", title: "시험용 연결도 시험용 연결구" });
     expect(items[0]).toMatchObject({ kindLabel: "기사", relationLabel: "관련 세금", meta: null });
   });
-  test("프로젝트 도착은 공개 화면(15단계) 전 0 · 다시 읽지 못한 도착(그 사이 비공개) 0 · 금주 핫뉴스 0 · http(s) 아닌 원문 0 · 모르는 종류·관계 0", () => {
-    expect(RENDERED_LINK_TYPES).not.toContain("project");
+  test("프로젝트 도착 행이 없으면(기능 키 realestate_projects 꺼짐 — 읽는 쪽이 넣지 않는다) 0 · 다시 읽지 못한 도착(그 사이 비공개) 0 · 금주 핫뉴스 0 · http(s) 아닌 원문 0 · 모르는 종류·관계 0", () => {
+    expect(RENDERED_LINK_TYPES).toEqual(["article", "official_source", "project", "region"]);
     const items = regionalLinkItems(
       [
         row(1, "project", "5", { relation: "related_project" }),
@@ -57,6 +58,17 @@ describe("화면이 있는 도착만 링크 (404 링크 0)", () => {
       targets(),
     );
     expect(items).toEqual([]);
+  });
+  test("프로젝트 도착 (15단계 — 12장 103번) — 기능 키가 켜져 읽은 공개 프로젝트만 /realestate/projects/[slug] · 현재 단계 글자 · 없는 번호 0", () => {
+    const projects = new Map([["5", { slug: "siheom-pr-5", name: "시험용 연결 프로젝트", stage_label: "시험용 구역지정" }]]);
+    const items = regionalLinkItems([row(1, "project", "5", { relation: "related_project" }), row(2, "project", "6", { relation: "related_project" })], targets({ projects }));
+    expect(items).toEqual([
+      { id: 1, kind: "project", kindLabel: "프로젝트", relation: "related_project", relationLabel: "관련 프로젝트", title: "시험용 연결 프로젝트", href: "/realestate/projects/siheom-pr-5", external: false, meta: "현재 단계 시험용 구역지정", underReview: false },
+    ]);
+    expect(LINK_RELATION_LABELS.related_project).toBe("관련 프로젝트");
+    // 종류 순 — 기사 → 공식 원문 → 프로젝트 → 지역 허브
+    const mixed = regionalLinkItems([row(1, "region", "9901100000"), row(2, "project", "5"), row(3, "official_source", "21"), row(4, "article", "11")], targets({ projects }));
+    expect(mixed.map((i) => i.kind)).toEqual(["article", "official_source", "project", "region"]);
   });
   test("검토 중 표시 · 제목 없는 자료는 발표기관", () => {
     const [item] = regionalLinkItems([row(1, "official_source", "22")], targets());

@@ -43,7 +43,7 @@ function row24(name: string): string[] {
 }
 
 const options = (over: Partial<SearchOptions> = {}): SearchOptions => ({ q: "취득세", tab: "all", section: null, contentType: null, region: null, from: null, to: null, page: 1, ...over });
-const counts = (over: Partial<Record<SearchKind, number>> = {}) => ({ region: 0, situation: 0, tracker: 0, glossary: 0, category: 0, article: 0, person: 0, interpretation: 0, ...over });
+const counts = (over: Partial<Record<SearchKind, number>> = {}) => ({ region: 0, situation: 0, tracker: 0, glossary: 0, category: 0, article: 0, person: 0, interpretation: 0, project: 0, ...over });
 const result = (over: Partial<SearchResult> = {}): SearchResult => ({ query: "취득세", terms: ["취득세"], total: 0, counts: counts(), items: [], page: 1, pageSize: 20, hasMore: false, ...over });
 const article = (ref: string): SearchHit => ({
   kind: "article",

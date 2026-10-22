@@ -200,7 +200,7 @@ function HitTitle({ hit }: { hit: SearchHit }) {
 /** 결과 한 칸 — 유형 표시 · 분야 · 날짜 → 제목(열린 화면이면 링크) → 한 줄 (카드 안쪽 24px — R7) */
 function HitItem({ hit, confirmStage }: { hit: SearchHit; confirmStage: ProgressStageKey }) {
   const section = "sectionName" in hit ? hit.sectionName : null;
-  const date = hit.kind === "article" ? hit.publishedOn : hit.kind === "tracker" ? hit.stageOn : hit.kind === "interpretation" ? hit.decidedOn : null;
+  const date = hit.kind === "article" ? hit.publishedOn : hit.kind === "tracker" || hit.kind === "project" ? hit.stageOn : hit.kind === "interpretation" ? hit.decidedOn : null;
   const stage = hit.kind === "tracker" ? trackerStageView(hit, confirmStage) : null;
   return (
     <li data-search-hit="" data-kind={hit.kind} data-ref={hit.ref} {...(hit.kind === "article" ? { "data-content-type": hit.contentType ?? "none" } : {})} className="flex">
@@ -209,6 +209,9 @@ function HitItem({ hit, confirmStage }: { hit: SearchHit; confirmStage: Progress
           <TypeMark hit={hit} />
           {section && <span>{section}</span>}
           {hit.kind === "interpretation" && <Chip>{hit.docTypeLabel}</Chip>}
+          {/* 프로젝트 (W4 15단계) — 사업 유형·현재 단계 글자 칩 (가격 0 — PR-05) */}
+          {hit.kind === "project" && hit.projectTypeLabel && <Chip>{hit.projectTypeLabel}</Chip>}
+          {hit.kind === "project" && hit.stageLabel && <Chip>{hit.stageLabel}</Chip>}
           {stage?.label && <Chip>{stage.label}</Chip>}
           {stage?.unconfirmed && <UnconfirmedChip />}
           {date && (

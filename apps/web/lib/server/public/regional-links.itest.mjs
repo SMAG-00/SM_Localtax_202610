@@ -177,7 +177,7 @@ afterAll(async () => {
 });
 
 describe("기사 상세 '확인된 연결' — 확인된 연결 중 도착 화면이 지금 열린 것만 (anon)", () => {
-  test("region_hubs 꺼짐 — 기사·공식 원문만 · 후보·지운 연결 0 · 프로젝트(공개 화면 15단계 전) 0 · 지역 허브 0", async () => {
+  test("region_hubs·realestate_projects 꺼짐 — 기사·공식 원문만 · 후보·지운 연결 0 · 프로젝트(기능 키 꺼짐) 0 · 지역 허브 0", async () => {
     const links = await linksOf();
     expect(links.map((l) => [l.id, l.kind, l.href, l.external])).toEqual([
       [w.l1, "article", `/news/${w.T1.slug}`, false],
@@ -198,6 +198,23 @@ describe("기사 상세 '확인된 연결' — 확인된 연결 중 도착 화�
       await hubs(false);
     }
     expect((await linksOf()).some((l) => l.kind === "region")).toBe(false);
+  });
+
+  test("realestate_projects 켜짐 (W4 15단계 — 12장 103번) → 프로젝트 링크 /realestate/projects/[slug] · 끄면 다음 읽기부터 0 · 프로젝트를 내리면 0", async () => {
+    const flags = (on) => setSetting("feature_flags", { ...saved.feature_flags, region_hubs: false, realestate_projects: on });
+    await flags(true);
+    try {
+      const links = await linksOf();
+      expect(links.map((l) => l.kind)).toEqual(["article", "official_source", "project"]);
+      expect(links[2]).toMatchObject({ id: w.l4, href: `/realestate/projects/siheom-rl-${RUN}`, title: "시험용 연결 프로젝트", kindLabel: "프로젝트", meta: "현재 단계 시험용 구역지정", external: false });
+      await db.query("update public.projects set status = 'hidden' where id = $1", [w.project]);
+      expect((await linksOf()).some((l) => l.kind === "project")).toBe(false);
+      await db.query("update public.projects set status = 'public' where id = $1", [w.project]);
+      expect((await linksOf()).some((l) => l.kind === "project")).toBe(true);
+    } finally {
+      await flags(false);
+    }
+    expect((await linksOf()).some((l) => l.kind === "project")).toBe(false);
   });
 
   test("목적지가 비공개가 되면 다음 읽기부터 링크 0 (404 링크 0) · 되돌리면 다시 · 원문 검수 중이면 '검토 중'", async () => {

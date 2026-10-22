@@ -20,12 +20,12 @@ PRD-01A 9장 W2-d(통합 검색·용어사전 v0·툴팁 — 증거: 검색 정�
 
 | 이름 | 값 |
 |---|---|
-| search.kind (결과 종류 — 순서 = 같은 등급 안의 종류 순서) | `region` · `situation` · `tracker` · `glossary` · `category` · `article` · `person` · `interpretation` |
+| search.kind (결과 종류 — 순서 = 같은 등급 안의 종류 순서) | `region` · `situation` · `tracker` · `glossary` · `category` · `article` · `person` · `interpretation` · `project` |
 | search.content_type (기사 유형 거르개 — 금주 핫뉴스 `digest`는 기사 결과에 없다) | `reported_news` · `explainer` · `guide` · `opinion` · `sponsored` |
 | search.person_roles (인물 결과에 넣는 역할 — 전문가만인 인물은 01C 검증 전 0) | `reporter` · `editor` · `writer` · `reviewer` |
 | search.tab (검색 화면 탭 — 2단계, 데이터 없는 탭 0) | `all` · `article` · `tracker` · `region` · `event` · `glossary` · `expert` |
 
-- 종류 글자(결과 유형 표시 — SRCH-01 '결과마다 유형 표시'): `region` 지역 · `situation` 상황 · `tracker` 개정 트래커 · `glossary` 용어 · `category` 분야 · `article` 기사 유형 배지(`@ltr/ui ARTICLE_TYPE_BADGE_LABELS` — `보도`·`해설`·`가이드`·`오피니언`·`광고`, 공동 기획은 유형 배지 대신 `공동 기획 ○○` — W2-b #49, 유형 없는 이관 기사는 `기사`) · `person` 기자·필자 · `interpretation` **`해석 원문`**(W3 10단계 — 공개 가능한 `legal_docs` 가운데 발행된 해석 해설이 다루는 원문, 유형 글자 칩(예규·통칙·유권해석·심판·판례)을 함께 단다). 뒤 작업이 더하는 종류: `project` 프로젝트(01B W4) · `event` **`행사안내`**(01B W6 — 정보 목록, 기사 유형 배지 글자 0, 축제 회차 0 — LG-10) · `expert` 전문가(01C — 공개·검증 프로필만). 결과 모양(7장)은 그대로 두고 함수 몸과 이 표에만 더한다.
+- 종류 글자(결과 유형 표시 — SRCH-01 '결과마다 유형 표시'): `region` 지역 · `situation` 상황 · `tracker` 개정 트래커 · `glossary` 용어 · `category` 분야 · `article` 기사 유형 배지(`@ltr/ui ARTICLE_TYPE_BADGE_LABELS` — `보도`·`해설`·`가이드`·`오피니언`·`광고`, 공동 기획은 유형 배지 대신 `공동 기획 ○○` — W2-b #49, 유형 없는 이관 기사는 `기사`) · `person` 기자·필자 · `interpretation` **`해석 원문`**(W3 10단계 — 공개 가능한 `legal_docs` 가운데 발행된 해석 해설이 다루는 원문, 유형 글자 칩(예규·통칙·유권해석·심판·판례)을 함께 단다). `project` **`프로젝트`**(01B W4 15단계 — 공개 프로젝트 + 기능 키 `realestate_projects`, 현재 단계 글자 칩·사업 유형을 함께 단다, 트래커 탭). 뒤 작업이 더하는 종류: `event` **`행사안내`**(01B W6 — 정보 목록, 기사 유형 배지 글자 0, 축제 회차 0 — LG-10) · `expert` 전문가(01C — 공개·검증 프로필만). 결과 모양(7장)은 그대로 두고 함수 몸과 이 표에만 더한다.
 - 탭 → 종류: `all` 모든 종류(종류별 묶음) · `article` 기사 · `tracker` 개정 트래커(+ 01B 프로젝트) · `region` 지역 · `event` 행사 · `glossary` 용어 · `expert` 전문가. 상황·분야·기자·필자·해석 원문은 `all`에만 [확인 필요 — 9장 #9 · W3 12장 #39].
 
 ### 2.2 정규화 견본 (DB 함수와 TypeScript가 같은 결과 — 시험이 이 표를 읽는다)

@@ -63,6 +63,23 @@ describe("프로젝트 단계 타임라인 (PR-02·PR-03·PR-05·PR-08)", () => 
     expect(screen.queryByText("제2026-210호")).toBeNull();
   });
 
+  it("공공누리 유형 글자는 기록에 있을 때만 · 해당 없음 단계는 상태 글자 대신 '해당 없음'(표도 같다), 기록이 있으면 기록이 앞선다 (W4 15단계)", () => {
+    const withExtra: ProjectStage[] = stages.map((s, i) =>
+      i === 0 ? { ...s, record: { ...s.record!, license: "공공누리 제1유형(출처표시)" } } : i === 3 ? { ...s, notApplicable: true } : i === 1 ? { ...s, notApplicable: true } : s,
+    );
+    const { container } = render(<ProjectStageTimeline stages={withExtra} />);
+    const items = [...container.querySelectorAll("ol > li")] as HTMLElement[];
+    expect(within(items[0]!).getByText("공공누리 제1유형(출처표시)")).toBeTruthy();
+    expect(within(items[0]!).getByText("공공누리")).toBeTruthy();
+    expect(within(items[2]!).queryByText("공공누리")).toBeNull();
+    expect(items.map((li) => li.hasAttribute("data-stage-na"))).toEqual([false, false, false, true, false, false]);
+    expect(within(items[3]!).getByText("해당 없음")).toBeTruthy();
+    expect(within(items[3]!).queryByText("예정 단계")).toBeNull();
+    expect(within(items[1]!).getByText("지난 단계")).toBeTruthy();
+    const cells = [...container.querySelectorAll("tbody tr")].map((tr) => tr.children[1]!.textContent);
+    expect(cells).toEqual(["지난 단계", "지난 단계", "현재 단계", "해당 없음", "예정 단계", "예정 단계"]);
+  });
+
   it("공개 단계 기록이 하나도 없으면 그리지 않는다", () => {
     const { container } = render(<ProjectStageTimeline stages={[{ name: "구역지정" }, { name: "준공" }]} />);
     expect(container.innerHTML).toBe("");

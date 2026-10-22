@@ -1,16 +1,17 @@
 // 공개 지역 연결 모양 (W4 13단계 — PRD-01B REG1-10 · LG-14, docs/dev/W4_설계.md 1장 13단계 · 12장 100번~) — 순수 함수
 // 공개 뷰 public_regional_links(확인된 연결 중 두 끝이 지금 공개인 것만 — 마이그레이션 …48)의 줄과 도착 대상(anon으로 다시 읽은 공개 행)을 화면 항목으로 바꾼다.
-//  · 도착 화면이 지금 있는 것만 링크 — 기사(/news/[slug], 금주 핫뉴스 제외) · 공식 자료(원문 주소 새 창) · 지역 허브(/local/…, region_hubs 켜짐 — 뷰가 본다)
-//  · 프로젝트 도착은 공개 화면(15단계 /realestate/projects/[slug])이 생기기 전 0 — 빈 링크·글자만 카드 0 (12장 103번)
-//  · 도착 행을 다시 읽지 못한 줄(그 사이 비공개)도 0 — 404 링크 0 · 같은 주소는 한 번 · 종류 순(기사 → 공식 자료 → 지역 허브) 안에서 최근 확인 순 · 최대 PUBLIC_LINK_LIMIT건
+//  · 도착 화면이 지금 있는 것만 링크 — 기사(/news/[slug], 금주 핫뉴스 제외) · 공식 자료(원문 주소 새 창) · 프로젝트(/realestate/projects/[slug] — 15단계,
+//    기능 키 realestate_projects가 켜졌을 때만 읽는 쪽이 도착 행을 넣는다 — 꺼지면 0, 12장 103번) · 지역 허브(/local/…, region_hubs 켜짐 — 뷰가 본다)
+//  · 도착 행을 다시 읽지 못한 줄(그 사이 비공개)도 0 — 404 링크 0 · 같은 주소는 한 번 · 종류 순(기사 → 공식 자료 → 프로젝트 → 지역 허브) 안에서 최근 확인 순 · 최대 PUBLIC_LINK_LIMIT건
 import { LINK_RELATION_LABELS, type RegionalLinkRelation, type RegionalLinkType } from "@/lib/admin/regional-link-rules";
+import { projectHref } from "./project-logic";
 
 /** 기사 상세 '확인된 연결' 최대 건수 (12장 104번) */
 export const PUBLIC_LINK_LIMIT = 10;
-/** 공개 화면이 있는 도착 종류 — 순서 = 화면 순서. 프로젝트는 15단계가 더한다 */
-export const RENDERED_LINK_TYPES = ["article", "official_source", "region"] as const satisfies readonly RegionalLinkType[];
+/** 공개 화면이 있는 도착 종류 — 순서 = 화면 순서 (프로젝트는 15단계 — 12장 103번) */
+export const RENDERED_LINK_TYPES = ["article", "official_source", "project", "region"] as const satisfies readonly RegionalLinkType[];
 export type RenderedLinkType = (typeof RENDERED_LINK_TYPES)[number];
-export const RENDERED_TYPE_LABELS: Readonly<Record<RenderedLinkType, string>> = { article: "기사", official_source: "공식 원문", region: "지역 허브" };
+export const RENDERED_TYPE_LABELS: Readonly<Record<RenderedLinkType, string>> = { article: "기사", official_source: "공식 원문", project: "프로젝트", region: "지역 허브" };
 
 export interface PublicLinkRow {
   id: number | string;
@@ -29,6 +30,8 @@ export interface LinkTargets {
   sources: ReadonlyMap<string, { title: string | null; source_url: string | null; source_name: string | null; reference_date: string | null; under_review: boolean }>;
   /** 지역 허브 — 코드 → 이름·주소 (오늘 유효 + region_hubs 켜짐일 때만 넣는다) */
   regions: ReadonlyMap<string, { name: string; href: string }>;
+  /** 공개 프로젝트 — 번호 → 주소·이름·현재 단계 글자 (기능 키 realestate_projects 켜짐일 때만 넣는다 — 없으면 프로젝트 링크 0) */
+  projects?: ReadonlyMap<string, { slug: string; name: string; stage_label: string | null }>;
 }
 
 export interface RegionalLinkItem {
@@ -66,6 +69,10 @@ export function regionalLinkItems(rows: readonly PublicLinkRow[], targets: LinkT
       if (!s || !HTTP.test(url)) continue;
       const meta = [s.source_name, s.reference_date ? `기준일 ${s.reference_date}` : null].filter(Boolean).join(" · ") || null;
       items.push({ ...base, title: s.title?.trim() || s.source_name || url, href: url, external: true, meta, underReview: s.under_review });
+    } else if (r.to_type === "project") {
+      const p = targets.projects?.get(r.to_id);
+      if (!p || !p.slug) continue;
+      items.push({ ...base, title: p.name, href: projectHref(p.slug), external: false, meta: p.stage_label ? `현재 단계 ${p.stage_label}` : null, underReview: false });
     } else {
       const g = targets.regions.get(r.to_id);
       if (!g) continue;

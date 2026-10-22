@@ -97,7 +97,7 @@ const constInt = (src, name) => {
 };
 
 test("설계 문서 2장의 표를 모두 읽었다", () => {
-  assert.deepEqual(VALUES.get("search.kind"), ["region", "situation", "tracker", "glossary", "category", "article", "person", "interpretation"]);
+  assert.deepEqual(VALUES.get("search.kind"), ["region", "situation", "tracker", "glossary", "category", "article", "person", "interpretation", "project"]);
   assert.equal(VALUES.get("search.content_type").length, 5);
   assert.ok(!VALUES.get("search.content_type").includes("digest"), "금주 핫뉴스는 기사 유형 거르개에 없다");
   assert.deepEqual(VALUES.get("search.person_roles"), ["reporter", "editor", "writer", "reviewer"]);

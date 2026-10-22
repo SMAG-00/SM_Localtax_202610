@@ -24,6 +24,20 @@ import { regionGateDecision, regionRoute, type RegionReader, type RegionRoute } 
 //    이 한 표의 도착 코드 한 칸만 주소 값 하나로 읽는다. 기능 키·지역 행은 anon 키(공개 표)로 읽는다
 //  · 어느 읽기든 실패하면 503 — 상세 경로와 같은 안내
 
+// 프로젝트 읽기 API (/api/projects/[slug] — W4 15단계): 주소 조각의 % 표기가 깨졌으면(예: %E0%A4%A) Next가 경로 매개변수를 풀다가 500을 낸다 —
+// 처리기에 닿기 전에 여기서 400(칸마다 사유 — 처리기와 같은 모양)으로 돌려준다 (5.6 '어떤 입력에도 500 0'). 그 밖은 그대로 처리기로
+const PROJECT_API_PATH = /^\/api\/projects\/([^/]+)\/?$/;
+function malformedProjectApiPath(pathname: string): boolean {
+  const m = PROJECT_API_PATH.exec(pathname);
+  if (!m) return false;
+  try {
+    decodeURIComponent(m[1]!);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 function noindex(response: NextResponse): NextResponse {
   response.headers.set("x-robots-tag", "noindex, nofollow");
   return response;
@@ -117,6 +131,10 @@ async function regionGate(request: NextRequest, route: RegionRoute): Promise<Nex
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  if (pathname.startsWith("/api/projects/")) {
+    if (!malformedProjectApiPath(pathname)) return NextResponse.next();
+    return NextResponse.json({ error: "조건을 확인하세요", errors: ["slug: 주소 글자를 읽을 수 없습니다"] }, { status: 400, headers: { "cache-control": "no-store", "x-robots-tag": "noindex" } });
+  }
   const detail = publicDetailRoute(pathname);
   if (detail) return publicGate(detail);
   const region = regionRoute(pathname);
@@ -169,5 +187,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // 공개 상세 경로 — public-gate.ts publicDetailRoute와 같은 목록 (제휴사 /partners/[id]는 W2-c 4단계가 판정만 더하고 여기에 빠져 있던 것을 W2-d 3단계가 더했다)
   // 지역 주소 /local/[sido](/[sigungu]) — region-route.ts regionRoute가 형식·예약 이름을 거른다 (W4 3단계)
-  matcher: ["/admin", "/admin/:path*", "/account", "/account/:path*", "/my", "/my/:path*", "/news/:slug", "/situations/:slug", "/people/:slug", "/partners/:id", "/glossary/:id", "/local/:sido", "/local/:sido/:sigungu"],
+  // 프로젝트 읽기 API /api/projects/[slug] — 깨진 % 표기만 400 (W4 15단계 — malformedProjectApiPath)
+  matcher: ["/admin", "/admin/:path*", "/account", "/account/:path*", "/my", "/my/:path*", "/news/:slug", "/situations/:slug", "/people/:slug", "/partners/:id", "/glossary/:id", "/local/:sido", "/local/:sido/:sigungu", "/api/projects/:slug"],
 };

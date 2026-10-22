@@ -225,7 +225,7 @@ describe("2단계 — 탭 숫자 다시 읽기 · 검색 화면 값 (getSearchPa
     // 전체 탭 1쪽 0건은 정말 0건 — 다시 읽지 않는다
     calls.length = 0;
     const none = await api.searchSite(options({ q: `${M} 없는낱말` }));
-    expect(none.counts).toEqual({ region: 0, situation: 0, tracker: 0, glossary: 0, category: 0, article: 0, person: 0, interpretation: 0 });
+    expect(none.counts).toEqual({ region: 0, situation: 0, tracker: 0, glossary: 0, category: 0, article: 0, person: 0, interpretation: 0, project: 0 });
     expect(rpcCalls()).toHaveLength(1);
   });
 

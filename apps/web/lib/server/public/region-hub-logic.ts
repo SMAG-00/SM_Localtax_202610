@@ -11,6 +11,7 @@
 import type { LocalTopic } from "@ltr/ui";
 import type { ArticleListItem } from "./cards";
 import { LIMITS, LOCAL_TOPICS } from "./constants";
+import type { ProjectCard } from "./project-logic";
 import { issuerSummary, type RegionOfficialCard } from "./region-official-logic";
 
 /** 블록 다섯 자리 (설계 2.1 local_hub.block — 순서 고정) */
@@ -96,6 +97,10 @@ export interface RegionHubBlock {
   items: ArticleListItem[];
   /** ⑤ 검수 공식 자료 카드 (기사 블록은 빈 목록) */
   sources: RegionOfficialCard[];
+  /** ③ 프로젝트 카드 (W4 15단계 — 다른 블록은 빈 목록, 기능 키가 꺼지면 빈 목록) */
+  projects: ProjectCard[];
+  /** ③ 프로젝트가 더 있으면 목록(지역 거르개) 주소 */
+  projectsMore: string | null;
   /** 상위 시·도 기사를 보이는 중 — 그 사실 문장 */
   fallbackNotice: string | null;
   /** 0건 문장 */
@@ -103,6 +108,12 @@ export interface RegionHubBlock {
 }
 
 export type BlockArticles = Partial<Record<ArticleBlock, readonly ArticleListItem[]>>;
+
+/** ③ 프로젝트 카드 — 그 지역 범위의 공개 프로젝트(12장 #120) */
+export interface RegionProjects {
+  cards: readonly ProjectCard[];
+  more: string | null;
+}
 
 /**
  * 지역 허브 블록 (②③⑤ — ①④는 W6). 시·도 허브는 sigunguName = null(대체 표시 없음).
@@ -118,6 +129,8 @@ export function regionHubBlocks(input: {
   parent: BlockArticles;
   /** ⑤ 검수 공식 자료 카드·감수 해설 — 없으면 0건 문장 */
   official?: { cards: readonly RegionOfficialCard[]; explainers: readonly ArticleListItem[] };
+  /** ③ 프로젝트 카드 (W4 15단계) — 상위 시·도 대체 없음(그 지역 범위만) */
+  projects?: RegionProjects;
 }): RegionHubBlock[] {
   const out: RegionHubBlock[] = [];
   if (input.fields) {
@@ -127,11 +140,14 @@ export function regionHubBlocks(input: {
       const own = pickBlock(input.own[block] ?? [], topics);
       const parent = input.sigunguName !== null && own.length === 0 ? pickBlock(input.parent[block] ?? [], topics) : [];
       const items = own.length ? own : parent;
+      const projects = block === "realestate" ? [...(input.projects?.cards ?? [])] : [];
       out.push({
         key: block,
         title: LOCAL_HUB_BLOCK_LABELS[block],
         items,
         sources: [],
+        projects,
+        projectsMore: projects.length ? (input.projects?.more ?? null) : null,
         fallbackNotice: own.length === 0 && parent.length > 0 ? fallbackNotice(input.sigunguName!, input.sidoName) : null,
         empty: items.length === 0 ? blockEmptyText(block, input.topic) : null,
       });
@@ -145,6 +161,8 @@ export function regionHubBlocks(input: {
     title: LOCAL_HUB_BLOCK_LABELS.official,
     items: explainers,
     sources,
+    projects: [],
+    projectsMore: null,
     fallbackNotice: null,
     empty: sources.length || explainers.length ? null : blockEmptyText("official", input.topic),
   });

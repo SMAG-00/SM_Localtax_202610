@@ -169,7 +169,7 @@ describe("DB 인자", () => {
   });
 
   test("탭 → 종류, 쪽 → 건너뛰기, 종류별 묶음은 건너뛰기 0", () => {
-    expect(searchArgs({ ...base, tab: "tracker", page: 3 })).toMatchObject({ p_kinds: ["tracker"], p_offset: 40, p_limit: 20 });
+    expect(searchArgs({ ...base, tab: "tracker", page: 3 })).toMatchObject({ p_kinds: ["tracker", "project"], p_offset: 40, p_limit: 20 });
     expect(searchArgs({ ...base, page: 3 }, { perKind: 3 })).toMatchObject({ p_kinds: null, p_offset: 0, p_per_kind: 3 });
     expect(searchArgs(base, { perKind: 99, pageSize: 999 })).toMatchObject({ p_per_kind: SEARCH_LIMITS.maxPerKind, p_limit: SEARCH_LIMITS.maxPageSize });
   });
@@ -203,6 +203,24 @@ describe("행 → 보기 값", () => {
     expect(searchHitView(r, CLOSED_FEATURES)).toMatchObject({ kind: "tracker", href: null, typeLabel: "개정 트래커", stage: "announced", stageOn: "2026-08-01", sourceUrl: "https://www.mois.go.kr/x" });
     expect(searchHitView(r, { ...CLOSED_FEATURES, amendments: true })?.href).toBe("/tax/amendments/reform-2026");
     expect(searchHitView(row({ ...r, meta: { source_url: "javascript:alert(1)" } }), CLOSED_FEATURES)).toMatchObject({ sourceUrl: null });
+  });
+
+  test("프로젝트 (W4 15단계) — 트래커 탭 · 기능 키 realestate_projects가 꺼지면 링크 0, 켜지면 /realestate/projects/[slug] · 사업 유형·현재 단계 글자·고시일", () => {
+    expect(TAB_KINDS.tracker).toEqual(["tracker", "project"]);
+    expect(KIND_LABELS.project).toBe("프로젝트");
+    const r = row({
+      kind: "project",
+      ref: "7",
+      slug: "siheom-gasang-1",
+      title: "시험용 가상구역 재개발",
+      snippet: "시험용 요약",
+      section: "realestate",
+      content_type: null,
+      meta: { stage: "plan", stage_label: "시험용 계획인가", stage_on: "2026-03-02", project_type: "siheom_redev", project_type_label: "시험용 재개발", region_code: "9901100000", landmark: false },
+    });
+    expect(searchHitView(r, CLOSED_FEATURES)).toMatchObject({ kind: "project", href: null, typeLabel: "프로젝트", section: "realestate", sectionName: "부동산", stageLabel: "시험용 계획인가", stageOn: "2026-03-02", projectTypeLabel: "시험용 재개발", regionCode: "9901100000" });
+    expect(searchHitView(r, { ...CLOSED_FEATURES, realestate_projects: true })?.href).toBe("/realestate/projects/siheom-gasang-1");
+    expect(searchHitView(row({ ...r, slug: null }), { ...CLOSED_FEATURES, realestate_projects: true })).toBeNull();
   });
 
   test("해석 원문 (W3 10단계) — 기능 키 interpretations가 켜지면 해설 기사 주소, 꺼지면 링크 0 + 원문 링크 · 유형 글자 · 결정일 · 모르는 유형은 그리지 않는다", () => {
@@ -270,7 +288,7 @@ describe("결과 — 탭 숫자·전체 수·다음 쪽", () => {
   test("종류별 수는 모든 종류(0 포함), 다음 쪽은 남은 결과가 있을 때만", () => {
     const rows = [row({ ref: "1", total_count: "25", kind_counts: { article: 25, glossary: 2 } }), row({ ref: "2", total_count: "25", kind_counts: { article: 25, glossary: 2 } })];
     const r = toSearchResult(rows, CLOSED_FEATURES, o, { p_limit: 2, p_offset: 0, p_per_kind: null });
-    expect(r.counts).toEqual({ region: 0, situation: 0, tracker: 0, glossary: 2, category: 0, article: 25, person: 0, interpretation: 0 });
+    expect(r.counts).toEqual({ region: 0, situation: 0, tracker: 0, glossary: 2, category: 0, article: 25, person: 0, interpretation: 0, project: 0 });
     expect(r.total).toBe(25);
     expect(r.items.map((i) => i.ref)).toEqual(["1", "2"]);
     expect(r.hasMore).toBe(true);
@@ -316,7 +334,7 @@ describe("탭 숫자 다시 읽기 (2단계 — 고른 탭·쪽에 행이 없을
   test("withCounts — 탭 숫자와 쓴 낱말만 바꾸고 결과 목록·쪽은 그대로", () => {
     const empty = toSearchResult([], CLOSED_FEATURES, { q: "차 팔았", page: 3 }, { p_limit: 20, p_offset: 40, p_per_kind: null });
     const counted = withCounts(empty, [row({ kind_counts: { situation: 1, article: 3 }, query_terms: ["차", "팔았"] })]);
-    expect(counted.counts).toEqual({ region: 0, situation: 1, tracker: 0, glossary: 0, category: 0, article: 3, person: 0, interpretation: 0 });
+    expect(counted.counts).toEqual({ region: 0, situation: 1, tracker: 0, glossary: 0, category: 0, article: 3, person: 0, interpretation: 0, project: 0 });
     expect(counted).toMatchObject({ terms: ["차", "팔았"], items: [], page: 3, total: 0, hasMore: false });
     expect(withCounts(empty, [])).toEqual(empty);
   });

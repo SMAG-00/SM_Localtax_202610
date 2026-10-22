@@ -9,6 +9,7 @@ import { SEARCH_LIMITS, leftChars, queryTerms } from "./search-normalize";
 import type { SearchClassification } from "./search-classify";
 import { sponsorMark, type SponsorMark } from "./article-logic";
 import { sponsorBadgeOf } from "./cards";
+import { projectHref } from "./project-logic";
 import {
   CONTENT_TYPE_NAMES,
   SECTION_INFO,
@@ -24,8 +25,8 @@ import {
   type SectionKey,
 } from "./constants";
 
-/** 결과 종류 — 차례 = 같은 등급 안의 종류 순서 (설계 2.1, DB c_kinds와 같다). interpretation(해석 원문)은 W3 10단계 */
-export const SEARCH_KINDS = ["region", "situation", "tracker", "glossary", "category", "article", "person", "interpretation"] as const;
+/** 결과 종류 — 차례 = 같은 등급 안의 종류 순서 (설계 2.1, DB c_kinds와 같다). interpretation(해석 원문)은 W3 10단계, project(프로젝트)는 01B W4 15단계 */
+export const SEARCH_KINDS = ["region", "situation", "tracker", "glossary", "category", "article", "person", "interpretation", "project"] as const;
 export type SearchKind = (typeof SEARCH_KINDS)[number];
 
 /** 기사 유형 거르개 (설계 2.1 — 금주 핫뉴스는 기사 결과에 없다) */
@@ -38,7 +39,8 @@ export type SearchTab = (typeof SEARCH_TABS)[number];
 export const TAB_KINDS: Readonly<Record<SearchTab, readonly SearchKind[]>> = {
   all: SEARCH_KINDS,
   article: ["article"],
-  tracker: ["tracker"],
+  // 트래커 탭 = 개정 트래커 + 프로젝트 트래커 (설계 2.1 'tracker 개정 트래커(+ 01B 프로젝트)' — W4 15단계)
+  tracker: ["tracker", "project"],
   region: ["region"],
   event: [],
   glossary: ["glossary"],
@@ -61,6 +63,7 @@ export const KIND_LABELS: Readonly<Record<SearchKind, string>> = {
   article: "기사",
   person: "기자·필자",
   interpretation: "해석 원문",
+  project: "프로젝트",
 };
 /** 행사 결과(01B W6)의 표시 — 기사 유형 배지 글자를 쓰지 않는다 (원칙 ⑥) */
 export const EVENT_LABEL = INFO_LIST_MARKER_LABELS.event;
@@ -235,6 +238,16 @@ export type SearchHit =
       decidedOn: string | null;
       /** 원문 주소 — 해설 화면이 닫혀 있을 때(기능 키 interpretations 꺼짐) 대신 보이는 원문 링크 */
       sourceUrl: string | null;
+    })
+  | (HitBase & {
+      kind: "project";
+      section: "realestate";
+      sectionName: string;
+      /** 현재 단계 글자 · 고시일(한국 날짜) */
+      stageLabel: string | null;
+      stageOn: string | null;
+      projectTypeLabel: string | null;
+      regionCode: string | null;
     });
 
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() !== "" ? v : null);
@@ -332,6 +345,21 @@ export function searchHitView(row: SearchRow, features: Features): SearchHit | n
       return { ...base, kind, href: open(categoryHref(row.section, slug), features), typeLabel: KIND_LABELS.category, section: row.section, sectionName: SECTION_INFO[row.section].name };
     case "person":
       return { ...base, kind, href: open(personHref(slug), features), typeLabel: KIND_LABELS.person, roles: strs(meta.roles) };
+    case "project": {
+      // 프로젝트 (W4 15단계) — 주소는 열린 화면만(기능 키 realestate_projects — isOpenPath). DB가 키가 꺼지면 행을 내지 않는다(…49 public_project_search)
+      return {
+        ...base,
+        kind,
+        href: open(projectHref(slug), features),
+        typeLabel: KIND_LABELS.project,
+        section: "realestate",
+        sectionName: SECTION_INFO.realestate.name,
+        stageLabel: str(meta.stage_label),
+        stageOn: str(meta.stage_on),
+        projectTypeLabel: str(meta.project_type_label),
+        regionCode: str(meta.region_code),
+      };
+    }
     case "interpretation": {
       // 해석 원문 (W3 10단계) — 주소는 그 원문을 다루는 가장 최근 발행 해설 기사. 해설 화면(원문 블록)은 기능 키 interpretations가 켜져야 열리므로
       // 꺼져 있으면 링크 0, 대신 원문 링크(권리 확인된 공개 원문의 출처 — 트래커의 현재 단계 원문 링크와 같다)

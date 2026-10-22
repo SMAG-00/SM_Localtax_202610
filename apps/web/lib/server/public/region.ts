@@ -11,6 +11,7 @@ import { countRegionArticles, readBlockArticles, readLocalBlockFields } from "./
 import { regionArticleCodes, regionPage, type RegionPage } from "./region-logic";
 import { readDescriptionTitles, readRegionIndexed } from "./region-index";
 import { readRegionalOfficial } from "./region-official";
+import { readRegionProjects } from "./projects";
 import { TAX_LINK_SITUATION_SECTIONS, TAX_LINK_SM_KEY, regionTaxLinks } from "./region-official-logic";
 import { SITUATION_COLUMNS, type SituationRow } from "./rows";
 
@@ -21,6 +22,7 @@ import { SITUATION_COLUMNS, type SituationRow } from "./rows";
 // 지방세 포인트는 지자체뉴스 허브와 같은 hub_tax_points.local(서명본만 — 12장 #31).
 // W4 9단계 — ⑤ 공식 자료/해설(그 지역 범위의 검수 공식 자료·감수 해설 — region-official.ts)과 지역 세금 연결 블록(상황 카드·지방세 감수 해설·SM 취득세 카드·공식 원문).
 // W4 11단계 — 색인 최소선 판정(뷰 public_region_index — …46)과 메타 설명 재료(그 지역 코드 하나만 단 최신 자체 취재 기사 제목 — region-index.ts).
+// W4 15단계 — ③ 프로젝트 카드(그 지역 범위의 공개 프로젝트, 지역에서 출발한 확인된 연결 먼저 — projects.ts, 기능 키 realestate_projects가 꺼지면 0장).
 
 export type { RegionPage } from "./region-logic";
 
@@ -35,7 +37,7 @@ export async function getRegionPage(sidoSlug: string, sigunguSlug: string | null
   const region = match.sigungu ?? match.sido;
   const topic = isLocalTopic(opts.topic) ? opts.topic : null; // 목록 밖 값은 전체 (2.8)
   const codes = regionArticleCodes(region, regions);
-  const [fields, total, taxPoint, official, situations, sm, indexable, descriptionTitles] = await Promise.all([
+  const [fields, total, taxPoint, official, situations, sm, indexable, descriptionTitles, projects] = await Promise.all([
     readLocalBlockFields(),
     countRegionArticles(codes),
     getHubTaxPoint("local"),
@@ -47,6 +49,7 @@ export async function getRegionPage(sidoSlug: string, sigunguSlug: string | null
     getSmCalculatorCard(TAX_LINK_SM_KEY, settings.features),
     readRegionIndexed(region.code),
     readDescriptionTitles(region.code),
+    readRegionProjects(region.code, codes, opts.now),
   ]);
   const own = fields ? await readBlockArticles(fields, topic, codes) : {};
   // 시·군·구 블록이 0건이면 상위 시·도 범위(시·도 + 그 아래 시·군·구 태그) — 0건인 블록만 다시 읽는다
@@ -56,5 +59,5 @@ export async function getRegionPage(sidoSlug: string, sigunguSlug: string | null
       ? await readBlockArticles({ local_tax: emptyBlocks.includes("local_tax") ? fields.local_tax : [], realestate: emptyBlocks.includes("realestate") ? fields.realestate : [] }, topic, regionArticleCodes(match.sido, regions))
       : {};
   const taxLinks = regionTaxLinks({ situations, situationLimit: settings.hubSituationLimit, official, sm });
-  return regionPage({ sido: match.sido, sigungu: match.sigungu, regions, total, today, siteUrl: siteUrl(), topic, fields, own, parent, taxPoint, official, taxLinks, indexable, descriptionTitles });
+  return regionPage({ sido: match.sido, sigungu: match.sigungu, regions, total, today, siteUrl: siteUrl(), topic, fields, own, parent, taxPoint, official, taxLinks, indexable, descriptionTitles, projects });
 }

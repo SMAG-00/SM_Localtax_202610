@@ -12,6 +12,8 @@ export type ProjectStageRecord = {
   checkedAt: IsoDate;
   /** 원본을 다시 받아 내용이 달라져 검토하는 중 */
   underReview?: boolean;
+  /** 공공누리 유형 글자 (PR-07 — 원문은 유형과 상관없이 링크만) */
+  license?: string;
 };
 
 /**
@@ -23,10 +25,13 @@ export type ProjectStage = {
   record?: ProjectStageRecord;
   /** 단계별 「지방세로 읽기」 한 줄 — 감수된 문장이 있는 단계에만 (PR-08) */
   taxLens?: string;
+  /** 이 프로젝트에 없는 단계(편집자 해당 없음 기록) — 상태 글자 대신 '해당 없음' */
+  notApplicable?: boolean;
 };
 
 type State = "past" | "current" | "upcoming";
 const STATE_LABEL: Record<State, string> = { past: "지난 단계", current: "현재 단계", upcoming: "예정 단계" };
+const NOT_APPLICABLE = "해당 없음";
 
 function validRecord(r: ProjectStageRecord | undefined): r is ProjectStageRecord {
   return !!r && filled(r.noticeNo) && filled(r.sourceUrl) && filled(r.agency) && isIsoDate(r.noticeDate) && isIsoDate(r.checkedAt);
@@ -38,10 +43,11 @@ function validRecord(r: ProjectStageRecord | undefined): r is ProjectStageRecord
  */
 export function ProjectStageTimeline({ stages, title = "사업 단계" }: { stages: ProjectStage[]; title?: string }) {
   const headingId = useId();
-  const rows = stages.map((s) => ({ name: s.name, record: validRecord(s.record) ? s.record : undefined, taxLens: filled(s.taxLens) ? s.taxLens : undefined }));
+  const rows = stages.map((s) => ({ name: s.name, record: validRecord(s.record) ? s.record : undefined, taxLens: filled(s.taxLens) ? s.taxLens : undefined, notApplicable: s.notApplicable === true }));
   const current = rows.reduce((last, r, i) => (r.record ? i : last), -1);
   if (current < 0) return null;
   const stateOf = (i: number): State => (i < current ? "past" : i === current ? "current" : "upcoming");
+  const stateText = (i: number) => (rows[i]!.notApplicable && !rows[i]!.record ? NOT_APPLICABLE : STATE_LABEL[stateOf(i)]);
 
   return (
     <section data-ui="project-stage-timeline" aria-labelledby={headingId}>
@@ -53,7 +59,7 @@ export function ProjectStageTimeline({ stages, title = "사업 단계" }: { stag
           const state = stateOf(i);
           const filledCircle = state !== "upcoming";
           return (
-            <li key={`${i}-${s.name}`} data-stage-state={state} className="relative">
+            <li key={`${i}-${s.name}`} data-stage-state={state} {...(s.notApplicable && !s.record ? { "data-stage-na": "" } : {})} className="relative">
               {i < rows.length - 1 && <span aria-hidden="true" className="absolute top-16 left-[27px] h-[calc(100%+0.25rem)] w-px bg-navy-200" />}
               <div className={cx("relative flex gap-5 rounded-2xl border bg-white p-6", state === "current" ? "border-hermes-400" : "border-navy-100")}>
                 <span
@@ -70,7 +76,7 @@ export function ProjectStageTimeline({ stages, title = "사업 단계" }: { stag
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
                     <span className="text-[22px] font-black tracking-tight text-navy-900">{s.name}</span>
-                    <span className={cx("text-[13px] font-bold", state === "current" ? "text-hermes-800" : "text-navy-600")}>{STATE_LABEL[state]}</span>
+                    <span className={cx("text-[13px] font-bold", state === "current" ? "text-hermes-800" : "text-navy-600")}>{stateText(i)}</span>
                     {s.record?.underReview && <StateChip>검토 중</StateChip>}
                   </p>
                   {s.record && (
@@ -86,6 +92,7 @@ export function ProjectStageTimeline({ stages, title = "사업 단계" }: { stag
                         <Field term="확인일" mono>
                           {s.record.checkedAt}
                         </Field>
+                        {filled(s.record.license) && <Field term="공공누리">{s.record.license}</Field>}
                       </dl>
                       <p className="mt-1">
                         <ExternalLink href={s.record.sourceUrl}>원문 보기</ExternalLink>
@@ -119,7 +126,7 @@ export function ProjectStageTimeline({ stages, title = "사업 단계" }: { stag
           {rows.map((s, i) => (
             <tr key={`${i}-${s.name}`} className="border-b border-navy-100 align-top">
               <td className="py-2 pr-2 font-bold break-words text-navy-900">{s.name}</td>
-              <td className="py-2 pr-2 text-navy-800">{STATE_LABEL[stateOf(i)]}</td>
+              <td className="py-2 pr-2 text-navy-800">{stateText(i)}</td>
               <td className={cx("py-2 pr-2 break-words text-navy-800", s.record && MONO)}>{s.record ? `${s.record.noticeNo} · ${s.record.noticeDate} · ${s.record.agency}` : "—"}</td>
               <td className={cx("py-2 break-words text-navy-800", s.record && MONO)}>{s.record ? s.record.checkedAt : "—"}</td>
             </tr>

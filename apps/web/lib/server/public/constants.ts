@@ -81,6 +81,9 @@ export const FEATURE_KEYS = [
   "local_events",
   "redevelopment_status",
   "ordinance_texts",
+  // W4 15단계 — 프로젝트 트래커 /realestate/projects/[slug]·지역 허브 ③ 프로젝트 카드·검색 결과 프로젝트·확인된 연결의 프로젝트 링크
+  // (사업 유형·단계 목록 감수 + 공개 프로젝트 1건 이상일 때 켠다 — W4 설계 2.4). 꺼지면 상세 404, 목록 /realestate/projects는 하위 분야 목록
+  "realestate_projects",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;
@@ -210,6 +213,8 @@ const FEATURE_PREFIXES: ReadonlyArray<{ prefix: string; feature: FeatureKey; sel
   { prefix: "/tax/amendments", feature: "amendments", self: false },
   // `/local`(허브)·`/local?topic=`은 그대로 — `/local/[sido](/[sigungu])`만
   { prefix: "/local", feature: "region_hubs", self: false },
+  // 프로젝트 트래커 (W4 15단계) — `/realestate/projects` 자체는 꺼져도 하위 분야 목록이다 — 상세 `/realestate/projects/[slug]`만
+  { prefix: "/realestate/projects", feature: "realestate_projects", self: false },
   // 동영상 목록 (W2-c 4단계 — 동영상 채널 결정 전에는 닫힘)
   { prefix: VIDEO_LIST_HREF, feature: "video_list", self: true },
   // 용어사전 색인·용어 쪽 (W2-d 3단계 — 공개 승인 전에는 닫힘)
