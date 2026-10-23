@@ -26,6 +26,15 @@ import { StaffFixture } from "./lib/staff.mjs";
 const ADMIN_EMAIL = "w2b-acceptance-e2e@example.test";
 const SITE = "https://e2e.example.test";
 const CRAWL_CAP = 200;
+/** 같은 틀로 만드는 지역 화면(전국 적재 뒤 시·도 16·시·군·구 229)은 틀마다 SAME_TEMPLATE_CAP쪽만 연다 — 지역 주소 전수는 e2e/w4-region-routes가 본다 */
+const SAME_TEMPLATE_CAP = 5;
+function templateKey(key) {
+  const u = new URL(key, "http://x");
+  if (/^\/local\/[^/]+\/[^/]+$/.test(u.pathname)) return "/local/:sido/:sigungu";
+  if (/^\/local\/[^/]+$/.test(u.pathname)) return "/local/:sido";
+  if (u.searchParams.has("region")) return `${u.pathname}?region=*`;
+  return null;
+}
 const DESKTOP = { width: 1280, height: 800 };
 const MOBILE = { width: 360, height: 740 };
 const GYEONGGI = "4100000000";
@@ -769,6 +778,8 @@ test("4) 링크 전수 — 홈에서 닿는 사이트 안 페이지 전부를 36
   const queue = ["/"];
   const referrer = new Map([["/", "(시작)"]]);
   const errors = [];
+  const perTemplate = new Map();
+  let skippedSameTemplate = 0;
   try {
     while (queue.length && pages.size < CRAWL_CAP) {
       const url = queue.shift();
@@ -785,6 +796,13 @@ test("4) 링크 전수 — 홈에서 닿는 사이트 안 페이지 전부를 36
         const key = l.path + l.search;
         if (!referrer.has(key)) {
           referrer.set(key, url);
+          const t = templateKey(key);
+          const n = t ? (perTemplate.get(t) ?? 0) : 0;
+          if (t && n >= SAME_TEMPLATE_CAP) {
+            skippedSameTemplate += 1;
+            continue;
+          }
+          if (t) perTemplate.set(t, n + 1);
           queue.push(key);
         }
       }
@@ -801,13 +819,14 @@ test("4) 링크 전수 — 홈에서 닿는 사이트 안 페이지 전부를 36
     truncated: queue.length > 0,
     stats: {
       pages: pages.size,
+      skippedSameTemplate,
       links: all.length,
       internalLinks: internal.length,
       uniqueInternal: new Set(internal.map((l) => l.path + l.search)).size,
       external: all.filter((l) => /^https?:\/\//i.test(l.raw)).length,
     },
   };
-  console.log(`링크 전수 — 페이지 ${crawl.stats.pages}쪽 · 링크 ${crawl.stats.links}개(사이트 안 ${crawl.stats.internalLinks} · 서로 다른 사이트 안 주소 ${crawl.stats.uniqueInternal} · 바깥 ${crawl.stats.external})`);
+  console.log(`링크 전수 — 페이지 ${crawl.stats.pages}쪽(같은 틀 지역 화면 ${crawl.stats.skippedSameTemplate}쪽 건너뜀) · 링크 ${crawl.stats.links}개(사이트 안 ${crawl.stats.internalLinks} · 서로 다른 사이트 안 주소 ${crawl.stats.uniqueInternal} · 바깥 ${crawl.stats.external})`);
   assert.equal(crawl.truncated, false, `${CRAWL_CAP}쪽 안에 다 돌았다`);
   // 시험 자료가 닿는 곳 — 네 허브·뉴스 전체·하위 분야·칼럼·기사·인물·상황·지역 선택
   for (const p of ["/", "/tax", "/realestate", "/finance", "/local", "/news", "/tax/interpretations", "/tax/columns", fx.explainer.href, fx.lens.href, fx.cards.href, fx.solved.href, fx.col2.href, fx.quant.href, `/people/${fx.reporterSlug}`, `/people/${fx.writerSlug}`, fx["sit-car"].href, fx["sit-home"].href, `${fx["sit-home"].href}?region=${SEOUL}`]) {
