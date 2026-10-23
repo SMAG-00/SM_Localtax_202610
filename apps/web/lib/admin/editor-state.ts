@@ -46,6 +46,8 @@ export interface EditorArticle {
   relationTypes?: string[];
   coveredPartnerIds?: number[];
   interestDisclosure?: string | null;
+  /** 법안 상태를 다룸 (PR-13) */
+  coversBillStatus?: boolean;
   /** 칼럼 연재 (ART-04) — 칼럼만 */
   seriesTitle: string | null;
   seriesEpisode: number | null;
@@ -120,6 +122,8 @@ export interface EditorState {
   relationTypes: string[];
   coveredPartnerIds: string[];
   interestDisclosure: string;
+  /** 법안 상태를 다룸 (PR-13) */
+  coversBillStatus: boolean;
   /** 칼럼 연재 이름·회차 (ART-04) — 둘 다 적거나 둘 다 비운다 */
   seriesTitle: string;
   seriesEpisodeText: string;
@@ -351,6 +355,7 @@ export function editorStateFromArticle(a: EditorArticle, makeKey: () => string):
     relationTypes: [...(a.relationTypes ?? [])],
     coveredPartnerIds: (a.coveredPartnerIds ?? []).map(String),
     interestDisclosure: textOf(a.interestDisclosure),
+    coversBillStatus: a.coversBillStatus === true,
     seriesTitle: textOf(a.seriesTitle),
     seriesEpisodeText: a.seriesEpisode === null ? "" : String(a.seriesEpisode),
     blocks,
@@ -437,6 +442,7 @@ export function editorPayload(s: EditorState, ctx: { published: boolean; version
     relationTypes: [...s.relationTypes],
     coveredPartnerIds: s.coveredPartnerIds.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0),
     interestDisclosure: textOrNull(s.interestDisclosure),
+    coversBillStatus: s.coversBillStatus,
     body: { blocks, claims },
     checklists: cleanChecklists(s.checklists),
     taxLens: taxLensPayload(s),
@@ -544,6 +550,7 @@ const FIELD_OF: Record<string, string> = {
   relationTypes: "meta-relation-types",
   coveredPartnerIds: "meta-covered-partners",
   interestDisclosure: "meta-interest-disclosure",
+  coversBillStatus: "meta-covers-bill-status",
   seriesTitle: "meta-series-title",
   seriesEpisode: "meta-series-episode",
   updateKind: "save-update-kind",
@@ -561,6 +568,8 @@ const FAILED_FIELD: Record<string, [string, string]> = {
   "reg1_17.relation-required": ["meta-relation-types", "축제·명소·상권 소재는 관계 유형을 1개 이상 골라야 기사 후보가 됩니다 (REG1-17)"],
   "reg1_17.relation-evidence": ["meta-subject-kind", "축제·명소·상권 소재는 관계를 뒷받침하는 취재 근거가 1건 이상 있어야 합니다 (REG1-17)"],
   "reg1_17.interest-disclosure": ["meta-interest-disclosure", "광고·협찬 계약 제휴사를 다룬 원고는 이해관계 표시를 적어야 합니다 (REG1-17 · NAV-06)"],
+  // 법안 상태를 다룬 기사 (PR-13)
+  "pr13.bill-status-source": ["meta-covers-bill-status", "법안 상태를 다룬 기사는 출처 주소와 확인일이 있는 공식 자료 출처를 1건 이상 더해야 발행됩니다 (PR-13)"],
 };
 
 function fieldOfPath(path: string, blockKeys: readonly string[]): string | null {

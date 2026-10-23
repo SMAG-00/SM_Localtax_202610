@@ -43,6 +43,8 @@ export interface ArticleRow {
   judged_at?: string | null;
   covered_partner_ids?: number[];
   interest_disclosure?: string | null;
+  /** W4 20단계 뒷부분 (…54) — 법안 상태를 다룸 (PR-13) */
+  covers_bill_status?: boolean;
   amendment_id: number | null;
   series_title: string | null;
   series_episode: number | null;

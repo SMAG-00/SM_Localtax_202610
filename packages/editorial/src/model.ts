@@ -614,6 +614,8 @@ export interface ArticleForPublish {
   qualitativeChecklist: QualitativeChecklist | null;
   /** 지역 기사 편집 게이트 입력 (REG1-17) — 없으면 지역 태그 0으로 본다 */
   regional?: RegionalFacts | null;
+  /** 법안 상태를 다룸 `covers_bill_status` (PR-13) — 켜면 출처 주소·확인일이 있는 공식 자료 출처가 1건 이상 있어야 발행된다 */
+  coversBillStatus?: boolean;
 }
 
 // ── 판정 문맥 ───────────────────────────────────────────────

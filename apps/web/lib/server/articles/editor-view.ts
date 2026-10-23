@@ -120,6 +120,7 @@ export async function loadEditorView(db: SupabaseClient, row: ArticleRow) {
       judgedAt: row.judged_at ?? null,
       coveredPartnerIds: row.covered_partner_ids ?? [],
       interestDisclosure: row.interest_disclosure ?? null,
+      coversBillStatus: row.covers_bill_status === true,
       seriesTitle: row.series_title ?? null,
       seriesEpisode: row.series_episode ?? null,
       navCandidate: row.nav_candidate,

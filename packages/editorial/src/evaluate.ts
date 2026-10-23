@@ -10,6 +10,7 @@ import { checkPlainLanguage } from "./checks/plain-language";
 import { checkPressure } from "./checks/pressure";
 import { checkQualitative } from "./checks/qualitative";
 import { checkQuantitative } from "./checks/quantitative";
+import { checkBillStatus } from "./checks/bill-status";
 import { checkRegional } from "./checks/regional";
 import { checkRegionalWarnings } from "./checks/regional-warnings";
 import { checkReviews } from "./checks/reviews";
@@ -32,6 +33,7 @@ export const BUILT_IN_CHECKS: readonly PublishCheck[] = [
   checkSourcing,
   checkOfficialSources,
   checkRegional,
+  checkBillStatus,
   checkRegionalWarnings,
   checkReviews,
   checkQuantitative,

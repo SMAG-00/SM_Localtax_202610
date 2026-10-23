@@ -271,6 +271,15 @@ export function MetaFields({
             <FieldErrorText id="meta-covered-partners" error={errors["meta-covered-partners"]} />
           </fieldset>
         )}
+        {/* 법안 상태를 다룬 기사 (PR-13): 표시를 켜면 출처 주소·확인일이 있는 공식 자료 출처가 있어야 발행된다 */}
+        <label className="flex items-start gap-2 text-[15px] text-navy-800">
+          <input id="meta-covers-bill-status" type="checkbox" className="mt-1" disabled={readOnly} checked={state.coversBillStatus} onChange={(e) => update({ coversBillStatus: e.target.checked })} />
+          <span>
+            <span className="font-bold">법안 상태를 다룸</span>
+            <span className="block text-[13px] text-navy-600">아직 확정되지 않은 법안의 진행 상태를 다루는 기사면 켭니다 — 출처 주소와 확인일이 있는 공식 자료 출처가 1건 이상 있어야 발행됩니다 (PR-13)</span>
+          </span>
+        </label>
+        <FieldErrorText id="meta-covers-bill-status" error={errors["meta-covers-bill-status"]} />
         <TextAreaField
           id="meta-interest-disclosure"
           label="이해관계 표시"

@@ -87,6 +87,7 @@ export const RULES = [
   { id: "reg1_17.relation-evidence", ruleRef: "REG1-17", level: "block", title: "축제·명소·상권 소재에 관계 근거 없음(보류)" },
   { id: "reg1_17.desk-checklist", ruleRef: "REG1-17", level: "block", title: "지역 기사 편집 승인에 근거·관계·광고 독립성 확인 없음" },
   { id: "reg1_17.interest-disclosure", ruleRef: "REG1-17", level: "block", title: "광고·협찬 계약 제휴사를 다룬 원고에 이해관계 표시 없음" },
+  { id: "pr13.bill-status-source", ruleRef: "PR-13", level: "block", title: "법안 상태를 다룬 기사에 출처 주소·확인일이 있는 공식 자료 출처 없음" },
   // REG1-14 지역 기사 편집 경고 (W4 8단계 — 발행은 막지 않고 편집 화면·발행 기록에 남긴다)
   { id: "reg1_14.press-release-repost", ruleRef: "REG1-14", level: "warn", title: "같은 보도자료를 유사도 기준 이상 다시 실음" },
   { id: "reg1_14.unsupported-figure", ruleRef: "REG1-14", level: "warn", title: "지역 수치 문단에 공식 자료·근거 연결 없음" },

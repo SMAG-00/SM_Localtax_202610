@@ -86,6 +86,7 @@ const FIELD_NAMES: Record<string, string> = {
   relationTypes: "관계 유형",
   editorialJudgement: "편집자 판정",
   interestDisclosure: "이해관계 표시",
+  coversBillStatus: "법안 상태를 다룸",
   // W4 8단계 편집 경고 (REG1-14)
   "sources.referenceDate": "출처 기준일",
 };

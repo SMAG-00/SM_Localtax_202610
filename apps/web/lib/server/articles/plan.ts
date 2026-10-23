@@ -34,6 +34,7 @@ const DIRECT: [keyof ArticleInput, keyof ArticleRow][] = [
   ["relationTypes", "relation_types"],
   ["coveredPartnerIds", "covered_partner_ids"],
   ["interestDisclosure", "interest_disclosure"],
+  ["coversBillStatus", "covers_bill_status"],
   ["seriesTitle", "series_title"],
   ["seriesEpisode", "series_episode"],
 ];

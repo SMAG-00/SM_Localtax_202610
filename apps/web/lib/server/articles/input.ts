@@ -20,13 +20,13 @@ import { parseBodyInput, parseSolvedCaseInput, parseTaxLensInput, type Result, t
 export { EDITORIAL_FIELDS };
 
 /** 지역 기사 편집 칸 (REG1-17 — W4 7단계). 편집국(기자·편집 책임자·관리자)만 바꾼다 — 광고·협찬 담당 등 편집국 외 역할은 403 + 감사 */
-export const REGIONAL_INPUT_KEYS = ["editorialField", "publicQuestion", "subjectKind", "relationTypes", "coveredPartnerIds", "interestDisclosure"] as const;
+export const REGIONAL_INPUT_KEYS = ["editorialField", "publicQuestion", "subjectKind", "relationTypes", "coveredPartnerIds", "interestDisclosure", "coversBillStatus"] as const;
 
 /** 새 원고가 지역 기사 편집 칸에 값을 넣는가 — 빈 값(null·빈 목록·소재 일반)은 기본값과 같아 넣지 않은 것으로 본다 */
 export function setsRegionalFields(input: ArticleInput): boolean {
   return REGIONAL_INPUT_KEYS.some((k) => {
     const v = input[k];
-    if (v === undefined || v === null) return false;
+    if (v === undefined || v === null || v === false) return false;
     if (Array.isArray(v)) return v.length > 0;
     return !(k === "subjectKind" && v === "general");
   });
@@ -61,6 +61,8 @@ export interface ArticleInput {
   relationTypes?: string[];
   coveredPartnerIds?: number[];
   interestDisclosure?: string | null;
+  /** 법안 상태를 다룸 (PR-13 — 켜면 출처 주소·확인일이 있는 공식 자료 출처가 있어야 발행) */
+  coversBillStatus?: boolean;
   /** 칼럼 연재 이름·회차 (ART-04) — 칼럼(opinion)만, 둘 다 있거나 둘 다 null */
   seriesTitle?: string | null;
   seriesEpisode?: number | null;
@@ -100,6 +102,7 @@ const COMMON_KEYS = [
   "relationTypes",
   "coveredPartnerIds",
   "interestDisclosure",
+  "coversBillStatus",
   "seriesTitle",
   "seriesEpisode",
   "checklists",
@@ -185,6 +188,10 @@ export function parseArticleInput(raw: Record<string, unknown>, mode: "create" |
     else out.coveredPartnerIds = v as number[];
   }
   text("interestDisclosure", { nullable: true, max: 500 });
+  if (has("coversBillStatus")) {
+    if (typeof raw.coversBillStatus !== "boolean") errors.push("coversBillStatus: true 또는 false여야 합니다");
+    else out.coversBillStatus = raw.coversBillStatus;
+  }
   for (const k of ["categoryId", "partnerId", "storyAssignmentId", "leadMediaId", "digestId", "amendmentId"] as const) id(k);
   // 칼럼 연재 (ART-04) — 이름·회차는 함께 보낸다. 칼럼이 아닌 기사·한쪽만 있는 값은 DB도 거부한다(articles_series_*)
   text("seriesTitle", { nullable: true, max: 100 });

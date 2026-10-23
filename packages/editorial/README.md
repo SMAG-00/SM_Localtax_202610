@@ -97,6 +97,7 @@ result.warnings;    // 발행 기록(check_log)에 남긴다
 | `reg1_17.relation-evidence` | REG1-17 | 차단 | 축제·명소·상권 소재에 관계 근거 없음(보류) |
 | `reg1_17.desk-checklist` | REG1-17 | 차단 | 지역 기사 편집 승인에 근거·관계·광고 독립성 확인 없음 |
 | `reg1_17.interest-disclosure` | REG1-17 | 차단 | 광고·협찬 계약 제휴사를 다룬 원고에 이해관계 표시 없음 |
+| `pr13.bill-status-source` | PR-13 | 차단 | 법안 상태를 다룬 기사에 출처 주소·확인일이 있는 공식 자료 출처 없음 |
 | `reg1_14.press-release-repost` | REG1-14 | 경고 | 같은 보도자료를 유사도 기준 이상 다시 실음 |
 | `reg1_14.unsupported-figure` | REG1-14 | 경고 | 지역 수치 문단에 공식 자료·근거 연결 없음 |
 | `reg1_14.photo-rights` | REG1-14 | 경고 | 사진 권리 정보 누락 |

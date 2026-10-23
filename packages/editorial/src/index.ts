@@ -21,6 +21,7 @@ export { infographicTexts } from "./text";
 export { OFFICIAL_REQUIRED_FIELDS, photoLicenseAllowed, photoLicenseProblem, sourceTypeProblem } from "./checks/official-sources";
 
 // REG1-17 — 지역 기사 편집 게이트 판정 (편집 화면 판정 상태·편집 승인 API·발행 판정 공용, W4 7단계)
+export { billStatusProblem } from "./checks/bill-status";
 export { isNonNewsJudgement, isRegionalArticle, missingRegionalChecks, regionalFacts, regionalState } from "./checks/regional";
 export type { RegionalState } from "./checks/regional";
 // REG1-14 — 지역 기사 편집 경고 4종·단계 순서 (편집 화면·발행 API·검토 API 공용, W4 8단계)
