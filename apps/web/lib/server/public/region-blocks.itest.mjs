@@ -255,10 +255,13 @@ describe("GET /api/regions/{code}/articles 데이터 (5.6)", () => {
 });
 
 describe("/local 전국 화면 (5장 /local 줄 · REG-10)", () => {
-  test("시·도 카드 — 오늘 유효한 시·도 전부(씨앗 17 + 시험용), region_hubs가 켜졌을 때만 링크", async () => {
+  test("시·도 카드 — 오늘 유효한 시·도 전부(실제 16 + 시험용), region_hubs가 켜졌을 때만 링크", async () => {
     const hub = await api.getHubData("local");
-    const seed = (await db.query("select code from public.regions where level = 'sido' and code not like '99%' order by code")).rows.map((r) => r.code);
-    expect(seed).toHaveLength(17);
+    const today = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
+    const seed = (
+      await db.query("select code from public.regions where level = 'sido' and code not like '99%' and (valid_from is null or valid_from <= $1) and (valid_to is null or valid_to >= $1) order by code", [today])
+    ).rows.map((r) => r.code);
+    expect(seed).toHaveLength(16); // 전국 적재(2026-07-29 원본) — 광주·전남은 전남광주통합특별시로 통합
     expect(hub.local.sido.map((c) => c.code)).toEqual([...seed, SIDO].sort());
     expect(hub.local.sido.find((c) => c.code === SIDO).href).toBe(`/local/${w.sidoSlug}`);
     await setFlags({ region_hubs: false });

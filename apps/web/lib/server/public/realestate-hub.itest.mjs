@@ -169,7 +169,7 @@ describe("지역 칩 — 시범 지역 + 시·도 전부, 모두 지역 허브 �
     const today = kstDay(0);
     const expected = (await db.query("select code from public.regions where level = 'sido' and (valid_from is null or valid_from <= $1) and (valid_to is null or valid_to >= $1)", [today])).rows.length;
     expect(v.chips.sido).toHaveLength(expected);
-    expect(v.chips.sido.length).toBeGreaterThanOrEqual(18);
+    expect(v.chips.sido.length).toBeGreaterThanOrEqual(17); // 실제 시·도 16 + 시험용 1
     expect(v.chips.sido.map((c) => c.code)).toContain(SIDO);
     for (const c of [...v.chips.pilot, ...v.chips.sido]) expect(c.href, c.label).toMatch(ANCHORED);
     expect(v.chips.sido.find((c) => c.code === SIDO).href).toBe(`/local/${w.sidoSlug}#realestate`);
@@ -180,7 +180,7 @@ describe("지역 칩 — 시범 지역 + 시·도 전부, 모두 지역 허브 �
     await setSetting("pilot_regions", []);
     const v = await hub.readRealEstateHub();
     expect(v.chips.pilot).toEqual([]);
-    expect(v.chips.sido.length).toBeGreaterThanOrEqual(18);
+    expect(v.chips.sido.length).toBeGreaterThanOrEqual(17); // 실제 시·도 16 + 시험용 1
   });
 
   test("region_hubs를 끄면 칩 0 (404 링크 0)", async () => {

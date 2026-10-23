@@ -386,7 +386,9 @@ describe("상황 페이지·인물 (UX-05 · CAT-03 · ART-04)", () => {
     // 열린 기능이 없으면 [같은 분야 더 보기](허브)만 — 연결 칸의 전문가 찾기는 기능 키가 꺼져 0
     expect(p.nextActions.map((a) => [a.key, a.href])).toEqual([["same_section", "/tax"]]);
     expect(p.reviewedOn).toBe(KST_TODAY);
-    expect(p.regionSelect.sido).toHaveLength(17);
+    // 오늘 유효한 시·도 수(전국 적재 뒤 16 — 2026-07 광주·전남 통합)를 DB에서 센다
+    const validSido = (await db.query("select count(*)::int n from public.regions where level = 'sido' and (valid_from is null or valid_from <= $1) and (valid_to is null or valid_to >= $1)", [KST_TODAY])).rows[0].n;
+    expect(p.regionSelect.sido).toHaveLength(validSido);
     expect(await api.getSituationPage(w.hiddenSituation.slug)).toBeNull();
   });
 
