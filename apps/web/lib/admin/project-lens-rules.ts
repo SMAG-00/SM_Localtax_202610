@@ -81,68 +81,81 @@ export function parseLensDraft(body: Record<string, unknown>, ctx: { types: Proj
   const stage = typeof body.stage === "string" ? body.stage.trim() : "";
   if (!type || !ctx.types?.[type] || stageKeysOf(ctx.lists, type).length === 0) errors.push("project_type: 단계 목록이 있는 사업 유형이어야 합니다 (운영 설정 project_types·project_stage_lists)");
   else if (!stageKeysOf(ctx.lists, type).includes(stage)) errors.push(`stage: 사업 유형 ${type}의 단계 목록에 있는 단계여야 합니다`);
+  const content = parseLensContent(body, ctx.forbiddenPhrases);
+  if (!content.ok) errors.push(...content.errors);
+  if (errors.length || !content.ok) return { ok: false, errors };
+  return { ok: true, value: { projectType: type, stage, lens: content.value } };
+}
+
+/**
+ * 박스 내용 검사 — 세목·포인트·링크·기준일 (단계 템플릿 16단계와 개발방법 박스 18단계가 같은 한도·같은 문장을 쓴다).
+ * errors는 "칸: 문장" — 칸 이름 앞에 prefix를 붙인다(개발방법은 "lens."). forbiddenPhrases = 금지 표현 사전(감면 단정 — CORE-01)
+ */
+export function parseLensContent(body: Record<string, unknown>, forbiddenPhrases: readonly string[], prefix = ""): Parsed<StageLensContent> {
+  const errors: string[] = [];
+  const f = (name: string) => `${prefix}${name}`;
 
   const topicsRaw = lines(body.topics);
   const topics: string[] = [];
-  if (!topicsRaw) errors.push("topics: 관련 세목 목록이어야 합니다");
+  if (!topicsRaw) errors.push(`${f("topics")}: 관련 세목 목록이어야 합니다`);
   else {
     topicsRaw.forEach((t, i) => {
-      if (typeof t !== "string" || t.trim() === "") return errors.push(`topics[${i}]: 빈 세목은 저장하지 않습니다`);
+      if (typeof t !== "string" || t.trim() === "") return errors.push(`${f("topics")}[${i}]: 빈 세목은 저장하지 않습니다`);
       const v = t.trim();
-      if (chars(v) > LENS_LIMITS.topicChars) errors.push(`topics[${i}]: 관련 세목은 ${LENS_LIMITS.topicChars}자 이하입니다 (지금 ${chars(v)}자)`);
-      if (topics.includes(v)) errors.push(`topics[${i}]: 관련 세목 ‘${v}’가 두 번 있습니다`);
+      if (chars(v) > LENS_LIMITS.topicChars) errors.push(`${f("topics")}[${i}]: 관련 세목은 ${LENS_LIMITS.topicChars}자 이하입니다 (지금 ${chars(v)}자)`);
+      if (topics.includes(v)) errors.push(`${f("topics")}[${i}]: 관련 세목 ‘${v}’가 두 번 있습니다`);
       topics.push(v);
     });
-    if (topicsRaw.length === 0) errors.push("topics: 관련 세목을 1개 이상 적어 주세요 (CORE-01)");
-    if (topicsRaw.length > LENS_LIMITS.topics) errors.push(`topics: 관련 세목은 ${LENS_LIMITS.topics}개까지입니다 (지금 ${topicsRaw.length}개)`);
+    if (topicsRaw.length === 0) errors.push(`${f("topics")}: 관련 세목을 1개 이상 적어 주세요 (CORE-01)`);
+    if (topicsRaw.length > LENS_LIMITS.topics) errors.push(`${f("topics")}: 관련 세목은 ${LENS_LIMITS.topics}개까지입니다 (지금 ${topicsRaw.length}개)`);
   }
 
   const pointsRaw = lines(body.points);
   const points: string[] = [];
-  if (!pointsRaw) errors.push("points: 핵심 포인트 줄 목록이어야 합니다");
+  if (!pointsRaw) errors.push(`${f("points")}: 핵심 포인트 줄 목록이어야 합니다`);
   else {
     pointsRaw.forEach((p, i) => {
-      if (typeof p !== "string" || p.trim() === "") return errors.push(`points[${i}]: 빈 줄은 저장하지 않습니다`);
+      if (typeof p !== "string" || p.trim() === "") return errors.push(`${f("points")}[${i}]: 빈 줄은 저장하지 않습니다`);
       const v = p.trim();
-      if (chars(v) > LENS_LIMITS.pointChars) errors.push(`points[${i}]: 줄은 ${LENS_LIMITS.pointChars}자 이하입니다 (지금 ${chars(v)}자)`);
+      if (chars(v) > LENS_LIMITS.pointChars) errors.push(`${f("points")}[${i}]: 줄은 ${LENS_LIMITS.pointChars}자 이하입니다 (지금 ${chars(v)}자)`);
       points.push(v);
     });
     if (pointsRaw.length < LENS_LIMITS.pointsMin || pointsRaw.length > LENS_LIMITS.pointsMax) {
-      errors.push(`points: 핵심 포인트는 ${LENS_LIMITS.pointsMin}~${LENS_LIMITS.pointsMax}줄입니다 (지금 ${pointsRaw.length}줄 — CORE-01)`);
+      errors.push(`${f("points")}: 핵심 포인트는 ${LENS_LIMITS.pointsMin}~${LENS_LIMITS.pointsMax}줄입니다 (지금 ${pointsRaw.length}줄 — CORE-01)`);
     }
   }
 
   const links: LensLink[] = [];
-  if (!Array.isArray(body.links) || body.links.length === 0) errors.push("links: 해설·도서·전문가 링크를 1개 이상 넣어 주세요 (CORE-01)");
+  if (!Array.isArray(body.links) || body.links.length === 0) errors.push(`${f("links")}: 해설·도서·전문가 링크를 1개 이상 넣어 주세요 (CORE-01)`);
   else {
-    if (body.links.length > LENS_LIMITS.links) errors.push(`links: 링크는 ${LENS_LIMITS.links}개까지입니다 (종류마다 하나)`);
+    if (body.links.length > LENS_LIMITS.links) errors.push(`${f("links")}: 링크는 ${LENS_LIMITS.links}개까지입니다 (종류마다 하나)`);
     body.links.forEach((l, i) => {
       const o = (typeof l === "object" && l !== null ? l : {}) as Record<string, unknown>;
       const kind = typeof o.kind === "string" ? o.kind : "";
       const label = typeof o.label === "string" ? o.label.trim() : "";
       const url = typeof o.url === "string" ? o.url.trim() : "";
-      if (kind === "calculator") errors.push(`links[${i}]: 계산기 링크는 적지 않습니다 — SM 취득세 카드(바깥 연결 설정)가 박스 옆에 붙습니다 (TX-01)`);
-      else if (!(LENS_LINK_KINDS as readonly string[]).includes(kind)) errors.push(`links[${i}]: 종류는 ${LENS_LINK_KINDS.join("·")} 중 하나입니다`);
-      else if (links.some((x) => x.kind === kind)) errors.push(`links[${i}]: ${LENS_LINK_LABELS[kind as LensLinkKind]} 링크가 두 번 있습니다 (종류마다 하나)`);
-      if (label === "" || chars(label) > LENS_LIMITS.labelChars) errors.push(`links[${i}]: 링크 이름은 1~${LENS_LIMITS.labelChars}자입니다`);
-      if (!LENS_URL_RE.test(url) || url.length > LENS_LIMITS.urlChars) errors.push(`links[${i}]: 사이트 안 주소(/로 시작 — 바깥 주소·//·#·공백 0, ${LENS_LIMITS.urlChars}자까지)여야 합니다`);
+      if (kind === "calculator") errors.push(`${f("links")}[${i}]: 계산기 링크는 적지 않습니다 — SM 취득세 카드(바깥 연결 설정)가 박스 옆에 붙습니다 (TX-01)`);
+      else if (!(LENS_LINK_KINDS as readonly string[]).includes(kind)) errors.push(`${f("links")}[${i}]: 종류는 ${LENS_LINK_KINDS.join("·")} 중 하나입니다`);
+      else if (links.some((x) => x.kind === kind)) errors.push(`${f("links")}[${i}]: ${LENS_LINK_LABELS[kind as LensLinkKind]} 링크가 두 번 있습니다 (종류마다 하나)`);
+      if (label === "" || chars(label) > LENS_LIMITS.labelChars) errors.push(`${f("links")}[${i}]: 링크 이름은 1~${LENS_LIMITS.labelChars}자입니다`);
+      if (!LENS_URL_RE.test(url) || url.length > LENS_LIMITS.urlChars) errors.push(`${f("links")}[${i}]: 사이트 안 주소(/로 시작 — 바깥 주소·//·#·공백 0, ${LENS_LIMITS.urlChars}자까지)여야 합니다`);
       links.push({ kind: kind as LensLinkKind, label, url });
     });
   }
 
-  if (!isIsoDate(body.base_date)) errors.push("base_date: 법령 기준일(YYYY-MM-DD)이 필요합니다");
+  if (!isIsoDate(body.base_date)) errors.push(`${f("base_date")}: 법령 기준일(YYYY-MM-DD)이 필요합니다`);
 
   // 세액 표현(숫자 + 원)·금지 표현(감면 단정) — CORE-01 박스 검사와 같은 함수 (세목·포인트·링크 이름 모두)
-  for (const p of pointLineProblems(topics, ctx.forbiddenPhrases)) errors.push(`topics[${p.index}]: ${p.message}`);
-  for (const p of pointLineProblems(points, ctx.forbiddenPhrases)) errors.push(`points[${p.index}]: ${p.message}`);
+  for (const p of pointLineProblems(topics, forbiddenPhrases)) errors.push(`${f("topics")}[${p.index}]: ${p.message}`);
+  for (const p of pointLineProblems(points, forbiddenPhrases)) errors.push(`${f("points")}[${p.index}]: ${p.message}`);
   for (const p of pointLineProblems(
     links.map((l) => l.label),
-    ctx.forbiddenPhrases,
+    forbiddenPhrases,
   ))
-    errors.push(`links[${p.index}]: ${p.message}`);
+    errors.push(`${f("links")}[${p.index}]: ${p.message}`);
 
   if (errors.length) return { ok: false, errors };
-  return { ok: true, value: { projectType: type, stage, lens: { topics, points, links, base_date: body.base_date as string } } };
+  return { ok: true, value: { topics, points, links, base_date: body.base_date as string } };
 }
 
 /** 저장 경고 — 숫자 + % (막지 않는다 — PR-05, DB raise warning과 같은 식) */

@@ -7,6 +7,8 @@ import { mailConfigured } from "@/lib/server/mail/config";
 import { parseFeatures } from "@/lib/server/public/settings";
 import { pilotRegionsRegionErrors } from "@/lib/server/public/region-index-logic";
 import { projectSettingsCrossErrors } from "@/lib/admin/project-rules";
+import { devMethodsEnableErrors } from "@/lib/admin/dev-method-rules";
+import { loadReadiness } from "@/lib/server/dev-methods/board";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import type { RegionRouteRow } from "@/lib/site/region-route";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
@@ -71,6 +73,21 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   if (key === "feature_flags") {
     const depErrors = featureEnableErrors(parseFeatures(current.value), parseFeatures(value), await publishedDocKeys(db), mailConfigured(mailEnv()), await brandRecords(db));
     if (depErrors.length) return errorJson(422, "기능을 켤 수 없습니다 — 먼저 필요한 것을 갖추세요", { errors: depErrors });
+    // 개발방법 비교(W4 18단계 — 2.4 · 2.5 '서명 없는 개발방법 공개 시도' 거부 감사): 7개 방법이 모두 공개 준비여야 켠다. DB 트리거(…52)가 같은 조건을 다시 본다
+    if (parseFeatures(value).dev_methods && !parseFeatures(current.value).dev_methods) {
+      const methodErrors = devMethodsEnableErrors(await loadReadiness(db));
+      if (methodErrors.length) {
+        await writeAudit(db, {
+          actor: actorOf(viewer),
+          action: "dev_method.publish.denied",
+          target,
+          before: null,
+          after: { errors: methodErrors },
+          reason: "서명·비교 항목이 갖춰지지 않은 개발방법 공개(dev_methods 켜기) 시도 — 거부",
+        });
+        return errorJson(422, "개발방법 비교를 켤 수 없습니다 — 7개 방법의 비교 항목 6칸과 세무 감수 서명이 모두 있어야 합니다", { errors: methodErrors });
+      }
+    }
   }
 
   const saved = await writeSetting(db, current, value, actorOf(viewer));

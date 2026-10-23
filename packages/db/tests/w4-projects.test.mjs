@@ -513,7 +513,7 @@ test("원문 해시 바뀜 → 검수 큐 1건(project_event) + 공개 단계 `�
     assert.match((await ins({ target_id: na.id })).message, /원본 스냅샷이 있는 단계 기록만/);
     assert.match((await ins({ article_id: a.id })).message, /기사 번호를 넣지 않습니다/);
     assert.ok((await ins({})).ok, "단계 기록 만료 항목은 받는다");
-    assert.match((await ins({ target_type: "dev_method_fact" })).message, /아직 받지 않습니다/);
+    assert.equal((await ins({ target_type: "dev_method_fact", target_id: 999999999 })).code, "23503", "개발방법 사실 행은 18단계(…52)가 받는다 — 없는 행 거부");
   }));
 
 test("권한 — anon은 표·현재 단계 뷰 거부, 공개 뷰는 공개 프로젝트의 공개 칸·정정되지 않은 공개 기록만", () =>

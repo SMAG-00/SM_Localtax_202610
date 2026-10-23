@@ -87,6 +87,9 @@ export const FEATURE_KEYS = [
   // W4 17단계 — 분양 정보 목록 /realestate/supply·지역 허브 ③ 분양 정보 카드·프로젝트 화면 분양 정보 (분양 광고 표시 기준 법률 검토 기록(12장 #12) + 공개 항목 1건 이상일 때 켠다 —
   // W4 설계 2.4). 꺼지면 /realestate/supply는 하위 분야 목록(W3 12장 #20과 같은 방식)·분양 정보 카드·공식 공고 링크 0
   "supply_notices",
+  // W4 18단계 — 개발방법 비교 /realestate/development-methods* (화면은 19단계). 7개 방법의 비교 항목 6칸과 세무 감수 서명이 모두 있어야 켜진다 —
+  // DB 저장 검사(…52 settings_dev_methods_flag_guard)와 운영 설정 화면이 같은 조건을 본다(W4 설계 2.4 · 12장 #153). 꺼지면 공개 뷰 0행
+  "dev_methods",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;

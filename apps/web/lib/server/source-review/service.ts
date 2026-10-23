@@ -23,6 +23,9 @@ export interface RefetchResult {
   /** 같은 원문 주소를 쓴 프로젝트 단계 기록 (W4 12단계 — 정정되지 않은 단계 기록) */
   projectTargets: number;
   projectOpened: number;
+  /** 같은 원문 주소를 쓴 개발방법 사실 행 (W4 18단계 — 최신 판만) */
+  methodTargets: number;
+  methodOpened: number;
 }
 
 interface SourceRow {
@@ -80,6 +83,8 @@ export async function refetchSource(db: SupabaseClient, input: RefetchInput, act
     noSnapshot: Number(r.noSnapshot),
     projectTargets: Number(r.projectTargets ?? 0),
     projectOpened: Number(r.projectOpened ?? 0),
+    methodTargets: Number(r.methodTargets ?? 0),
+    methodOpened: Number(r.methodOpened ?? 0),
   };
 }
 

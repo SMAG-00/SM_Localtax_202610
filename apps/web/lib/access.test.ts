@@ -69,6 +69,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "regional_link.confirm":   [X, O, X, X, X, X, X, O, X], // W4 13단계 — 지역 연결 후보 찾기·확인·지우기는 편집 책임자·관리자 (REG1-10 '편집자가 확인한 연결만 공개')
   "project.manage":          [X, O, X, X, X, X, X, O, X], // W4 14단계 — 프로젝트 만들기·단계 기록·정정·공개 전환은 편집 책임자·관리자 (6장 '편집 책임자 이상', brand_ops 거부 감사)
   "supply.manage":           [X, O, X, X, X, X, X, O, X], // W4 17단계 — 분양 정보 만들기·고치기·공개 전환은 편집 책임자·관리자 (6장, ad_ops·brand_ops 거부 감사)
+  "dev_method.manage":       [X, O, X, X, X, X, X, O, X], // W4 18단계 — 개발방법 내용·비교 항목·사실 행은 편집 책임자·관리자 (6장, 서명은 review.tax_review)
   "article.regional_fields": [O, O, X, X, X, X, X, O, X], // W4 7단계 — 지역 기사 편집 칸(편집 분야·공익적 질문·소재·관계)은 기자·편집 책임자·관리자, 광고·협찬 담당 0
   "column.manage":           [X, O, X, X, X, X, X, X, X],
   "column.signature":        [X, O, X, X, X, X, X, X, X], // W3 8단계 — 시그니처 연재 회차·순서는 칼럼 정렬과 같은 편집 행위 (BR-08)
@@ -233,6 +234,20 @@ describe("분양 정보 — 편집 책임자·관리자만, 그 밖은 거부 + 
     expect(can(viewer(["editor"]), "supply.manage")).toBe(true);
     expect(can(viewer([], true), "supply.manage")).toBe(true);
     expect(AUDITED_DENIALS.has("supply.manage")).toBe(true);
+  });
+});
+
+describe("개발방법 비교 — 편집 책임자·관리자만 적고, 서명은 감수위원만 (W4 18단계 · PR-09·10)", () => {
+  test("기자·감수위원·광고·브랜드·스토어·전문가 담당 → 입력 거부 + 사유에 PR-09 + 감사 대상 · 편집 책임자·관리자 허용 · 서명은 reviewer만", () => {
+    for (const role of ["reporter", "reviewer", "ad_ops", "brand_ops", "store_ops", "expert_ops"] as const) {
+      expect(check(viewer([role]), "dev_method.manage")).toEqual({ allowed: false, reason: expect.stringContaining("PR-09") });
+    }
+    expect(can(viewer(["editor"]), "dev_method.manage")).toBe(true);
+    expect(can(viewer([], true), "dev_method.manage")).toBe(true);
+    expect(AUDITED_DENIALS.has("dev_method.manage")).toBe(true);
+    expect(can(viewer(["editor"]), "review.tax_review")).toBe(false);
+    expect(can(viewer([], true), "review.tax_review")).toBe(false);
+    expect(can(viewer(["reviewer"]), "review.tax_review")).toBe(true);
   });
 });
 

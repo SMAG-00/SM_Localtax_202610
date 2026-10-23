@@ -153,7 +153,7 @@ test("원문 다시 받기 — 해시가 다르면 그 주소를 쓴 기사마�
 
     // 같은 원문(같은 해시) → 0건, 새 스냅샷 0 (기존 행을 쓴다)
     const same = await refetch(url, OLD);
-    assert.deepEqual({ ...same, snapshotId: undefined }, { snapshotId: undefined, targets: 4, opened: 0, unchanged: 3, alreadyQueued: 0, noSnapshot: 1, projectTargets: 0, projectOpened: 0, projectUnchanged: 0, projectAlreadyQueued: 0 });
+    assert.deepEqual({ ...same, snapshotId: undefined }, { snapshotId: undefined, targets: 4, opened: 0, unchanged: 3, alreadyQueued: 0, noSnapshot: 1, projectTargets: 0, projectOpened: 0, projectUnchanged: 0, projectAlreadyQueued: 0, methodTargets: 0, methodOpened: 0, methodUnchanged: 0, methodAlreadyQueued: 0 });
     assert.equal(Number(same.snapshotId), Number(snap.id), "같은 주소·같은 해시는 기존 스냅샷");
     assert.deepEqual(await queueOf([s1.id, s2.id, s3.id, s3old.id, sGone.id, press.id, other.id, noSnap.id]), [], "같은 해시 → 큐 0");
 
@@ -288,9 +288,9 @@ test("해결 — 열린 항목만, 해결한 사람·시각 필수, 다른 칸 �
     const b = await article();
     assert.match((await ins({ article_id: b.id, basis_on: "2026-10-02" })).message, /기사 번호/);
     assert.equal((await ins({ target_id: 999999999, basis_on: "2026-10-03" })).code, "23503");
-    // 프로젝트 단계 기록은 12단계(…47)가 열었다 — 없는 단계 기록은 거부(받는 경우는 w4-projects.test.mjs). 개발방법 사실 행은 18단계까지 거부
+    // 프로젝트 단계 기록은 12단계(…47)가, 개발방법 사실 행은 18단계(…52)가 열었다 — 없는 대상은 거부(받는 경우는 w4-projects·w4-dev-methods 시험)
     assert.equal((await ins({ target_type: "project_event", target_id: 999999999, article_id: null, basis_on: "2026-10-04" })).code, "23503", "없는 단계 기록");
-    assert.match((await ins({ target_type: "dev_method_fact", article_id: null, basis_on: "2026-10-04" })).message, /아직 받지 않습니다/, "dev_method_fact");
+    assert.equal((await ins({ target_type: "dev_method_fact", target_id: 999999999, article_id: null, basis_on: "2026-10-04" })).code, "23503", "없는 사실 행");
     // 사유별 필수 칸
     assert.equal((await ins({ reason: "snapshot_changed", basis_on: null, run_key: null })).code, "23514", "원문 변경은 옛·새 해시·새 스냅샷 필수");
     assert.equal((await ins({ basis_on: null })).code, "23514", "만료는 확인일 필수");

@@ -47,6 +47,10 @@ export const targetOf = {
   projectEvent: (id: number | string) => `project_events:${id}`,
   /** 분양 정보 (W4 17단계) */
   supplyNotice: (id: number | string) => `supply_notices:${id}`,
+  /** 개발방법 비교 (W4 18단계) — 방법은 slug, 비교 항목은 slug:항목, 사실 행은 판 번호 */
+  devMethod: (slug: string) => `dev_methods:${slug}`,
+  devMethodCompare: (slug: string, item: string) => `dev_method_compare:${slug}:${item}`,
+  devMethodFact: (id: number | string) => `dev_method_facts:${id}`,
 };
 
 /** 감사 로그 한 줄. 실패하면 예외 — 감사 기록 없는 변경을 성공으로 알리지 않는다 */
