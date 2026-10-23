@@ -168,7 +168,7 @@ test("b) 지역 칩 전수 — 시·도 17 이상 + 시범 지역, 모든 칩이
   const hrefs = chipHrefs(r.html);
   const sidoChips = (r.html.match(/data-chip-kind="sido"/g) ?? []).length;
   const pilotChips = (r.html.match(/data-chip-kind="pilot"/g) ?? []).length;
-  assert.ok(sidoChips >= 18, `시·도 칩 17 + 시험용 1 이상: ${sidoChips}`);
+  assert.ok(sidoChips >= 17, `시·도 칩 16 + 시험용 1 이상: ${sidoChips}`);
   assert.equal(pilotChips, 1, "시범 지역 칩 1");
   assert.equal(hrefs.length, sidoChips + pilotChips);
   assert.ok(hrefs.includes(`/local/${sidoSlug()}/${slugOf(G1)}#realestate`), "시범 시·군·구 칩 주소");

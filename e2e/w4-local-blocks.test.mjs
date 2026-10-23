@@ -404,7 +404,7 @@ test("e) 허브 문구 금지 표현(세금 혜택·가격 상승·투자 권유
 
 test("f) /local 전국 — 시·도 카드 = 오늘 유효한 시·도 전부·링크 전수 200 · region_hubs 꺼짐 → 글자만 · ⑤ · 데이터 출처 줄 1개", async () => {
   const valid = (await db.query("select code from public.regions where level = 'sido' and (valid_to is null or valid_to >= current_date) order by code")).rows.map((r) => r.code);
-  assert.equal(valid.filter((c) => !c.startsWith("99")).length, 17, "씨앗 시·도 17");
+  assert.equal(valid.filter((c) => !c.startsWith("99")).length, 16, "실제 시·도 16 (전국 적재 — 전남광주통합특별시)");
   const { page, ctx } = await open("/local");
   const cards = await page.$$eval('[data-part="sido-cards"] [data-sido-code]', (els) => els.map((e) => [e.getAttribute("data-sido-code"), e.querySelector("a")?.getAttribute("href") ?? null]));
   assert.deepEqual(cards.map((c) => c[0]), valid, "시·도 카드 = 오늘 유효한 시·도 (코드 순)");

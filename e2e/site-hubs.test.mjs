@@ -361,10 +361,11 @@ test("d) 상황 페이지 — 먼저 확인할 것 3개·자주 틀리는 점·�
   assert.equal(await notice.page.locator('[data-situation-part="checks"] [data-ui="step-timeline"] > li').count(), 3);
   await notice.page.close();
 
-  // 지역 선택 — 시·도 17 칩, 서울을 고르면 서울 기사 (화면 전환), 시·군·구 칩이 생긴다
+  // 지역 선택 — 시·도 칩(오늘 유효한 시·도 수 — 전국 적재 뒤 16), 서울을 고르면 서울 기사 (화면 전환), 시·군·구 칩이 생긴다
   const home = await open(fx.situations["home-bought"].href);
   const chips = home.page.locator('[data-situation-part="region"] ul[aria-label="시·도"] a');
-  assert.equal(await chips.count(), 17);
+  const validSido = (await db.query("select count(*)::int n from public.regions where level = 'sido' and code not like '99%' and (valid_from is null or valid_from <= current_date) and (valid_to is null or valid_to >= current_date)")).rows[0].n;
+  assert.equal(await chips.count(), validSido);
   await home.page.evaluate(() => (window.__e2eMarker = "kept"));
   await home.page.locator(`[data-region-code="${SEOUL}"]`).first().click();
   await home.page.waitForURL((url) => url.pathname === fx.situations["home-bought"].href && url.searchParams.get("region") === SEOUL);
