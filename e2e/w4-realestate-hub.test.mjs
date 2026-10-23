@@ -97,9 +97,9 @@ before(async () => {
   await removeFixtureRows((sql, params) => db.query(sql, params));
   await removeRegions((sql, params) => db.query(sql, params));
   await staff.snapshotOperations();
-  await staff.makeIntroArticle("reh"); // 상속·증여 키 켜기 조건 — 세무 감수 승인된 입문 기사 1건 (W4 26단계)
   for (const t of ["regions", "articles", "projects", "project_events", "supply_notices", "raw_snapshots"]) counts0[t] = (await one(`select count(*)::int n from public.${t}`)).n;
   for (const k of ["feature_flags", "pilot_regions", "project_types", "project_stage_lists"]) saved[k] = (await one("select value from public.settings where key = $1", [k])).value;
+  await staff.makeIntroArticle("reh"); // 상속·증여 키 켜기 조건 — 세무 감수 승인된 입문 기사 1건 (W4 26단계). 행 수를 센 뒤에 만든다 — 정리 때 지워지므로 시험 전 수에 넣지 않는다
   assert.equal(saved.feature_flags.dev_methods ?? false, false, "시험 전 dev_methods는 꺼져 있다");
 
   await db.query("insert into public.regions (code, level, name, slug) values ($1, 'sido', $2, $3)", [SIDO.code, SIDO.name, sidoSlug()]);

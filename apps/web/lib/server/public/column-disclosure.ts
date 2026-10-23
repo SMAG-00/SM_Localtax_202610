@@ -1,6 +1,7 @@
 import "server-only";
 import { publicDb, rowsOf } from "./db";
 import { interestLinesByArticle, type InterestItemRow } from "./column-interest-logic";
+import { getFinanceInterestLine } from "./finance";
 import { readPublicSettings } from "./reads";
 
 // 칼럼 상세의 이해관계 줄 + 의견 고지 (TX-16·17 — docs/dev/W3_설계.md 1장 6단계). 공개 뷰 public_column_disclosures만 읽는다(공개 기사의 줄만, 계약·증빙 위치 없음).
@@ -49,6 +50,7 @@ export async function getColumnDisclosure(articleId: number): Promise<ColumnDisc
   const notice = (row.opinion_notice ?? "").trim();
   if (notice === "") return null;
   const interestLine = row.interest_state === "declared" ? `이해관계: ${row.interest_text ?? ""}` : "이해관계: 필자가 밝힌 이해관계 없음";
-  const itemsLine = (await readColumnInterestLines([articleId])).get(articleId) ?? null;
+  // 부동산 칼럼 3항목 줄 또는 개발금융 칼럼 소속 2항목 줄 (W5 DF-09) - 칼럼 분야가 다르므로 한쪽만 있다
+  const itemsLine = (await readColumnInterestLines([articleId])).get(articleId) ?? (await getFinanceInterestLine(articleId));
   return { interestLine, notice, aiIndexAllowed: row.ai_index_scope !== "deny", itemsLine };
 }

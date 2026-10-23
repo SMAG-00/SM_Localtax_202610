@@ -46,6 +46,8 @@ const RULES: readonly MenuRule[] = [
   { id: "supply", label: "분양 정보", href: "/admin/supply", when: (a) => a.has("supply.manage"), paths: ["/admin/supply"] },
   // 개발방법 비교 — 7개 방법의 내용·비교 항목·숫자 요건 사실 행(편집 책임자·관리자)과 세무 감수 서명(세무 감수위원) (PR-09·10 · W4 19단계)
   { id: "dev-methods", label: "개발방법 비교", href: "/admin/dev-methods", when: (a) => a.has("dev_method.manage") || a.has("review.tax_review"), paths: ["/admin/dev-methods"] },
+  // 개발금융 - 구조 해설 초안·법률 확인(편집 책임자·관리자)과 세무 감수 서명(세무 감수위원), 통계·규제·사례·칼럼 소속 (W5 DF-01~05·09)
+  { id: "finance", label: "개발금융", href: "/admin/finance", when: (a) => a.has("finance.manage") || a.has("review.tax_review"), paths: ["/admin/finance"] },
   {
     id: "situations",
     label: "상황 카드",

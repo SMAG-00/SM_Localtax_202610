@@ -125,7 +125,10 @@ for (const role of ["anon", "authenticated"]) {
     world(async () => {
       const r = await attempt("select code, parent_code, level, name, slug, aliases, valid_from, valid_to from public.regions where level = 'sido'", [], role);
       assert.ok(r.ok, r.message);
-      assert.equal(r.rows.length, 17);
+      // 씨앗 17 + W4 2단계 통합 신설 1 (광주·전남은 폐지 행으로 남아 공개 읽기에 그대로 보인다) — 서비스 역할이 센 시·도 수와 같다
+      const all = (await client.query("select count(*)::int as n from public.regions where level = 'sido'")).rows[0].n;
+      assert.equal(r.rows.length, all);
+      assert.equal(all, 18);
     }));
 
   test(`${role} — 상황은 공개(visible)만, 감수자·수정자 칸은 비공개`, () =>

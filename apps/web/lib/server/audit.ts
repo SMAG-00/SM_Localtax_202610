@@ -48,6 +48,8 @@ export const targetOf = {
   /** 분양 정보 (W4 17단계) */
   supplyNotice: (id: number | string) => `supply_notices:${id}`,
   /** 개발방법 비교 (W4 18단계) — 방법은 slug, 비교 항목은 slug:항목, 사실 행은 판 번호 */
+  financeStructure: (slug: string) => `finance_structures:${slug}`,
+  financeRecord: (table: string, id: number | string) => `${table}:${id}`,
   devMethod: (slug: string) => `dev_methods:${slug}`,
   devMethodCompare: (slug: string, item: string) => `dev_method_compare:${slug}:${item}`,
   devMethodFact: (id: number | string) => `dev_method_facts:${id}`,

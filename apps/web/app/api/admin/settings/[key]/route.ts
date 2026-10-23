@@ -1,4 +1,5 @@
 import { isEditableSetting, parseJsonText, sameJson, validateSettingValue } from "@/lib/admin/settings-rules";
+import { financeEnableErrors } from "@/lib/admin/finance-rules";
 import { featureEnableErrors } from "@/lib/policy/feature-open";
 import { brandRecords } from "@/lib/server/admin/brand-records";
 import { publishedDocKeys } from "@/lib/server/auth-guard";
@@ -127,6 +128,13 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
     const noticeRow = await readSetting(db, "inheritance_gift_notice");
     const gateErrors = inheritanceGiftEnableErrors(approved, noticeRow?.value);
     if (gateErrors.length) return errorJson(422, "상속·증여 안내를 켤 수 없습니다 — 세무 게이트 승인 기록(입문 기사 세무 감수)과 고지 문구가 필요합니다", { errors: gateErrors });
+  }
+
+  // 개발금융 켜기 (W5 - 설계 2장): 법률 검토 기록(approved)이 있어야 한다. DB 트리거(...60 finance_flag_guard)가 같은 조건을 다시 본다
+  if (key === "feature_flags" && parseFeatures(value).finance && !parseFeatures(current.value).finance) {
+    const reviewRow = await readSetting(db, "finance_legal_review");
+    const gateErrors = financeEnableErrors(reviewRow?.value);
+    if (gateErrors.length) return errorJson(422, "개발금융을 켤 수 없습니다 - 법률 검토 기록이 필요합니다", { errors: gateErrors });
   }
 
   const saved = await writeSetting(db, current, value, actorOf(viewer));

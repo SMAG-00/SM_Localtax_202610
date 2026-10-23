@@ -20,6 +20,9 @@ const APPEND_ONLY = new Set([
   "public.project_events", // 프로젝트 단계 기록(W4 12단계 PR-02·03) — service_role은 읽기·추가만, 잘못 적은 기록은 정정 기록으로만
   "public.special_law_confirmations", // 특례법 확인 기록(W4 20단계 PR-13) — service_role은 읽기·추가만, 고치기·지우기 0
   "public.dev_method_facts", // 개발방법 숫자 요건 사실 행(W4 18단계 PR-10) — service_role은 읽기·추가 + 서명 칸 한 번(고치기 트리거), 고치기는 새 판 + 사유로만
+  "public.finance_structure_versions", // 개발금융 구조 해설 승인본(W5 DF-02) — service_role은 읽기·추가만
+  "public.finance_indicators", // 개발금융 통계 시계열(W5 DF-04) — 읽기·추가만
+  "public.finance_regulations", // 개발금융 규제 항목(W5 DF-04) — 읽기·추가만
   "public.article_tombstones",
 ]);
 let client;

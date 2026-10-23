@@ -255,7 +255,7 @@ test("금지 표현 사전 새 판 — 2.11 낱말 6개 · 기존 낱말 그대�
     const dict = (await one("select value from public.settings where key = 'forbidden_phrases'")).value;
     for (const w of [...words, "무료 상담", "투자 추천", "현지 1위"]) assert.ok(dict.phrases.includes(w), w);
     assert.equal(new Set(dict.phrases).size, dict.phrases.length, "중복 0");
-    assert.equal(dict.version, "2026-10-23.1");
+    assert.match(dict.version, /^2026-10-2[3-9]./, "사전 판 번호는 이 새 판 이후");
 
     const reviewer = await staffUser("reviewer");
     const m = await draftMethod("redevelopment", { ...CONTENT, summary: "시험용 방식이 유리합니다" });

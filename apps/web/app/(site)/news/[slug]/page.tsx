@@ -8,6 +8,8 @@ import { MeasureView } from "@/components/site/Measure";
 import { UnavailablePage } from "@/components/site/Unavailable";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { ColumnDisclosureBlock } from "@/components/site/ColumnDisclosureBlock";
+import { CaseBlock } from "@/components/site/FinanceViews";
+import { getFinanceCase } from "@/lib/server/public/finance";
 import { LegalDocBlock } from "@/components/site/InterpretationView";
 import { ThenNowBlock } from "@/components/site/ThenNowBlock";
 import { getArticleDetail, getArticleLegalDocs, getArticleReviewMark, getArticleSignature, getColumnDisclosure, isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
@@ -59,6 +61,8 @@ export default async function ArticlePage({ params }: Props) {
   const docs = await readPublic("기사 원문 연결", () => getArticleLegalDocs(a.id), () => ({ subject: [], related: [] }));
   // 칼럼이면 머리 위에 이해관계 줄 + 의견 고지 (W3 6단계 — 기능 키 tax_columns 켜짐·고지 문구 있음일 때만)
   const disclosure = a.contentType === "opinion" ? await readPublic("칼럼 이해관계", () => getColumnDisclosure(a.id), () => null) : null;
+  // 개발금융 사례 구조 블록 (W5 DF-03) - 기능 키 finance 켜짐 + 사례 기록이 있는 공개 기사일 때만
+  const financeCase = a.section === "finance" ? await readPublic("개발금융 사례 구조", () => getFinanceCase(a.id), () => null) : null;
   // 감수 표시 '감수 ○○' — 세무 감수 서명 기록(뷰 article_review_marks) + 그 뒤 오탈자 아닌 수정 없음 + 서명자 동의서 활성일 때만 (W3 7단계 BR-03).
   // 손으로 넣는 칸이 없다. 읽지 못하면 표시하지 않는다
   const mark = await readPublic("감수 표시", () => getArticleReviewMark(a.id), () => null);
@@ -82,6 +86,7 @@ export default async function ArticlePage({ params }: Props) {
         </p>
       )}
       <ColumnDisclosureBlock disclosure={disclosure} />
+      <CaseBlock view={financeCase} />
       <LegalDocBlock subject={docs.subject} related={docs.related} />
       {/* 원문 블록이 있는 해석 해설 열람 → interpretation_viewed(기사 번호·첫 해설 대상 원문 유형) 1건 (W3 10단계). 그리는 것 0 */}
       {docs.subject[0] && <MeasureView name="interpretation_viewed" section={a.section} props={{ article_id: a.id, doc_type: docs.subject[0].doc_type }} />}

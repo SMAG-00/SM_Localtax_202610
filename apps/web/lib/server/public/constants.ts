@@ -92,6 +92,8 @@ export const FEATURE_KEYS = [
   "dev_methods",
   // W4 23단계 - 상속·증여 안내 (설계 2.4). 꺼지면 /realestate/inheritance-gift는 하위 분야 목록, /inheritance·/gift는 404, 링크 0
   "inheritance_gift",
+  // W5 - 개발금융 W5 화면(구조 해설 /finance/trust-pf/[slug]·허브 규제 통계 트래커·사례 구조 블록·칼럼 소속 줄) - 법률 검토 기록(finance_legal_review approved)이 있어야 켜진다 (설계 12장 #1). 꺼지면 공개 뷰 0행
+  "finance",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;

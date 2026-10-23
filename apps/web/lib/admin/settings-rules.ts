@@ -19,6 +19,7 @@ import { searchTopicsErrors } from "@/lib/server/public/search-classify";
 import { REGION_INDEX_LIMITS, pilotRegionsErrors, regionIndexThresholdErrors } from "@/lib/server/public/region-index-logic";
 import { IG_LIMITS, inheritanceNoticeErrors, inheritanceSituationsErrors } from "@/lib/server/public/inheritance-gift-logic";
 import { phraseError } from "./dictionary-rules";
+import { blockedDomainsErrors, legalReviewSettingErrors, rebuttalWaitErrors } from "./finance-rules";
 import { PROJECT_LIMITS, projectStageListsErrors, projectTypesErrors } from "./project-rules";
 import { EXPIRY_DAYS_DEFAULT, EXPIRY_DAYS_MAX, EXPIRY_DAYS_MIN, expiryDaysErrors } from "@/lib/source-review/rules";
 
@@ -339,6 +340,22 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "상속·증여 상황 목록 (FAM-02)",
     guide: `["상황-slug", ...] - 상황 ${IG_LIMITS.situations}종까지. 목록의 상황은 부동산 분야이고 외부 계산기 연결(안심 상속증여계산기)과 체크리스트 고지가 있어야 합니다. 빈 목록([])이면 상황 카드 줄이 없습니다`,
     check: (value) => inheritanceSituationsErrors(value),
+  },
+  // -- W5 개발금융 (docs/dev/W5_설계.md 2장) - DB 트리거(...60 finance_settings_guard)와 같은 검사 --
+  finance_legal_review: {
+    label: "개발금융 법률 검토 기록 (DF-05)",
+    guide: '{ "reviewer": "검토자", "reviewed_on": "YYYY-MM-DD", "conclusion": "approved" } - approved여야 기능 키 finance를 켤 수 있습니다. 비우려면 {}',
+    check: (value) => legalReviewSettingErrors(value),
+  },
+  finance_blocked_domains: {
+    label: "금융상품 차단 도메인 (DF-05)",
+    guide: '["example.test", ...] - 금융상품 판매·가입 페이지 도메인(하위 도메인 포함). 개발금융 원문 주소가 여기에 있으면 저장되지 않습니다',
+    check: (value) => blockedDomainsErrors(value),
+  },
+  finance_rebuttal_wait_days: {
+    label: "반론 무응답 인정 기간 (DF-03)",
+    guide: "숫자(일, 1~365) - 반론 요청일부터 이 기간이 지나야 답변 상태 무응답을 고를 수 있습니다. 법률 검토로 정합니다",
+    check: (value) => rebuttalWaitErrors(value),
   },
   next_action_priority: {
     label: "다음 행동 버튼 우선순위 (ART-06)",
