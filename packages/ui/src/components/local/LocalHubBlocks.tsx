@@ -55,6 +55,9 @@ const BLOCKS: ReadonlyArray<{ key: BlockKey; eyebrow: string; title: string }> =
   { key: "sources", eyebrow: "SOURCES", title: "공식 자료/해설" },
 ];
 
+/** 블록 앵커 id — 부동산 허브 지역 칩이 `/local/[sido]#realestate`로 ③ 블록에 닿는다 (W4 22단계 · PR-01). 페이지 안에서 겹치지 않는 고정 글자 */
+export const BLOCK_ANCHORS: Readonly<Record<BlockKey, string>> = { weekly: "weekly", localTax: "local-tax", realEstate: "realestate", events: "events", sources: "official" };
+
 const MAX_ITEMS = 5;
 const MAX_GROUP_ITEMS = 6;
 
@@ -67,7 +70,7 @@ function Block({ id, blockKey, eyebrow, title, content }: { id: string; blockKey
   const items = content.items.slice(0, MAX_ITEMS);
   const groups = (content.groups ?? []).filter((g) => g.items.length > 0 && g.title.trim());
   return (
-    <section data-hub-block={blockKey} aria-labelledby={headingId}>
+    <section data-hub-block={blockKey} id={BLOCK_ANCHORS[blockKey]} aria-labelledby={headingId} className="scroll-mt-24">
       <div className="flex items-start gap-3">
         {content.pictogram && <span className="mt-1 shrink-0">{content.pictogram}</span>}
         <div>

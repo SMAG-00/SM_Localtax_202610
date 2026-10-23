@@ -3,7 +3,10 @@ import type { ArticleListItem, HubData } from "@/lib/server/public";
 import { HUB_HEADINGS, SIDO_CHIP_LABELS, hubParts } from "@/lib/site/hub-view";
 import { ArticleGrid, ArticleItem } from "./ArticleItem";
 import { OfficialSourceCardView } from "./OfficialSourceCardView";
+import { ProjectCardView } from "./ProjectView";
+import { RealEstateChips, RealEstateLinkCards } from "./RealEstateHubParts";
 import { OFFICIAL_GROUPS, RegionSourceLineView } from "./RegionView";
+import { SUPPLY_COPY, SupplyCardView } from "./SupplyView";
 import { TermChipList } from "./GlossaryView";
 import { HotBlock } from "./HotBlock";
 import { MeasureSituationCards, MeasureView } from "./Measure";
@@ -117,6 +120,70 @@ export function HubView({ hub }: { hub: HubData }) {
                     </li>
                   ))}
                 </ul>
+              </SiteSection>
+            );
+          case "chips":
+            return hub.estate && (
+              <SiteSection key={key} id="hub-chips" tone={tone} heading={HUB_HEADINGS.chips} data={{ "data-hub-part": "chips" }}>
+                <RealEstateChips chips={hub.estate.chips} />
+              </SiteSection>
+            );
+          case "landmarks":
+            return hub.estate && (
+              <SiteSection key={key} id="hub-landmarks" tone={tone} heading={HUB_HEADINGS.landmarks} data={{ "data-hub-part": "landmarks" }}>
+                <ul data-part="hub-landmarks" className="mt-8 grid gap-4 sm:grid-cols-2">
+                  {hub.estate.projects.cards.map((c) => (
+                    <li key={c.id} className="flex">
+                      <ProjectCardView card={c} />
+                    </li>
+                  ))}
+                </ul>
+                {hub.estate.projects.all && (
+                  <p className="mt-6">
+                    <UiLink href={hub.estate.projects.all} className={TEXT_LINK}>
+                      프로젝트 전체 보기
+                    </UiLink>
+                  </p>
+                )}
+              </SiteSection>
+            );
+          case "supply":
+            return hub.estate && (
+              <SiteSection key={key} id="hub-supply" tone={tone} heading={HUB_HEADINGS.supply} data={{ "data-hub-part": "supply" }}>
+                <p className="mt-4 text-[15px] text-navy-600">{SUPPLY_COPY.groupNote}</p>
+                <ul data-part="hub-supply" className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {hub.estate.supply.cards.map((c) => (
+                    <li key={c.id} className="flex">
+                      <SupplyCardView card={c} />
+                    </li>
+                  ))}
+                </ul>
+                {hub.estate.supply.all && (
+                  <p className="mt-6">
+                    <UiLink href={hub.estate.supply.all} className={TEXT_LINK}>
+                      분양 정보 전체 보기
+                    </UiLink>
+                  </p>
+                )}
+              </SiteSection>
+            );
+          case "links":
+            return hub.estate && (
+              <SiteSection key={key} id="hub-links" tone={tone} heading={HUB_HEADINGS.links} data={{ "data-hub-part": "links" }}>
+                <RealEstateLinkCards cards={hub.estate.links} />
+              </SiteSection>
+            );
+          case "columns":
+            return hub.estate && (
+              <SiteSection key={key} id="hub-columns" tone={tone} heading={HUB_HEADINGS.columns} data={{ "data-hub-part": "columns" }}>
+                <ArticleGrid part="hub-columns" items={hub.estate.columns.items} />
+                {hub.estate.columns.all && (
+                  <p className="mt-6">
+                    <UiLink href={hub.estate.columns.all} className={TEXT_LINK}>
+                      칼럼 전체 보기
+                    </UiLink>
+                  </p>
+                )}
               </SiteSection>
             );
           case "blocks":

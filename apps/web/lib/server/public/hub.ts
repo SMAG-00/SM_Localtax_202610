@@ -12,6 +12,7 @@ import { readArticleList, readCategories, readCategoryCounts, readPublicSettings
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { sourceLineOf } from "./region-hub-logic";
 import { readIndexedSidoCodes, readPilotRegions } from "./region-index";
+import { readRealEstateHub } from "./realestate-hub";
 import { readRegionalOfficial } from "./region-official";
 import { EMPTY_REGIONAL_OFFICIAL, sidoCards } from "./region-official-logic";
 import { GLOSSARY_COLUMNS, SITUATION_COLUMNS, num, type GlossaryRow, type SituationRow } from "./rows";
@@ -44,7 +45,7 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
         })
       : null;
   const localOfficial = section === "local" && !topic ? readRegionalOfficial(null) : null;
-  const [settings, categories, counts, topicCounts, latest, situations, terms, blockReads, hot, taxPoint, official, regions, pilots, indexedSido] = await Promise.all([
+  const [settings, categories, counts, topicCounts, latest, situations, terms, blockReads, hot, taxPoint, official, regions, pilots, indexedSido, estate] = await Promise.all([
     readPublicSettings(),
     readCategories(),
     readCategoryCounts(),
@@ -59,6 +60,7 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     section === "local" && !topic ? readRegions() : null,
     section === "local" && !topic ? readPilotRegions() : null,
     section === "local" && !topic ? readIndexedSidoCodes() : null,
+    section === "realestate" ? readRealEstateHub() : null,
   ]);
   const blocks =
     section === "local" && !topic
@@ -79,6 +81,7 @@ export async function getHubData(section: SectionKey, opts: { topic?: string | n
     situations: hubSituationCards(situations, section, settings.hubSituationLimit),
     terms: terms.map((t) => termChip(t, settings.features)),
     taxPoint,
+    estate,
     noindex: topic !== null && latest.items.length === 0,
     local:
       section === "local"

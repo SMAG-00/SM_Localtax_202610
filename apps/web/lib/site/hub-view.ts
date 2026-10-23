@@ -8,7 +8,8 @@ import { brand, type StepTimelineItem } from "@ltr/ui";
 import { sectionTones, type SectionTone } from "./home-view";
 
 /** 허브 본문 부분 — 이 순서 고정 */
-export const HUB_PARTS = ["head", "regions", "blocks", "latest", "hot", "situations", "terms", "source"] as const;
+// 부동산 허브(W4 22단계)만 chips·landmarks·supply·links·columns 가 더 있다 — 머리 → 지역 칩 → 대표 프로젝트 → 분양 정보 → 링크 카드 → 최신 기사 → 칼럼 (PR-01)
+export const HUB_PARTS = ["head", "regions", "chips", "landmarks", "supply", "links", "blocks", "latest", "columns", "hot", "situations", "terms", "source"] as const;
 export type HubPart = (typeof HUB_PARTS)[number];
 
 /** 부분 머리 — 아이브로(영문)와 제목 (분야 고유 블록은 블록마다 제목이 있어 머리가 없다) */
@@ -18,6 +19,11 @@ export const HUB_HEADINGS = {
   situations: { eyebrow: "SITUATIONS", title: "상황으로 찾기" },
   terms: { eyebrow: "GLOSSARY", title: "관련 용어" },
   regions: { eyebrow: "REGIONS", title: "시·도별 지자체 허브" },
+  chips: { eyebrow: "REGIONS", title: "지역별 부동산·개발" },
+  landmarks: { eyebrow: "LANDMARK", title: "대표 프로젝트" },
+  supply: { eyebrow: "SUPPLY", title: "분양 정보" },
+  links: { eyebrow: "GUIDE", title: "더 알아보기" },
+  columns: { eyebrow: "COLUMN", title: "칼럼" },
 } as const;
 
 /** /local 시·도 카드 칩 글자 (W4 11단계 — PRD-01B 5장 '시범 지역·색인 대상 표시') */
@@ -27,6 +33,14 @@ interface HubShape {
   blocks: unknown;
   /** /local 전국 화면 (W4 9단계) — 시·도 카드·데이터 출처 줄. 다른 허브는 null·없음 */
   local?: { sido: readonly unknown[] } | null;
+  /** /realestate 허브 확장 (W4 22단계) — 부동산 허브만. 없으면 null·없음 */
+  estate?: {
+    chips: { pilot: readonly unknown[]; sido: readonly unknown[] };
+    projects: { cards: readonly unknown[] };
+    supply: { cards: readonly unknown[] };
+    links: readonly unknown[];
+    columns: { items: readonly unknown[] };
+  } | null;
   /** 상담 사례 HOT 블록 (HOME-05 — 지방세 허브) — 없으면 null */
   hot: unknown;
   latest: readonly unknown[];
@@ -40,8 +54,14 @@ interface HubShape {
 export function hubParts(hub: HubShape): Array<{ key: HubPart; tone: SectionTone }> {
   const present: HubPart[] = ["head"];
   if (hub.local && hub.local.sido.length > 0) present.push("regions");
+  const e = hub.estate;
+  if (e && e.chips.pilot.length + e.chips.sido.length > 0) present.push("chips");
+  if (e && e.projects.cards.length > 0) present.push("landmarks");
+  if (e && e.supply.cards.length > 0) present.push("supply");
+  if (e && e.links.length > 0) present.push("links");
   if (hub.blocks) present.push("blocks");
   if (hub.latest.length > 0 || hub.noindex) present.push("latest");
+  if (e && e.columns.items.length > 0) present.push("columns");
   if (hub.hot) present.push("hot");
   if (hub.situations.length > 0) present.push("situations");
   if (hub.terms.length > 0) present.push("terms");

@@ -12,6 +12,7 @@ import { NEWS_TAB_LABELS, SECTION_INFO, SECTION_KEYS, type SectionKey } from "./
 import type { TermChip } from "./glossary-logic";
 import type { LocalBlocks, RegionSourceLine } from "./region-hub-logic";
 import type { SidoCard } from "./region-official-logic";
+import type { RealEstateHubData } from "./realestate-hub-logic";
 import type { PublicCategoryRow } from "./rows";
 import type { HotBlock } from "./rankings";
 import type { HubTaxPoint } from "./hub-point-logic";
@@ -85,6 +86,8 @@ export interface HubData {
   noindex: boolean;
   /** /local 전국 화면 (W4 9단계) — 지자체뉴스 허브만, 다른 허브·닫힌 허브는 null */
   local: LocalIndexView | null;
+  /** /realestate 허브 확장 (W4 22단계) — 부동산 허브만, 다른 허브·닫힌 허브는 null */
+  estate: RealEstateHubData | null;
   /** 공개 데이터를 읽지 못해 닫힌 허브(머리만)를 보이는 중 */
   unavailable?: true;
 }
@@ -108,6 +111,7 @@ export function closedHubData(section: SectionKey): HubData {
     taxPoint: null,
     noindex: false,
     local: null,
+    estate: null,
     unavailable: true,
   };
 }

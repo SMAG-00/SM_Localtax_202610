@@ -462,3 +462,23 @@ describe("이슈 묶음 머리 (CORE-04)", () => {
     expect(container.innerHTML).toBe("");
   });
 });
+
+describe("블록 앵커 (W4 22단계 — 부동산 허브 지역 칩이 ③ 블록으로 닿는다)", () => {
+  it("③ 부동산·개발 블록은 id=realestate, 다섯 블록의 id는 서로 다르고 제목과 이어져 있다", () => {
+    const { container } = render(<LocalHubBlocks weekly={block("핫뉴스")} localTax={block("지방세")} realEstate={block("부동산")} events={block("행사")} sources={block("자료")} />);
+    const ids = [...container.querySelectorAll("[data-hub-block]")].map((el) => el.id);
+    expect(ids).toEqual(["weekly", "local-tax", "realestate", "events", "official"]);
+    expect(new Set(ids).size).toBe(5);
+    const estate = container.querySelector("#realestate");
+    expect(estate?.getAttribute("data-hub-block")).toBe("realEstate");
+    expect(within(estate as HTMLElement).getByRole("heading", { level: 2 }).textContent).toBe("부동산·개발");
+  });
+
+  it("③ 블록이 0건 문장만 받아도 앵커는 남는다 (빈 카드 0)", () => {
+    const { container } = render(<LocalHubBlocks realEstate={{ items: [], empty: "아직 이 지역의 기사가 없습니다." }} />);
+    const estate = container.querySelector("#realestate") as HTMLElement;
+    expect(estate).not.toBeNull();
+    expect(within(estate).getByText("아직 이 지역의 기사가 없습니다.")).toBeTruthy();
+    expect(estate.querySelectorAll("li").length).toBe(0);
+  });
+});

@@ -7,11 +7,11 @@ const hub = (over: Partial<Parameters<typeof hubParts>[0]> = {}) => ({ blocks: n
 describe("허브 골격 (CAT-02 — 네 허브 같은 순서, 0건 부분은 빠짐)", () => {
   test("모두 있으면 머리 → 분야 고유 블록 → 최신 목록 → 상담 사례 HOT → 상황 카드 → 관련 용어, 바탕은 ivory부터 번갈아", () => {
     expect(hubParts(hub({ blocks: {}, hot: {} })).map((p) => `${p.key}:${p.tone}`)).toEqual(["head:ivory", "blocks:ivory-dark", "latest:ivory", "hot:ivory-dark", "situations:ivory", "terms:ivory-dark"]);
-    expect(hubParts(hub({ blocks: {}, hot: {} })).map((p) => p.key)).toEqual(HUB_PARTS.filter((k) => k !== "regions" && k !== "source"));
+    expect(hubParts(hub({ blocks: {}, hot: {} })).map((p) => p.key)).toEqual(HUB_PARTS.filter((k) => !["regions", "chips", "landmarks", "supply", "links", "columns", "source"].includes(k)));
   });
 
   test("/local 전국 화면(W4 9단계) — 머리 뒤 시·도 카드, 맨 아래 데이터 출처 줄. 시·도 카드 0장이면 그 자리만 빠지고 출처 줄은 남는다", () => {
-    expect(hubParts(hub({ blocks: {}, hot: {}, local: { sido: [1] } })).map((p) => p.key)).toEqual([...HUB_PARTS]);
+    expect(hubParts(hub({ blocks: {}, hot: {}, local: { sido: [1] } })).map((p) => p.key)).toEqual(HUB_PARTS.filter((k) => !["chips", "landmarks", "supply", "links", "columns"].includes(k)));
     expect(hubParts(hub({ blocks: {}, local: { sido: [1] } })).map((p) => p.key)).toEqual(["head", "regions", "blocks", "latest", "situations", "terms", "source"]);
     expect(hubParts(hub({ latest: [], noindex: true, local: { sido: [] } })).map((p) => p.key)).toEqual(["head", "latest", "situations", "terms", "source"]);
     expect(hubParts(hub({ local: null })).map((p) => p.key)).toEqual(["head", "latest", "situations", "terms"]);
@@ -33,6 +33,25 @@ describe("허브 골격 (CAT-02 — 네 허브 같은 순서, 0건 부분은 빠
 
   test("고른 편집 분야에 기사가 0건이면 최신 목록 자리에 허브 안내를 둔다 (목록 부분은 남는다)", () => {
     expect(hubParts(hub({ latest: [], noindex: true, situations: [] })).map((p) => p.key)).toEqual(["head", "latest", "terms"]);
+  });
+});
+
+describe("부동산 허브 확장(W4 22단계 — PR-01)", () => {
+  const estate = (over: Record<string, unknown> = {}) => ({ chips: { pilot: [], sido: [1] }, projects: { cards: [1] }, supply: { cards: [1] }, links: [1], columns: { items: [1] }, ...over });
+
+  test("머리 → 지역 칩 → 대표 프로젝트 → 분양 정보 → 링크 카드 → 최신 기사 → 칼럼 → 상황 → 용어 (PR-01 차례)", () => {
+    expect(hubParts(hub({ estate: estate() })).map((p) => p.key)).toEqual(["head", "chips", "landmarks", "supply", "links", "latest", "columns", "situations", "terms"]);
+  });
+
+  test("내용 0건인 부분은 빠진다 — 칩 0(지역 허브 꺼짐)·프로젝트 0·분양 0·링크 카드 0(닫힌 기능)·칼럼 0", () => {
+    const none = { chips: { pilot: [], sido: [] }, projects: { cards: [] }, supply: { cards: [] }, links: [], columns: { items: [] } };
+    expect(hubParts(hub({ estate: none })).map((p) => p.key)).toEqual(["head", "latest", "situations", "terms"]);
+    expect(hubParts(hub({ estate: estate({ ...none, links: [1] }) })).map((p) => p.key)).toEqual(["head", "links", "latest", "situations", "terms"]);
+    expect(hubParts(hub({ estate: estate({ chips: { pilot: [1], sido: [] } }) })).map((p) => p.key)).toContain("chips");
+  });
+
+  test("다른 허브(estate 없음)의 골격은 그대로", () => {
+    expect(hubParts(hub({ estate: null })).map((p) => p.key)).toEqual(["head", "latest", "situations", "terms"]);
   });
 });
 
