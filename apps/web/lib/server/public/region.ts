@@ -13,6 +13,7 @@ import { readDescriptionTitles, readRegionIndexed } from "./region-index";
 import { readRegionalOfficial } from "./region-official";
 import { readRegionProjects } from "./projects";
 import { readRegionSupply } from "./supply";
+import { getHubLocalNews } from "./local-news";
 import { TAX_LINK_SITUATION_SECTIONS, TAX_LINK_SM_KEY, regionTaxLinks } from "./region-official-logic";
 import { SITUATION_COLUMNS, type SituationRow } from "./rows";
 
@@ -39,7 +40,7 @@ export async function getRegionPage(sidoSlug: string, sigunguSlug: string | null
   const region = match.sigungu ?? match.sido;
   const topic = isLocalTopic(opts.topic) ? opts.topic : null; // 목록 밖 값은 전체 (2.8)
   const codes = regionArticleCodes(region, regions);
-  const [fields, total, taxPoint, official, situations, sm, indexable, descriptionTitles, projects, supply] = await Promise.all([
+  const [fields, total, taxPoint, official, situations, sm, indexable, descriptionTitles, projects, supply, localNews] = await Promise.all([
     readLocalBlockFields(),
     countRegionArticles(codes),
     getHubTaxPoint("local"),
@@ -57,6 +58,11 @@ export async function getRegionPage(sidoSlug: string, sigunguSlug: string | null
       console.error("[public] 지역 허브 분양 정보를 읽지 못해 0장으로 그립니다:", err instanceof Error ? err.message : String(err));
       return { cards: [], more: null };
     }),
+    // W6 - ① 금주 핫뉴스 · ④ 행사안내 (키 weekly_digest·local_events가 꺼지면 null). 허브의 덧붙임이라 읽지 못하면 두 블록만 뺀다
+    getHubLocalNews({ sido: match.sido, sigungu: match.sigungu, regions, ...(opts.now ? { now: opts.now } : {}) }).catch((err: unknown) => {
+      console.error("[public] 지역 허브 금주 핫뉴스·행사안내를 읽지 못해 두 블록을 뺍니다:", err instanceof Error ? err.message : String(err));
+      return { weekly: null, events: null };
+    }),
   ]);
   const own = fields ? await readBlockArticles(fields, topic, codes) : {};
   // 시·군·구 블록이 0건이면 상위 시·도 범위(시·도 + 그 아래 시·군·구 태그) — 0건인 블록만 다시 읽는다
@@ -66,5 +72,5 @@ export async function getRegionPage(sidoSlug: string, sigunguSlug: string | null
       ? await readBlockArticles({ local_tax: emptyBlocks.includes("local_tax") ? fields.local_tax : [], realestate: emptyBlocks.includes("realestate") ? fields.realestate : [] }, topic, regionArticleCodes(match.sido, regions))
       : {};
   const taxLinks = regionTaxLinks({ situations, situationLimit: settings.hubSituationLimit, official, sm });
-  return regionPage({ sido: match.sido, sigungu: match.sigungu, regions, total, today, siteUrl: siteUrl(), topic, fields, own, parent, taxPoint, official, taxLinks, indexable, descriptionTitles, projects, supply });
+  return regionPage({ sido: match.sido, sigungu: match.sigungu, regions, total, today, siteUrl: siteUrl(), topic, fields, own, parent, taxPoint, official, taxLinks, indexable, descriptionTitles, projects, supply, localNews });
 }

@@ -23,6 +23,11 @@ const APPEND_ONLY = new Set([
   "public.finance_structure_versions", // 개발금융 구조 해설 승인본(W5 DF-02) — service_role은 읽기·추가만
   "public.finance_indicators", // 개발금융 통계 시계열(W5 DF-04) — 읽기·추가만
   "public.finance_regulations", // 개발금융 규제 항목(W5 DF-04) — 읽기·추가만
+  "public.hot_news_candidates", // 핫뉴스 후보(W6 LG-05) — 지우기 0, 안 쓰는 후보는 dismissed
+  "public.weekly_digests", // 주간 페이지(W6 LG-01) — 지우기 0, 발행 뒤 되돌리기 0
+  "public.local_events", // 행사 회차(W6 LG-09) — 지우기 0, 내리기는 published=false
+  "public.event_status_history", // 행사 상태 이력(W6 LG-12) — 읽기만, 트리거가 쓴다
+  "public.event_links", // 행사 연결(W6 LG-14) — 읽기·추가·지우기
   "public.article_tombstones",
 ]);
 let client;

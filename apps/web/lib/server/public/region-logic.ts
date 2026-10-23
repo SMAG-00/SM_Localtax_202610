@@ -15,6 +15,7 @@ import { isValidOn, regionHref, type RegionRouteRow } from "@/lib/site/region-ro
 import { SECTION_INFO } from "./constants";
 import type { HubTaxPoint } from "./hub-point-logic";
 import { regionHubBlocks, regionSourceLine, topicHasOwnArticles, type BlockArticles, type LocalBlockFields, type RegionHubBlock, type RegionProjects, type RegionSourceLine, type RegionSupply } from "./region-hub-logic";
+import type { EventsBlockView, WeeklyBlockView } from "./local-news-logic";
 import { regionDescription, regionNoindexReason, type NoindexReason } from "./region-index-logic";
 import type { RegionalOfficial, RegionTaxLinksView } from "./region-official-logic";
 
@@ -41,6 +42,8 @@ export interface RegionPage {
   taxPoint: HubTaxPoint | null;
   /** LG-08 블록 — ②③(고른 분야를 담는 블록만)·⑤ 순서 고정 (①④는 W6 — 요소 0) */
   blocks: RegionHubBlock[];
+  /** LG-08 ① 금주 핫뉴스 · ④ 행사안내 (W6 — 기능 키 weekly_digest·local_events가 꺼지면 null → 요소 0) */
+  localNews: { weekly: WeeklyBlockView | null; events: EventsBlockView | null };
   /** 지역 세금 연결 블록 (⑤ 뒤 — REG1-10) — 내용이 하나도 없으면 null(블록째 0) */
   taxLinks: RegionTaxLinksView | null;
   /** 데이터 출처 줄 (REG-10) */
@@ -116,6 +119,8 @@ export function regionPage(input: {
   projects?: RegionProjects;
   /** ③ 분양 정보 카드 (W4 17단계 — 기능 키 supply_notices 켜짐일 때만, 청약 마감 전 항목) */
   supply?: RegionSupply;
+  /** ① 금주 핫뉴스 · ④ 행사안내 (W6) */
+  localNews?: { weekly: WeeklyBlockView | null; events: EventsBlockView | null };
 }): RegionPage {
   const { sido, sigungu } = input;
   const sidoRef: RegionRef = { name: sido.name, href: regionHref(sido.slug) };
@@ -141,6 +146,7 @@ export function regionPage(input: {
     topic,
     taxPoint: input.taxPoint ?? null,
     blocks,
+    localNews: input.localNews ?? { weekly: null, events: null },
     taxLinks: input.taxLinks ?? null,
     source: regionSourceLine(blocks),
     total: empty ? 0 : input.total,

@@ -90,6 +90,7 @@ export const ACTIONS = {
   "regional_link.confirm": "지역 연결 — 같은 지역 후보 찾기·연결 만들기·확인·지우기 (편집 책임자·관리자, W4 13단계 REG1-10 — 확인된 연결만 공개)",
   "project.manage": "프로젝트 트래커 — 프로젝트 만들기·단계 기록·정정(사유)·공개 전환·지역 연결 (편집 책임자·관리자, W4 14단계 PR-02·03 — 가격·분담금·수익률 입력 0)",
   "finance.manage": "개발금융 - 구조 해설 초안·법률 확인·통계 지표·규제 항목·사례 구조 기록·칼럼 소속 항목 입력 (편집 책임자·관리자, W5 DF-01~05·09 - 세무 서명은 review.tax_review, 법률 검토 기록은 설정 권한)",
+  "local_news.manage": "지자체뉴스 - 금주 핫뉴스(후보 넣기·선정·요약·유사도 검사·발행·기획 전환)와 행사안내(회차·상태·연결·공개) 입력 (편집 책임자·관리자, W6 LG-01~14 - 광고·협찬 담당은 행사 정렬·분류 권한 없음)",
   "supply.manage": "분양 정보 — 공식 공고를 보고 항목 만들기·고치기·공개 전환 (편집 책임자·관리자, W4 17단계 PR-04 — 가격 입력 0, 홍보 원고는 sponsored 기사로만)",
   "dev_method.manage": "개발방법 비교 — 방법 내용·비교 항목 6칸 초안·숫자 요건 사실 행(새 판 + 사유) 적기 (편집 책임자·관리자, W4 18단계 PR-09·10 — 감수 서명은 review.tax_review, 점수·순위·추천 입력 0)",
   "special_law.confirm": "특례법 확인 기록 — 공포 확인·철회와 특례법 근거 행의 확인·철회 (관리자(PO)만, W4 20단계 PR-13)",
@@ -137,6 +138,8 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "supply.manage",
   // W5 - 개발금융 입력. 편집국 외 역할의 시도는 거부 + 감사
   "finance.manage",
+  // W6 - 지자체뉴스 입력. 광고·협찬 담당 등 편집국 외 역할의 시도(행사 정렬·분류 포함)는 거부 + 감사 (LG-13)
+  "local_news.manage",
   // W4 18단계 — 개발방법 내용·비교 항목·숫자 요건 입력. 편집국 외 역할의 시도는 거부 + 감사 (W4 설계 6장 '개발방법 입력: 편집 책임자 이상')
   "dev_method.manage",
   // W4 20단계 — 특례법 확인 기록은 관리자(PO)만. 그 밖의 역할의 시도는 거부 + 감사 (W4 설계 6장)
@@ -290,6 +293,9 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     // 개발금융 (W5 - 편집 책임자 이상, 1인 체제면 관리자·PO). 세무 서명은 review.tax_review(감수위원만)
     case "finance.manage":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("개발금융(구조 해설·통계·규제·사례 구조·칼럼 소속)은 편집 책임자와 관리자만 적습니다 - 세무 감수위원은 서명만 합니다 (DF-01~05)");
+    // 지자체뉴스 (W6 - 편집 책임자 이상, 1인 체제면 관리자·PO). 광고·협찬 담당은 행사 정렬·편집 분야 판정 권한이 없다 (LG-13)
+    case "local_news.manage":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("지자체뉴스(금주 핫뉴스·행사안내)는 편집 책임자와 관리자만 다룹니다 (LG-13)");
     case "supply.manage":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("분양 정보(만들기·고치기·공개 전환)는 편집 책임자와 관리자만 합니다 — 시행사·분양대행사 홍보 원고는 광고·협찬 기사로만 냅니다 (PR-04)");
     // 개발방법 비교 (W4 18단계 — 6장 '개발방법 입력: 편집 책임자 이상', 1인 체제면 관리자·PO). 서명은 review.tax_review(감수위원만) — 이 권한으로는 서명하지 않는다

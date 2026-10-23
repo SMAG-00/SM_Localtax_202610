@@ -19,7 +19,17 @@ const shell = process.platform === "win32";
 // anon(공개 키)이 실행해도 되는 함수 — 데이터를 읽지 않는 상태 확인(FND-06)과, 공개 행만 돌려주는 통합 검색(W2-d — security invoker라
 // 부르는 역할의 RLS·칸 권한이 그대로 걸린다, docs/dev/W2-d_설계.md 7장), 통합 검색이 부르는 지역 + 주제 분류(W4 10단계 — security invoker,
 // 공개 행정구역과 공개 설정 search_topics 한 줄만 읽는다, docs/dev/W4_설계.md 11.9)
-export const ANON_EXECUTE_ALLOWED = new Set(["health_ping", "search_public", "search_classify"]);
+// + AI 도우미 익명 호출 함수 5개(W7b — security definer, 입력 모양 검사 후 마스킹본만 기록, docs/dev/W7b_설계.md 2행)
+export const ANON_EXECUTE_ALLOWED = new Set([
+  "health_ping",
+  "search_public",
+  "search_classify",
+  "assistant_runtime",
+  "assistant_rate_hit",
+  "assistant_register_prompt",
+  "assistant_record_turn",
+  "assistant_feedback",
+]);
 
 /** 응답 판정 — 빈 배열·401·403·404는 차단, 행이 있는 200은 노출, 그 밖은 오류 */
 export function classify(status, body) {

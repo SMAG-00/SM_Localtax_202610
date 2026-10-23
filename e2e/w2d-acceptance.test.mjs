@@ -333,8 +333,8 @@ test("1) 9장 증거 줄 = 이 시험이 증명하는 것 · 출발점(기사 0�
   fx.privateTracker = await insertAmendment("private", `${M} 비공개 개편안`, "draft");
   fx.hiddenPerson = Number((await one("insert into public.people (slug, name, roles, visibility) values ($1, $2, '{reporter}', 'hidden') returning id", [`${SLUG_PREFIX}-hidden-${staff.run}`.toLowerCase(), `${M} 숨은 기자`])).id);
   staff.personIds.add(fx.hiddenPerson);
-  // 지역 — 성동구(서울)·경주시(경북), 옛 이름 별칭
-  for (const [code, parent, name, slug, aliases] of [["1179900000", "1100000000", "성동구", "sd", [`${H}옛성동`]], ["4779900000", "4700000000", "경주시", "gj", []]]) {
+  // 지역 — 서울 아래 가상 구·경북 아래 가상 시, 옛 이름 별칭. 전국 행정구역이 적재돼 있으므로 실제 이름(성동구·경주시)을 쓰면 진짜 지역과 겹친다 — 이름은 실행마다 다른 한글 꼬리표로 만든다
+  for (const [code, parent, name, slug, aliases] of [["1179900000", "1100000000", `${H}구`, "sd", [`${H}옛성동`]], ["4779900000", "4700000000", `${H}시`, "gj", []]]) {
     await db.query("insert into public.regions (code, parent_code, level, name, slug, aliases) values ($1, $2, 'sigungu', $3, $4, $5)", [code, parent, name, `${SLUG_PREFIX}-${slug}-${staff.run}`.toLowerCase(), aliases]);
   }
   // 용어 200개(가나다 색인·4대 분야) — 가짜 낱말·가짜 풀이. 공개 요청 전에 DB에 직접
@@ -534,15 +534,15 @@ test("5) SRCH-01 편집국 API로 쓴 기사 — 발행 판정을 지나 공개�
 
 // ── 6) 지역 ─────────────────────────────────────────────
 test("6) REG-08/REG1-11 지역 — 지역명만 쓰면 지역이 첫 결과 · 옛 이름(별칭)으로 현재 지역 · \"성동구 재개발\"·\"경주 취득세\" · 지역 거르개 · 축제 검색에 행사 0", async () => {
-  const first = (await refsOf("성동구")).items[0];
+  const first = (await refsOf(`${H}구`)).items[0];
   assert.deepEqual([first.kind, first.ref], ["region", "1179900000"], "지역명만 — 지역이 첫 결과");
   const byAlias = (await refsOf(`${H}옛성동`)).items[0];
   assert.deepEqual([byAlias.kind, byAlias.ref], ["region", "1179900000"], "옛 이름으로 검색하면 현재 지역");
   assert.ok((await refsOf("성동구 재개발")).items.some((i) => i.ref === String(fx.rebuild.id)), "성동구 재개발 → 두 낱말이 든 기사");
   assert.ok((await refsOf("경주 취득세")).items.some((i) => i.ref === String(fx.explainer.id)), "경주 취득세 → 두 낱말이 든 기사");
-  const filtered = await refsOf("성동구", "&region=1100000000");
+  const filtered = await refsOf(`${H}구`, "&region=1100000000");
   assert.ok(filtered.items.some((i) => i.kind === "region" && i.ref === "1179900000"), "시·도 거르개는 그 아래 시·군·구 포함");
-  assert.equal((await refsOf("성동구", "&region=4700000000")).items.some((i) => i.kind === "region"), false, "다른 시·도 거르개에는 없다");
+  assert.equal((await refsOf(`${H}구`, "&region=4700000000")).items.some((i) => i.kind === "region"), false, "다른 시·도 거르개에는 없다");
   const body = await refsOf("강릉 축제");
   assert.ok(body.items.every((i) => KINDS.includes(i.kind) && i.kind !== "place"), "강릉 축제 — 관광·행사 종류 0");
 });

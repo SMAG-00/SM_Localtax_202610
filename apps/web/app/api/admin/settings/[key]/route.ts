@@ -1,5 +1,6 @@
 import { isEditableSetting, parseJsonText, sameJson, validateSettingValue } from "@/lib/admin/settings-rules";
 import { financeEnableErrors } from "@/lib/admin/finance-rules";
+import { weeklyDigestEnableErrors } from "@/lib/admin/local-news-rules";
 import { featureEnableErrors } from "@/lib/policy/feature-open";
 import { brandRecords } from "@/lib/server/admin/brand-records";
 import { publishedDocKeys } from "@/lib/server/auth-guard";
@@ -135,6 +136,13 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
     const reviewRow = await readSetting(db, "finance_legal_review");
     const gateErrors = financeEnableErrors(reviewRow?.value);
     if (gateErrors.length) return errorJson(422, "개발금융을 켤 수 없습니다 - 법률 검토 기록이 필요합니다", { errors: gateErrors });
+  }
+
+  // 금주 핫뉴스 켜기 (W6 - 설계 2장): 시·도 2곳 이상. DB 트리거(...63 weekly_digest_flag_guard)가 같은 조건을 다시 본다
+  if (key === "feature_flags" && parseFeatures(value).weekly_digest && !parseFeatures(current.value).weekly_digest) {
+    const sidosRow = await readSetting(db, "digest_sidos");
+    const gateErrors = weeklyDigestEnableErrors(sidosRow?.value);
+    if (gateErrors.length) return errorJson(422, "금주 핫뉴스를 켤 수 없습니다 - 시범 시·도 설정이 필요합니다", { errors: gateErrors });
   }
 
   const saved = await writeSetting(db, current, value, actorOf(viewer));

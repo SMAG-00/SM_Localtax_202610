@@ -20,6 +20,7 @@ import { REGION_INDEX_LIMITS, pilotRegionsErrors, regionIndexThresholdErrors } f
 import { IG_LIMITS, inheritanceNoticeErrors, inheritanceSituationsErrors } from "@/lib/server/public/inheritance-gift-logic";
 import { phraseError } from "./dictionary-rules";
 import { blockedDomainsErrors, legalReviewSettingErrors, rebuttalWaitErrors } from "./finance-rules";
+import { digestSidosErrors, digestSourcesErrors, digestSummaryMaxErrors, eventBlockedDomainsErrors, eventRecheckErrors } from "./local-news-rules";
 import { PROJECT_LIMITS, projectStageListsErrors, projectTypesErrors } from "./project-rules";
 import { EXPIRY_DAYS_DEFAULT, EXPIRY_DAYS_MAX, EXPIRY_DAYS_MIN, expiryDaysErrors } from "@/lib/source-review/rules";
 
@@ -356,6 +357,32 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "반론 무응답 인정 기간 (DF-03)",
     guide: "숫자(일, 1~365) - 반론 요청일부터 이 기간이 지나야 답변 상태 무응답을 고를 수 있습니다. 법률 검토로 정합니다",
     check: (value) => rebuttalWaitErrors(value),
+  },
+  // -- W6 지자체뉴스 (docs/dev/W6_설계.md 2장) - DB 트리거(...63 digest_settings_guard · ...64 event_settings_guard)와 같은 모양 검사 --
+  digest_sidos: {
+    label: "금주 핫뉴스 시·도 (LG-01)",
+    guide: '["1100000000", "2600000000"] - 금주 핫뉴스를 내는 시·도 법정동코드. 이 시·도만 주간 페이지를 발행할 수 있고 2곳 이상이어야 기능 키 weekly_digest를 켤 수 있습니다 (PRD_최종 13장 7번)',
+    check: (value) => digestSidosErrors(value),
+  },
+  digest_summary_max_chars: {
+    label: "핫뉴스 요약 길이 상한 (LG-02)",
+    guide: "숫자(글자, 50~2000) - 이 길이를 넘는 요약은 저장되지 않습니다. 바꾸면 다음 저장부터 적용됩니다",
+    check: (value) => digestSummaryMaxErrors(value),
+  },
+  digest_sources: {
+    label: "핫뉴스 후보 출처 (LG-05)",
+    guide: '[{ "id": "출처id", "name": "이름", "host": "도메인", "kind": "rss 또는 board", "basis": "허용 근거(약관·robots 확인 내용)", "checked_on": "YYYY-MM-DD" }] - 허용 근거와 확인일이 있는 출처의 후보만 받습니다',
+    check: (value) => digestSourcesErrors(value),
+  },
+  event_url_blocked_domains: {
+    label: "행사 공식 주소 차단 도메인 (LG-11)",
+    guide: '["bit.ly", ...] - 단축 주소·개인 블로그·카페 서비스 도메인(하위 도메인 포함). 이 도메인의 주소는 행사 공식 URL로 저장되지 않습니다',
+    check: (value) => eventBlockedDomainsErrors(value),
+  },
+  event_recheck: {
+    label: "행사 재확인 기준 (REG1-05)",
+    guide: '{ "days": 7, "hide_stale": false } - 마지막 확인일로부터 days일이 지나면 "일정 재확인 필요"를 표시하고, hide_stale이 true면 예정 목록에서도 숨깁니다. 바꾸면 다음 조회부터 적용됩니다',
+    check: (value) => eventRecheckErrors(value),
   },
   next_action_priority: {
     label: "다음 행동 버튼 우선순위 (ART-06)",

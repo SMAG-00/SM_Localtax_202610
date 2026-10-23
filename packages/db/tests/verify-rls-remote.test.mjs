@@ -46,8 +46,17 @@ test("실제 로컬 API — 감사 기록 수정·삭제 함수는 anon이 부�
   assert.deepEqual(r.exposed, []);
 });
 
-test("허용된 공개 함수(health_ping · 통합 검색 search_public · 지역 + 주제 분류 search_classify — W4 10단계)만 anon 실행 허용 목록에 있다", () => {
-  assert.deepEqual([...ANON_EXECUTE_ALLOWED], ["health_ping", "search_public", "search_classify"]);
+test("허용된 공개 함수(health_ping · 통합 검색 search_public · 지역 + 주제 분류 search_classify — W4 10단계 · AI 도우미 익명 호출 함수 5개 — W7b)만 anon 실행 허용 목록에 있다", () => {
+  assert.deepEqual([...ANON_EXECUTE_ALLOWED], [
+    "health_ping",
+    "search_public",
+    "search_classify",
+    "assistant_runtime",
+    "assistant_rate_hit",
+    "assistant_register_prompt",
+    "assistant_record_turn",
+    "assistant_feedback",
+  ]);
 });
 
 test("일부러 새는 표(anon 읽기 정책 + 행 1개)를 만들면 노출로 잡는다", async () => {

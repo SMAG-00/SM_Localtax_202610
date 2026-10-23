@@ -190,7 +190,7 @@ test("a) 블록 순서 — 360×740·1280×800 DOM 순서 = 화면 위치 = ②�
   assert.equal(r.status, 422, show(r));
 });
 
-test("b) ① 금주 핫뉴스·④ 행사안내 — 기능 키 꺼짐 요소 0, 켜도 W4는 요소 0 (빈 블록 0)", async () => {
+test("b) ① 금주 핫뉴스·④ 행사안내 - 기능 키 꺼짐 요소 0 / 행사안내만 켜면(W6) 자료가 없어도 '현재 확인된 일정 없음' 한 줄, 금주 핫뉴스는 시범 시·도 설정 없이 켜기 422 (빈 블록 0)", async () => {
   const check = async (label) => {
     for (const p of ["/local", sidoPath(), guPath(GU.full.key)]) {
       const { html } = await get(p);
@@ -200,14 +200,22 @@ test("b) ① 금주 핫뉴스·④ 행사안내 — 기능 키 꺼짐 요소 0, 
     }
   };
   await check("꺼짐");
-  await setFlags({ weekly_digest: true, local_events: true });
+  // W6 - 금주 핫뉴스는 시범 시·도 2곳 설정 없이 켤 수 없다 (설정 digest_sidos)
+  const cur = (await one("select value from public.settings where key = 'feature_flags'")).value;
+  const denied = await api("PATCH", "/settings/feature_flags", u.admin, { value: { ...cur, weekly_digest: true } });
+  assert.equal(denied.status, 422, show(denied));
+  await setFlags({ local_events: true });
   try {
-    await check("켜짐(W4)");
+    for (const p of [sidoPath(), guPath(GU.full.key)]) {
+      const { html } = await get(p);
+      assert.ok(html.includes('data-hub-block="events"') && html.includes("현재 확인된 일정 없음"), `${p}: 행사안내 블록은 빈 일정 한 줄`);
+      assert.ok(!html.includes('data-hub-block="weekly"'), `${p}: 금주 핫뉴스는 키 꺼짐 - 요소 0`);
+    }
     const { page, ctx } = await open(guPath(GU.full.key));
-    assert.deepEqual((await blocksOf(page)).map((b) => b.key), ["localTax", "realEstate", "sources"], "나머지 순서 그대로");
+    assert.deepEqual((await blocksOf(page)).map((b) => b.key), ["localTax", "realEstate", "events", "sources"], "LG-08 순서 - 행사안내는 부동산·개발 뒤, 공식 자료 앞");
     await ctx.close();
   } finally {
-    await setFlags({ weekly_digest: false, local_events: false });
+    await setFlags({ local_events: false });
   }
 });
 

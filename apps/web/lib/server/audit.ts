@@ -50,6 +50,8 @@ export const targetOf = {
   /** 개발방법 비교 (W4 18단계) — 방법은 slug, 비교 항목은 slug:항목, 사실 행은 판 번호 */
   financeStructure: (slug: string) => `finance_structures:${slug}`,
   financeRecord: (table: string, id: number | string) => `${table}:${id}`,
+  /** 지자체뉴스 (W6) - 표 이름:번호 */
+  localNews: (table: string, id: number | string) => `${table}:${id}`,
   devMethod: (slug: string) => `dev_methods:${slug}`,
   devMethodCompare: (slug: string, item: string) => `dev_method_compare:${slug}:${item}`,
   devMethodFact: (id: number | string) => `dev_method_facts:${id}`,

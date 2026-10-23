@@ -3,6 +3,7 @@ import { FieldTaxPoint, LocalHubBlocks, RegionHubHead, SourceLine, TopicFilter, 
 import type { RegionPage } from "@/lib/server/public";
 import type { RegionHubBlock } from "@/lib/server/public/region-hub-logic";
 import { ArticleItem } from "./ArticleItem";
+import { eventsBlockContent, weeklyBlockContent } from "./LocalNewsViews";
 import { MeasureCalculatorCards, MeasureRegionHub, MeasureView } from "./Measure";
 import { OfficialSourceCardView } from "./OfficialSourceCardView";
 import { ProjectCardView } from "./ProjectView";
@@ -147,7 +148,7 @@ export function RegionView({ page }: { page: RegionPage }) {
                   </ul>
                 </div>
               )}
-              <LocalHubBlocks localTax={blockContent(find("local_tax"))} realEstate={blockContent(find("realestate"))} sources={blockContent(find("official"))} />
+              <LocalHubBlocks weekly={page.localNews.weekly ? weeklyBlockContent(page.localNews.weekly) : undefined} events={page.localNews.events ? eventsBlockContent(page.localNews.events) : undefined} localTax={blockContent(find("local_tax"))} realEstate={blockContent(find("realestate"))} sources={blockContent(find("official"))} />
             </div>
           }
           taxLinks={page.taxLinks ? <RegionTaxLinksBlock view={page.taxLinks} /> : undefined}
