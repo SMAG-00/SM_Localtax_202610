@@ -145,7 +145,7 @@ export function MeasureInheritanceSituations() {
  * 속성은 카드 키(data-link-card — official_links.key)·화면·카드 차례(data-link-rank)뿐 — 카드 주소·이 화면의 입력값·검색어·쿼리는 읽지 않는다.
  * 카드 컴포넌트는 그리기만 하고, 누름은 문서에서 한 번 듣는다(화면마다 이 컴포넌트 하나). 대체 안내 링크(끊김 카드)는 세지 않는다
  */
-export function MeasureCalculatorCards({ screen, section }: { screen: "calc" | "situation"; section: SectionKey | null }) {
+export function MeasureCalculatorCards({ screen, section }: { screen: "calc" | "situation" | "inheritance_gift" | "project" | "region_hub" | "dev_method"; section: SectionKey | null }) {
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
       const link = event.target instanceof Element ? event.target.closest('[data-link-card] a[data-part="go"]') : null;
@@ -159,6 +159,49 @@ export function MeasureCalculatorCards({ screen, section }: { screen: "calc" | "
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
   }, [screen, section]);
+  return null;
+}
+
+/**
+ * 지역 허브 안 누름 측정 (W4 24단계 · REG1-15) — 허브 화면마다 이 컴포넌트 하나가 문서에서 누름을 한 번 듣고, 링크 한 번에 이벤트 한 건만 보낸다.
+ *  · 지역 세금 연결 블록(data-ui="region-tax-links")의 상황 카드·감수 해설·공식 원문 → region_to_tax_clicked(target). SM 취득세 카드는 calculator_card_clicked(region_hub)가 센다
+ *  · 허브 ③ 부동산·개발(data-hub-block="realEstate")의 프로젝트 카드·분양 카드·더 보기 → region_to_realestate_clicked(target)
+ *  · ⑤ 공식 자료 원문 카드의 [원문 보기](data-source-type) → regional_source_opened(source_type)
+ *  · 그 밖의 허브 블록 기사 카드(data-article-field)의 /news/ 링크 → regional_news_opened(field)
+ * 속성은 지역 코드·종류 키뿐 — 링크 주소·제목·검색어·화면 입력값은 읽지 않는다. 키 목록 검사는 수집 API(events.ts)가 한다.
+ */
+export function MeasureRegionHub({ regionCode, moreTargets }: { regionCode: string; moreTargets: Readonly<Record<string, "project_list" | "supply_list">> }) {
+  useEffect(() => {
+    const send = (name: EventName, props: Props) => void track(name, { section: "local", props: { region_code: regionCode, ...props } });
+    const onClick = (event: MouseEvent) => {
+      const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+      if (!link) return;
+      const href = link.getAttribute("href") ?? "";
+      if (link.closest('[data-ui="region-tax-links"]')) {
+        const row = link.closest("[data-tax-links-row]")?.getAttribute("data-tax-links-row");
+        const target = row === "situations" ? "situation" : row === "explainers" ? "explainer" : row === "originals" ? "official_source" : null;
+        if (target) send("region_to_tax_clicked", { target });
+        return;
+      }
+      const source = link.closest('[data-part="official-source-card"]');
+      if (source) {
+        const type = source.getAttribute("data-source-type");
+        if (type && link.getAttribute("data-part") === "official-source-open") send("regional_source_opened", { source_type: type });
+        return;
+      }
+      if (link.closest('[data-hub-block="realEstate"]')) {
+        const target = link.closest("[data-project-card]") ? "project" : link.closest("[data-supply-card]") ? "supply" : Object.hasOwn(moreTargets, href) && link.closest('[data-part="group-more"]') ? moreTargets[href] : null;
+        if (target) {
+          send("region_to_realestate_clicked", { target });
+          return;
+        }
+      }
+      const field = link.closest("[data-article-field]")?.getAttribute("data-article-field");
+      if (field && href.startsWith("/news/") && link.closest("[data-hub-block]")) send("regional_news_opened", { field });
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [regionCode, moreTargets]);
   return null;
 }
 

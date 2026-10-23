@@ -221,7 +221,7 @@ test("c) 상황 카드 — 공개된 목록 상황만 · 상황 페이지 FAM-08
 });
 
 test("d) FAM-08 카드 — 새 창·noopener noreferrer·저장 주소 그대로·'별도 사이트'뿐 / 끊김 → 국세청 / 둘 다 끊김 → 숨김", async () => {
-  await flags({ inheritance_gift: true });
+  await flags({ inheritance_gift: true, sm_calculator: true });
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   try {
@@ -236,6 +236,16 @@ test("d) FAM-08 카드 — 새 창·noopener noreferrer·저장 주소 그대로
     assert.ok(text.includes("별도 사이트"), "관계 표기");
     for (const w of ["같은 운영", "운영 주체", "제휴", "자매", "계열"]) assert.ok(!text.includes(w), `관계 표기는 '별도 사이트'뿐: ${w}`);
     assert.equal(await page.locator('[data-part="fam08"] [data-tax-kind="national"]').count(), 1, "국세 배지");
+    // 24단계 — FAM-08 카드·SM 취득세 카드 이동 링크 누름 1번 = calculator_card_clicked(화면 inheritance_gift) 1건 (눌러도 이동하지 않게 막고 센다)
+    await page.evaluate(() => document.addEventListener("click", (e) => e.preventDefault(), true));
+    const c0 = (await eventsSince("calculator_card_clicked")).length;
+    await a.click();
+    const fam = (await waitEvents("calculator_card_clicked", c0 + 1)).slice(c0);
+    assert.deepEqual(fam.map((r) => [r.props.card, r.props.screen]), [["inheritance_gift", "inheritance_gift"]], "FAM-08 카드 누름 = 이벤트 1건");
+    const smKey = await page.locator('[data-part="sm-card"] [data-link-card]').getAttribute("data-link-card");
+    await page.locator('[data-part="sm-card"] a[data-part="go"]').click();
+    const both = (await waitEvents("calculator_card_clicked", c0 + 2)).slice(c0);
+    assert.deepEqual(both.map((r) => [r.props.card, r.props.screen]), [["inheritance_gift", "inheritance_gift"], [smKey, "inheritance_gift"]], "SM 취득세 카드 누름 = 이벤트 1건 더");
 
     await linkStatus("external_calculator", "inheritance_gift", "broken");
     await page.goto(`${base}${PATHS[0]}`);

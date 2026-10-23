@@ -3,6 +3,7 @@ import { Chip, DevMethodComparison, Eyebrow, TaxLensBox, UiLink } from "@ltr/ui"
 import type { DevMethodCrumb } from "@/lib/server/public/dev-methods-logic";
 import type { DevMethodDetailView, DevMethodsListView, SpecialLawView } from "@/lib/server/public/dev-methods";
 import { ArticleItem } from "./ArticleItem";
+import { MeasureCalculatorCards, MeasureView } from "./Measure";
 import { ProjectCardView } from "./ProjectView";
 import { SiteSection } from "./SiteSection";
 
@@ -106,6 +107,9 @@ export function DevMethodDetail({ view }: { view: DevMethodDetailView }) {
   return (
     <div data-ui="dev-method-detail" data-method={m.slug}>
       <JsonLd breadcrumb={view.breadcrumb} />
+      {/* 측정 (W4 24단계) — 상세를 열면 dev_method_viewed 1건(방법 slug). 공용 연결 카드가 놓이면 calculator_card_clicked(dev_method)로 센다 */}
+      <MeasureView name="dev_method_viewed" section="realestate" props={{ method: m.slug }} />
+      <MeasureCalculatorCards screen="dev_method" section="realestate" />
       <SiteSection id="dev-method-head" tone="ivory" first data={{ "data-dev-method-part": "head" }}>
         <Crumbs crumbs={view.crumbs} />
         <div className="mt-6">

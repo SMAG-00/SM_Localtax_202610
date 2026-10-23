@@ -18,7 +18,7 @@ export function ReviewMark() {
 
 export function OfficialSourceCardView({ card: c, as: Tag = "li", articles = [] }: { card: OfficialSourceCard; as?: "li" | "article"; articles?: readonly { id: number; title: string; href: string }[] }) {
   return (
-    <Tag data-part="official-source-card" data-source-id={c.id} className="h-full w-full rounded-2xl border border-navy-100 bg-white p-5">
+    <Tag data-part="official-source-card" data-source-id={c.id} {...(c.typeKey ? { "data-source-type": c.typeKey } : {})} className="h-full w-full rounded-2xl border border-navy-100 bg-white p-5">
       <p data-part="official-source-type" className="text-[13px] font-bold text-hermes-800">
         {c.typeLabel}
       </p>

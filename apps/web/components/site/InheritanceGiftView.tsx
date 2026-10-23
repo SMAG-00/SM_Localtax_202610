@@ -1,7 +1,7 @@
 import { SituationCard, TaxKindBadge, UiLink } from "@ltr/ui";
 import type { InheritanceGiftView as View } from "@/lib/server/public/inheritance-gift";
 import { ArticleItem } from "./ArticleItem";
-import { MeasureInheritanceSituations } from "./Measure";
+import { MeasureCalculatorCards, MeasureInheritanceSituations } from "./Measure";
 import { OfficialLinkCard, linkSiteLabel } from "./OfficialLinkCard";
 
 // 상속·증여 안내 (/realestate/inheritance-gift · /inheritance · /gift — W4 23단계, FAM-01·02·08). 고지 문구 1개 · 국세/지방세 구분 · 상황 카드 · 입문 기사 카드(배지·최종 감수일) ·
@@ -14,6 +14,8 @@ export function InheritanceGiftView({ view }: { view: View }) {
   return (
     <main id="main" data-ui="inheritance-gift" data-path={view.path} className="mx-auto w-full max-w-[1100px] px-4 py-10">
       <MeasureInheritanceSituations />
+      {/* FAM-08·SM 취득세 카드의 이동 링크 누름 → calculator_card_clicked(화면 inheritance_gift) (W4 24단계) */}
+      <MeasureCalculatorCards screen="inheritance_gift" section="realestate" />
       <h1 className="text-[28px] font-black text-navy-900">{view.title}</h1>
       <section data-part="tax-kinds" aria-label="국세와 지방세 구분" className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-navy-100 bg-white p-5">

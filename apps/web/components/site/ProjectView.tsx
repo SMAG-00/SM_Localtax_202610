@@ -3,6 +3,7 @@ import { Chip, Eyebrow, ProjectStageTimeline, SourceLine, TaxLensBox, UiLink, cx
 import { lensFor, type FilterChip, type ProjectCard, type ProjectCrumb, type StageLensView, type TimelineStage } from "@/lib/server/public/project-logic";
 import type { ProjectDetailView, ProjectListView } from "@/lib/server/public/projects";
 import { ArticleItem } from "./ArticleItem";
+import { MeasureCalculatorCards, MeasureView } from "./Measure";
 import { OfficialLinkCard, linkSiteLabel } from "./OfficialLinkCard";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
 import { ProjectSupplySection } from "./SupplyView";
@@ -117,6 +118,7 @@ function ChipRow({ label, chips, part }: { label: string; chips: readonly Filter
 export function ProjectList({ view }: { view: ProjectListView }) {
   return (
     <div data-ui="project-list" data-project-total={String(view.total)}>
+      <MeasureCalculatorCards screen="project" section="realestate" />
       <JsonLd view={view} />
       <SiteSection id="projects-head" tone="ivory" first data={{ "data-project-part": "head" }}>
         <Crumbs crumbs={view.crumbs} />
@@ -205,6 +207,9 @@ export function ProjectDetail({ view }: { view: ProjectDetailView }) {
   return (
     <div data-ui="project-page" data-project={c.slug} data-project-stage={c.stage.key} data-source-recorded={String(view.coverage.recorded)} data-source-linked={String(view.coverage.linked)}>
       <JsonLd view={view} />
+      {/* 측정 (W4 24단계) — 상세를 열면 project_viewed 1건(지역 코드·사업 유형 키·현재 단계 키) · SM 취득세 카드 누름(calculator_card_clicked project) */}
+      <MeasureView name="project_viewed" section="realestate" props={{ region_code: c.region.code, project_type: c.type.key, stage: c.stage.key }} />
+      <MeasureCalculatorCards screen="project" section="realestate" />
       <SiteSection id="project-head" tone="ivory" first data={{ "data-project-part": "head" }}>
         <Crumbs crumbs={view.crumbs} />
         <div className="mt-6">

@@ -116,7 +116,7 @@ describe("검수 공식 자료 (REG1-07 · REG1-13 · 9.2 '스냅샷이 있는 �
       [702, "2026-10-03"],
       [701, "2026-10-02"],
     ]);
-    expect(Object.keys(cards[0]!).sort()).toEqual(["articles", "href", "id", "issuer", "license", "provider", "publishedOn", "referenceDate", "regionUnit", "title", "typeLabel", "underReview", "verifiedOn"]);
+    expect(Object.keys(cards[0]!).sort()).toEqual(["articles", "href", "id", "issuer", "license", "provider", "publishedOn", "referenceDate", "regionUnit", "title", "typeKey", "typeLabel", "underReview", "verifiedOn"]);
   });
 
   test("발표기관 둘까지는 그대로, 셋 이상은 '외 N곳'", () => {

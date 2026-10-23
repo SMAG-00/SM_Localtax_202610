@@ -24,6 +24,7 @@ describe("공식 자료 카드 (원문 블록)", () => {
     expect(officialCard(FULL)).toEqual({
       id: 11,
       typeLabel: "지방세 세수",
+      typeKey: "local_tax_revenue",
       title: "시험용 가상구 지방세 세수 결산",
       href: "https://gasang.example/open/tax-2026",
       issuer: "시험용 가상구청",

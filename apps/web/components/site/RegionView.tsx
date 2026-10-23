@@ -3,6 +3,7 @@ import { FieldTaxPoint, LocalHubBlocks, RegionHubHead, SourceLine, TopicFilter, 
 import type { RegionPage } from "@/lib/server/public";
 import type { RegionHubBlock } from "@/lib/server/public/region-hub-logic";
 import { ArticleItem } from "./ArticleItem";
+import { MeasureCalculatorCards, MeasureRegionHub, MeasureView } from "./Measure";
 import { OfficialSourceCardView } from "./OfficialSourceCardView";
 import { ProjectCardView } from "./ProjectView";
 import { RegionTaxLinksBlock } from "./RegionTaxLinksBlock";
@@ -46,7 +47,7 @@ function blockContent(block: RegionHubBlock | undefined): HubBlockContent | unde
           key: "explainers",
           ...OFFICIAL_GROUPS.explainers,
           items: block.items.map((a) => (
-            <div key={a.id} data-article-id={a.id} className="flex h-full">
+            <div key={a.id} data-article-id={a.id} {...(a.editorialField ? { "data-article-field": a.editorialField } : {})} className="flex h-full">
               <ArticleItem item={a} withModified />
             </div>
           )),
@@ -57,7 +58,7 @@ function blockContent(block: RegionHubBlock | undefined): HubBlockContent | unde
   }
   return {
     items: block.items.map((a) => (
-      <div key={a.id} data-article-id={a.id} className="flex h-full">
+      <div key={a.id} data-article-id={a.id} {...(a.editorialField ? { "data-article-field": a.editorialField } : {})} className="flex h-full">
         <ArticleItem item={a} withModified />
       </div>
     )),
@@ -91,6 +92,16 @@ export function RegionSourceLineView({ line }: { line: RegionPage["source"] }) {
   return "latestPublished" in line ? <SourceLine source={line.source} latestPublished={line.latestPublished} /> : <SourceLine source={line.source} baseDate={line.baseDate} checkedAt={line.checkedAt} />;
 }
 
+/** 더 보기 링크 주소 → 도착 종류 (프로젝트 더 보기·분양 더 보기) — region_to_realestate_clicked의 target */
+function moreTargetsOf(blocks: readonly RegionHubBlock[]): Record<string, "project_list" | "supply_list"> {
+  const out: Record<string, "project_list" | "supply_list"> = {};
+  for (const b of blocks) {
+    if ("projectsMore" in b && b.projectsMore) out[b.projectsMore] = "project_list";
+    if ("supplyMore" in b && b.supplyMore) out[b.supplyMore] = "supply_list";
+  }
+  return out;
+}
+
 export function RegionView({ page }: { page: RegionPage }) {
   const jsonLd = page.breadcrumb ? toJsonLdScriptContent([breadcrumbList(page.breadcrumb)]) : null;
   const find = (key: RegionHubBlock["key"]) => page.blocks.find((b) => b.key === key);
@@ -108,6 +119,10 @@ export function RegionView({ page }: { page: RegionPage }) {
       // 최소선 판정 (색인 대상 = 두 항목 모두 최소선 이상 — 사이트맵 원본 public_region_index에 있음)
       data-region-indexable={page.indexable ? "true" : "false"}
     >
+      {/* 측정 (W4 24단계) — 허브를 열면 region_viewed 1건 · 허브 안 누름 · SM 취득세 카드 누름(calculator_card_clicked region_hub). 그리는 것 0 */}
+      <MeasureView name="region_viewed" section="local" props={{ region_code: page.code, level: page.level }} />
+      <MeasureRegionHub regionCode={page.code} moreTargets={moreTargetsOf(page.blocks)} />
+      <MeasureCalculatorCards screen="region_hub" section="local" />
       {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
       <SiteSection id="region-head" tone="ivory" first data={{ "data-region-part": "head" }}>
         <RegionHubHead

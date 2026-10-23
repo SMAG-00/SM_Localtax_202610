@@ -38,6 +38,8 @@ export interface OfficialSourceCard {
   id: number;
   /** 자료 종류 글자 — 비면 '공식 자료' */
   typeLabel: string;
+  /** 자료 종류 키 (official_source_type) — 측정 regional_source_opened의 source_type. 비면 null */
+  typeKey: string | null;
   title: string;
   href: string;
   issuer: string;
@@ -76,6 +78,7 @@ export function officialCard(s: SourceCardInput): OfficialSourceCard | null {
   return {
     id: s.id,
     typeLabel: filled(s.source_type) ? sourceTypeLabel(s.source_type.trim()) : "공식 자료",
+    typeKey: filled(s.source_type) ? s.source_type.trim() : null,
     title: filled(s.title) ? s.title.trim() : s.source_name.trim(),
     href: s.source_url.trim(),
     issuer: s.source_name.trim(),

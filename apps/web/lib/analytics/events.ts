@@ -3,7 +3,7 @@
 import { CONTENT_TYPES, FORMATS, detectPii } from "@ltr/editorial";
 import { NEXT_ACTION_KEYS, SECTION_KEYS, type SectionKey } from "@/lib/server/public/constants";
 
-/** 이벤트 이름 22종 (PRD-01A 12장 19종 + W3 10단계 3종 — DB check 제약 analytics_events.name과 같다) */
+/** 이벤트 이름 29종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 — DB check 제약 analytics_events.name과 같다) */
 export const EVENT_NAMES = [
   "home_entry_clicked",
   "hub_viewed",
@@ -28,6 +28,14 @@ export const EVENT_NAMES = [
   "calculator_card_clicked",
   "amendment_viewed",
   "interpretation_viewed",
+  // W4 24단계 (docs/dev/W4_설계.md 2.5) — 지역 허브 열람 · 지역 기사·공식 자료 열기 · 지역 → 세금/부동산 이동 · 프로젝트·개발방법 열람
+  "region_viewed",
+  "regional_news_opened",
+  "regional_source_opened",
+  "region_to_tax_clicked",
+  "region_to_realestate_clicked",
+  "project_viewed",
+  "dev_method_viewed",
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -53,9 +61,16 @@ export const PROP_VALUES = {
   "hub_viewed.topic": ["local_tax", "realestate", "local_finance", "urban_policy"],
   // W3 10단계 — 카드 키는 official_links.key 시드(마이그레이션 …32 — DB 시험 w3-search-measure가 대조), 단계는 W2-a amendment_event.stage, 원문 유형은 legal_doc.doc_type
   "calculator_card_clicked.card": ["acquisition", "property_tax", "transfer", "registration", "comprehensive", "inheritance_gift", "wetax", "nts"],
-  "calculator_card_clicked.screen": ["calc", "situation"],
+  "calculator_card_clicked.screen": ["calc", "situation", "inheritance_gift", "project", "region_hub", "dev_method"],
   "amendment_viewed.stage": ["announced", "pre_notice", "submitted", "passed", "promulgated", "effective"],
   "interpretation_viewed.doc_type": ["ruling", "circular", "interpretation", "tribunal", "case"],
+  // W4 24단계 — 행정구역 단계 = region.level · 편집 분야 = editorial_field · 자료 종류 = official_source_type(허용) · 개발방법 키 = dev_method.slug (W4 설계 2.1)
+  "region_viewed.level": ["sido", "sigungu"],
+  "regional_news_opened.field": ["local_tax", "realestate", "local_finance", "urban_policy"],
+  "regional_source_opened.source_type": ["ordinance", "notice", "budget_settlement", "local_tax_revenue", "realestate_transaction", "redevelopment"],
+  "region_to_tax_clicked.target": ["situation", "explainer", "official_source"],
+  "region_to_realestate_clicked.target": ["project", "project_list", "supply", "supply_list"],
+  "dev_method_viewed.method": ["redevelopment", "reconstruction", "small-scale", "public", "trust", "renewal", "rapid-planning"],
 } as const satisfies Record<string, readonly string[]>;
 
 type Field =
@@ -65,6 +80,8 @@ type Field =
   | { kind: "bool" }
   | { kind: "slug" }
   | { kind: "path" }
+  | { kind: "region" }
+  | { kind: "key" }
   | { kind: "enum"; values: readonly string[] };
 
 interface PropSpec {
@@ -83,6 +100,10 @@ const id: PropSpec = { field: { kind: "id" } };
 const rank: PropSpec = { field: { kind: "rank" } };
 const bool: PropSpec = { field: { kind: "bool" } };
 const path: PropSpec = { field: { kind: "path" } };
+/** 지역 코드 — regions.code (법정동코드 10자리) */
+const region: PropSpec = { field: { kind: "region" } };
+/** 설정 키 — 프로젝트 사업 유형·단계 (영문 소문자로 시작, 소문자·숫자·_ 2~40자) */
+const key: PropSpec = { field: { kind: "key" } };
 const count = (max: number): PropSpec => ({ field: { kind: "count", max } });
 const oneOf = (values: readonly string[], optional = false): PropSpec => ({ field: { kind: "enum", values }, ...(optional ? { optional: true as const } : {}) });
 const articleProps = { article_id: id, format: oneOf(FORMATS), content_type: oneOf(CONTENT_TYPES) };
@@ -114,6 +135,13 @@ export const EVENT_SPECS: Readonly<Record<EventName, EventSpec>> = {
   },
   amendment_viewed: { section: "required", props: { amendment_id: id, stage: oneOf(PROP_VALUES["amendment_viewed.stage"], true) } },
   interpretation_viewed: { section: "required", props: { article_id: id, doc_type: oneOf(PROP_VALUES["interpretation_viewed.doc_type"]) } },
+  region_viewed: { section: "required", props: { region_code: region, level: oneOf(PROP_VALUES["region_viewed.level"]) } },
+  regional_news_opened: { section: "required", props: { region_code: region, field: oneOf(PROP_VALUES["regional_news_opened.field"]) } },
+  regional_source_opened: { section: "required", props: { region_code: region, source_type: oneOf(PROP_VALUES["regional_source_opened.source_type"]) } },
+  region_to_tax_clicked: { section: "required", props: { region_code: region, target: oneOf(PROP_VALUES["region_to_tax_clicked.target"]) } },
+  region_to_realestate_clicked: { section: "required", props: { region_code: region, target: oneOf(PROP_VALUES["region_to_realestate_clicked.target"]) } },
+  project_viewed: { section: "required", props: { region_code: region, project_type: key, stage: key } },
+  dev_method_viewed: { section: "required", props: { method: oneOf(PROP_VALUES["dev_method_viewed.method"]) } },
 };
 
 export const isEventName = (v: unknown): v is EventName => typeof v === "string" && (EVENT_NAMES as readonly string[]).includes(v);
@@ -128,6 +156,8 @@ const SLUG_MAX = 100;
 const PATH = /^\/[A-Za-z0-9/_.~%-]*$/;
 const PATH_MAX = 200;
 const RANK_MAX = 100;
+const REGION_CODE = /^[0-9]{10}$/;
+const KEY = /^[a-z][a-z0-9_]{1,39}$/;
 /** 리퍼러 — 호스트 이름만 (소문자·숫자·점·하이픈) */
 const HOST = /^(?=.{1,253}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/;
 
@@ -143,6 +173,10 @@ function fieldError(field: Field, v: unknown): string | null {
       return typeof v === "boolean" ? null : "true/false여야 합니다";
     case "slug":
       return typeof v === "string" && v.length <= SLUG_MAX && SLUG.test(v) ? null : `영문 소문자·숫자·'-' ${SLUG_MAX}자 이하여야 합니다`;
+    case "region":
+      return typeof v === "string" && REGION_CODE.test(v) ? null : "지역 코드(숫자 10자리)여야 합니다";
+    case "key":
+      return typeof v === "string" && KEY.test(v) ? null : "영문 소문자로 시작하는 소문자·숫자·'_' 2~40자 키여야 합니다";
     case "enum":
       return typeof v === "string" && field.values.includes(v) ? null : `${field.values.join("·")} 중 하나여야 합니다`;
     case "path": {
