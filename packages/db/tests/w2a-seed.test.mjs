@@ -69,7 +69,8 @@ test("문서 파싱 견본 — 분야 표는 4대 분야를 모두 담고, 대�
 
 test("categories 초기 데이터가 PRD-00 5.3 분야 표와 같다 (분야·이름 집합, 분야 안 순서)", async () => {
   const want = prdCategories();
-  const { rows } = await client.query("select section, name, sort from public.categories order by section, sort, id");
+  // W4 21단계가 더한 하위 분야 realestate/columns(PR-14 부동산 칼럼)는 PRD-00 5.3 표 밖의 01B 추가분이다
+  const { rows } = await client.query("select section, name, sort from public.categories where not (section = 'realestate' and slug = 'columns') order by section, sort, id");
   assert.deepEqual(
     rows.map((r) => `${r.section}/${r.name}`).sort(),
     want.map((c) => `${c.section}/${c.name}`).sort(),

@@ -195,4 +195,6 @@ export interface ArticleGraph {
   reviews: ReviewRow[];
   /** 원고가 다룬 제휴사(covered_partner_ids) — 광고·협찬 계약 기록 판정 (REG1-17 · NAV-06). 없으면 빈 목록 */
   coveredPartners?: PartnerRow[];
+  /** 부동산 칼럼 이해관계 3항목 (PR-14) — 부동산 칼럼이 아니면 없음 */
+  columnInterest?: { required: boolean; items: { item: string; state: string }[] } | null;
 }

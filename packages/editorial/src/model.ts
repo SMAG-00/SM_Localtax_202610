@@ -616,6 +616,11 @@ export interface ArticleForPublish {
   regional?: RegionalFacts | null;
   /** 법안 상태를 다룸 `covers_bill_status` (PR-13) — 켜면 출처 주소·확인일이 있는 공식 자료 출처가 1건 이상 있어야 발행된다 */
   coversBillStatus?: boolean;
+  /**
+   * 부동산 칼럼 이해관계 3항목 (PR-14) — 부동산 칼럼(분야 realestate · 유형 opinion)만 해당. required = W3 칼럼 발행 검사 대상(칼럼 기록이 있거나 기능 키 tax_columns 켜짐).
+   * 없으면(undefined·null) 이 검사를 하지 않는다. items = 저장된 항목(항목 키 · 상태)
+   */
+  realestateColumn?: { required: boolean; items: readonly { item: string; state: string }[] } | null;
 }
 
 // ── 판정 문맥 ───────────────────────────────────────────────

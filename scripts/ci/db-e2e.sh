@@ -75,6 +75,7 @@ step "W4 개발방법 비교 관리 API E2E (18단계 — 기자·광고 담당 
 step "W4 개발방법 비교 화면 E2E (19단계 — dev_methods 꺼짐: 목록 = 하위 분야 목록·상세 404·방법 상세 링크 0 / 관리 화면 메뉴·폼으로 방법 내용·숫자 요건 첫 판 + 감사·금지 표현 칸 옆 오류·감수위원 화면 서명 + 감사·초안 폼 0·준비 현황 7줄·기자 403·점수·순위·추천 입력 0 / 공개 비교표 7개 고정 순서·계획 지원 절차 칩·강조 문단·폼·점수·정렬 요소 0·숫자 요건 옆 기준일·감수자·화면 숫자는 서명된 DB 값뿐·BreadcrumbList만 / 방법 상세 절차 순서·박스·관련 프로젝트·기사 줄째 0·칸 하나 고치면 그 방법만 빠짐 / 360·1280px·방법별 탭·R1~R3·접근성 95·키 끄면 하위 분야 목록)"; node --test --test-concurrency=1 e2e/w4-dev-methods.test.mjs
 step "W4 특례법 확인 기록 E2E (20단계 — 관리자만 확인·철회 + 거부 감사·주소·공포일 필수 422·확인 전 표시 켜기 409·확인 전 공개 화면 특례법 요소 0·행 확인 뒤 보임·글 고치면 다시 숨김·재확인·행 철회·공포 철회 숨김·anon 표 접근 0)"; node --test --test-concurrency=1 e2e/w4-special-law.test.mjs
 step "W4 법안 상태 기사 발행 검사 E2E (20단계 뒷부분 — 표시 켠 기사 공식 자료(출처 주소·확인일) 없음 → 발행 422 + DB 거부 + 공개 0, 더하면 200 / 표시 끔 → 달라진 것 없음 / 편집 화면 체크박스 저장)"; node --test --test-concurrency=1 e2e/w4-bill-status.test.mjs
+step "W4 부동산 칼럼 이해관계 E2E (21단계 — 3항목 중 비면 발행 거부·없음은 확인자와 함께·다른 분야 칼럼 그대로 / 칼럼 머리 줄 = 프로젝트 관련 칼럼 줄 / /realestate/columns 200)"; node --test --test-concurrency=1 e2e/w4-realestate-columns.test.mjs
 step "견본 페이지 브라우저 E2E (70종·가로 스크롤 0)"; node --test --test-concurrency=1 e2e/design-page.test.mjs
 step "화면 규칙 측정 시험 (R1~R3 경계 견본)"; node --test --test-concurrency=1 e2e/screen-rules.test.mjs
 step "화면 규칙 측정 (주요 화면 × 뷰포트 표)"; node e2e/run-screen-rules.mjs

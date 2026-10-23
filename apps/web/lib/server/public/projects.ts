@@ -3,6 +3,7 @@ import { isoToKstDate } from "@/lib/admin/form-utils";
 import { siteUrl } from "../env";
 import { getSmCalculatorCard, type OfficialLinkCard } from "./calc";
 import type { ArticleListItem } from "./cards";
+import { readColumnInterestLines } from "./column-disclosure";
 import { publicDb, rowsOf } from "./db";
 import { readArticleList, readPublicSettings, readRegions } from "./reads";
 import {
@@ -72,6 +73,8 @@ export interface ProjectDetailView {
   coverage: { recorded: number; linked: number };
   /** 관련 기사 — 확인된 연결(프로젝트 → 기사 · 기사 → 프로젝트), 공개 기사만 */
   articles: ArticleListItem[];
+  /** 관련 칼럼 (21단계 — PR-14) — 같은 연결의 칼럼(opinion)만. 부동산 칼럼은 칼럼 머리와 같은 조합·시공사·신탁사 자문 줄이 붙는다(기능 키 tax_columns 켜짐일 때) */
+  columns: { item: ArticleListItem; interestLine: string | null }[];
   /** 확인된 연결 — 공식 원문·다른 프로젝트·지역 허브 (기사는 관련 기사 자리) */
   links: RegionalLinkItem[];
   crumbs: ProjectCrumb[];
@@ -175,7 +178,11 @@ export async function getProject(slug: string, now: Date = new Date()): Promise<
     ),
   ]);
   const order = new Map(articleIds.map((x, i) => [x, i]));
-  const articles = [...articleList.items].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  const sorted = [...articleList.items].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  const articles = sorted.filter((a) => a.contentType !== "opinion");
+  const columnItems = sorted.filter((a) => a.contentType === "opinion");
+  const interestLines = await orEmpty("부동산 칼럼 이해관계 줄", () => readColumnInterestLines(columnItems.map((c) => c.id)), new Map<number, string>());
+  const columns = columnItems.map((item) => ({ item, interestLine: interestLines.get(item.id) ?? null }));
   const crumbs = projectCrumbs({ name: card.name, href: card.href });
   const lenses = stageLensMap(lensRows, row.project_type, settings.features);
   return {
@@ -184,6 +191,7 @@ export async function getProject(slug: string, now: Date = new Date()): Promise<
     timeline,
     coverage: sourceCoverage(timeline),
     articles,
+    columns,
     links,
     crumbs,
     breadcrumb: projectBreadcrumb(crumbs, siteUrl()),

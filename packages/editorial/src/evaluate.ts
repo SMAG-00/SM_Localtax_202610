@@ -11,6 +11,7 @@ import { checkPressure } from "./checks/pressure";
 import { checkQualitative } from "./checks/qualitative";
 import { checkQuantitative } from "./checks/quantitative";
 import { checkBillStatus } from "./checks/bill-status";
+import { checkColumnInterest } from "./checks/column-interest";
 import { checkRegional } from "./checks/regional";
 import { checkRegionalWarnings } from "./checks/regional-warnings";
 import { checkReviews } from "./checks/reviews";
@@ -34,6 +35,7 @@ export const BUILT_IN_CHECKS: readonly PublishCheck[] = [
   checkOfficialSources,
   checkRegional,
   checkBillStatus,
+  checkColumnInterest,
   checkRegionalWarnings,
   checkReviews,
   checkQuantitative,

@@ -263,9 +263,9 @@ export function ProjectDetail({ view }: { view: ProjectDetailView }) {
         </SiteSection>
       )}
       <SiteSection id="project-articles" tone={articlesTone} heading={{ eyebrow: "NEWS", title: "관련 기사" }} data={{ "data-project-part": "articles" }}>
-        {view.articles.length === 0 ? (
+        {view.articles.length === 0 && view.columns.length === 0 ? (
           <p className="mt-6 text-[17px] text-navy-600">이 프로젝트와 연결된 기사가 아직 없습니다.</p>
-        ) : (
+        ) : view.articles.length === 0 ? null : (
           <ul className="mt-6 grid gap-4 sm:grid-cols-2">
             {view.articles.map((a) => (
               <li key={a.id} data-article-id={a.id} className="flex">
@@ -273,6 +273,23 @@ export function ProjectDetail({ view }: { view: ProjectDetailView }) {
               </li>
             ))}
           </ul>
+        )}
+        {view.columns.length > 0 && (
+          <div data-project-part="columns" className="mt-10">
+            <h3 className="text-[20px] font-bold text-navy-900">관련 칼럼</h3>
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+              {view.columns.map((c) => (
+                <li key={c.item.id} data-article-id={c.item.id} className="flex flex-col gap-2">
+                  <ArticleItem item={c.item} withModified />
+                  {c.interestLine && (
+                    <p data-part="column-interest-items" className="text-[15px] text-navy-800">
+                      {c.interestLine}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
         {view.supply.length === 0 && source}
       </SiteSection>

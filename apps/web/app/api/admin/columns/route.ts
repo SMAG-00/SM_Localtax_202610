@@ -1,6 +1,6 @@
 import { CADENCE_MAX, SERIES_SETTING_KEY, isSeriesKey, parseEpisodeAssign, parseThenNowItems, seriesTitleErrors } from "@/lib/brand/claim";
 import { isoToKstDate } from "@/lib/admin/form-utils";
-import { COLUMN_OPS, DEFAULT_REVERIFY_DAYS, SIGNATURE_OPS, parseContract, parseMeta, parseVerify, verificationExpiry } from "@/lib/admin/column-rules";
+import { COLUMN_OPS, DEFAULT_REVERIFY_DAYS, SIGNATURE_OPS, parseContract, parseInterestItems, parseMeta, parseVerify, verificationExpiry } from "@/lib/admin/column-rules";
 import { brandRecords } from "@/lib/server/admin/brand-records";
 import { actorOf, writeAudit } from "@/lib/server/audit";
 import { nowIso, serviceDb } from "@/lib/server/articles/service";
@@ -121,6 +121,32 @@ export const POST = handle(async (request: Request) => {
     if (error || !data) throw dbError(error ?? {}, "column_meta 저장");
     await writeAudit(db, { actor, action: "column.contract_edit", target: `column_meta:${v.articleId}`, before: null, after: data, reason: "칼럼 이해관계·계약 연결" });
     return json({ meta: data });
+  }
+
+  if (op === "interest_items") {
+    const p = parseInterestItems(body);
+    if (!p.ok) return errorJson(422, "입력값을 확인하세요", { errors: p.errors });
+    const { articleId, items } = p.value;
+    const { data: art, error: ae } = await db.from("articles").select("id, section, content_type").eq("id", articleId).maybeSingle();
+    if (ae) throw dbError(ae, "articles 조회");
+    if (!art) return errorJson(404, "기사를 찾을 수 없습니다");
+    const a = art as { section: string; content_type: string | null };
+    if (a.section !== "realestate" || a.content_type !== "opinion") return errorJson(422, "입력값을 확인하세요", { errors: ["articleId: 조합·시공사·신탁사 이해관계 항목은 부동산 칼럼(분야 realestate · 유형 opinion)에만 담습니다"] });
+    const { data: before, error: be } = await db.from("column_interest_items").select("item, state, interest_text, confirmed_by").eq("article_id", articleId).order("item");
+    if (be) throw dbError(be, "column_interest_items 조회");
+    const rows = items.map((i) => ({
+      article_id: articleId,
+      item: i.item,
+      state: i.state,
+      interest_text: i.interestText,
+      confirmed_by: i.confirmedBy,
+      confirmed_at: i.state === "none_confirmed" ? nowIso() : null,
+    }));
+    const { data, error } = await db.from("column_interest_items").upsert(rows, { onConflict: "article_id,item" }).select("item, state, interest_text, confirmed_by");
+    if (error?.code === "23514") return errorJson(422, error.message);
+    if (error || !data) throw dbError(error ?? {}, "column_interest_items 저장");
+    await writeAudit(db, { actor, action: "column.contract_edit", target: `column_interest_items:${articleId}`, before, after: data, reason: "부동산 칼럼 이해관계 항목(조합·시공사·신탁사)" });
+    return json({ articleId, items: data });
   }
 
   return errorJson(422, `op는 ${[...COLUMN_OPS, ...SIGNATURE_OPS].join("·")} 중 하나입니다`);

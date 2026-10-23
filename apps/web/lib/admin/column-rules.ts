@@ -2,7 +2,7 @@
 // 필자 증빙·계약 내용·이해관계 문구는 편집국이 입력한다 — 여기서 만들어 채우는 값은 없다.
 import { isRealDate } from "./amendment-rules";
 
-export const COLUMN_OPS = ["verify", "contract", "meta"] as const;
+export const COLUMN_OPS = ["verify", "contract", "meta", "interest_items"] as const;
 /** 시그니처 연재 쓰기 (W3 8단계) — 권한 작업 column.signature */
 export const SIGNATURE_OPS = ["signature", "then_now", "series_title", "cadence"] as const;
 export type ColumnOp = (typeof COLUMN_OPS)[number];
@@ -103,4 +103,44 @@ export function parseMeta(body: Record<string, unknown>): Result<MetaInput> {
 export function verificationExpiry(verifiedAt: Date, days: number, explicit: string | null): Date {
   if (explicit !== null) return new Date(explicit);
   return new Date(verifiedAt.getTime() + days * 86_400_000);
+}
+
+// 부동산 칼럼 이해관계 3항목 (W4 21단계 — PR-14). 조합·시공사·신탁사 자문 관계, 항목마다 declared(내용) 또는 none_confirmed(필자 확인자)
+export const INTEREST_ITEM_KEYS = ["union", "contractor", "trust_company"] as const;
+export type InterestItemKey = (typeof INTEREST_ITEM_KEYS)[number];
+export interface InterestItemInput {
+  item: InterestItemKey;
+  state: "declared" | "none_confirmed";
+  interestText: string | null;
+  confirmedBy: string | null;
+}
+export interface InterestItemsInput {
+  articleId: number;
+  items: InterestItemInput[];
+}
+/** body = { articleId, items: [{ item, state, interestText?, confirmedBy? }, …] } — 한 번에 1~3항목(같은 항목 두 번 0). 3항목을 다 채웠는지는 발행 검사가 본다 */
+export function parseInterestItems(body: Record<string, unknown>): Result<InterestItemsInput> {
+  const errors: string[] = [];
+  const articleId = posInt(body.articleId);
+  if (articleId === null) errors.push("articleId: 기사 번호를 확인하세요");
+  const raw = Array.isArray(body.items) ? body.items : null;
+  if (raw === null || raw.length < 1 || raw.length > INTEREST_ITEM_KEYS.length) errors.push(`items: 항목을 1~${INTEREST_ITEM_KEYS.length}개 보내세요 (${INTEREST_ITEM_KEYS.join("·")})`);
+  const items: InterestItemInput[] = [];
+  const seen = new Set<string>();
+  (raw ?? []).forEach((r, i) => {
+    const o = typeof r === "object" && r !== null && !Array.isArray(r) ? (r as Record<string, unknown>) : {};
+    const item = str(o.item);
+    const state = str(o.state);
+    const text = str(o.interestText) || null;
+    const by = str(o.confirmedBy) || null;
+    if (!(INTEREST_ITEM_KEYS as readonly string[]).includes(item)) return void errors.push(`items[${i}].item: ${INTEREST_ITEM_KEYS.join("·")} 중 하나입니다`);
+    if (seen.has(item)) return void errors.push(`items[${i}].item: 같은 항목을 두 번 보낼 수 없습니다 (${item})`);
+    seen.add(item);
+    if (state !== "declared" && state !== "none_confirmed") return void errors.push(`items[${i}].state: declared·none_confirmed 중 하나입니다`);
+    if (state === "declared" && text === null) return void errors.push(`items[${i}].interestText: 자문 관계 내용을 입력하세요`);
+    if (state === "none_confirmed" && by === null) return void errors.push(`items[${i}].confirmedBy: '없음'은 필자 확인을 받은 사람을 기록해야 합니다`);
+    items.push({ item: item as InterestItemKey, state, interestText: state === "declared" ? text : null, confirmedBy: state === "none_confirmed" ? by : null });
+  });
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, value: { articleId: articleId!, items } };
 }

@@ -264,6 +264,7 @@ export function toArticleForPublish(graph: ArticleGraph): ArticleForPublish {
     qualitativeChecklist: checklists.qualitative,
     regional: regionalFactsOf(graph),
     coversBillStatus: a.covers_bill_status === true,
+    realestateColumn: graph.columnInterest ?? null,
   };
 }
 

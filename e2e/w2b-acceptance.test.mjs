@@ -901,7 +901,7 @@ test("4c) 사이트 안 링크는 모두 화면 전환 — 누르면 앱이 받�
   assert.deepEqual(externalIntercepted, [], "바깥 링크는 앱이 가로채지 않는다 (FND-09 — 전체 이동)");
 });
 
-test("4d) 설계대로의 응답 — 삭제된 기사 410 · 초안·없는 기사·인물·상황·하위 분야·지자체 하위 경로·부동산 칼럼 404 · 빈 하위 분야 200 + noindex + 상위 허브 안내 · 500 0", async () => {
+test("4d) 설계대로의 응답 — 삭제된 기사 410 · 초안·없는 기사·인물·상황·하위 분야·지자체 하위 경로·지역 칼럼 404 · 빈 하위 분야 200 + noindex + 상위 허브 안내 · 500 0", async () => {
   const expect = [
     [fx.gone.href, 410],
     [fx.draft.href, 404],
@@ -910,7 +910,8 @@ test("4d) 설계대로의 응답 — 삭제된 기사 410 · 초안·없는 기�
     ["/situations/no-such-situation", 404],
     ["/tax/no-such-category", 404],
     ["/local/reporting", 404],
-    ["/realestate/columns", 404],
+    ["/local/columns", 404], // 지역 분야에는 칼럼 하위 분야가 없다 (부동산 칼럼은 W4 21단계가 열었다 — 빈 칼럼 목록 200)
+    ["/realestate/columns", 200],
     ["/finance/indicators", 200],
   ];
   for (const [p, status] of expect) {

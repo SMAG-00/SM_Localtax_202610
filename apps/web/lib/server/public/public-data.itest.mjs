@@ -418,7 +418,8 @@ describe("칼럼 목록 (ART-04)", () => {
     expect(idsOf(list.groups.at(-1).items)).toContain(Number(w.colSingle.id));
     expect(list.groups.flatMap((g) => idsOf(g.items))).not.toContain(Number(w.colExplainer.id));
     expect(list.category.slug).toBe("columns");
-    expect(await api.getColumnList("realestate")).toBeNull();
+    // 부동산은 W4 21단계가 하위 분야 columns를 더해 칼럼 목록이 열린다 (PR-14)
+    expect((await api.getColumnList("realestate"))?.category.slug).toBe("columns");
     expect(await api.getColumnList("local")).toBeNull();
   });
 

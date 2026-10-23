@@ -146,7 +146,13 @@ export async function loadArticleGraph(db: Db, idOrRow: number | ArticleRow): Pr
       ? []
       : await rows<PartnerRow>(db.from("partners").select("id, name, contract_from, contract_to").in("id", coveredIds).order("id"), "partners 읽기");
 
-  return { article, author, category, partner, media, sources, snapshots, evidence, datasets, interviews, reviews, coveredPartners };
+  // 부동산 칼럼 이해관계 3항목 (PR-14) — 부동산 칼럼만. 대상 판정은 DB realestate_column_guard와 같다(칼럼 기록이 있거나 tax_columns 켜짐)
+  const columnInterest =
+    article.section === "realestate" && article.content_type === "opinion"
+      ? await loadColumnInterest(db, article.id)
+      : null;
+
+  return { article, author, category, partner, media, sources, snapshots, evidence, datasets, interviews, reviews, coveredPartners, columnInterest };
 }
 
 /** 판정 설정 — 금지·공포 표현 사전·유사도 기준(settings)과 쉬운 말 사전(glossary_terms). 사전이 없으면 503 */
@@ -198,4 +204,14 @@ export async function currentRevisionId(db: Db, article: Pick<ArticleRow, "id" |
   const { data, error } = await db.from("article_revisions").select("id").eq("article_id", article.id).eq("version", article.version).maybeSingle();
   if (error) throw dbError(error, "article_revisions 읽기");
   return (data as { id: number } | null)?.id ?? null;
+}
+
+async function loadColumnInterest(db: Db, articleId: number): Promise<{ required: boolean; items: { item: string; state: string }[] }> {
+  const [items, meta, flags] = await Promise.all([
+    rows<{ item: string; state: string }>(db.from("column_interest_items").select("item, state").eq("article_id", articleId), "column_interest_items 읽기"),
+    rows<{ article_id: number }>(db.from("column_meta").select("article_id").eq("article_id", articleId), "column_meta 읽기"),
+    rows<{ value: unknown }>(db.from("settings").select("value").eq("key", "feature_flags"), "settings 읽기"),
+  ]);
+  const flag = (flags[0]?.value as { tax_columns?: unknown } | undefined)?.tax_columns === true;
+  return { required: flag || meta.length > 0, items };
 }

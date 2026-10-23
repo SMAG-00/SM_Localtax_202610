@@ -8,6 +8,11 @@ export function ColumnDisclosureBlock({ disclosure }: { disclosure: ColumnDisclo
       <p data-part="column-interest" className="text-[15px] text-navy-800">
         {disclosure.interestLine}
       </p>
+      {disclosure.itemsLine && (
+        <p data-part="column-interest-items" className="mt-2 text-[15px] text-navy-800">
+          {disclosure.itemsLine}
+        </p>
+      )}
       <p data-part="column-opinion-notice" className="mt-2 text-[15px] font-bold text-navy-700">
         {disclosure.notice}
       </p>
