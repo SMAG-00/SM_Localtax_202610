@@ -80,7 +80,7 @@ const CLOSED = [
 const OPENED_IN_CLOSED = new Set(["/about/measurement"]);
 /** 단계 전 경로·v1.2 경로 — PRD-01A 3장(1단계 라우트 목록에 없는 경로) + PRD-00 8장 'v1.2 경로 대체'의 옛 주소. 옛 주소는 그 자체도 막는다 */
 const STAGED_V12 = (() => {
-  const l01a = lineOf(PRD_01A, "1단계 라우트 목록에 없다");
+  const l01a = lineOf(PRD_01A, "1단계 라우트 목록에 없습니다");
   const l00 = lineOf(PRD_00, "**v1.2 경로 대체**");
   const old00 = l00
     .slice(l00.indexOf("—") + 1, l00.indexOf("새 플랫폼이"))
