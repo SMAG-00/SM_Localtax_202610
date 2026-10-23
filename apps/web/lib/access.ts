@@ -90,6 +90,7 @@ export const ACTIONS = {
   "project.manage": "프로젝트 트래커 — 프로젝트 만들기·단계 기록·정정(사유)·공개 전환·지역 연결 (편집 책임자·관리자, W4 14단계 PR-02·03 — 가격·분담금·수익률 입력 0)",
   "supply.manage": "분양 정보 — 공식 공고를 보고 항목 만들기·고치기·공개 전환 (편집 책임자·관리자, W4 17단계 PR-04 — 가격 입력 0, 홍보 원고는 sponsored 기사로만)",
   "dev_method.manage": "개발방법 비교 — 방법 내용·비교 항목 6칸 초안·숫자 요건 사실 행(새 판 + 사유) 적기 (편집 책임자·관리자, W4 18단계 PR-09·10 — 감수 서명은 review.tax_review, 점수·순위·추천 입력 0)",
+  "special_law.confirm": "특례법 확인 기록 — 공포 확인·철회와 특례법 근거 행의 확인·철회 (관리자(PO)만, W4 20단계 PR-13)",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
@@ -134,6 +135,8 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "supply.manage",
   // W4 18단계 — 개발방법 내용·비교 항목·숫자 요건 입력. 편집국 외 역할의 시도는 거부 + 감사 (W4 설계 6장 '개발방법 입력: 편집 책임자 이상')
   "dev_method.manage",
+  // W4 20단계 — 특례법 확인 기록은 관리자(PO)만. 그 밖의 역할의 시도는 거부 + 감사 (W4 설계 6장)
+  "special_law.confirm",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -285,6 +288,9 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     // 개발방법 비교 (W4 18단계 — 6장 '개발방법 입력: 편집 책임자 이상', 1인 체제면 관리자·PO). 서명은 review.tax_review(감수위원만) — 이 권한으로는 서명하지 않는다
     case "dev_method.manage":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("개발방법 비교(방법 내용·비교 항목·숫자 요건 사실 행)는 편집 책임자와 관리자만 적습니다 — 세무 감수위원은 감수 서명만 합니다 (PR-09·PR-10)");
+    // 특례법 확인 기록 (W4 20단계 — 6장 '특례법 확인 기록: 관리자(PO)만')
+    case "special_law.confirm":
+      return viewer.isAdmin ? ALLOW : deny("특례법 확인 기록(공포 확인·철회, 행 확인)은 관리자(PO)만 남깁니다 (PR-13)");
     // 지역 기사 편집 칸 (편집 분야·공익적 질문·소재·관계 유형·다룬 제휴사·이해관계 표시) — 기자·편집 책임자·관리자
     case "article.regional_fields":
       return has(viewer, "reporter", "editor") || viewer.isAdmin

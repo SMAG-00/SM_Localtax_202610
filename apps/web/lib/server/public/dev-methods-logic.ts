@@ -23,8 +23,8 @@ export const isMethodSlug = (v: string): v is DevMethodSlug => (DEV_METHOD_SLUGS
 export const DEV_METHOD_PUBLIC_LIMITS = { projects: 4, articles: 5 } as const;
 
 export const PUBLIC_METHOD_COLUMNS = "slug, name, kind, sort, legal_basis_name, summary, steps, lens, reviewed_at, reviewer_name";
-export const PUBLIC_COMPARE_COLUMNS = "slug, sort, item, item_position, body, reviewed_at, reviewer_name";
-export const PUBLIC_FACT_COLUMNS = "slug, sort, fact_key, label, value, unit, law_ref, reference_date, source_url, version, reviewed_at, reviewer_name, under_review";
+export const PUBLIC_COMPARE_COLUMNS = "slug, sort, item, item_position, body, reviewed_at, reviewer_name, special_law_basis";
+export const PUBLIC_FACT_COLUMNS = "slug, sort, fact_key, label, value, unit, law_ref, reference_date, source_url, version, reviewed_at, reviewer_name, under_review, special_law_basis";
 
 export interface PublicMethodRow {
   slug: string;
@@ -46,6 +46,8 @@ export interface PublicCompareRow {
   body: string | null;
   reviewed_at: string | null;
   reviewer_name: string | null;
+  /** 특례법 근거 표시 + 공포 확인 + 이 행 확인이 모두 맞을 때만 true (마이그레이션 …53) */
+  special_law_basis?: boolean | null;
 }
 export interface PublicFactRow {
   slug: string;
@@ -60,6 +62,7 @@ export interface PublicFactRow {
   version: number | null;
   reviewed_at: string | null;
   reviewer_name: string | null;
+  special_law_basis?: boolean | null;
   under_review: boolean | null;
 }
 
@@ -216,4 +219,22 @@ export function devMethodCrumbs(method?: { name: string; href: string }): DevMet
 export function devMethodBreadcrumb(crumbs: readonly DevMethodCrumb[], siteUrl: string | undefined): BreadcrumbView | null {
   if (!siteUrl) return null;
   return { items: crumbs.map((c) => ({ name: c.name, url: `${siteUrl}${c.href}` })) };
+}
+
+/** 특례법 근거 표시 — 표시 + 공포 확인 + 그 행 확인이 모두 맞는 행만. 없으면 null(화면에 특례법 요소 0) */
+export interface SpecialLawView {
+  promulgationUrl: string;
+  promulgatedOn: string;
+  items: { slug: string; method: string; label: string }[];
+}
+
+export function specialLawView(law: { promulgation_url: string | null; promulgated_on: string | null }[], methods: PublicMethod[], compare: PublicCompareRow[], facts: PublicFactRow[], only?: string): SpecialLawView | null {
+  const l = law[0];
+  if (!l?.promulgation_url || !l.promulgated_on) return null;
+  const names = new Map<string, string>(methods.map((m) => [m.slug, m.name]));
+  const items = [
+    ...compare.flatMap((c) => (c.special_law_basis === true && names.has(c.slug) ? [{ slug: c.slug, method: names.get(c.slug) as string, label: DEV_METHOD_ITEM_LABELS[c.item as DevMethodItem] ?? c.item }] : [])),
+    ...facts.flatMap((f) => (f.special_law_basis === true && names.has(f.slug) && f.label ? [{ slug: f.slug, method: names.get(f.slug) as string, label: f.label }] : [])),
+  ].filter((i) => only === undefined || i.slug === only);
+  return items.length === 0 ? null : { promulgationUrl: l.promulgation_url, promulgatedOn: l.promulgated_on, items };
 }

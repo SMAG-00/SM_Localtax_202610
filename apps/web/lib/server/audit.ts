@@ -51,6 +51,8 @@ export const targetOf = {
   devMethod: (slug: string) => `dev_methods:${slug}`,
   devMethodCompare: (slug: string, item: string) => `dev_method_compare:${slug}:${item}`,
   devMethodFact: (id: number | string) => `dev_method_facts:${id}`,
+  /** 특례법 확인 (W4 20단계) — 공포 확인은 law, 행 확인은 종류:대상 */
+  specialLaw: (kind: string, ref?: string) => (ref ? `special_law_confirmations:${kind}:${ref}` : `special_law_confirmations:${kind}`),
 };
 
 /** 감사 로그 한 줄. 실패하면 예외 — 감사 기록 없는 변경을 성공으로 알리지 않는다 */

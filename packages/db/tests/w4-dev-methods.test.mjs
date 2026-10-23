@@ -477,7 +477,7 @@ test("공개 준비·기능 키 — 서명·6칸 없이 켜기 거부(사유에 
     const cmp = await all("select * from public.public_dev_method_compare order by sort, item_position");
     assert.equal(cmp.length, 42, "7 × 6");
     assert.deepEqual(cmp.slice(0, 6).map((c) => c.item), ITEMS, "항목 순서 = 2.1");
-    assert.deepEqual(Object.keys(cmp[0]), ["slug", "sort", "item", "item_position", "body", "reviewed_at", "reviewer_name"]);
+    assert.deepEqual(Object.keys(cmp[0]), ["slug", "sort", "item", "item_position", "body", "reviewed_at", "reviewer_name", "special_law_basis"]);
     assert.equal(cmp.filter((c) => /확인\s*중|준비\s*중/.test(c.body)).length, 0, "'확인 중' 채움 0");
     // 켜진 뒤 한 칸 고침 → 그 방법만 0 (다른 방법·켜진 키는 그대로)
     assert.ok((await editItem("trust", "procedure", "body = '시험용 고친 절차'")).ok);
@@ -508,7 +508,7 @@ test("공개 사실 행 — 서명 전 0 · 기준일 없음 0 · 서명자 공�
     assert.ok((await signFact(v1.rows[0].id, reviewer)).ok);
     const shown = await facts();
     assert.equal(shown.length, 1);
-    assert.deepEqual(Object.keys(shown[0]), ["slug", "sort", "fact_key", "label", "value", "unit", "law_ref", "reference_date", "source_url", "version", "reviewed_at", "reviewer_name", "under_review"]);
+    assert.deepEqual(Object.keys(shown[0]), ["slug", "sort", "fact_key", "label", "value", "unit", "law_ref", "reference_date", "source_url", "version", "reviewed_at", "reviewer_name", "under_review", "special_law_basis"]);
     assert.deepEqual([shown[0].value, shown[0].version, shown[0].reviewer_name, shown[0].under_review], ["시험용 99", 1, "시험용 감수위원", false]);
     // 새 판 → 서명 전에는 그 요건 0 (옛 판으로 대신하지 않는다) → 서명 뒤 새 값·새 기준일
     const v2 = await putFact("redevelopment", { supersedes_id: v1.rows[0].id, value: "시험용 98", reference_date: "2026-06-01", reason: "시험용 고친 사유" });

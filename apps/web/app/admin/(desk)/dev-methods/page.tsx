@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LawForm, MarkButton, RowConfirm } from "@/components/admin/SpecialLawControls";
 import { CompareForm, FactForm, MethodForm, SignButton } from "@/components/admin/DevMethodControls";
 import { EmptyNote, MONO, PageTitle, Panel, ToneChip } from "@/components/admin/ui";
 import { can } from "@/lib/access";
@@ -6,6 +7,7 @@ import { DEV_METHOD_ITEM_LABELS } from "@/lib/admin/dev-method-rules";
 import { pageViewer, requirePage } from "@/lib/server/admin/pages";
 import { serviceDb } from "@/lib/server/articles/service";
 import { loadDevMethodBoard } from "@/lib/server/dev-methods/board";
+import { loadSpecialLawBoard } from "@/lib/server/special-law";
 
 // 개발방법 비교 관리 (/admin/dev-methods — W4 19단계, PRD-01B PR-09 · PR-10 · PR-11, docs/dev/W4_설계.md 1장 19단계 · 5장 · 6장 · 7장 4).
 // 편집 책임자·관리자(dev_method.manage)는 7개 방법의 내용·비교 항목 6칸·숫자 요건 사실 행(첫 판·새 판 + 사유)을 적고, 세무 감수위원(review.tax_review)은 서명한다.
@@ -18,6 +20,8 @@ export default async function DevMethodsPage() {
   const viewer = await pageViewer();
   requirePage(viewer, ["dev_method.manage", "review.tax_review"]);
   const board = await loadDevMethodBoard(serviceDb());
+  const law = await loadSpecialLawBoard(serviceDb());
+  const canConfirm = can(viewer, "special_law.confirm");
   const canEdit = can(viewer, "dev_method.manage");
   const canSign = can(viewer, "review.tax_review");
   const readyCount = board.methods.filter((m) => m.readiness.ready).length;
@@ -48,6 +52,71 @@ export default async function DevMethodsPage() {
               </li>
             ))}
           </ul>
+        </Panel>
+
+        <Panel id="special-law" title={`특례법 확인 ${law.current ? "확인됨" : "확인 전"}`} description="특례법 공포 확인(공포 원문 주소·공포일)은 관리자(PO)가 실사 뒤 직접 남깁니다. 확인 기록이 없으면 공개 화면에 특례법 요소가 나오지 않고, 표시된 행을 고치면 그 행의 확인을 다시 해야 합니다.">
+          <div className="space-y-4 text-[15px]" data-testid="special-law" data-confirmed={String(Boolean(law.current))}>
+            {law.current ? (
+              <p data-part="law-current" className="text-navy-800 [overflow-wrap:anywhere]">
+                공포일 {law.current.promulgated_on} · <a className="underline" href={law.current.promulgation_url ?? "#"} rel="noopener noreferrer" target="_blank">공포 원문</a> · 확인 {law.current.confirmed_at.slice(0, 10)}
+              </p>
+            ) : (
+              <EmptyNote>특례법 공포 확인 기록이 없습니다.</EmptyNote>
+            )}
+            {law.targets.length > 0 && (
+              <ul className="space-y-3" data-part="special-law-targets">
+                {law.targets.map((t) => (
+                  <li key={t.ref + t.kind} data-kind={t.kind} data-ref={t.ref} data-confirmed={String(t.confirmed)} className="rounded-xl border border-navy-100 p-3">
+                    <p className="font-bold text-navy-900 [overflow-wrap:anywhere]">
+                      {t.method_name} · {t.kind === "compare" ? (DEV_METHOD_ITEM_LABELS[t.key as keyof typeof DEV_METHOD_ITEM_LABELS] ?? t.key) : t.label}{" "}
+                      <ToneChip tone={t.confirmed ? "emerald" : "amber"}>{t.confirmed ? "확인됨" : "확인 전"}</ToneChip>
+                    </p>
+                    {canConfirm && law.current && (
+                      <div className="mt-2">
+                        <RowConfirm body={t.kind === "compare" ? { target: "compare", slug: t.slug, item: t.key } : { target: "fact", slug: t.slug, fact_id: t.fact_id }} label="이 행" confirmed={t.confirmed} />
+                      </div>
+                    )}
+                    {canEdit && t.kind === "compare" && (
+                      <div className="mt-2">
+                        <MarkButton body={{ op: "mark_compare", slug: t.slug, item: t.key, on: false }} label="특례법 근거 표시 끄기" />
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {canEdit && (
+              <details>
+                <summary className="cursor-pointer font-bold text-navy-900">특례법 근거 표시 켜기 (비교 항목)</summary>
+                <ul className="mt-3 space-y-2" data-part="special-law-mark-list">
+                  {board.methods.flatMap((m) =>
+                    m.compare.flatMap(({ item, row }) =>
+                      row ? (
+                        <li key={m.slug + item} data-mark={`${m.slug}:${item}`}>
+                          <MarkButton body={{ op: "mark_compare", slug: m.slug, item, on: true }} label={`${m.name} · ${DEV_METHOD_ITEM_LABELS[item]} 표시 켜기`} />
+                        </li>
+                      ) : [],
+                    ),
+                  )}
+                </ul>
+              </details>
+            )}
+            {canEdit && board.methods.some((m) => m.facts.length > 0) && (
+              <details>
+                <summary className="cursor-pointer font-bold text-navy-900">숫자 요건의 특례법 근거 표시 (새 판으로 바뀜)</summary>
+                <ul className="mt-3 space-y-2">
+                  {board.methods.flatMap((m) =>
+                    m.facts.map((g) => (
+                      <li key={m.slug + g.fact_key} data-mark-fact={`${m.slug}:${g.fact_key}`}>
+                        <MarkButton body={{ op: "mark_fact", slug: m.slug, fact_key: g.fact_key, on: !law.targets.some((t) => t.kind === "fact" && t.slug === m.slug && t.key === g.fact_key) }} label={`${m.name} · ${g.latest.label} 표시 바꾸기`} />
+                      </li>
+                    )),
+                  )}
+                </ul>
+              </details>
+            )}
+            {canConfirm && <LawForm current={Boolean(law.current)} />}
+          </div>
         </Panel>
 
         {board.methods.map((m) => (

@@ -11,6 +11,7 @@ import {
   projectTypeKeys,
   publicMethods,
   reviewLine,
+  specialLawView,
   type PublicCompareRow,
   type PublicFactRow,
   type PublicMethodRow,
@@ -164,5 +165,39 @@ describe("감수 줄·박스·관련 프로젝트 키", () => {
     expect(crumbs.map((c) => c.name)).toEqual(["홈", "부동산", "개발방법 비교", "시험"]);
     expect(devMethodBreadcrumb(crumbs, undefined)).toBeNull();
     expect(devMethodBreadcrumb(crumbs, "https://x.test")!.items[2]).toEqual({ name: "개발방법 비교", url: "https://x.test/realestate/development-methods" });
+  });
+});
+
+describe("특례법 근거 표시 (PR-13 — 확인 전 요소 0)", () => {
+  const LAW = [{ promulgation_url: "https://gasang.example/law", promulgated_on: "2026-01-02" }];
+  const methods = (): ReturnType<typeof publicMethods> => {
+    const { m, c, f } = all();
+    return publicMethods(m, c, f);
+  };
+  test("공포 확인 줄이 없으면 표시된 행이 있어도 null이다", () => {
+    const { c, f } = all();
+    const flagged = c.map((x) => ({ ...x, special_law_basis: true }));
+    expect(specialLawView([], methods(), flagged, f)).toBeNull();
+  });
+  test("뷰가 true로 준 행이 없으면 공포 확인이 있어도 null이다 (행 확인 전)", () => {
+    const { c, f } = all();
+    expect(specialLawView(LAW, methods(), c.map((x) => ({ ...x, special_law_basis: false })), f.map((x) => ({ ...x, special_law_basis: null })))).toBeNull();
+  });
+  test("true인 비교 항목·사실 행만 방법 이름과 항목 이름으로 모이고 only로 한 방법만 거른다", () => {
+    const { c, f } = all();
+    const flaggedC = c.map((x) => ({ ...x, special_law_basis: x.slug === "trust" && x.item === DEV_METHOD_ITEMS[0] }));
+    const flaggedF = f.map((x) => ({ ...x, special_law_basis: x.slug === "public" }));
+    const v = specialLawView(LAW, methods(), flaggedC, flaggedF)!;
+    expect(v.promulgationUrl).toBe("https://gasang.example/law");
+    expect(v.promulgatedOn).toBe("2026-01-02");
+    expect(v.items.map((i) => i.slug).sort()).toEqual(["public", "trust"]);
+    expect(specialLawView(LAW, methods(), flaggedC, flaggedF, "trust")!.items).toHaveLength(1);
+    expect(specialLawView(LAW, methods(), flaggedC, flaggedF, "renewal")).toBeNull();
+  });
+  test("공포 원문 주소나 공포일이 비어 있으면 null이다", () => {
+    const { c, f } = all();
+    const flagged = c.map((x) => ({ ...x, special_law_basis: true }));
+    expect(specialLawView([{ promulgation_url: null, promulgated_on: "2026-01-02" }], methods(), flagged, f)).toBeNull();
+    expect(specialLawView([{ promulgation_url: "https://gasang.example/law", promulgated_on: null }], methods(), flagged, f)).toBeNull();
   });
 });

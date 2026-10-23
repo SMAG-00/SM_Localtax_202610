@@ -70,6 +70,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "project.manage":          [X, O, X, X, X, X, X, O, X], // W4 14단계 — 프로젝트 만들기·단계 기록·정정·공개 전환은 편집 책임자·관리자 (6장 '편집 책임자 이상', brand_ops 거부 감사)
   "supply.manage":           [X, O, X, X, X, X, X, O, X], // W4 17단계 — 분양 정보 만들기·고치기·공개 전환은 편집 책임자·관리자 (6장, ad_ops·brand_ops 거부 감사)
   "dev_method.manage":       [X, O, X, X, X, X, X, O, X], // W4 18단계 — 개발방법 내용·비교 항목·사실 행은 편집 책임자·관리자 (6장, 서명은 review.tax_review)
+  "special_law.confirm":    [X, X, X, X, X, X, X, O, X], // W4 20단계 — 특례법 확인 기록은 관리자(PO)만 (6장)
   "article.regional_fields": [O, O, X, X, X, X, X, O, X], // W4 7단계 — 지역 기사 편집 칸(편집 분야·공익적 질문·소재·관계)은 기자·편집 책임자·관리자, 광고·협찬 담당 0
   "column.manage":           [X, O, X, X, X, X, X, X, X],
   "column.signature":        [X, O, X, X, X, X, X, X, X], // W3 8단계 — 시그니처 연재 회차·순서는 칼럼 정렬과 같은 편집 행위 (BR-08)

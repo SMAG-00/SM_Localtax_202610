@@ -10,6 +10,8 @@ import {
   PUBLIC_FACT_COLUMNS,
   PUBLIC_METHOD_COLUMNS,
   comparisonMethods,
+  specialLawView,
+  type SpecialLawView,
   devMethodBreadcrumb,
   devMethodCrumbs,
   methodLens,
@@ -31,7 +33,10 @@ import type { PublicLinkRow } from "./regional-links-logic";
 // 기능 키 dev_methods가 꺼져 있으면 null → 목록 /realestate/development-methods는 하위 분야 목록(W3 12장 #20과 같은 방식), 방법 상세는 404.
 // 관련 프로젝트·기사는 화면의 덧붙임이라 읽지 못하면 0으로 그리고 서버 기록에만 남긴다(방법 화면은 그대로 — 15·16단계와 같은 방식).
 
+export type { SpecialLawView };
+
 export interface DevMethodsListView {
+  specialLaw: SpecialLawView | null;
   methods: PublicMethod[];
   comparison: Partial<Record<DevMethodId, DevMethodEntry>>;
   review: { reviewers: string[]; reviewedOn: string } | null;
@@ -40,6 +45,7 @@ export interface DevMethodsListView {
 }
 
 export interface DevMethodDetailView {
+  specialLaw: SpecialLawView | null;
   method: PublicMethod;
   lens: StageLensView | null;
   /** 다른 방법 — 고정 편집 순서 */
@@ -50,24 +56,25 @@ export interface DevMethodDetailView {
   breadcrumb: BreadcrumbView | null;
 }
 
-async function readAll(): Promise<{ methods: PublicMethod[]; features: Awaited<ReturnType<typeof readPublicSettings>>["features"] } | null> {
+async function readAll(): Promise<{ methods: PublicMethod[]; compare: PublicCompareRow[]; facts: PublicFactRow[]; law: { promulgation_url: string | null; promulgated_on: string | null }[]; features: Awaited<ReturnType<typeof readPublicSettings>>["features"] } | null> {
   const settings = await readPublicSettings();
   if (!settings.features.dev_methods) return null;
   const db = publicDb();
-  const [m, c, f] = await Promise.all([
+  const [m, c, f, law] = await Promise.all([
     rowsOf<PublicMethodRow>(db.from("public_dev_methods").select(PUBLIC_METHOD_COLUMNS).order("sort"), "공개 개발방법"),
     rowsOf<PublicCompareRow>(db.from("public_dev_method_compare").select(PUBLIC_COMPARE_COLUMNS).order("sort").order("item_position"), "공개 개발방법 비교 항목"),
     rowsOf<PublicFactRow>(db.from("public_dev_method_facts").select(PUBLIC_FACT_COLUMNS).order("sort").order("fact_key"), "공개 개발방법 숫자 요건"),
+    rowsOf<{ promulgation_url: string | null; promulgated_on: string | null }>(db.from("public_special_law").select("promulgation_url, promulgated_on").limit(1), "공개 특례법 공포 확인"),
   ]);
   const methods = publicMethods(m, c, f);
-  return methods.length === 0 ? null : { methods, features: settings.features };
+  return methods.length === 0 ? null : { methods, compare: c, facts: f, law, features: settings.features };
 }
 
 export async function getDevMethodsList(): Promise<DevMethodsListView | null> {
   const all = await readAll();
   if (!all) return null;
   const crumbs = devMethodCrumbs();
-  return { methods: all.methods, comparison: comparisonMethods(all.methods), review: reviewLine(all.methods), crumbs, breadcrumb: devMethodBreadcrumb(crumbs, siteUrl()) };
+  return { specialLaw: specialLawView(all.law, all.methods, all.compare, all.facts), methods: all.methods, comparison: comparisonMethods(all.methods), review: reviewLine(all.methods), crumbs, breadcrumb: devMethodBreadcrumb(crumbs, siteUrl()) };
 }
 
 export async function getDevMethod(slug: string): Promise<DevMethodDetailView | null> {
@@ -77,6 +84,7 @@ export async function getDevMethod(slug: string): Promise<DevMethodDetailView | 
   const { projects, articles } = await relatedOf(method);
   const crumbs = devMethodCrumbs({ name: method.name, href: method.href });
   return {
+    specialLaw: specialLawView(all.law, all.methods, all.compare, all.facts, slug),
     method,
     lens: methodLens(method, all.features),
     others: all.methods.filter((m) => m.slug !== slug).map((m) => ({ slug: m.slug, name: m.name, href: m.href })),

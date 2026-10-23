@@ -1,7 +1,7 @@
 import { breadcrumbList, toJsonLdScriptContent } from "@ltr/structured-data";
 import { Chip, DevMethodComparison, Eyebrow, TaxLensBox, UiLink } from "@ltr/ui";
 import type { DevMethodCrumb } from "@/lib/server/public/dev-methods-logic";
-import type { DevMethodDetailView, DevMethodsListView } from "@/lib/server/public/dev-methods";
+import type { DevMethodDetailView, DevMethodsListView, SpecialLawView } from "@/lib/server/public/dev-methods";
 import { ArticleItem } from "./ArticleItem";
 import { ProjectCardView } from "./ProjectView";
 import { SiteSection } from "./SiteSection";
@@ -56,6 +56,26 @@ function JsonLd({ breadcrumb }: { breadcrumb: DevMethodsListView["breadcrumb"] }
   return json ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: json }} /> : null;
 }
 
+/** 특례법 근거 — 공포 확인과 행 확인이 맞는 행이 있을 때만 그린다(없으면 요소 0). 공포 원문은 링크만, 특례법 이름·요건 글자는 DB 값 그대로 */
+function SpecialLawNote({ law }: { law: SpecialLawView | null }) {
+  if (!law) return null;
+  return (
+    <aside data-part="special-law" aria-label="특례법 근거" className="mt-8 rounded-xl border border-navy-100 bg-white p-4 text-[15px] text-navy-800">
+      <h2 className="text-[17px] font-black text-navy-900">특례법 근거</h2>
+      <ul className="mt-2 list-disc pl-5">
+        {law.items.map((i, n) => (
+          <li key={`${i.slug}-${n}`} data-special-law-item={i.slug} className="[overflow-wrap:anywhere]">
+            {i.method} · {i.label}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 font-mono text-[13px] text-navy-600">
+        공포일 {law.promulgatedOn} · <a className="underline" href={law.promulgationUrl} rel="noopener noreferrer" target="_blank">공포 원문</a>
+      </p>
+    </aside>
+  );
+}
+
 export function DevMethodsList({ view }: { view: DevMethodsListView }) {
   return (
     <div data-ui="dev-methods-list" data-method-count={String(view.methods.length)}>
@@ -70,6 +90,7 @@ export function DevMethodsList({ view }: { view: DevMethodsListView }) {
       </SiteSection>
       <SiteSection id="dev-methods-compare" tone="ivory-dark" data={{ "data-dev-methods-part": "compare" }}>
         <DevMethodComparison methods={view.comparison} />
+        <SpecialLawNote law={view.specialLaw} />
         {view.review && (
           <p data-part="review-line" className="mt-8 font-mono text-[13px] text-navy-600 [overflow-wrap:anywhere]">
             {`${DEV_METHODS_COPY.reviewPrefix} ${view.review.reviewers.join(", ")} · ${DEV_METHODS_COPY.reviewDatePrefix} ${view.review.reviewedOn}`}
@@ -164,6 +185,7 @@ export function DevMethodDetail({ view }: { view: DevMethodDetailView }) {
             ))}
           </ul>
         </nav>
+        <SpecialLawNote law={view.specialLaw} />
         <p data-part="review-line" className="mt-8 font-mono text-[13px] text-navy-600 [overflow-wrap:anywhere]">
           {`${DEV_METHODS_COPY.reviewPrefix} ${m.reviewer} · ${DEV_METHODS_COPY.reviewDatePrefix} ${m.reviewedOn}`}
         </p>
