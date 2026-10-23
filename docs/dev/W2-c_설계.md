@@ -67,7 +67,7 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 | 이름 | 값 |
 |---|---|
 | article_shared.channel (공유 채널) | `native_share` · `copy_link` |
-| situation_card_clicked.position (상황 카드 위치) | `hub` · `search_empty` |
+| situation_card_clicked.position (상황 카드 위치) | `hub` · `search_empty` · `inheritance_gift` |
 | next_action_clicked.screen (화면) | `article` · `situation` |
 | popular_article_clicked.position (위치) | `sidebar` · `list` |
 | policy_page_viewed.policy (정책 종류) | `editorial_policy` · `ethics` · `corrections` · `ad_policy` · `privacy` |

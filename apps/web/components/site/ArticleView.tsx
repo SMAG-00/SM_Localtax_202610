@@ -1,3 +1,4 @@
+import { OfficialLinkCard } from "./OfficialLinkCard";
 import { pageJsonLd, toJsonLdScriptContent } from "@ltr/structured-data";
 import {
   ArticleTypeBadge,
@@ -356,6 +357,11 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
               a.taxLens && (
                 <Part key={part} part={part} tone={tone(part)} rail={rail}>
                   <TaxLensBox taxes={a.taxLens.topics} points={a.taxLens.points} links={taxLensBoxLinks(a.taxLens.links)} reviewer={a.taxLens.reviewer} basisDate={a.taxLens.basisDate} />
+                  {a.lensNational && (
+                    <ul data-part="lens-national" className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <OfficialLinkCard card={a.lensNational.card} site="별도 사이트 · 새 창 · 이 사이트의 결과와 합산하지 않습니다" fallbacks={a.lensNational.fallbacks} rank={1} />
+                    </ul>
+                  )}
                 </Part>
               )
             );

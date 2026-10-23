@@ -17,6 +17,7 @@ import { SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings
 import { localBlockFieldsErrors } from "@/lib/server/public/region-hub-logic";
 import { searchTopicsErrors } from "@/lib/server/public/search-classify";
 import { REGION_INDEX_LIMITS, pilotRegionsErrors, regionIndexThresholdErrors } from "@/lib/server/public/region-index-logic";
+import { IG_LIMITS, inheritanceNoticeErrors, inheritanceSituationsErrors } from "@/lib/server/public/inheritance-gift-logic";
 import { phraseError } from "./dictionary-rules";
 import { PROJECT_LIMITS, projectStageListsErrors, projectTypesErrors } from "./project-rules";
 import { EXPIRY_DAYS_DEFAULT, EXPIRY_DAYS_MAX, EXPIRY_DAYS_MIN, expiryDaysErrors } from "@/lib/source-review/rules";
@@ -327,6 +328,17 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "사업 유형별 표준 단계 목록 (PR-02)",
     guide: `{ "유형 키": [{ "key": "단계 키", "label": "화면 글자" }, …] } — 배열 순서 = 단계 순서(첫 단계 … 마지막 단계), 유형마다 ${PROJECT_LIMITS.stagesMin}~${PROJECT_LIMITS.stagesMax}단계, 키·글자 중복 0. 유형은 project_types에 먼저 넣습니다. 단계 기록이 쓰는 단계는 뺄 수 없고 글자·순서는 바꿀 수 있습니다(현재 단계는 다음 읽기부터 새 순서로)`,
     check: (value) => projectStageListsErrors(value),
+  },
+  // -- W4 23단계 상속·증여 안내 (docs/dev/W4_설계.md 2.2) - DB 트리거(...56 inheritance_gift_settings_guard)와 같은 검사. 목록 상황의 연결·고지는 설정 API가 상황 표를 읽어 한 번 더 본다 --
+  inheritance_gift_notice: {
+    label: "상속·증여 고지 문구 (FAM-01)",
+    guide: `글자 한 줄(1~${IG_LIMITS.noticeMax}자, 숫자 0) - 세 경로(/realestate/inheritance-gift·/inheritance·/gift)에 한 번씩 나오는 감수본 고지. 바꾸면 배포 없이 다음 요청부터`,
+    check: (value) => inheritanceNoticeErrors(value),
+  },
+  inheritance_gift_situations: {
+    label: "상속·증여 상황 목록 (FAM-02)",
+    guide: `["상황-slug", ...] - 상황 ${IG_LIMITS.situations}종까지. 목록의 상황은 부동산 분야이고 외부 계산기 연결(안심 상속증여계산기)과 체크리스트 고지가 있어야 합니다. 빈 목록([])이면 상황 카드 줄이 없습니다`,
+    check: (value) => inheritanceSituationsErrors(value),
   },
   next_action_priority: {
     label: "다음 행동 버튼 우선순위 (ART-06)",

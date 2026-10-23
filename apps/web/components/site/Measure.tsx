@@ -127,6 +127,19 @@ export function MeasureSituationCards({ section }: { section: SectionKey }) {
   return null;
 }
 
+/** 상속·증여 안내의 상황 카드를 누르면 situation_card_clicked(상황·위치 inheritance_gift) 1건 (W4 23단계 · FAM-02). 카드 목록의 data-situation-slug */
+export function MeasureInheritanceSituations() {
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const slug = clickedIn(event, '[data-part="ig-situations"] [data-situation-slug]')?.getAttribute("data-situation-slug");
+      if (slug) void track("situation_card_clicked", { section: "realestate", props: { situation: slug, position: "inheritance_gift" } });
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
+  return null;
+}
+
 /**
  * 바깥 연결 카드(/calc·상황 페이지 공용 카드 OfficialLinkCard)의 이동 링크를 누르면 calculator_card_clicked 1건 (W3 10단계 · W2-c 2.2).
  * 속성은 카드 키(data-link-card — official_links.key)·화면·카드 차례(data-link-rank)뿐 — 카드 주소·이 화면의 입력값·검색어·쿼리는 읽지 않는다.

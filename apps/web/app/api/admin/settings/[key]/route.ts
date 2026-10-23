@@ -7,6 +7,7 @@ import { mailConfigured } from "@/lib/server/mail/config";
 import { parseFeatures } from "@/lib/server/public/settings";
 import { pilotRegionsRegionErrors } from "@/lib/server/public/region-index-logic";
 import { projectSettingsCrossErrors } from "@/lib/admin/project-rules";
+import { inheritanceSituationsCrossErrors, type SituationFacts } from "@/lib/server/public/inheritance-gift-logic";
 import { devMethodsEnableErrors } from "@/lib/admin/dev-method-rules";
 import { loadReadiness } from "@/lib/server/dev-methods/board";
 import { isoToKstDate } from "@/lib/admin/form-utils";
@@ -67,6 +68,21 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   if (key === "project_types" || key === "project_stage_lists") {
     const other = await readSetting(db, key === "project_types" ? "project_stage_lists" : "project_types");
     const crossErrors = projectSettingsCrossErrors(key, value, other?.value);
+    if (crossErrors.length) return errorJson(422, "설정 값이 규칙에 맞지 않습니다", { errors: crossErrors });
+  }
+  // 상속·증여 상황 목록: 목록의 상황은 외부 계산기 연결·체크리스트 고지가 있어야 한다 (W4 23단계 - DB 트리거 ...56과 같은 규칙, 422로 상황마다 사유)
+  if (key === "inheritance_gift_situations" && Array.isArray(value) && value.length > 0) {
+    const slugs = value as string[];
+    const { data: sits, error: sitErr } = await db.from("situations").select("slug, section, checklist, external_link_id").in("slug", slugs);
+    if (sitErr) throw dbError(sitErr, "situations 읽기");
+    const linkIds = [...new Set((sits ?? []).flatMap((s) => (s.external_link_id ? [Number(s.external_link_id)] : [])))];
+    const { data: links, error: linkErr } = linkIds.length ? await db.from("official_links").select("id, kind, key").in("id", linkIds) : { data: [], error: null };
+    if (linkErr) throw dbError(linkErr, "official_links 읽기");
+    const facts: SituationFacts[] = (sits ?? []).map((s) => {
+      const l = (links ?? []).find((x) => Number(x.id) === Number(s.external_link_id));
+      return { slug: s.slug as string, section: s.section as string, checklist: s.checklist, link: l ? { kind: l.kind as string, key: l.key as string } : null };
+    });
+    const crossErrors = inheritanceSituationsCrossErrors(slugs, facts);
     if (crossErrors.length) return errorJson(422, "설정 값이 규칙에 맞지 않습니다", { errors: crossErrors });
   }
   // 기능 키를 새로 켜는 경우: 게시본·메일 설정 의존을 채우지 못하면 거부하고 사유를 보인다 (W2-e 설계 2.3 · 6.3)

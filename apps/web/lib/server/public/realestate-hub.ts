@@ -9,7 +9,7 @@ import { readPilotRegions } from "./region-index";
 
 // /realestate 허브 확장 읽기 (W4 22단계 — 규칙은 realestate-hub-logic.ts). 새 표·마이그레이션 없음 — 기존 공개 뷰(public_projects·public_supply_notices·public_dev_methods…)와
 // 설정(pilot_regions·feature_flags)·공개 기사 뷰만 anon 키로 읽는다. 기능 키가 꺼진 부분은 읽지 않고 0장. 한 부분을 읽지 못하면 그 부분만 0(허브 전체를 닫지 않는다).
-// 상속·증여 키(inheritance_gift)는 23단계가 FEATURE_KEYS·feature_flags에 더한다 — 그 전까지 feature_flags 값에 키가 없으면 닫힘(카드 0).
+// 상속·증여 키(inheritance_gift)는 23단계부터 정식 기능 키 - 다른 키와 같이 settings.features로 읽는다.
 
 /** 한 부분을 읽지 못하면 비어 있는 값 */
 async function soft<T>(read: () => Promise<T>, empty: T): Promise<T> {
@@ -20,18 +20,12 @@ async function soft<T>(read: () => Promise<T>, empty: T): Promise<T> {
   }
 }
 
-async function inheritanceOpen(): Promise<boolean> {
-  const rows = await rowsOf<{ value: unknown }>(publicDb().from("settings").select("value").eq("key", "feature_flags"), "기능 키 상속·증여");
-  const v = rows[0]?.value;
-  return typeof v === "object" && v !== null && (v as Record<string, unknown>)["inheritance_gift"] === true;
-}
-
 export async function readRealEstateHub(now: Date = new Date()): Promise<RealEstateHubData> {
   const settings = await readPublicSettings();
   const f = settings.features;
   const db = publicDb();
   const today = todayKst(now);
-  const [chips, projects, supply, devMethods, inherit, columns] = await Promise.all([
+  const [chips, projects, supply, devMethods, columns] = await Promise.all([
     f.region_hubs
       ? soft(async () => {
           const [regions, pilots] = await Promise.all([readRegions(), readPilotRegions()]);
@@ -58,11 +52,10 @@ export async function readRealEstateHub(now: Date = new Date()): Promise<RealEst
         }, EMPTY_REALESTATE_HUB.supply)
       : EMPTY_REALESTATE_HUB.supply,
     f.dev_methods ? soft(async () => (await getDevMethodsList())?.review ?? null, null) : null,
-    soft(inheritanceOpen, false),
     soft(async () => {
       const { items } = await readArticleList(db, { section: "realestate", contentType: "opinion", limit: HUB_COLUMN_LIMIT });
       return { items, all: items.length > 0 ? COLUMNS_HREF : null };
     }, EMPTY_REALESTATE_HUB.columns),
   ]);
-  return { chips, projects, supply, links: hubLinkCards({ devMethods: devMethods ? { reviewedOn: devMethods.reviewedOn } : null, inheritanceOpen: inherit }), columns };
+  return { chips, projects, supply, links: hubLinkCards({ devMethods: devMethods ? { reviewedOn: devMethods.reviewedOn } : null, inheritanceOpen: f.inheritance_gift }), columns };
 }

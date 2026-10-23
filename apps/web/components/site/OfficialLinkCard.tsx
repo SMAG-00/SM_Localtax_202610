@@ -63,7 +63,7 @@ export function OfficialLinkCard({ card, site, fallbacks, rank }: { card: Card; 
         </div>
       ) : (
         <p className="mt-3">
-          <a href={card.url} target="_blank" rel="noopener noreferrer" data-part="go" className="font-bold text-navy-900 underline underline-offset-4">
+          <a href={card.url} target="_blank" rel="noopener noreferrer" data-part="go" className="inline-flex min-h-11 items-center font-bold text-navy-900 underline underline-offset-4">
             {card.label} 열기 (새 창)
           </a>
         </p>

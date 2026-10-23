@@ -84,3 +84,4 @@ step "Docker 이미지 E2E";                   node e2e/run-docker.mjs
 step "사내 서버 구성 E2E (web·scheduler·proxy)"; node --test --test-concurrency=1 e2e/compose.test.mjs
 
 step "W4 /realestate 허브 확장 E2E (22단계 — 기능 키 꺼짐 요소 0 / 지역 칩 전수 지역 허브 ③ 앵커 200 / 카드 지역·단계·출처·기준일 누락 0·닫힌 기능 링크 카드 0 / 0건 지역 ③ 0건 문장·관광 0 / 지역 허브 꺼짐 칩 0 / 360·1280px·R1~R3·접근성 95)"; node --test --test-concurrency=1 e2e/w4-realestate-hub.test.mjs
+step "W4 상속·증여 안내 E2E (23단계 — 키 꺼짐 목록·404 / 세 경로 고지 1·FAM-08 카드 1·SM 취득세 카드 1·입문 기사 배지·감수일 / 상황 카드·누름 1건 / 새 창·끊김 국세청·숨김 / self_calculator 버튼 / 설정 API 422 / 360·1280px·R1~R3·접근성 95)"; node --test --test-concurrency=1 e2e/w4-inheritance-gift.test.mjs

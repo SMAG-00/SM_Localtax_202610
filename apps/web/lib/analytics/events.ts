@@ -45,7 +45,7 @@ export const CLIENT_ENTRIES = ["assistant", "experts", "tax_lens"] as const sati
 /** 속성 값 목록 (설계 2.3) */
 export const PROP_VALUES = {
   "article_shared.channel": ["native_share", "copy_link"],
-  "situation_card_clicked.position": ["hub", "search_empty"],
+  "situation_card_clicked.position": ["hub", "search_empty", "inheritance_gift"],
   "next_action_clicked.screen": ["article", "situation"],
   "popular_article_clicked.position": ["sidebar", "list"],
   "policy_page_viewed.policy": ["editorial_policy", "ethics", "corrections", "ad_policy", "privacy"],

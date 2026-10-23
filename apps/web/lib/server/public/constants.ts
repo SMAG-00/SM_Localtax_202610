@@ -90,6 +90,8 @@ export const FEATURE_KEYS = [
   // W4 18단계 — 개발방법 비교 /realestate/development-methods* (화면은 19단계). 7개 방법의 비교 항목 6칸과 세무 감수 서명이 모두 있어야 켜진다 —
   // DB 저장 검사(…52 settings_dev_methods_flag_guard)와 운영 설정 화면이 같은 조건을 본다(W4 설계 2.4 · 12장 #153). 꺼지면 공개 뷰 0행
   "dev_methods",
+  // W4 23단계 - 상속·증여 안내 (설계 2.4). 꺼지면 /realestate/inheritance-gift는 하위 분야 목록, /inheritance·/gift는 404, 링크 0
+  "inheritance_gift",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;
