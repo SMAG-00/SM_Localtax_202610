@@ -44,6 +44,8 @@ const RULES: readonly MenuRule[] = [
   { id: "project-lenses", label: "단계 지방세로 읽기 감수", href: "/admin/projects/lenses", when: (a) => a.has("review.tax_review"), paths: ["/admin/projects/lenses"] },
   // 분양 정보 — 공식 공고를 보고 넣는 정보 목록(기사 아님 — PR-04 · W4 17단계) — 편집 책임자·관리자
   { id: "supply", label: "분양 정보", href: "/admin/supply", when: (a) => a.has("supply.manage"), paths: ["/admin/supply"] },
+  // 개발방법 비교 — 7개 방법의 내용·비교 항목·숫자 요건 사실 행(편집 책임자·관리자)과 세무 감수 서명(세무 감수위원) (PR-09·10 · W4 19단계)
+  { id: "dev-methods", label: "개발방법 비교", href: "/admin/dev-methods", when: (a) => a.has("dev_method.manage") || a.has("review.tax_review"), paths: ["/admin/dev-methods"] },
   {
     id: "situations",
     label: "상황 카드",

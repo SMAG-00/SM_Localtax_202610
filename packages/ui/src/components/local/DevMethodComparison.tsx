@@ -19,6 +19,7 @@ export type DevMethodId = (typeof DEV_METHODS)[number]["id"];
 export type DevMethodFact = {
   label: string;
   value: string;
+  /** 단위 — 값에 단위가 없으면 빈 글자 */
   unit: string;
   /** 근거 조문 */
   article: string;
@@ -35,6 +36,8 @@ export type DevMethodEntry = {
   target: string;
   /** 주요 절차 */
   procedure: string;
+  /** 숫자 요건 비교 칸의 서명된 글 (있으면 숫자 요건 행에서 값 목록 위에 보인다) */
+  factsNote?: string;
   /** 숫자 요건 */
   facts: DevMethodFact[];
   /** 지방세 쟁점 (감수본) */
@@ -59,7 +62,7 @@ const ROWS: ReadonlyArray<{ key: RowKey; label: string }> = [
 ];
 
 function validFact(f: DevMethodFact): boolean {
-  return filled(f.label) && filled(f.value) && filled(f.unit) && filled(f.article) && isIsoDate(f.basisDate) && filled(f.reviewer);
+  return filled(f.label) && filled(f.value) && filled(f.article) && isIsoDate(f.basisDate) && filled(f.reviewer);
 }
 
 type Column = (typeof DEV_METHODS)[number] & { entry: DevMethodEntry; facts: DevMethodFact[] };
@@ -75,25 +78,28 @@ function columns(methods: DevMethodComparisonProps["methods"]): Column[] {
   });
 }
 
-function Facts({ facts }: { facts: DevMethodFact[] }) {
+function Facts({ facts, note }: { facts: DevMethodFact[]; note?: string | undefined }) {
   return (
-    <ul className="space-y-2">
-      {facts.map((f, i) => (
-        <li key={i}>
-          <span className="block text-navy-800">{f.label}</span>
-          <span className="block font-mono text-[15px] font-bold tracking-wide text-navy-900">
-            {f.value}
-            {f.unit}
-          </span>
-          <span className={cx("block text-navy-600", MONO)}>{`${f.article} · 기준일 ${f.basisDate} · 감수 ${f.reviewer}`}</span>
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-3">
+      {filled(note) && <p>{note}</p>}
+      <ul className="space-y-2">
+        {facts.map((f, i) => (
+          <li key={i}>
+            <span className="block text-navy-800">{f.label}</span>
+            <span className="block font-mono text-[15px] font-bold tracking-wide text-navy-900">
+              {f.value}
+              {f.unit}
+            </span>
+            <span className={cx("block text-navy-600", MONO)}>{`${f.article} · 기준일 ${f.basisDate} · 감수 ${f.reviewer}`}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
 function cell(col: Column, key: RowKey): ReactNode {
-  return key === "facts" ? <Facts facts={col.facts} /> : col.entry[key];
+  return key === "facts" ? <Facts facts={col.facts} note={col.entry.factsNote} /> : col.entry[key];
 }
 
 function MethodName({ col }: { col: Column }) {

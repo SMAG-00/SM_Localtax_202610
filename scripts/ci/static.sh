@@ -19,6 +19,7 @@ step "SM 플랫폼 식별자";      node scripts/check-forbidden-ids.mjs
 step "국세 미산출 (TX-06 — 세율표·계산 함수·rulesets 국세 세목·계산 경로·공개 입력 칸 0)"; node scripts/check-national-tax.mjs
 step "마이그레이션 RLS";      node packages/db/scripts/lint-migrations.mjs packages/db/supabase/migrations
 step "디자인 린트";           node scripts/check-design.mjs
+step "화면 고정 문구 숫자 (W4 2.12 — 개발방법·프로젝트 화면 소스의 숫자 요건 0)"; node scripts/check-fixed-numbers.mjs
 step "디자인 토큰·명칭 시험";   pnpm --filter @ltr/ui test
 step "점검·유사도·구조화 데이터 견본 시험 (W1-b)"; pnpm --filter @ltr/seo-lint --filter @ltr/similarity --filter @ltr/structured-data --filter @ltr/editorial test
 step "접근 판정·기사 변환 시험 (웹 서버 기능)"; pnpm --filter @ltr/web test

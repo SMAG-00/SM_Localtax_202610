@@ -189,6 +189,15 @@ describe("개발방법 비교표 (PR-09·PR-10·PR-11)", () => {
     expect(screen.queryByText(/확인 중/)).toBeNull();
   });
 
+  it("단위가 없는 숫자 요건(값만)도 기준일·감수자와 함께 그리고, 숫자 요건 비교 칸의 서명된 글은 값 목록 위에 둔다", () => {
+    render(<DevMethodComparison methods={{ redevelopment: { ...entry("재개발"), factsNote: "재개발 숫자 요건 비교 글", facts: [fact("재개발 최소 구역 수", "3", "")] } }} />);
+    const table = screen.getByRole("table");
+    expect(within(table).getByText("3")).toBeTruthy();
+    expect(within(table).getByText("도시정비법 제35조 · 기준일 2026-10-01 · 감수 감수자 A")).toBeTruthy();
+    const note = within(table).getByText("재개발 숫자 요건 비교 글");
+    expect(note.compareDocumentPosition(within(table).getByText("3")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("필수 비교 항목이 빈 방법은 공개하지 않는다", () => {
     render(<DevMethodComparison methods={{ ...all, public: { ...entry("공공 방식"), law: "" } }} />);
     expect(tableHeaders()).not.toContain("공공 방식");
