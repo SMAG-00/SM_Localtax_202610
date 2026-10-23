@@ -168,3 +168,34 @@ test("anon — 두 설정 키와 뷰는 읽고 다른 설정 키는 못 읽는�
       await client.query("reset role");
     }
   }));
+
+test("기능 키 켜기 조건(26단계) — 승인된 입문 기사 없으면 켜기 거부 · 승인 전·다른 하위 분야·비공개·승인 기록 없음도 거부 · 승인되면 켜짐 · 끄기와 이미 켜진 값은 검사 0", () =>
+  tx(async () => {
+    await client.query("set local session_replication_role = replica");
+    await client.query("update public.settings set value = value || '{\"inheritance_gift\": false}'::jsonb where key = 'feature_flags'");
+    const turnOn = () => attempt("update public.settings set value = value || '{\"inheritance_gift\": true}'::jsonb where key = 'feature_flags' returning key");
+    await client.query("set local session_replication_role = origin"); // 켜기 검사 트리거를 보려면 트리거를 켠 채로
+    const base = await turnOn();
+    assert.equal(base.ok, false, "입문 기사 0건이면 거부");
+    assert.match(base.message, /세무 감수가 승인된 입문 기사/);
+    await client.query("set local session_replication_role = replica");
+    const person = await one("insert into public.people (name, slug, roles) values ('시험용 감수자', 'w4ig-gate-' || txid_current(), '{reviewer}') returning id");
+    const pending = await article({ tax_review_status: "pending" });
+    const draft = await article({ status: "draft" });
+    const other = await article({ category_id: (await one("select id from public.categories where section = 'realestate' and slug = 'columns'")).id });
+    const noRecord = await article();
+    for (const id of [pending, draft, other]) await review(id, person.id, "approve", "2026-10-01T03:00:00Z");
+    assert.ok(noRecord > 0);
+    await client.query("set local session_replication_role = origin");
+    const gate = (await one("select public.inheritance_gift_gate_missing() as m")).m;
+    assert.match(gate ?? "", /세무 감수가 승인된 입문 기사/, "승인 전·비공개·다른 하위 분야·승인 기록 없음은 조건을 채우지 못한다");
+    assert.equal((await turnOn()).ok, false);
+    await client.query("set local session_replication_role = replica");
+    const ok = await article();
+    await review(ok, person.id, "approve", "2026-10-05T03:00:00Z");
+    await client.query("set local session_replication_role = origin");
+    assert.equal((await one("select public.inheritance_gift_gate_missing() as m")).m, null);
+    assert.ok((await turnOn()).ok, "승인된 입문 기사 + 고지가 있으면 켜짐");
+    assert.ok((await attempt("update public.settings set value = value || '{\"inheritance_gift\": true, \"sm_calculator\": false}'::jsonb where key = 'feature_flags' returning key")).ok, "이미 켜진 값은 검사 0");
+    assert.ok((await attempt("update public.settings set value = value || '{\"inheritance_gift\": false}'::jsonb where key = 'feature_flags' returning key")).ok, "끄기 검사 0");
+  }));

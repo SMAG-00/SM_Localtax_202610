@@ -127,6 +127,32 @@ export class StaffFixture {
     if (id) this.articleIds.add(Number(id));
   }
 
+  /** 상속·증여 입문 기사 — 세무 감수 승인된 공개 해설 1건(감수자 인물 포함). 기능 키 inheritance_gift 켜기 조건(W4 26단계)을 채운다.
+   *  발행 절차는 다른 시험 몫이라 트리거를 끈 세션으로 직접 넣는다. 정리는 cleanup이 한다 */
+  async makeIntroArticle(label) {
+    const cat = (await this.db.query("select id from public.categories where section = 'realestate' and slug = 'inheritance-gift'")).rows[0];
+    const person = (await this.db.query("insert into public.people (name, slug, roles) values ('시험용 감수위원', $1, '{reviewer}') returning id", [`intro-rv-${label}-${this.run}`])).rows[0];
+    this.personIds.add(Number(person.id));
+    await this.db.query("begin");
+    try {
+      await this.db.query("set local session_replication_role = replica");
+      const a = (
+        await this.db.query(
+          `insert into public.articles (slug, title, summary, section, content_type, status, category_id, tax_review_status, first_published_at)
+           values ($1, $2, '시험용 요약', 'realestate', 'explainer', 'published', $3, 'approved', now()) returning id`,
+          [`intro-art-${label}-${this.run}`, `시험용 입문 기사 ${label}`, cat.id],
+        )
+      ).rows[0];
+      await this.db.query("insert into public.editorial_reviews (article_id, kind, reviewer_id, decision, at) values ($1, 'tax_review', $2, 'approve', '2026-10-05T03:00:00Z')", [a.id, person.id]);
+      await this.db.query("commit");
+      this.trackArticle(a.id);
+      return Number(a.id);
+    } catch (err) {
+      await this.db.query("rollback");
+      throw err;
+    }
+  }
+
   trackAssignment(id) {
     if (id) this.assignmentIds.add(Number(id));
   }

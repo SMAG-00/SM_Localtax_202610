@@ -109,3 +109,12 @@ export const lensNeedsNationalCard = (topics: readonly string[]): boolean => top
 /** [취득세 계산하기] 버튼 — 기능 키 self_calculator가 켜졌을 때만 (FAM-01 2단계 플래그). 꺼짐 → null = 요소 0 */
 export const SELF_CALCULATOR_HREF = "/calc/acquisition";
 export const selfCalculatorHref = (open: boolean): string | null => (open ? SELF_CALCULATOR_HREF : null);
+
+/** 기능 키 inheritance_gift 켜기 조건 (W4 26단계 — 설계 2.4). DB 트리거 …59 inheritance_gift_flag_guard와 같은 규칙.
+ *  세무 게이트 승인 기록 = 입문 기사의 세무 감수 승인 기록, 승인된 공개 해설 기사 1건 이상 + 고지 문구 */
+export function inheritanceGiftEnableErrors(approvedIntroArticles: number, notice: unknown): string[] {
+  const errors: string[] = [];
+  if (approvedIntroArticles < 1) errors.push("feature_flags.inheritance_gift: 세무 감수가 승인된 입문 기사(공개 해설) 1건이 필요합니다");
+  if (typeof notice !== "string" || notice.trim() === "") errors.push("feature_flags.inheritance_gift: 고지 문구(inheritance_gift_notice)가 필요합니다");
+  return errors;
+}

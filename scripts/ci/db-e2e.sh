@@ -87,3 +87,5 @@ step "W4 /realestate 허브 확장 E2E (22단계 — 기능 키 꺼짐 요소 0 
 step "W4 상속·증여 안내 E2E (23단계 — 키 꺼짐 목록·404 / 세 경로 고지 1·FAM-08 카드 1·SM 취득세 카드 1·입문 기사 배지·감수일 / 상황 카드·누름 1건 / 새 창·끊김 국세청·숨김 / self_calculator 버튼 / 설정 API 422 / 360·1280px·R1~R3·접근성 95)"; node --test --test-concurrency=1 e2e/w4-inheritance-gift.test.mjs
 step "W4 지역 측정 이벤트 E2E (24단계 — 허브 열면 region_viewed 1건 / 세금 연결·부동산·공식 원문·기사 누름 1건 / 프로젝트·개발방법 열람 / 측정 거부·GPC·편집자 0건)"; node --test --test-concurrency=1 e2e/w4-region-measure.test.mjs
 step "W4 지역 성과 대시보드 E2E (25단계 — 지역 탭 비율마다 분자/분모·자체 취재 2/2·근거 1/2·재방문 30일째 포함 31일째 제외·이동 봇/편집국 제외 / 편집비 빈 달 편집비 미입력·입력 API 사유 필수·422·unchanged·감사 / 화면 폼 / 편집 책임자 403 / 360px)"; node --test --test-concurrency=1 e2e/w4-region-dashboard.test.mjs
+
+step "W4 수용 E2E (26단계 — 프로젝트 원문 없이 차단·단계 원문 100%·가격·수익률 칸 0·추천 0·시범 지역 최소선 리포트(2곳 충족/한 시·도 미달)·허브 블록 순서 ②③⑤·지역 기사 편집 범위·빈 시·군·구·자료 출처 누락 422·분양 원고 sponsored·개발방법 비교·상속·증여 켜기 조건과 외부 연결·여정 1(홈→지역→기사→공식 원문→세금)·여정 2(검색→프로젝트→박스→SM 카드)·링크 404 0·360/1280px·접근성 95·키 꺼짐 404·정리 뒤 행 수 같음)"; node --test --test-concurrency=1 e2e/w4-acceptance.test.mjs

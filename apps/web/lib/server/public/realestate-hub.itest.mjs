@@ -69,6 +69,27 @@ beforeAll(async () => {
   await db.connect();
   for (const k of ["feature_flags", "pilot_regions", "project_types", "project_stage_lists"]) saved[k] = (await one("select value from public.settings where key = $1", [k])).value;
   expect(saved.feature_flags.realestate_projects).toBe(false);
+  // 상속·증여 키 켜기 조건(W4 26단계) — 세무 감수 승인된 입문 기사 1건. 발행 절차는 다른 시험 몫이라 트리거를 끈 세션으로 직접 넣는다
+  {
+    const cat = await one("select id from public.categories where section = 'realestate' and slug = 'inheritance-gift'");
+    const person = await one("insert into public.people (name, slug, roles) values ('시험용 감수위원', $1, '{reviewer}') returning id", [`itest-reh-rv-${RUN}`]);
+    w.person = Number(person.id);
+    await db.query("begin");
+    try {
+      await db.query("set local session_replication_role = replica");
+      const a = await one(
+        `insert into public.articles (slug, title, summary, section, content_type, status, category_id, tax_review_status, first_published_at)
+         values ($1, '시험용 입문 기사', '시험용 요약', 'realestate', 'explainer', 'published', $2, 'approved', now()) returning id`,
+        [`itest-reh-intro-${RUN}`, cat.id],
+      );
+      w.intro = Number(a.id);
+      await db.query("insert into public.editorial_reviews (article_id, kind, reviewer_id, decision, at) values ($1, 'tax_review', $2, 'approve', now())", [w.intro, w.person]);
+      await db.query("commit");
+    } catch (err) {
+      await db.query("rollback");
+      throw err;
+    }
+  }
   expect((await one("select count(*)::int n from public.regions where code like '99%'")).n).toBe(0);
 
   w.sidoSlug = `itest-reh-${RUN}`;
@@ -114,6 +135,11 @@ afterAll(async () => {
     await db.query("delete from public.projects where id = any($1::bigint[])", [made.projects]);
     await db.query("delete from public.raw_snapshots where id = any($1::bigint[])", [made.snapshots]);
     await db.query("delete from public.regions where code = any($1::text[])", [made.regions]);
+    if (w.intro) {
+      await db.query("delete from public.editorial_reviews where article_id = $1", [w.intro]);
+      await db.query("delete from public.articles where id = $1", [w.intro]);
+    }
+    if (w.person) await db.query("delete from public.people where id = $1", [w.person]);
     for (const [k, v] of Object.entries(saved)) await setSetting(k, v);
     await db.query("commit");
   } catch (err) {

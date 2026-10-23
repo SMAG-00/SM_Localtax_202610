@@ -7,7 +7,7 @@ import { mailConfigured } from "@/lib/server/mail/config";
 import { parseFeatures } from "@/lib/server/public/settings";
 import { pilotRegionsRegionErrors } from "@/lib/server/public/region-index-logic";
 import { projectSettingsCrossErrors } from "@/lib/admin/project-rules";
-import { inheritanceSituationsCrossErrors, type SituationFacts } from "@/lib/server/public/inheritance-gift-logic";
+import { inheritanceGiftEnableErrors, inheritanceSituationsCrossErrors, type SituationFacts } from "@/lib/server/public/inheritance-gift-logic";
 import { devMethodsEnableErrors } from "@/lib/admin/dev-method-rules";
 import { loadReadiness } from "@/lib/server/dev-methods/board";
 import { isoToKstDate } from "@/lib/admin/form-utils";
@@ -104,6 +104,29 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
         return errorJson(422, "개발방법 비교를 켤 수 없습니다 — 7개 방법의 비교 항목 6칸과 세무 감수 서명이 모두 있어야 합니다", { errors: methodErrors });
       }
     }
+  }
+
+  // 상속·증여 안내 켜기 (W4 26단계 — 설계 2.4): 세무 감수 승인된 입문 기사 1건 + 고지 문구. DB 트리거(…59)가 같은 조건을 다시 본다
+  if (key === "feature_flags" && parseFeatures(value).inheritance_gift && !parseFeatures(current.value).inheritance_gift) {
+    const { data: art, error: artErr } = await db
+      .from("articles")
+      .select("id, categories!inner(section, slug)")
+      .eq("status", "published")
+      .eq("content_type", "explainer")
+      .eq("tax_review_status", "approved")
+      .eq("categories.section", "realestate")
+      .eq("categories.slug", "inheritance-gift");
+    if (artErr) throw dbError(artErr, "입문 기사 읽기");
+    const ids = (art ?? []).map((a) => Number(a.id));
+    let approved = 0;
+    if (ids.length) {
+      const { data: revs, error: revErr } = await db.from("editorial_reviews").select("article_id").in("article_id", ids).eq("kind", "tax_review").eq("decision", "approve");
+      if (revErr) throw dbError(revErr, "세무 감수 기록 읽기");
+      approved = new Set((revs ?? []).map((r) => Number(r.article_id))).size;
+    }
+    const noticeRow = await readSetting(db, "inheritance_gift_notice");
+    const gateErrors = inheritanceGiftEnableErrors(approved, noticeRow?.value);
+    if (gateErrors.length) return errorJson(422, "상속·증여 안내를 켤 수 없습니다 — 세무 게이트 승인 기록(입문 기사 세무 감수)과 고지 문구가 필요합니다", { errors: gateErrors });
   }
 
   const saved = await writeSetting(db, current, value, actorOf(viewer));
