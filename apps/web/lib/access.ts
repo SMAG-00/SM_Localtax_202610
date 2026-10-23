@@ -66,7 +66,8 @@ export const ACTIONS = {
   "brand.manage": "인물 페이지·표준 약력·증빙·동의 기록",
   "brand.approve": "브랜드 공개 승인 — 증빙 승인·동의서 기록/철회·경력 표시 승인·광고 규정 감수 기록·brand_copy 켜기 (관리자·PO만, W3 설계 6장)",
   "expert.manage": "전문가 등재·연락 요청 처리",
-  "metrics.read": "측정 지표 대시보드 열람 (GROW-01)",
+  "metrics.read": "측정 지표 대시보드 열람 (GROW-01 · 지역 탭 REG1-15)",
+  "region_cost.edit": "지역 편집비 입력·변경 (REG1-15 — 관리자(운영 책임자)만, W4 설계 6장)",
   "readiness.read": "기사 생산·제휴 준비 대시보드 열람 (NAV-13·14)",
   "readiness.requirements": "제휴 규정 버전 등록·고치기·확정 (NAV-13)",
   "query_terms.read": "검색어 집계 열람 (SRCH-03 — 편집 기획 참고)",
@@ -325,6 +326,7 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     // 측정 지표 대시보드(/admin/metrics) — PRD-00 6장 표에 행이 없어 관리자 전권만(같은 표의 수익 대시보드도 관리자만).
     // 집계 숫자를 읽는 일이라 거부는 감사 대상(AUDITED_DENIALS)이 아니다 (W2-c 설계 9장)
     case "metrics.read":
+    case "region_cost.edit":
       return viewer.isAdmin ? ALLOW : deny(ADMIN_ONLY);
 
     // 기사 생산·제휴 준비 대시보드와 규정 버전 (NAV-13·14) — PRD-01A 3장 화면 '편집 책임자·관리자만'.

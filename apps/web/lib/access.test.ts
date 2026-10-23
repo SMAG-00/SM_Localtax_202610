@@ -99,6 +99,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "brand.approve":          [X, X, X, X, X, X, X, O, X], // W3 7단계 — 증빙 승인·동의서·경력 표시 승인은 관리자(PO)만 (설계 6장)
   "expert.manage":          [X, X, X, X, X, X, O, O, X],
   "metrics.read":           [X, X, X, X, X, X, X, O, X], // GROW-01 지표 대시보드 — PRD-00 6장에 행이 없어 관리자 전권만 (수익 대시보드와 같다, W2-c 설계 9장)
+  "region_cost.edit":       [X, X, X, X, X, X, X, O, X], // REG1-15 지역 편집비 입력 — 관리자(운영 책임자)만 (W4 설계 6장)
   "readiness.read":         [X, O, X, X, X, X, X, O, X], // NAV-13·14 기사 생산·제휴 준비 대시보드 — PRD-01A 3장 '편집 책임자·관리자만'
   "readiness.requirements": [X, O, X, X, X, X, X, O, X], // NAV-13 규정 버전 등록·확정 — 같은 화면의 담당자(편집 책임자·관리자)
   "query_terms.read":       [X, O, X, X, X, X, X, O, X], // SRCH-03 검색어 집계 — 동의어 사전을 고치는 사람(편집 책임자·관리자)과 같다 (W2-d 설계 8.3)
