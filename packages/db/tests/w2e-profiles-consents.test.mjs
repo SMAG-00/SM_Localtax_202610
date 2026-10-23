@@ -49,7 +49,8 @@ const putProfile = (id, cols = {}) => {
   return attempt(`insert into public.profiles (${keys.join(", ")}) values (${keys.map((_, i) => `$${i + 1}`).join(", ")}) returning *`, [id, ...Object.values(cols)]);
 };
 const setProfile = (id, col, value) => attempt(`update public.profiles set ${col} = $2 where id = $1 returning *`, [id, value]);
-const SIDO = ["1100000000", "2600000000", "2700000000", "2800000000", "2900000000", "3000000000", "3100000000", "3600000000"];
+// 오늘 유효한 시·도만 (2900000000 광주광역시는 W4 2단계 전국 적재로 폐지 — 새로 단 코드는 오늘 유효해야 한다)
+const SIDO = ["1100000000", "2600000000", "2700000000", "2800000000", "4100000000", "3000000000", "3100000000", "3600000000"];
 const HASH = (c) => c.repeat(64);
 
 test("설계 2.2 member 블록을 읽었다 — 관심 분야 20 · 관심 지역 3 · 표시 이름 30", () => {

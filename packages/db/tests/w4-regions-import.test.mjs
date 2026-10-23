@@ -25,6 +25,16 @@ before(async () => {
 });
 after(async () => client?.end());
 
+/**
+ * 이 시험은 "시·도 17 씨앗만 있는 DB"에서 시작하는 도구 시험이다. 2단계 전국 적재(20261024000062)가 DB에 들어갔으므로,
+ * 거래 안에서 그 적재 결과(시·군·구·통합 신설 시·도·옛 주소·폐지 표시)를 씨앗 상태로 되돌린 뒤 시작한다 (거래 끝에 롤백 — 실제 데이터는 그대로)
+ */
+async function resetToSeed() {
+  await client.query("delete from public.region_slug_redirects where region_code = '1200000000'");
+  await client.query("update public.regions set valid_to = null, successor_code = null, import_run_id = null where code in ('2900000000', '4600000000')");
+  await client.query("delete from public.regions where level = 'sigungu' and code !~ '^99'");
+  await client.query("delete from public.regions where code = '1200000000'");
+}
 async function tx(fn) {
   await client.query("begin");
   try {
@@ -256,6 +266,7 @@ test("⑤ RLS — 적재 기록·옛 주소 표는 anon·authenticated 권한 �
 
 test("⑥ 도구가 만든 데이터 마이그레이션 — v1 적용 = 계산한 상태 · 두 번 적용 = 같음 · 같은 파일 다시 = 차이 0 · v2(개칭·폐지·새 지역) 적용 = 계산한 상태", () =>
   tx(async () => {
+    await resetToSeed();
     await addSido(); // 가짜 시·도는 씨앗처럼 먼저 있다 (실제 적재에서 시·도 17은 씨앗)
     const r1 = pipelineFor("v1.utf8.txt", { current: await currentFromDb(client) });
     assert.deepEqual(r1.plan.counts, { added: 6, renamed: 0, retired: 0, unchanged: 18 });

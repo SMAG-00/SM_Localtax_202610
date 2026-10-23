@@ -20,7 +20,25 @@ export const RESERVED_SLUGS = Object.freeze(["events", "weekly", "places", "fest
 /** W2-b regions.slug 형식 — DB check와 같다 */
 export const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+/**
+ * 원본 파일 형식 (12장 #1·#176) — 형식마다 열 머리·구분자·이름을 만드는 방법이 다르다. 모르는 형식은 바로 중단.
+ *  · code-go-kr = 행정표준코드관리시스템 「법정동코드 전체자료」 (열 머리·구분자는 아래 DEFAULTS header·delimiter — 기존 동작)
+ *  · molit-csv = 공공데이터포털 「국토교통부_전국 법정동」 CSV (UTF-8 BOM·쉼표). 법정동명 = 시도명·시군구명·읍면동명·리명 중 빈 칸을 뺀 것을 공백으로 이은 것
+ *    (code.go.kr 파일이 이름을 짓는 방식과 같다). '존재' 코드만 들어 있어 폐지여부 열이 없다 — 모든 행을 존재로 본다
+ */
+export const SOURCE_FORMATS = Object.freeze({
+  "code-go-kr": Object.freeze({ kind: "tabular" }),
+  "molit-csv": Object.freeze({
+    kind: "molit",
+    header: Object.freeze(["법정동코드", "시도명", "시군구명", "읍면동명", "리명", "순번", "생성일자"]),
+    delimiter: "comma",
+    nameColumns: 4,
+  }),
+});
+
 export const DEFAULTS = Object.freeze({
+  /** 원본 파일 형식 — SOURCE_FORMATS 키 */
+  format: "code-go-kr",
   // 12장 #1 — 원본 파일 형식 [확인 필요 — 파일 이름·묶음·인코딩·열·배포일은 2단계에서 실제 파일로 확인]
   header: Object.freeze(["법정동코드", "법정동명", "폐지여부"]),
   delimiter: "tab",
@@ -45,6 +63,7 @@ export const ENCODINGS = Object.freeze({ cp949: "euc-kr", "euc-kr": "euc-kr", "u
 /** 설정 합치기 — 모르는 선택지는 바로 오류 (조용히 기본값으로 바꾸지 않는다) */
 export function resolveOptions(over = {}) {
   const o = { ...DEFAULTS, ...Object.fromEntries(Object.entries(over).filter(([, v]) => v !== undefined)) };
+  if (!SOURCE_FORMATS[o.format]) throw new Error(`--format은 ${Object.keys(SOURCE_FORMATS).join("·")} 중 하나입니다: ${o.format}`);
   if (!DELIMITERS[o.delimiter]) throw new Error(`--delimiter는 ${Object.keys(DELIMITERS).join("·")} 중 하나입니다: ${o.delimiter}`);
   if (!["suffix", "plain"].includes(o.slugStyle)) throw new Error(`slug 모양은 suffix·plain 중 하나입니다: ${o.slugStyle}`);
   if (o.generalGu !== "parent_alias") throw new Error(`일반구 처리는 지금 parent_alias만 됩니다(12장 #4 — 일반구 허브는 regions 단계 변경이 필요): ${o.generalGu}`);

@@ -1,7 +1,8 @@
 // 2.6 4 검증 — 부모·시·도 씨앗 대조·같은 이름 하위 행(12장 #5) → 넣을 지역 목록(desired)
 //  · '존재' 시·군·구·일반구마다 같은 앞 2자리 '존재' 시·도
 //  · '존재' 일반구의 상위 시도 '존재'
-//  · 원본의 '존재' 시·도 = 기준 시·도 목록(W2-b 씨앗 17)과 코드·이름이 같다 (빠짐·더함·이름 다름 모두 중단)
+//  · 원본의 '존재' 시·도 = 기준 시·도 목록(W2-b 씨앗 17 + 이번에 더하는 시·도 --new-sido)과 코드·이름이 같다 (빠짐·더함·이름 다름 모두 중단)
+//    예외: 씨앗 시·도가 원본에 행이 아예 없고 사람이 후속 입력(--successors)에 폐지로 적었으면(retiringSido) 멈추지 않고 넣을 목록에서 뺀다 — 폐지는 차이 보고가 처리한다
 //  · 시·도와 이름이 같은 하위 행(세종 등): 설정 sameNameChild에 따라 — sido_alias(권고) = 넣지 않음 / sigungu = 시·군·구 행
 import fs from "node:fs";
 import { resolveOptions } from "./config.mjs";
@@ -38,7 +39,7 @@ export function loadSidoSeed(paths) {
  * classified(classifyRows 결과의 rows) → { desired, notes, problems }
  * desired = { sido: [{code,name,slug,aliases}], sigungu: [{code,parentCode,name,line}], generalGu: [{code,cityCode,cityName,name,line}] }
  */
-export function validateRows(classified, { expectedSido, ...over } = {}) {
+export function validateRows(classified, { expectedSido, retiringSido = new Set(), ...over } = {}) {
   const o = resolveOptions(over);
   if (!expectedSido?.length) throw new Error("기준 시·도 목록(expectedSido)이 없습니다");
   const byCode = new Map(classified.map((r) => [r.code, r]));
@@ -51,7 +52,8 @@ export function validateRows(classified, { expectedSido, ...over } = {}) {
   const expectedCodes = new Set(expectedSido.map((s) => s.code));
   for (const s of expectedSido) {
     const r = byCode.get(s.code);
-    if (!r) problems.push(problem("SEED_MISMATCH", `씨앗 ${s.code} ${s.name}이 원본에 없습니다`));
+    if (!r && retiringSido.has(s.code)) notes.push(`씨앗 시·도 ${s.code} ${s.name} — 원본에 행이 없고 후속 입력에 폐지로 적혀 있어 넣지 않고 폐지로 처리합니다`);
+    else if (!r) problems.push(problem("SEED_MISMATCH", `씨앗 ${s.code} ${s.name}이 원본에 없습니다`));
     else if (r.rowClass !== "sido" || r.status !== "active") problems.push(problem("SEED_MISMATCH", `씨앗 ${s.code} ${s.name}이 원본에서 '존재' 시·도가 아닙니다`, r.line));
     else if (r.fullName !== s.name) problems.push(problem("SEED_MISMATCH", `${s.code} 이름 — 씨앗 '${s.name}' · 원본 '${r.fullName}'`, r.line));
     else desired.sido.push({ code: s.code, name: s.name, slug: s.slug, aliases: [...s.aliases] });

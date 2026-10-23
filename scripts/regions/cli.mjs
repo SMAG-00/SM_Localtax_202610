@@ -10,6 +10,8 @@
 //        [--slug-review <region_slugs.review.csv>] [--successors <후속 입력.csv — code,successor_code,valid_to,basis>]
 //        [--record-dry-run]                      region_import_runs에 dry_run 1행 (DB)
 //        [--emit --approved-by <PO 승인자> [--migration-dir <폴더>] [--migration-name <파일 이름>]]
+//        [--format code-go-kr|molit-csv]         원본 형식 (기본 code-go-kr · 공공데이터포털 국토교통부 CSV는 molit-csv + --encoding utf-8)
+//        [--new-sido <시·도.json>]...            이번 적재가 더하는 시·도 [{code,name,slug,aliases}] (씨앗에 없는 새 시·도, 예: 통합 신설)
 //        [--slug-style suffix|plain] [--same-name-child sido_alias|sigungu] [--delimiter tab|comma] [--today YYYY-MM-DD]
 // 결과 폴더: report.md(차이 보고서) · report.json · region_slugs.review.csv · derived.json(파생 파일) · regions.after.json(적용 뒤 상태)
 // 끝 코드: 0 통과 · 1 멈춤(문제 목록) · 2 사용법 오류
@@ -37,7 +39,7 @@ export function runPipeline(input) {
   const text = decode(input.bytes, input.encoding);
   const parsed = parseSource(text, options);
   const classified = classify(parsed.rows);
-  const validated = validate(classified.rows, { expectedSido: input.expectedSido, ...options });
+  const validated = validate(classified.rows, { expectedSido: input.expectedSido, retiringSido: new Set((input.successors ?? new Map()).keys()), ...options });
   const slugged = slugs(validated.desired, { current: input.current, review: input.review ?? new Map(), ...options });
   const p = makePlan(slugged.entries, input.current, { fileRows: classified.rows, successors: input.successors ?? new Map(), today });
   const source = {
@@ -46,11 +48,12 @@ export function runPipeline(input) {
     sha256: actualSha,
     rowsTotal: parsed.rows.length,
     encoding: input.encoding,
+    format: options.format,
     downloadedOn: input.downloadedOn,
     sourceUrl: input.sourceUrl,
   };
   const derived = {
-    source: { file_name: source.fileName, file_date: source.fileDate, sha256: source.sha256, rows_total: source.rowsTotal, encoding: source.encoding },
+    source: { file_name: source.fileName, file_date: source.fileDate, sha256: source.sha256, rows_total: source.rowsTotal, encoding: source.encoding, format: source.format },
     class_counts: classCountsJson(classified.counts),
     rows: classified.rows
       .filter((r) => r.rowClass !== "sub_district")
@@ -88,7 +91,7 @@ export function reportMarkdown(r, { currentLabel, seedLabel } = {}) {
   L.push(`| 배포일 | ${r.source.fileDate} |`);
   L.push(`| SHA-256 | \`${r.source.sha256}\` |`);
   L.push(`| 받은 날 · 받은 곳 | ${cell(r.source.downloadedOn ?? "[기록 없음]")} · ${cell(r.source.sourceUrl ?? "[기록 없음]")} |`);
-  L.push(`| 인코딩 | ${r.source.encoding} |`);
+  L.push(`| 인코딩 · 형식 | ${r.source.encoding} · ${r.source.format} |`);
   L.push(`| 비교한 지금 상태 | ${cell(currentLabel ?? "")} |`);
   L.push(`| 기준 시·도 | ${cell(seedLabel ?? "")} |`);
   L.push(`| 유효 판단 기준일 | ${r.today} |`);
@@ -157,6 +160,8 @@ async function main(argv) {
         "approved-by": { type: "string" },
         "migration-dir": { type: "string" },
         "migration-name": { type: "string" },
+        format: { type: "string" },
+        "new-sido": { type: "string", multiple: true },
         "slug-style": { type: "string" },
         "same-name-child": { type: "string" },
         delimiter: { type: "string" },
@@ -174,9 +179,12 @@ async function main(argv) {
   }
   let client;
   try {
-    const options = resolveOptions({ slugStyle: args["slug-style"], sameNameChild: args["same-name-child"], delimiter: args.delimiter });
+    const options = resolveOptions({ slugStyle: args["slug-style"], sameNameChild: args["same-name-child"], delimiter: args.delimiter, format: args.format });
     const seedPaths = args["sido-seed"]?.length ? args["sido-seed"] : [SIDO_SEED_MIGRATION];
-    const expectedSido = loadSidoSeed(seedPaths);
+    const seedSido = loadSidoSeed(seedPaths);
+    const newSido = args["new-sido"]?.length ? loadSidoSeed(args["new-sido"]) : [];
+    for (const s of newSido) if (seedSido.some((x) => x.code === s.code)) throw new Error(`--new-sido ${s.code}는 이미 기준 시·도에 있습니다`);
+    const expectedSido = [...seedSido, ...newSido];
     let dbHost;
     if (args.current === "db" || args["record-dry-run"]) {
       const { connect, dbUrl } = await import("../../packages/db/scripts/db.mjs");
@@ -186,7 +194,7 @@ async function main(argv) {
     let current;
     let currentLabel;
     if (args.current === "seed") {
-      current = currentFromSeed(expectedSido);
+      current = currentFromSeed(seedSido); // 새 시·도(--new-sido)는 지금 상태에 없다 — added로 나온다
       currentLabel = "씨앗만 적용된 상태 (시·도만)";
     } else if (args.current === "db") {
       current = await currentFromDb(client);

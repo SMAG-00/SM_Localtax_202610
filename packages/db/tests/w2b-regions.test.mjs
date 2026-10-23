@@ -56,14 +56,16 @@ const gu = (code, over = {}) => ({ code, parent_code: SEOUL, level: "sigungu", n
 const kstDay = (days = 0) => new Date(Date.now() + 9 * 3600_000 + days * 86_400_000).toISOString().slice(0, 10);
 const article = (over = {}) => insert("articles", { slug: uniq("a"), title: "지역 기사", section: "local", content_type: "explainer", ...over });
 
-test("씨앗 — 시·도 17곳만, 코드·slug가 서로 다르고 모두 부모 없는 시·도 단계다", async () => {
+test("씨앗 — 시·도 17곳(+ W4 2단계 통합 신설 1곳), 코드·slug가 서로 다르고 모두 부모 없는 시·도 단계다", async () => {
   const { rows } = await client.query("select code, parent_code, level, name, slug, aliases from public.regions where code !~ '^9' order by code");
   const sido = rows.filter((r) => r.level === "sido");
-  assert.equal(sido.length, 17, JSON.stringify(rows.map((r) => r.name)));
-  assert.equal(rows.filter((r) => r.level === "sigungu").length, 0, "시·군·구는 W4 전국 적재 — 씨앗에 없다");
+  assert.equal(sido.length, 18, JSON.stringify(sido.map((r) => r.name)));
+  assert.ok(sido.some((r) => r.code === "1200000000" && r.name === "전남광주통합특별시"), "W4 2단계 전국 적재가 더한 통합 신설 시·도(마이그레이션 20261024000062)");
+  // 시·군·구는 W4 전국 적재(…62)가 넣는다 — 씨앗(…09)에는 없다. 여기서는 모두 시·도 아래인지만 본다
+  assert.ok(rows.filter((r) => r.level === "sigungu").every((r) => sido.some((s) => s.code === r.parent_code)));
   assert.ok(sido.every((r) => r.parent_code === null && /^\d{2}0{8}$/.test(r.code)));
-  assert.equal(new Set(sido.map((r) => r.slug)).size, 17);
-  assert.equal(new Set(sido.map((r) => r.name)).size, 17);
+  assert.equal(new Set(sido.map((r) => r.slug)).size, 18);
+  assert.equal(new Set(sido.map((r) => r.name)).size, 18);
   const byName = Object.fromEntries(sido.map((r) => [r.name, r]));
   assert.equal(byName["서울특별시"].code, "1100000000");
   assert.equal(byName["강원특별자치도"].code, "5100000000", "강원특별자치도 — 옛 강원도(42) 아님");
@@ -124,11 +126,12 @@ test("하위가 있는 행의 단계는 못 바꾸고, 하위가 없으면 바�
 
 test("(parent_code, slug) unique — 같은 시·도 안 slug 중복 거부, 시·도끼리도 중복 거부, 다른 시·도면 같은 slug 허용", () =>
   tx(async () => {
-    await insert("regions", gu("1199000000", { slug: "jung-gu" }));
-    const dup = await tryInsert("regions", gu("1199100000", { slug: "jung-gu" }));
+    const same = uniq("jung-gu"); // 서울 중구(jung-gu)는 전국 적재가 이미 넣었다 — 시험용 slug로
+    await insert("regions", gu("1199000000", { slug: same }));
+    const dup = await tryInsert("regions", gu("1199100000", { slug: same }));
     assert.equal(dup.ok, false);
     assert.equal(dup.code, "23505");
-    const other = await tryInsert("regions", { code: "2699000000", parent_code: BUSAN, level: "sigungu", name: "중구", slug: "jung-gu" });
+    const other = await tryInsert("regions", { code: "2699000000", parent_code: BUSAN, level: "sigungu", name: "중구", slug: same });
     assert.ok(other.ok, other.message);
     const sidoDup = await tryInsert("regions", { code: "9900000000", level: "sido", name: "또 서울", slug: "seoul" });
     assert.equal(sidoDup.ok, false, "부모가 없는 시·도끼리도 slug가 겹치면 안 된다 (nulls not distinct)");
