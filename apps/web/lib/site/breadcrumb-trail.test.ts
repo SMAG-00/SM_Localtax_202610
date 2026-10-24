@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { validate } from "@ltr/structured-data";
+import { brand } from "@ltr/ui";
 import { aboutOrganizationJsonLd } from "./org-jsonld";
 import { staticTrail, trailJsonLd } from "./breadcrumb-trail";
 
@@ -50,7 +51,7 @@ describe("매체 소개 NewsMediaOrganization — 발행 기관 SM(선명) (OPT-
     const org = nodes[0]!;
     expect(org["@type"]).toBe("NewsMediaOrganization");
     expect(org.name).toBe("SM(선명)");
-    expect(org.alternateName).toBe("김의효 지방세연구");
+    expect(org.alternateName).toBe(brand.productName); // 제품명 글자는 brand.ts 한 곳에만 (packages/ui/tests/brand.test.mjs)
     expect(org.url).toBe(`${SITE}/`);
     expect(org.ethicsPolicy).toBe(`${SITE}/about/ethics`);
     expect(org.publishingPrinciples).toBeUndefined();
