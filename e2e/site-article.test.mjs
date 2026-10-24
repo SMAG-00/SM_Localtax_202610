@@ -357,7 +357,7 @@ test("a) ART-02 — 머리·본문 블록·면책·기자 소개, 유형 배지 
   assert.equal((await head.locator("h1").textContent()).trim(), `주택 취득세, 잔금일부터 60일 안에 신고 ${staff.run}`);
   assert.match(await head.textContent(), /주택을 사면 취득일부터 60일 안에/);
   assert.equal(await head.locator('[data-ui="article-type-badge"]').textContent(), "해설", "유형 배지 글자 = explainer");
-  assert.equal(await head.locator('[data-ui="chip"]').first().textContent(), "지방세 › 해석");
+  assert.equal(await head.locator('[data-ui="chip"]').first().textContent(), "지방세·부동산세금 › 해석");
   assert.equal(await head.locator('[data-part="byline"] a').getAttribute("href"), `/people/${fx.reporterSlug}`);
   assert.equal(await head.locator('time[data-date="basis"]').textContent(), "2026-10-01");
   assert.equal(await head.locator('time[data-date="modified"]').count(), 0, "발행 직후에는 실질 수정일 0");
