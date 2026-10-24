@@ -2,17 +2,21 @@
 // 이 PC에서 사이트를 띄웁니다 (개발용, http://localhost:3001).
 //   pnpm dev:local
 // - 이 PC의 시험용 DB(로컬 Supabase, Docker)에 연결합니다. 꺼져 있으면 먼저 켭니다.
-// - 이 PC에서만 쓰는 시험용 관리자 계정을 처음 한 번 만들고, 이메일·비밀번호를 data-src/local-admin.txt(저장소에 안 올라감)에 적습니다.
+// - 이 PC에서만 쓰는 시험용 관리자 계정을 처음 한 번 만들고, 이메일·비밀번호를 비밀보관 폴더(문서\SM_Localtax_비밀보관\개발용주소-관리자-로그인.txt)에 적습니다.
+//   폴더는 LTR_SECRETS_DIR로 바꿀 수 있고, 폴더가 없으면 data-src/local-admin.txt(저장소에 안 올라감)에 적습니다.
 // - AI 도우미 키·모델은 apps/web/.env.local에서 Next가 읽습니다. 운영 DB·운영 계정에는 닿지 않습니다.
 import { execFileSync, spawn } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DB_DIR = path.join(ROOT, "packages", "db");
-const ADMIN_FILE = path.join(ROOT, "data-src", "local-admin.txt");
+/** 비밀번호는 한곳(비밀보관 폴더)에 둡니다 (2026-10-24 PO "비밀번호를 한곳에 보관하자") */
+const SECRETS_DIR = process.env.LTR_SECRETS_DIR ?? path.join(os.homedir(), "Documents", "SM_Localtax_비밀보관");
+const ADMIN_FILE = fs.existsSync(SECRETS_DIR) ? path.join(SECRETS_DIR, "개발용주소-관리자-로그인.txt") : path.join(ROOT, "data-src", "local-admin.txt");
 const ADMIN_EMAIL = "po@local.test";
 const shell = process.platform === "win32";
 
@@ -55,7 +59,7 @@ async function ensureLocalAdmin() {
   }
   fs.mkdirSync(path.dirname(ADMIN_FILE), { recursive: true });
   fs.writeFileSync(ADMIN_FILE, `이 PC 전용 시험용 관리자 (http://localhost:3001/admin)\n이메일: ${ADMIN_EMAIL}\n비밀번호: ${password}\n`, "utf8");
-  console.log(`시험용 관리자 계정을 만들었습니다 — 로그인 정보는 ${path.relative(ROOT, ADMIN_FILE)}에 있습니다.`);
+  console.log(`시험용 관리자 계정을 만들었습니다 — 로그인 정보는 ${ADMIN_FILE}에 있습니다.`);
 }
 await ensureLocalAdmin();
 
