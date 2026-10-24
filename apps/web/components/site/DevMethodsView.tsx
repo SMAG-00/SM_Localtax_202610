@@ -1,3 +1,4 @@
+import { JsonLd } from "./JsonLd";
 import { breadcrumbList, toJsonLdScriptContent } from "@ltr/structured-data";
 import { Chip, DevMethodComparison, Eyebrow, TaxLensBox, UiLink } from "@ltr/ui";
 import type { DevMethodCrumb } from "@/lib/server/public/dev-methods-logic";
@@ -52,9 +53,9 @@ function Crumbs({ crumbs }: { crumbs: readonly DevMethodCrumb[] }) {
   );
 }
 
-function JsonLd({ breadcrumb }: { breadcrumb: DevMethodsListView["breadcrumb"] }) {
+function BreadcrumbJsonLd({ breadcrumb }: { breadcrumb: DevMethodsListView["breadcrumb"] }) {
   const json = breadcrumb ? toJsonLdScriptContent([breadcrumbList(breadcrumb)]) : null;
-  return json ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: json }} /> : null;
+  return <JsonLd content={json} />;
 }
 
 /** 특례법 근거 — 공포 확인과 행 확인이 맞는 행이 있을 때만 그린다(없으면 요소 0). 공포 원문은 링크만, 특례법 이름·요건 글자는 DB 값 그대로 */
@@ -80,7 +81,7 @@ function SpecialLawNote({ law }: { law: SpecialLawView | null }) {
 export function DevMethodsList({ view }: { view: DevMethodsListView }) {
   return (
     <div data-ui="dev-methods-list" data-method-count={String(view.methods.length)}>
-      <JsonLd breadcrumb={view.breadcrumb} />
+      <BreadcrumbJsonLd breadcrumb={view.breadcrumb} />
       <SiteSection id="dev-methods-head" tone="ivory" first data={{ "data-dev-methods-part": "head" }}>
         <Crumbs crumbs={view.crumbs} />
         <div className="mt-6">
@@ -106,7 +107,7 @@ export function DevMethodDetail({ view }: { view: DevMethodDetailView }) {
   const m = view.method;
   return (
     <div data-ui="dev-method-detail" data-method={m.slug}>
-      <JsonLd breadcrumb={view.breadcrumb} />
+      <BreadcrumbJsonLd breadcrumb={view.breadcrumb} />
       {/* 측정 (W4 24단계) — 상세를 열면 dev_method_viewed 1건(방법 slug). 공용 연결 카드가 놓이면 calculator_card_clicked(dev_method)로 센다 */}
       <MeasureView name="dev_method_viewed" section="realestate" props={{ method: m.slug }} />
       <MeasureCalculatorCards screen="dev_method" section="realestate" />

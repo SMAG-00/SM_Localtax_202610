@@ -22,6 +22,7 @@ import { phraseError } from "./dictionary-rules";
 import { blockedDomainsErrors, legalReviewSettingErrors, rebuttalWaitErrors } from "./finance-rules";
 import { digestSidosErrors, digestSourcesErrors, digestSummaryMaxErrors, eventBlockedDomainsErrors, eventRecheckErrors } from "./local-news-rules";
 import { PROJECT_LIMITS, projectStageListsErrors, projectTypesErrors } from "./project-rules";
+import { crawlerPolicyErrors, indexnowErrors, newsSitemapHoursErrors, seoLintParamsErrors } from "@/lib/seo/settings";
 import { EXPIRY_DAYS_DEFAULT, EXPIRY_DAYS_MAX, EXPIRY_DAYS_MIN, expiryDaysErrors } from "@/lib/source-review/rules";
 
 const SEARCH_CHIP_RANGE = [SEARCH_CHIPS_MIN, SEARCH_CHIPS_MAX] as const;
@@ -233,6 +234,29 @@ export interface SettingSpec {
 }
 
 export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
+  // ── W7 최적화 (docs/dev/W7_설계.md 2장) — 점검 엔진(gate.ts)·robots.txt·사이트맵이 같은 검사로 읽는다 ──
+  seo_lint_params: {
+    label: "최적화 점검 기준값 (OPT-03·10)",
+    guide:
+      '{ "seo.keyword-density": { "maxPercent": 8 }, "aeo.lead-answer": { "maxSentences": 2 } } — 규칙 파일 기본값을 덮어씁니다. 규칙 ID와 기준 이름은 규칙 파일(packages/seo-lint/rules)에 있는 것만, 정수·글자 형식이 맞는 값만 적용됩니다(틀린 항목은 무시). 차단 항목의 등급·가중치는 바꿀 수 없습니다. 비우려면 {}. 바꾸면 배포 없이 다음 점검부터',
+    check: (value) => seoLintParamsErrors(value),
+  },
+  crawler_policy: {
+    label: "크롤러 정책 (OPT-08)",
+    guide:
+      '{ "search": ["<검색 크롤러 이름>"], "ai_training": { "decided": false, "agents": [{ "name": "<AI 학습 크롤러 이름>", "allow": false }] } } — robots.txt가 이 값으로 만들어집니다. AI 학습 크롤러 허용 여부를 PO가 정하기 전(decided=false)에는 색인을 켤 수 없고 robots.txt는 전체 차단입니다(PRD_최종 §13 #3). 크롤러 이름은 공식 문서에서 확인해 적습니다',
+    check: (value) => crawlerPolicyErrors(value),
+  },
+  news_sitemap_hours: {
+    label: "뉴스 사이트맵 기간 (OPT-01)",
+    guide: "1~168 정수(시간) — 이 시간 안에 발행된 기사만 뉴스 사이트맵에 담깁니다 (초기값 48 [확인 필요: 검색 엔진 권장 기간]). 바꾸면 배포 없이 다음 요청부터",
+    check: (value) => newsSitemapHoursErrors(value),
+  },
+  indexnow: {
+    label: "IndexNow 전송 (OPT-01)",
+    guide: '{ "enabled": false } — 지원 범위 실사(PRD_최종 §13 #18) 뒤에만 true. 꺼져 있거나 SITE_INDEXING=off이면 전송 요청이 0건입니다',
+    check: (value) => indexnowErrors(value),
+  },
   forbidden_phrases: {
     label: "금지 표현 사전 (UX-01)",
     guide: '{ "version": "새 버전", "phrases": ["표현", …] } — 표현 하나씩 고치기는 사전 화면이 편합니다',

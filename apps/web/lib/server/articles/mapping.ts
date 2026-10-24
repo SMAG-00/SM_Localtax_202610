@@ -357,6 +357,33 @@ export interface LintExtras {
   structuredDataMismatches: readonly string[];
   /** 구조화 데이터(JSON-LD) headline 값 */
   structuredHeadline: string;
+  /** 직접 인용 블록 비율이 설정 기준을 넘음 (OPT-06) */
+  quoteWarning?: boolean;
+}
+
+/** 본문 글 — 문단·요약 상자·콜아웃·FAQ 답 (인용·표·이미지 설명 제외) — 키워드 반복 점검(OPT-10)의 입력 */
+export function bodyTextOf(article: ArticleForPublish): string {
+  return article.blocks
+    .flatMap((b) => {
+      switch (b.type) {
+        case "paragraph":
+        case "callout":
+          return [b.text];
+        case "key_summary":
+          return [...b.lines];
+        case "faq":
+          return b.items.map((i) => i.answer);
+        default:
+          return [];
+      }
+    })
+    .join("\n");
+}
+
+/** 리드 — 본문 첫 문단 (AEO 「리드 직접 답」) */
+export function leadOf(article: ArticleForPublish): string {
+  const first = article.blocks.find((b) => b.type === "paragraph");
+  return first?.type === "paragraph" ? first.text : "";
 }
 
 export function toLintArticle(graph: ArticleGraph, article: ArticleForPublish, view: ArticleView, opts: ViewOptions, extras: LintExtras): ArticleForLint {
@@ -384,7 +411,7 @@ export function toLintArticle(graph: ArticleGraph, article: ArticleForPublish, v
     sources: article.sources.map((s) => ({ id: s.id, kind: s.kind, title: s.title })),
     evidence: article.evidence.map((e) => ({ id: e.id })),
     structuredDataMismatches: extras.structuredDataMismatches,
-    similarity: { status: extras.similarityStatus },
+    similarity: { status: extras.similarityStatus, quoteWarning: extras.quoteWarning === true },
     sponsorship: {
       label: AD_LABELS[a.label] ?? "없음",
       partnerName: a.label === "co_planned" ? (graph.partner?.name ?? null) : null,
@@ -393,6 +420,8 @@ export function toLintArticle(graph: ArticleGraph, article: ArticleForPublish, v
     },
     // 블록 모델에 소제목 블록이 없다 — 질문형 소제목 점검은 경고로 남는다
     headings: [],
+    lead: leadOf(article),
+    bodyText: bodyTextOf(article),
     internalLinkCount: internalLinkCount(article, opts.siteUrl),
     images: [
       ...(article.leadImage ? [{ alt: article.leadImage.alt }] : []),

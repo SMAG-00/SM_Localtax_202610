@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { DarkButton } from "@ltr/ui";
 import { adminApi, apiErrorMessage } from "@/lib/admin/api-client";
-import { PANEL_COPY, PUBLISH_COPY, failedItemNames, panelView, publishButtonState, type CheckReport, type PanelItem } from "@/lib/admin/check-panel";
+import { CHECK_DEBOUNCE_MS, PANEL_COPY, PUBLISH_COPY, failedItemNames, panelView, publishButtonState, type CheckReport, type PanelItem } from "@/lib/admin/check-panel";
 import { ErrorSummary, StatusNote } from "./fields";
 import { MONO, OUTLINE_BUTTON, ToneChip } from "./ui";
 import { useHydrated } from "./useHydrated";
@@ -19,6 +19,7 @@ export function CheckPanel({
   canPublishRole,
   blockTypes,
   refreshKey,
+  draft = null,
   onChanged,
 }: {
   articleId: number;
@@ -27,6 +28,8 @@ export function CheckPanel({
   blockTypes: readonly string[];
   /** 바뀌면 다시 점검한다 (버전·게재 상태·검토 기록 수) */
   refreshKey: string;
+  /** 저장하지 않은 입력(저장 요청 본문과 같은 모양) — 있으면 입력이 멈춘 뒤 이 입력으로 다시 점검한다 (OPT-03). 저장본과 같으면 null */
+  draft?: Record<string, unknown> | null;
   onChanged: () => void;
 }) {
   const hydrated = useHydrated();
@@ -37,19 +40,28 @@ export function CheckPanel({
   const [published, setPublished] = useState("");
   const [publishFailure, setPublishFailure] = useState<{ title: string; details: string[] } | null>(null);
 
+  const draftJson = draft === null ? null : JSON.stringify(draft);
   useEffect(() => {
     let alive = true;
-    adminApi("GET", `/api/admin/articles/${articleId}/check`).then((r) => {
-      if (!alive) return;
-      if (r.status === 200) {
-        setReport(r.body as unknown as CheckReport);
-        setLoadError("");
-      } else setLoadError(apiErrorMessage(r));
-    });
+    // 저장 전 입력이 있으면 입력이 멈춘 뒤에 POST(같은 판정, 저장 없음). 늦게 온 응답은 버린다(alive)
+    const timer = setTimeout(
+      () => {
+        const request = draftJson === null ? adminApi("GET", `/api/admin/articles/${articleId}/check`) : adminApi("POST", `/api/admin/articles/${articleId}/check`, JSON.parse(draftJson));
+        request.then((r) => {
+          if (!alive) return;
+          if (r.status === 200) {
+            setReport(r.body as unknown as CheckReport);
+            setLoadError("");
+          } else setLoadError(apiErrorMessage(r));
+        });
+      },
+      draftJson === null ? 0 : CHECK_DEBOUNCE_MS,
+    );
     return () => {
       alive = false;
+      clearTimeout(timer);
     };
-  }, [articleId, refreshKey, nonce]);
+  }, [articleId, refreshKey, nonce, draftJson]);
 
   async function publish() {
     setPublishing(true);
@@ -73,14 +85,16 @@ export function CheckPanel({
   }
 
   const view = report ? panelView(report, blockTypes) : null;
-  const button = publishButtonState({ report, canPublishRole, status });
+  const button = publishButtonState({ report, canPublishRole, status, unsaved: draft !== null });
 
   return (
     <section data-testid="check-panel" aria-labelledby="check-title" className="rounded-2xl border border-navy-100 bg-white p-6">
       <h2 id="check-title" className="text-[19px] font-black text-navy-900">
         {PANEL_COPY.title}
       </h2>
-      <p className="mt-1 text-[14px] text-navy-600">{PANEL_COPY.basis}</p>
+      <p className="mt-1 text-[14px] text-navy-600" data-testid="check-basis">
+        {draft === null ? PANEL_COPY.basis : PANEL_COPY.draftBasis}
+      </p>
       {loadError && <ErrorSummary title={loadError} messages={[]} />}
       {!report && !loadError && (
         <p role="status" className="mt-3 text-[15px] text-navy-600">

@@ -159,16 +159,32 @@ export const PUBLISH_COPY = {
   published: "이미 발행된 기사입니다",
   deleted: "삭제된 기사는 발행할 수 없습니다",
   blocked: (n: number) => `차단 항목 ${n}개를 고치면 발행할 수 있습니다`,
+  unsaved: "저장하지 않은 변경이 있습니다 — 저장한 뒤 발행하세요",
 } as const;
 
+/** 입력이 멈춘 뒤 이 시간(ms)이 지나면 패널이 저장 전 입력으로 다시 점검한다 (OPT-03) */
+export const CHECK_DEBOUNCE_MS = 1000;
+
 /** 발행 버튼 — 차단 항목이 남거나, 발행 권한(article.publish)이 없거나, 이미 발행·삭제됐으면 꺼진다 */
-export function publishButtonState({ report, canPublishRole, status }: { report: CheckReport | null; canPublishRole: boolean; status: string }): {
+export function publishButtonState({
+  report,
+  canPublishRole,
+  status,
+  unsaved = false,
+}: {
+  report: CheckReport | null;
+  canPublishRole: boolean;
+  status: string;
+  /** 저장하지 않은 변경이 있음 — 발행은 저장본만 판정하므로 저장 뒤에 누른다 */
+  unsaved?: boolean;
+}): {
   disabled: boolean;
   reason: string | null;
 } {
   if (status === "published") return { disabled: true, reason: PUBLISH_COPY.published };
   if (status === "deleted") return { disabled: true, reason: PUBLISH_COPY.deleted };
   if (!canPublishRole) return { disabled: true, reason: PUBLISH_COPY.noRole };
+  if (unsaved) return { disabled: true, reason: PUBLISH_COPY.unsaved };
   if (report === null) return { disabled: true, reason: PUBLISH_COPY.loading };
   if (!report.canPublish || report.failed.length > 0) return { disabled: true, reason: PUBLISH_COPY.blocked(report.failed.length) };
   return { disabled: false, reason: null };
@@ -185,7 +201,8 @@ export function failedItemNames(report: Pick<CheckReport, "failed" | "seoLint">)
 /** 패널 고정 문구 — 점검 패널(components/admin/CheckPanel.tsx)이 이 글자만 쓰고, 시험이 금지어를 검사한다 */
 export const PANEL_COPY = {
   title: "최적화 점검",
-  basis: "저장된 버전 기준 점검입니다. 고친 내용은 저장한 뒤 다시 점검하세요.",
+  basis: "저장된 버전 기준 점검입니다.",
+  draftBasis: "저장 전 입력 기준 점검입니다. 입력이 멈추면 다시 계산하고, 발행은 저장한 뒤 할 수 있습니다.",
   blockers: "차단 항목 — 발행 불가",
   warnings: "경고 — 발행할 수 있고 발행 기록에 남습니다",
   editorialWarnings: "편집 경고 — 지역 기사 점검, 발행 기록에 남습니다",
@@ -206,4 +223,5 @@ export const PANEL_FIXED_COPY: readonly string[] = [
   PUBLISH_COPY.published,
   PUBLISH_COPY.deleted,
   PUBLISH_COPY.blocked(1),
+  PUBLISH_COPY.unsaved,
 ];

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { connection } from "next/server";
 import { Footer } from "@ltr/ui";
@@ -5,6 +6,9 @@ import { maskEmailForDisplay } from "@/lib/policy/email";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteLinkProvider } from "@/components/site/SiteLinkProvider";
 import { AssistantMount } from "@/components/site/AssistantMount";
+import { PathBreadcrumbJsonLd } from "@/components/site/PathBreadcrumbJsonLd";
+import { siteIndexing, siteUrl } from "@/lib/server/env";
+import { defaultRobots } from "@/lib/seo/robots-meta";
 import { closedChrome, getSiteChrome, readPublic, type SiteChrome } from "@/lib/server/public";
 import { FOOTER_DISCLAIMER, footerLinks, headerSubmenus, headerUtilityKeys } from "@/lib/site/chrome-view";
 
@@ -13,6 +17,11 @@ import { FOOTER_DISCLAIMER, footerLinks, headerSubmenus, headerUtilityKeys } fro
 //  · 요청 때 그린다 — 빌드 때 DB를 읽지 않는다(Docker·CI 빌드에는 DB 접속값이 없다). 검색 노출 차단(noindex)은 루트 레이아웃 그대로.
 //  · AI 도우미 런처(01C CHAT-01, W7b)는 AssistantMount가 켜짐·공개 게이트를 판정해 붙인다 — 꺼짐·미공개 방문자에게는 런처 0.
 //  · 공개 데이터를 읽지 못하면 닫힌 틀(상단 메뉴만 — 유틸 메뉴·정책 링크 0)로 그린다(서버 로그 [public]). 그 밖의 본문 오류는 error.tsx.
+// 공개 화면 기본 robots (SEO-04) — SITE_INDEXING=on일 때만 색인 허용. 화면별 noindex(빈 지역·삭제·검색 결과 등)는 각 화면 metadata가 덮어쓴다. 공개 틀 밖(로그인·계정·관리)은 루트의 noindex 그대로
+export function generateMetadata(): Metadata {
+  return { robots: defaultRobots(siteIndexing()) };
+}
+
 async function chrome(): Promise<SiteChrome> {
   return readPublic("화면 틀", () => getSiteChrome(), () => closedChrome());
 }
@@ -28,6 +37,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
       >
         본문으로 건너뛰기
       </a>
+      <PathBreadcrumbJsonLd site={siteUrl()} />
       <SiteHeader utilities={headerUtilityKeys(c.utilities)} submenus={headerSubmenus(c.sections)} />
       <main id="main" tabIndex={-1} className="focus:outline-none">
         {children}

@@ -1,4 +1,8 @@
 import { FieldHubHead, UiLink } from "@ltr/ui";
+import { siteUrl } from "@/lib/server/env";
+import { SECTION_INFO } from "@/lib/server/public/constants";
+import { trailJsonLd } from "@/lib/site/breadcrumb-trail";
+import { JsonLd } from "./JsonLd";
 import type { CategoryListData } from "@/lib/server/public";
 import { HUB_HEADINGS, pagerLinks } from "@/lib/site/hub-view";
 import { ArticleGrid } from "./ArticleItem";
@@ -16,6 +20,17 @@ export function CategoryView({ list }: { list: CategoryListData }) {
   const empty = list.total === 0;
   return (
     <div data-ui="category-list" data-section={list.section} data-category={list.category.slug}>
+      <JsonLd
+        content={trailJsonLd(
+          [
+            { name: "홈", path: "/" },
+            { name: SECTION_INFO[list.section].name, path: SECTION_INFO[list.section].href },
+            { name: list.category.name, path: `${list.hubHref}/${list.category.slug}` },
+          ],
+          siteUrl(),
+        )}
+        part="breadcrumb-jsonld"
+      />
       <SiteSection id="category-head" tone="ivory" first data={{ "data-hub-part": "head" }}>
         <FieldHubHead
           field={list.section}

@@ -270,4 +270,57 @@ export const CHECKS: Readonly<Record<string, CheckDef>> = {
       return mixed.length === 0 ? pass() : fail("mixed", { places: where(mixed) });
     },
   }),
+
+  "aeo.lead-answer": define({
+    // maxSentences = 리드(본문 첫 문단)에 허용하는 문장 수 — 질문에 대한 직접 답을 1~2문장에 (OPT-03 AEO)
+    params: { maxSentences: "int" },
+    messageKeys: ["pass", "missing", "long"],
+    run(a, _ctx, p) {
+      const sentences = splitSentences(a.lead);
+      if (sentences.length === 0) return fail("missing");
+      return sentences.length <= p.maxSentences ? pass({ actual: sentences.length }) : fail("long", { actual: sentences.length, max: p.maxSentences });
+    },
+  }),
+
+  "seo.keyword-density": define({
+    // 같은 낱말(minTokenLength자 이상, 숫자만인 낱말 제외)이 본문 낱말 수의 maxPercent%를 넘으면 경고 (OPT-10 키워드 반복 금지).
+    // 본문이 minTokens 낱말보다 짧으면 판단하지 않는다. 기준과 같은 값은 통과, 넘으면 경고
+    params: { maxPercent: "int", minTokens: "int", minTokenLength: "int" },
+    messageKeys: ["pass", "fail", "notApplicable"],
+    run(a, _ctx, p) {
+      const tokens = tokensOf(a.bodyText, p.minTokenLength);
+      if (tokens.length < p.minTokens) return { kind: "not_applicable" };
+      const counts = new Map<string, number>();
+      for (const t of tokens) counts.set(t, (counts.get(t) ?? 0) + 1);
+      // 가장 많이 나온 낱말 — 같은 횟수면 글자 순서가 앞선 것 (결정론)
+      const [word, count] = [...counts].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1))[0]!;
+      const percent = Math.round((1000 * count) / tokens.length) / 10;
+      return count * 100 > p.maxPercent * tokens.length ? fail("fail", { word, count, percent, max: p.maxPercent }) : pass({ percent });
+    },
+  }),
+
+  "common.quote-ratio": define({
+    params: {},
+    messageKeys: ["pass", "fail"],
+    run(a) {
+      return a.similarity.quoteWarning === true ? fail("fail") : pass();
+    },
+  }),
 };
+
+/** 문장 나누기 — 마침표·물음표·느낌표 뒤 공백, 줄바꿈 기준. 숫자 소수점(3.5)은 공백이 없어 나뉘지 않는다 */
+export function splitSentences(text: string): string[] {
+  return text
+    .split(/(?<=[.!?。])\s+|\r?\n+/)
+    .map((s) => s.trim())
+    .filter((s) => s !== "");
+}
+
+/** 낱말 목록 — 글자·숫자가 아닌 것으로 나누고, 짧은 낱말과 숫자만인 낱말은 뺀다 */
+export function tokensOf(text: string, minLength: number): string[] {
+  return text
+    .normalize("NFKC")
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((t) => [...t].length >= minLength && !/^\p{N}+$/u.test(t));
+}

@@ -32,7 +32,7 @@ const ruleOf = (raw: RawRules, id: string) => raw.rules.find((r) => r.id === id)
 
 describe("규칙 파일 버전", () => {
   it("규칙 파일 version이 결과 ruleVersion에 그대로 실린다 (seo_checks.rules_version)", () => {
-    expect(rawRules.version).toBe("2026.10-w2a");
+    expect(rawRules.version).toBe("2026.10-w7");
     const result = lintArticle(PASSING_SAMPLE.article, PASSING_SAMPLE.context, RULES_V1);
     expect(result.ruleVersion).toBe(rawRules.version);
   });
@@ -75,7 +75,12 @@ describe("규칙 파일 ↔ PRD", () => {
     const row = (axis: string) => table.split("\n").find((l) => l.startsWith(`| ${axis} | `))!;
     for (const r of RULES_V1.rules) {
       const cited = r.source.match(/점검 표 (SEO|AEO|GEO|공통) 「([^」]+)」/);
-      expect(cited, r.id).not.toBeNull();
+      if (!cited) {
+        // 점검 표 밖의 경고 — 키워드 반복(OPT-10)·인용 블록 비율(OPT-06)은 요구사항 행이 근거다
+        expect(r.source, r.id).toMatch(/^PRD-01A OPT-(06|10) /);
+        expect(r.level, r.id).toBe("warn");
+        continue;
+      }
       expect(cited![1], r.id).toBe(r.axis);
       const text = row(r.axis);
       const bold = text.match(/\*\*([^*]+)\*\*/)?.[1] ?? "";
@@ -87,7 +92,7 @@ describe("규칙 파일 ↔ PRD", () => {
 
 describe("parseRules — 규칙 파일 검사", () => {
   it("v1 규칙 파일은 통과한다", () => {
-    expect(parseRules(cloneRaw()).rules).toHaveLength(16);
+    expect(parseRules(cloneRaw()).rules).toHaveLength(19);
   });
 
   it("메시지에 패널 금지어가 들어간 규칙 파일은 거부한다", () => {
@@ -188,7 +193,7 @@ describe("패널 문구 금지어 — '순위'·'노출 예측'·'상위 노출'
   });
 
   it("견본 9종을 점검해 나온 패널 문구 전부에 금지어가 없다", () => {
-    expect(emitted).toHaveLength(9 * 16);
+    expect(emitted).toHaveLength(9 * 19);
     for (const text of emitted) for (const w of prdWords) expect(text).not.toContain(w);
   });
 

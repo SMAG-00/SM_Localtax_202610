@@ -1,3 +1,4 @@
+import { JsonLd } from "./JsonLd";
 import { pageJsonLd, toJsonLdScriptContent } from "@ltr/structured-data";
 import { Chip, DarkButton, UiLink } from "@ltr/ui";
 import { REQUEST_CODES, type RequestCode } from "@/lib/experts/logic";
@@ -111,10 +112,21 @@ export function ExpertProfilePageView({ view }: { view: ExpertProfileView }) {
   const p = view.profile;
   if (!p) return null;
   const photo = p.photo && /^(https?:\/\/|\/)/.test(p.photo.path) ? p.photo : null;
-  const jsonLd = view.view ? toJsonLdScriptContent(pageJsonLd({ kind: "person", person: view.view })) : null;
+  const origin = view.view && view.view.url.startsWith("http") ? new URL(view.view.url).origin : null;
+  const jsonLd = view.view
+    ? toJsonLdScriptContent(
+        pageJsonLd({
+          kind: "person",
+          person: view.view,
+          ...(origin
+            ? { breadcrumb: { items: [{ name: "홈", url: `${origin}/` }, { name: "SM 전문가", url: `${origin}/experts` }, { name: view.view.name, url: view.view.url }] } }
+            : {}),
+        }),
+      )
+    : null;
   return (
     <div data-ui="expert-profile" data-expert-slug={p.slug}>
-      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
+      <JsonLd content={jsonLd} />
       <SiteSection id="expert-head" tone="ivory" first data={{ "data-expert-part": "head" }}>
         <p className="flex flex-wrap items-center gap-2">
           <span data-part="sm-badge" className="inline-flex items-center rounded-full bg-navy-900 px-2.5 py-0.5 text-[13px] font-bold text-white">

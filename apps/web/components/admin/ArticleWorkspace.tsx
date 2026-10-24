@@ -87,6 +87,13 @@ export function ArticleWorkspace({
   const [failure, setFailure] = useState<{ title: string; details: string[]; conflict: boolean } | null>(null);
   const [saved, setSaved] = useState<{ message: string; checks: Finding[] } | null>(null);
   const [saving, setSaving] = useState(false);
+  // 저장 전 입력 점검 (OPT-03) — 저장 요청과 같은 본문에서 버전·수정 사유 칸을 뺀 값이 저장해 둔 값과 다르면 패널이 이 입력으로 다시 점검한다
+  const draftBody = (() => {
+    const { expectedVersion: _version, ...body } = editorPayload(state, { published: false, version: 0 });
+    return body;
+  })();
+  const draftJson = JSON.stringify(draftBody);
+  const [savedJson, setSavedJson] = useState(draftJson);
 
   const published = view.article.firstPublishedAt !== null;
   const readOnly = !perms.canEdit || view.article.status === "deleted";
@@ -109,11 +116,13 @@ export function ArticleWorkspace({
       return;
     }
     setSaving(true);
+    const submittedJson = draftJson;
     const r = await adminApi("PATCH", `/api/admin/articles/${view.article.id}`, editorPayload(state, { published, version: baseVersion }));
     setSaving(false);
     if (r.status === 200) {
       const next = (r.body.article as { version?: number } | undefined)?.version ?? baseVersion;
       setBaseVersion(next);
+      setSavedJson(submittedJson);
       const checks = Array.isArray(r.body.checks) ? (r.body.checks as Finding[]) : [];
       setSaved({ message: r.body.unchanged ? "바뀐 내용이 없습니다" : `저장했습니다 — 버전 ${next}`, checks });
       if (published) update({ updateKind: "", reason: "" });
@@ -277,6 +286,7 @@ export function ArticleWorkspace({
           canPublishRole={perms.canPublish}
           blockTypes={storedBlockTypes}
           refreshKey={`${view.article.version}-${view.article.status}-${view.reviews.length}-${view.sources.length}-${view.evidence.length}`}
+          draft={readOnly || draftJson === savedJson ? null : draftBody}
           onChanged={refresh}
         />
         {perms.canSubmit && <SubmitForReview articleId={view.article.id} status={view.article.status} onChanged={refresh} />}

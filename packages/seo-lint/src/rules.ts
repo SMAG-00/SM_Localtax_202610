@@ -118,3 +118,35 @@ export function parseRules(raw: unknown): RuleSet {
 
 /** rules/rules.v1.json — 검사를 마친 기본 규칙 */
 export const RULES_V1: RuleSet = parseRules(rulesV1Json);
+
+/**
+ * 설정(settings.seo_lint_params)이 규칙 기준값을 덮어쓴다 — `{ "<규칙 ID>": { "<params 이름>": 값 } }`.
+ * 모르는 규칙·모르는 이름·형식이 틀린 값은 무시하고 규칙 파일 값을 그대로 둔다. 차단 규칙의 level·가중치는 바꾸지 않는다 (OPT-03).
+ * 돌려주는 problems는 무시한 항목 목록(화면 안내용)이다.
+ */
+export function applyRuleParams(rules: RuleSet, overrides: unknown): { rules: RuleSet; problems: string[] } {
+  const problems: string[] = [];
+  if (overrides === undefined || overrides === null) return { rules, problems };
+  if (!isObject(overrides)) return { rules, problems: ["seo_lint_params는 객체여야 합니다"] };
+  const next = rules.rules.map((rule) => {
+    const over = overrides[rule.id];
+    if (over === undefined) return rule;
+    const def = CHECKS[rule.id];
+    if (!def || !isObject(over)) {
+      problems.push(`${rule.id}: 객체가 아닙니다`);
+      return rule;
+    }
+    const params: Record<string, unknown> = { ...rule.params };
+    for (const [name, value] of Object.entries(over)) {
+      const type = def.params[name];
+      if (type === undefined || !checkParam(type, value)) {
+        problems.push(`${rule.id}.${name}: 모르는 이름이거나 형식이 틀립니다`);
+        continue;
+      }
+      params[name] = value;
+    }
+    return Object.freeze({ ...rule, params: deepFreeze(structuredClone(params)) });
+  });
+  for (const id of Object.keys(overrides)) if (!rules.rules.some((r) => r.id === id)) problems.push(`${id}: 규칙 파일에 없는 규칙입니다`);
+  return { rules: Object.freeze({ ...rules, rules: Object.freeze(next) }), problems };
+}

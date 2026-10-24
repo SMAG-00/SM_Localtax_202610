@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { queryValue } from "@/lib/site/hub-view";
-import { policyDoc, type PolicyDocKey } from "@/lib/policy/docs";
+import { POLICY_DOCS, policyDoc, type PolicyDocKey } from "@/lib/policy/docs";
+import { siteUrl } from "@/lib/server/env";
+import { aboutOrganizationJsonLd } from "@/lib/site/org-jsonld";
+import { JsonLd } from "./JsonLd";
 import { getPolicyView } from "@/lib/server/public/policy";
 import { HelpForm, openHelpToken } from "@/components/help/HelpForm";
 import { parseHelpSettings } from "@/lib/help/forms";
@@ -29,8 +32,11 @@ export async function PolicyRoute({ docKey, searchParams }: { docKey: PolicyDocK
   const view = await getPolicyView(docKey, policyDoc(docKey).feature, v);
   if (!view) notFound();
   const form = docKey === "corrections" && v === null && view.features.page_help ? await correctionForm(sp) : null;
+  // 매체 소개의 NewsMediaOrganization (OPT-02) — 열려 있는 정책 페이지 주소만 단다. 이전 판(?v=)에는 내지 않는다
+  const orgJsonLd = docKey === "about" && v === null ? aboutOrganizationJsonLd(siteUrl(), POLICY_DOCS.filter((d) => view.features[d.feature]).map((d) => d.href)) : null;
   return (
     <>
+      <JsonLd content={orgJsonLd} />
       <PolicyPage view={view} />
       {form}
     </>

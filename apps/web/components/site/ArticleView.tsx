@@ -1,3 +1,4 @@
+import { JsonLd } from "./JsonLd";
 import { OfficialLinkCard } from "./OfficialLinkCard";
 import { pageJsonLd, toJsonLdScriptContent } from "@ltr/structured-data";
 import {
@@ -316,14 +317,32 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
   const tones = new Map(sectionTones(parts).map((t) => [t.key, t.tone]));
   const tone = (p: ArticlePart): SectionTone => tones.get(p) ?? "ivory";
   const links = reporterPolicyLinks(a.policyLinks);
-  const jsonLd = toJsonLdScriptContent(pageJsonLd({ kind: "article", article: a.view }));
+  const site = a.view.url.startsWith("http") ? new URL(a.view.url).origin : null;
+  const jsonLd = toJsonLdScriptContent(
+    pageJsonLd({
+      kind: "article",
+      article: a.view,
+      ...(site
+        ? {
+            breadcrumb: {
+              items: [
+                { name: "홈", url: `${site}/` },
+                { name: a.sectionName, url: `${site}${a.sectionHref}` },
+                ...(a.subsection ? [{ name: a.subsection.name, url: `${site}${a.subsection.href}` }] : []),
+                { name: a.view.title, url: a.view.url },
+              ],
+            },
+          }
+        : {}),
+    }),
+  );
   const rail = a.popular.length > 0;
   // 본문 첫 등장 용어 풀이 (GLO-02) — 공개 용어 가운데 이 기사에 처음 나오는 자리만. 저장된 본문은 그대로
   const tips = articleTipPlan(a.blocks, a.glossary);
 
   return (
     <article data-ui="article-page" data-article-id={a.id} data-format={a.format ?? "general"} data-content-type={a.contentType ?? "none"}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+      <JsonLd content={jsonLd} />
       {/* 측정 (W2-c — article_viewed · 30초 article_engaged). 그리는 것 0 */}
       {a.contentType && <MeasureArticle articleId={a.id} section={a.section} format={a.format ?? "general"} contentType={a.contentType} />}
       {/* 다음 행동 띠 누름 → next_action_clicked (W2-c 3단계 — 첫 방문 깔때기). 그리는 것 0 */}

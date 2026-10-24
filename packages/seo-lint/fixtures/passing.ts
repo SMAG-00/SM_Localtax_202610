@@ -52,6 +52,9 @@ export const PASSING_SAMPLE: LintSample = {
       { level: 2, text: "신청 시기와 서류" },
       { level: 2, text: "감면세액이 추징되는 경우" },
     ],
+    lead: "생애최초로 주택을 살 때 요건을 갖추면 취득세를 감면받을 수 있습니다. 감면은 취득세를 신고할 때 함께 신청합니다.",
+    bodyText:
+      "생애최초로 주택을 살 때 요건을 갖추면 취득세를 감면받을 수 있습니다. 감면은 취득세를 신고할 때 함께 신청합니다. 정해진 기간 안에 거주를 시작하지 않으면 감면세액이 추징될 수 있습니다.",
     internalLinkCount: 1,
     images: [{ alt: "생애최초 주택 취득세 감면 신청 절차 4단계 인포그래픽" }],
     summaryBoxLines: [

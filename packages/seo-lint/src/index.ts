@@ -2,7 +2,8 @@
 export * from "./types";
 export { ENGINE_VERSION, lintArticle } from "./lint";
 export { publishDecision } from "./gate";
-export { BLOCKING_RULE_IDS, RULES_V1, RulesError, parseRules } from "./rules";
+export { BLOCKING_RULE_IDS, RULES_V1, RulesError, applyRuleParams, parseRules } from "./rules";
+export { splitSentences, tokensOf } from "./checks";
 export { FORBIDDEN_PANEL_WORDS, SCORE_DISCLAIMER } from "./text";
 // 견본 원고 — 패키지 견본 시험과 W7 편집기·발행 API E2E가 같은 원고를 쓴다
 export { PASSING_SAMPLE } from "../fixtures/passing";

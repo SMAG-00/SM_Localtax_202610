@@ -1,7 +1,7 @@
 // 점검 항목별 경계 시험 — 통과 견본에서 한 칸씩 바꿔 경계 양쪽을 본다 (OPT-03)
 import { describe, expect, it } from "vitest";
 import rawRules from "../rules/rules.v1.json";
-import { PASSING_SAMPLE, RULES_V1, lintArticle, parseRules } from "./index";
+import { PASSING_SAMPLE, RULES_V1, applyRuleParams, lintArticle, parseRules, splitSentences } from "./index";
 import type { ArticleForLint, LintContext, LintItem, RuleSet } from "./index";
 
 const base = PASSING_SAMPLE.article;
@@ -348,5 +348,55 @@ describe("문구 자리 채움", () => {
     const messages = variants.flatMap((v) => lint(v).items.map((i) => i.message));
     expect(messages).toHaveLength(variants.length * RULES_V1.rules.length);
     for (const m of messages) expect(m).not.toMatch(/\{[A-Za-z.]+\}/);
+  });
+});
+
+describe("W7 추가 점검 — 리드 직접 답 · 키워드 반복 · 인용 블록 비율 (OPT-03·06·10)", () => {
+  const find = (a: ArticleForLint, id: string) => lint(a).items.find((i) => i.id === id)!;
+  const filler = (n: number) => Array.from({ length: n }, (_, i) => `단어${String.fromCharCode(0xac00 + i)}${String.fromCharCode(0xb000 + i)}`).join(" ");
+
+  it("리드가 2문장이면 통과, 3문장이면 경고, 비어 있으면 경고(없음)", () => {
+    expect(find(art({ lead: "첫째 문장입니다. 둘째 문장입니다." }), "aeo.lead-answer").level).toBe("pass");
+    const three = find(art({ lead: "첫째 문장입니다. 둘째 문장입니다. 셋째 문장입니다." }), "aeo.lead-answer");
+    expect(three.level).toBe("warn");
+    expect(three.message).toContain("3문장");
+    expect(find(art({ lead: "" }), "aeo.lead-answer").level).toBe("warn");
+  });
+
+  it("소수점 숫자(3.5)는 문장을 나누지 않는다", () => {
+    expect(splitSentences("세율은 3.5 퍼센트입니다. 다음 문장입니다.")).toEqual(["세율은 3.5 퍼센트입니다.", "다음 문장입니다."]);
+  });
+
+  it("키워드 반복 — 기준과 같은 값은 통과, 넘으면 경고, 짧은 본문은 판단하지 않음 (결정론)", () => {
+    // 100낱말 중 '반복어' 8번 = 8% (기준 8) → 통과. 9번 = 9% → 경고
+    const body = (n: number) => `${Array(n).fill("반복어").join(" ")} ${filler(100 - n)}`;
+    expect(find(art({ bodyText: body(8) }), "seo.keyword-density").level).toBe("pass");
+    const over = find(art({ bodyText: body(9) }), "seo.keyword-density");
+    expect(over.level).toBe("warn");
+    expect(over.message).toContain("반복어");
+    expect(find(art({ bodyText: "반복어 반복어 반복어 반복어" }), "seo.keyword-density").applicable).toBe(false);
+    expect(lint(art({ bodyText: body(9) }))).toEqual(lint(art({ bodyText: body(9) })));
+  });
+
+  it("인용 블록 비율 — quoteWarning이 참이면 경고, 발행은 막지 않는다", () => {
+    const r = lint(art({ similarity: { status: "pass", quoteWarning: true } }));
+    expect(r.warnings).toContain("common.quote-ratio");
+    expect(r.canPublish).toBe(true);
+    expect(lint(art({ similarity: { status: "pass" } })).warnings).not.toContain("common.quote-ratio");
+  });
+
+  it("설정 덮어쓰기 — 기준값만 바뀌고 모르는 이름·틀린 형식·차단 규칙 level은 무시한다", () => {
+    const body = `${Array(9).fill("반복어").join(" ")} ${filler(91)}`;
+    const strict = applyRuleParams(RULES_V1, { "seo.keyword-density": { maxPercent: 20, bogus: 1 }, "geo.author": { level: "warn" }, "nope.rule": {} });
+    expect(strict.rules.rules.find((r) => r.id === "seo.keyword-density")!.params.maxPercent).toBe(20);
+    expect(strict.problems.join(" ")).toContain("seo.keyword-density.bogus");
+    expect(strict.problems.join(" ")).toContain("nope.rule");
+    expect(lintArticle(art({ bodyText: body }), PASSING_SAMPLE.context, strict.rules).warnings).not.toContain("seo.keyword-density");
+    expect(lintArticle(art({ bodyText: body }), PASSING_SAMPLE.context, RULES_V1).warnings).toContain("seo.keyword-density");
+    expect(strict.rules.rules.find((r) => r.id === "geo.author")!.level).toBe("block");
+    expect(applyRuleParams(RULES_V1, { "seo.keyword-density": { maxPercent: "20" } }).rules.rules.find((r) => r.id === "seo.keyword-density")!.params.maxPercent).toBe(8);
+    expect(applyRuleParams(RULES_V1, undefined).rules).toBe(RULES_V1);
+    // 원본 규칙은 바뀌지 않는다
+    expect(RULES_V1.rules.find((r) => r.id === "seo.keyword-density")!.params.maxPercent).toBe(8);
   });
 });

@@ -465,3 +465,37 @@ describe("W4 8단계 지역 기사 편집 경고 — DB 칸·유사도 결과 �
     expect(editorialWarnings(g).map((f) => [f.id, f.location?.field])).toEqual([["reg1_14.photo-rights", "leadImage"]]);
   });
 });
+
+describe("W7 점검 기준 — 리드 직접 답·설정 덮어쓰기·규정 유사도 기준", () => {
+  const withLead = (text: string) => {
+    const base = graph();
+    const body = base.article.body as { blocks: unknown[]; claims: unknown[] };
+    return graph({}, { body: { blocks: [{ type: "paragraph", text }, ...body.blocks], claims: body.claims } });
+  };
+  const threeSentences = "첫째 문장입니다. 둘째 문장입니다. 셋째 문장입니다.";
+
+  test("본문 첫 문단이 3문장이면 리드 직접 답 경고, 2문장이면 통과 (발행은 막지 않음)", () => {
+    const long = runGate(withLead(threeSentences), SETTINGS, GATE_OPTIONS);
+    expect(long.lint.warnings).toContain("aeo.lead-answer");
+    expect(long.lint.blockers).not.toContain("aeo.lead-answer");
+    const short = runGate(withLead("첫째 문장입니다. 둘째 문장입니다."), SETTINGS, GATE_OPTIONS);
+    expect(short.lint.warnings).not.toContain("aeo.lead-answer");
+  });
+
+  test("settings.seo_lint_params가 기준값을 덮어쓴다 — 허용 문장 수 3이면 같은 원고가 통과, 틀린 형식은 무시", () => {
+    const loose = { ...SETTINGS, seoLintParams: { "aeo.lead-answer": { maxSentences: 3 } } };
+    expect(runGate(withLead(threeSentences), loose, GATE_OPTIONS).lint.warnings).not.toContain("aeo.lead-answer");
+    const bad = { ...SETTINGS, seoLintParams: { "aeo.lead-answer": { maxSentences: "3" } } };
+    expect(runGate(withLead(threeSentences), bad, GATE_OPTIONS).lint.warnings).toContain("aeo.lead-answer");
+  });
+
+  test("parseGateSettings가 seo_lint_params 행을 그대로 싣는다", () => {
+    const dict = [
+      { key: "forbidden_phrases", value: { phrases: ["가"] } },
+      { key: "fear_phrases", value: { phrases: ["나"] } },
+    ];
+    const value = { "seo.keyword-density": { maxPercent: 12 } };
+    expect(parseGateSettings([...dict, { key: "seo_lint_params", value }], []).settings.seoLintParams).toEqual(value);
+    expect(parseGateSettings(dict, []).settings.seoLintParams).toBeUndefined();
+  });
+});

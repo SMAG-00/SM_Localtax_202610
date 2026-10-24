@@ -1,3 +1,4 @@
+import { JsonLd } from "./JsonLd";
 import { breadcrumbList, toJsonLdScriptContent } from "@ltr/structured-data";
 import { Chip, Eyebrow, ProjectStageTimeline, SourceLine, TaxLensBox, UiLink, cx, type ProjectStage } from "@ltr/ui";
 import { lensFor, type FilterChip, type ProjectCard, type ProjectCrumb, type StageLensView, type TimelineStage } from "@/lib/server/public/project-logic";
@@ -44,9 +45,9 @@ function Crumbs({ crumbs }: { crumbs: readonly ProjectCrumb[] }) {
   );
 }
 
-function JsonLd({ view }: { view: { breadcrumb: ProjectListView["breadcrumb"] } }) {
+function BreadcrumbJsonLd({ view }: { view: { breadcrumb: ProjectListView["breadcrumb"] } }) {
   const json = view.breadcrumb ? toJsonLdScriptContent([breadcrumbList(view.breadcrumb)]) : null;
-  return json ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: json }} /> : null;
+  return <JsonLd content={json} />;
 }
 
 /** 프로젝트 카드 — 지자체 허브 ③·목록이 같은 카드. 칸(지역·단계·출처·기준일)이 빈 카드는 만들지 않는다(project-logic projectCard) */
@@ -119,7 +120,7 @@ export function ProjectList({ view }: { view: ProjectListView }) {
   return (
     <div data-ui="project-list" data-project-total={String(view.total)}>
       <MeasureCalculatorCards screen="project" section="realestate" />
-      <JsonLd view={view} />
+      <BreadcrumbJsonLd view={view} />
       <SiteSection id="projects-head" tone="ivory" first data={{ "data-project-part": "head" }}>
         <Crumbs crumbs={view.crumbs} />
         <div className="mt-6">
@@ -206,7 +207,7 @@ export function ProjectDetail({ view }: { view: ProjectDetailView }) {
   );
   return (
     <div data-ui="project-page" data-project={c.slug} data-project-stage={c.stage.key} data-source-recorded={String(view.coverage.recorded)} data-source-linked={String(view.coverage.linked)}>
-      <JsonLd view={view} />
+      <BreadcrumbJsonLd view={view} />
       {/* 측정 (W4 24단계) — 상세를 열면 project_viewed 1건(지역 코드·사업 유형 키·현재 단계 키) · SM 취득세 카드 누름(calculator_card_clicked project) */}
       <MeasureView name="project_viewed" section="realestate" props={{ region_code: c.region.code, project_type: c.type.key, stage: c.stage.key }} />
       <MeasureCalculatorCards screen="project" section="realestate" />

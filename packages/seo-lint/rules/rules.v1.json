@@ -1,6 +1,6 @@
 {
   "$comment": "packages/seo-lint 점검 규칙 파일 (PRD-01A OPT-03 · PRD_최종 §7.3). 점검 규칙·가중치·기준값은 이 파일에 두고 코드 상수로 박지 않는다 (PRD-01A §4.15). version은 결과 ruleVersion → seo_checks.rules_version으로 남는다. level = 위반 때 등급(block 발행 차단 · warn 발행 가능·발행 기록에 남음). weight = 축 점수 가중치 — 축 점수 = round(100 × 통과 항목 가중치 합 ÷ 해당 항목 가중치 합), 해당 없음 항목은 뺀다. 가중치(차단 3 · 경고 1)와 기준값은 W1-b 초기값이며 W7에서 조정한다. 메시지의 {이름} 자리는 엔진이 채운다. 패널 문구 금지어는 엔진(src/text.ts)이 정하고, 금지어가 든 문구는 이 파일을 읽을 때 거부된다.",
-  "version": "2026.10-w2a",
+  "version": "2026.10-w7",
   "axes": ["SEO", "AEO", "GEO", "공통"],
   "rules": [
     {
@@ -232,6 +232,48 @@
         "place.metaTitle": "메타 제목",
         "place.metaDescription": "메타 설명",
         "place.headline": "구조화 데이터 headline"
+      }
+    },
+    {
+      "id": "aeo.lead-answer",
+      "axis": "AEO",
+      "level": "warn",
+      "name": "리드 직접 답",
+      "weight": 1,
+      "source": "PRD-01A §4.15 점검 표 AEO 「리드 1~2문장에 직접 답」 · 4.14 핵심 여정 1",
+      "params": { "maxSentences": 2 },
+      "messages": {
+        "pass": "리드가 {actual}문장입니다",
+        "missing": "본문 첫 문단(리드)이 없습니다 — 질문에 대한 직접 답을 1~2문장으로 먼저 써 주세요",
+        "long": "리드가 {actual}문장입니다 (권장 {max}문장 이내) — 직접 답을 앞에 두세요"
+      }
+    },
+    {
+      "id": "seo.keyword-density",
+      "axis": "SEO",
+      "level": "warn",
+      "name": "키워드 반복",
+      "weight": 1,
+      "source": "PRD-01A OPT-10 (키워드 반복 금지 — 같은 단어의 반복 밀도가 설정 기준을 넘으면 경고)",
+      "$comment": "maxPercent — 같은 낱말이 본문 낱말 수에서 차지하는 최대 %(기준과 같은 값은 통과). minTokens — 이보다 짧은 본문은 판단하지 않음. minTokenLength — 이보다 짧은 낱말은 세지 않음. 초기값은 견본 원고 시험 뒤 편집 책임자가 설정(seo_lint_params)으로 조정한다",
+      "params": { "maxPercent": 8, "minTokens": 60, "minTokenLength": 2 },
+      "messages": {
+        "pass": "가장 많이 반복된 낱말이 본문의 {percent}%입니다",
+        "fail": "‘{word}’이(가) {count}번 반복됩니다 (본문의 {percent}%, 기준 {max}%) — 다른 표현으로 풀어 쓰세요",
+        "notApplicable": "본문이 짧아 반복 정도를 판단하지 않습니다"
+      }
+    },
+    {
+      "id": "common.quote-ratio",
+      "axis": "공통",
+      "level": "warn",
+      "name": "인용 블록 비율",
+      "weight": 1,
+      "source": "PRD-01A OPT-06 (인용 블록 비율이 설정 기준을 넘으면 경고 1건)",
+      "params": {},
+      "messages": {
+        "pass": "직접 인용 블록 비율이 기준 이내입니다",
+        "fail": "직접 인용 블록 비율이 기준을 넘었습니다 — 인용은 줄이고 요약·재구성을 늘려 주세요"
       }
     }
   ]

@@ -77,7 +77,11 @@ export interface ArticleForLint {
   /** packages/structured-data의 렌더 값 ↔ JSON-LD 대조 결과 — 다른 칸 이름 목록(빈 배열 = 일치) — 공통 **「구조화 데이터와 화면 일치」(차단)** (OPT-02) */
   structuredDataMismatches: readonly string[];
   /** packages/similarity 결과 — 공통 **「유사도」(차단)** (OPT-06) */
-  similarity: { status: SimilarityStatus };
+  similarity: {
+    status: SimilarityStatus;
+    /** 직접 인용 블록 비율이 설정 기준을 넘음 (OPT-06 — 경고 1건, 발행은 막지 않음). 알 수 없으면 비움 */
+    quoteWarning?: boolean;
+  };
   /**
    * 광고 표기 — 공통 **「광고 표기 일치」(차단)** (OPT-02). 표기 글자는 PRD 그대로: 광고는 "광고"(PRD-00 8.8),
    * 공동 기획은 제휴 배지 "공동 기획 ○○"(ART-10 — ○○ = 제휴사 이름). 메타 제목·설명·headline에는 "[배지]" 모양으로 넣는다.
@@ -98,6 +102,10 @@ export interface ArticleForLint {
   internalLinkCount: number;
   /** 본문 이미지 — SEO 「이미지 대체 텍스트」 */
   images: readonly { alt: string }[];
+  /** 본문 첫 문단 글자 — AEO 「리드 1~2문장에 직접 답」 (OPT-03). 첫 문단이 없으면 빈 글자 */
+  lead: string;
+  /** 본문 글(문단·요약 상자·콜아웃·FAQ 답, 인용 제외) — SEO 「키워드 반복」 밀도 (OPT-10). 화면 글과 같은 원본에서 만든다 */
+  bodyText: string;
   /** 핵심 요약 상자 줄 — AEO 「3줄 요약」 */
   summaryBoxLines: readonly string[];
   /** 화면에 보이는 FAQ 블록 항목(숨김 FAQ는 저장되지 않는다, OPT-10) — AEO 「FAQ 2~5개(화면 노출)」 */

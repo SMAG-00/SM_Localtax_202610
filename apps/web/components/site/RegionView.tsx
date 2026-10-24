@@ -1,3 +1,4 @@
+import { JsonLd } from "./JsonLd";
 import { breadcrumbList, toJsonLdScriptContent } from "@ltr/structured-data";
 import { FieldTaxPoint, LocalHubBlocks, RegionHubHead, SourceLine, TopicFilter, UiLink, type HubBlockContent } from "@ltr/ui";
 import type { RegionPage } from "@/lib/server/public";
@@ -124,7 +125,7 @@ export function RegionView({ page }: { page: RegionPage }) {
       <MeasureView name="region_viewed" section="local" props={{ region_code: page.code, level: page.level }} />
       <MeasureRegionHub regionCode={page.code} moreTargets={moreTargetsOf(page.blocks)} />
       <MeasureCalculatorCards screen="region_hub" section="local" />
-      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
+      <JsonLd content={jsonLd} />
       <SiteSection id="region-head" tone="ivory" first data={{ "data-region-part": "head" }}>
         <RegionHubHead
           sido={page.sido}

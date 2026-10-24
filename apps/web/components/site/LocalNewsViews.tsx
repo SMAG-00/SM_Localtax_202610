@@ -1,3 +1,4 @@
+import { JsonLd } from "./JsonLd";
 import { breadcrumbList, toJsonLdScriptContent } from "@ltr/structured-data";
 import { UiLink, type HubBlockContent } from "@ltr/ui";
 import type { EventDetailView, EventListView, WeeklyPageView } from "@/lib/server/public/local-news";
@@ -126,7 +127,7 @@ export function EventsListView({ view }: { view: EventListView }) {
   const regionParam = view.regionCode;
   return (
     <div data-ui="events-page" data-events-count={view.cards.length}>
-      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
+      <JsonLd content={jsonLd} />
       <SiteSection id="events-head" tone="ivory" first data={{ "data-events-part": "head" }}>
         <p className="text-[14px] font-bold text-navy-600">
           <UiLink href="/" className={TEXT_LINK}>
@@ -238,7 +239,7 @@ export function EventDetailPage({ view }: { view: EventDetailView }) {
   const ld = eventJsonLdScript(card, row.starts_at, row.ends_at, siteUrl());
   return (
     <div data-ui="event-detail" data-event-status={card.statusLabel}>
-      {ld && <script type="application/ld+json" data-part="event-jsonld" dangerouslySetInnerHTML={{ __html: ld }} />}
+      <JsonLd content={ld} part="event-jsonld" />
       <SiteSection id="event-head" tone="ivory" first data={{ "data-event-part": "head" }}>
         <p className="flex flex-wrap items-center gap-2">
           <span data-part="event-kind" className={CHIP}>
@@ -348,7 +349,7 @@ export function WeeklyPage({ view }: { view: WeeklyPageView }) {
     : null;
   return (
     <div data-ui="weekly-page" data-week-key={view.weekKey} data-item-count={view.items.length}>
-      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
+      <JsonLd content={jsonLd} />
       <SiteSection id="weekly-head" tone="ivory" first data={{ "data-weekly-part": "head" }}>
         <p className="text-[14px] font-bold text-navy-600">
           <UiLink href={`/local/${view.sidoSlug}`} className={TEXT_LINK}>

@@ -2,7 +2,7 @@
 // 견본 응답은 발행 판정(@ltr/editorial)·점검(@ltr/seo-lint)이 실제로 내는 모양을 옮겼다.
 import { describe, expect, test } from "vitest";
 import { FORBIDDEN_PANEL_WORDS, SCORE_DISCLAIMER } from "@ltr/seo-lint";
-import { PANEL_FIXED_COPY, failedItemNames, locationText, panelView, publishButtonState, type CheckReport } from "./check-panel";
+import { CHECK_DEBOUNCE_MS, PANEL_FIXED_COPY, PUBLISH_COPY, failedItemNames, locationText, panelView, publishButtonState, type CheckReport } from "./check-panel";
 
 const report = (over: Partial<CheckReport> = {}): CheckReport => ({
   canPublish: false,
@@ -136,5 +136,16 @@ describe("발행 422 — 실패 항목 이름", () => {
 describe("패널 문구 규칙 (OPT-03)", () => {
   test("고정 문구에 '순위'·'노출 예측'·'상위 노출'이 없다 — 점수 옆 고정 문구만 예외", () => {
     for (const text of PANEL_FIXED_COPY) for (const word of FORBIDDEN_PANEL_WORDS) expect(text).not.toContain(word);
+  });
+});
+
+describe("저장 전 입력 점검 — 발행 버튼 (OPT-03)", () => {
+  test("저장하지 않은 변경이 있으면 차단 0이어도 발행 버튼이 꺼지고 이유를 알린다", () => {
+    const report = { canPublish: true, failed: [], warnings: [], findings: [], taxReviewReasons: [], seoLint: { disclaimer: "", ruleVersion: "v", engineVersion: "e", scores: {}, blockers: [], warnings: [], items: [] } };
+    expect(publishButtonState({ report, canPublishRole: true, status: "draft" })).toEqual({ disabled: false, reason: null });
+    expect(publishButtonState({ report, canPublishRole: true, status: "draft", unsaved: true })).toEqual({ disabled: true, reason: PUBLISH_COPY.unsaved });
+  });
+  test("입력이 멈춘 뒤 1초에 다시 계산한다", () => {
+    expect(CHECK_DEBOUNCE_MS).toBe(1000);
   });
 });

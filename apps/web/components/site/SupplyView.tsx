@@ -1,3 +1,4 @@
+import { JsonLd } from "./JsonLd";
 import type { ReactNode } from "react";
 import { breadcrumbList, toJsonLdScriptContent } from "@ltr/structured-data";
 import { Eyebrow, PresaleInfoCard, SourceLine, UiLink, cx } from "@ltr/ui";
@@ -83,7 +84,7 @@ export function SupplyList({ view }: { view: SupplyListView }) {
   const jsonLd = view.breadcrumb ? toJsonLdScriptContent([breadcrumbList(view.breadcrumb)]) : null;
   return (
     <div data-ui="supply-list" data-supply-total={String(view.total)} data-list-kind="info">
-      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
+      <JsonLd content={jsonLd} />
       <SiteSection id="supply-head" tone="ivory" first data={{ "data-supply-part": "head" }}>
         <Crumbs crumbs={view.crumbs} />
         <div className="mt-6">

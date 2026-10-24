@@ -159,7 +159,7 @@ export async function loadArticleGraph(db: Db, idOrRow: number | ArticleRow): Pr
 export async function loadGateSettings(db: Db): Promise<GateSettings> {
   const [settingRows, glossary] = await Promise.all([
     rows<{ key: string; value: unknown }>(
-      db.from("settings").select("key, value").in("key", ["forbidden_phrases", "fear_phrases", "similarity_internal", "official_source_types", "kogl_usage", "regional_judge_fields", "stale_statistics_days"]),
+      db.from("settings").select("key, value").in("key", ["forbidden_phrases", "fear_phrases", "similarity_internal", "official_source_types", "kogl_usage", "regional_judge_fields", "stale_statistics_days", "seo_lint_params"]),
       "settings 읽기",
     ),
     rows<{ term: string; plain: string | null }>(db.from("glossary_terms").select("term, plain").eq("jargon", true), "glossary_terms 읽기"),

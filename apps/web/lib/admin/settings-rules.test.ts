@@ -95,9 +95,14 @@ describe("개정 확정 기준 단계 amendment_confirmed_stage (TX-08)", () => 
 describe("화면에서 고칠 수 있는 설정", () => {
   test("검사 규칙이 있는 키만 고친다 — 모르는 키는 거부(닫힌 쪽)", () => {
     expect(isEditableSetting("similarity_internal")).toBe(true);
-    // 크롤러 정책(OPT-08 — W7)은 아직 검사 규칙이 없다 (HOT 가중치는 W2-c에서 규칙이 생겼다)
-    expect(isEditableSetting("crawler_policy")).toBe(false);
-    expect(validateSettingValue("crawler_policy", { gptbot: "allow" }, null)).toEqual({ ok: false, errors: ["이 설정은 검사 규칙이 아직 없어 화면에서 고칠 수 없습니다"] });
+    // 검사 규칙이 없는 키는 고칠 수 없다
+    expect(isEditableSetting("no_such_setting")).toBe(false);
+    expect(validateSettingValue("no_such_setting", 1, null)).toEqual({ ok: false, errors: ["이 설정은 검사 규칙이 아직 없어 화면에서 고칠 수 없습니다"] });
+  });
+  test("크롤러 정책(OPT-08 — W7)은 { search, ai_training } 모양만 저장된다", () => {
+    expect(isEditableSetting("crawler_policy")).toBe(true);
+    expect(validateSettingValue("crawler_policy", { gptbot: "allow" }, null).ok).toBe(false);
+    expect(validateSettingValue("crawler_policy", { search: [], ai_training: { decided: false, agents: [] } }, null)).toEqual({ ok: true, value: { search: [], ai_training: { decided: false, agents: [] } } });
   });
 });
 

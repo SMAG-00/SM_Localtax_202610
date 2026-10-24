@@ -1,3 +1,4 @@
+import { JsonLd } from "./JsonLd";
 import { pageJsonLd, toJsonLdScriptContent } from "@ltr/structured-data";
 import { Chip, PersonHeader } from "@ltr/ui";
 import type { PersonPage } from "@/lib/server/public";
@@ -20,7 +21,7 @@ export function PersonView({ person }: { person: PersonPage }) {
   const jsonLd = toJsonLdScriptContent(pageJsonLd({ kind: "person", person: person.view }));
   return (
     <div data-ui="person-page" data-person={person.slug}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+      <JsonLd content={jsonLd} />
       <SiteSection id="person-head" tone="ivory" first data={{ "data-person-part": "head" }}>
         <PersonHeader
           name={person.name}

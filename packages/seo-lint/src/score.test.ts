@@ -19,9 +19,9 @@ const deepFreeze = <T>(value: T): T => {
 };
 
 describe("축 점수", () => {
-  it("통과 견본 — SEO 7/8 → 88, AEO 2/3 → 67, GEO·공통 100", () => {
+  it("통과 견본 — SEO 7/8 → 88, AEO 3/4 → 75, GEO·공통 100", () => {
     // SEO: canonical 3 + 경고 5개×1 = 8, 내부 링크 경고 하나 빠져 7. AEO: 경고 3개 중 질문형 소제목 하나 빠져 2
-    expect(scores(base)).toEqual({ SEO: 88, AEO: 67, GEO: 100, 공통: 100 });
+    expect(scores(base)).toEqual({ SEO: 88, AEO: 75, GEO: 100, 공통: 100 });
   });
 
   it("모든 항목을 통과하면 네 축 모두 100", () => {
@@ -42,7 +42,8 @@ describe("축 점수", () => {
       sources: [],
       evidence: [],
       structuredDataMismatches: ["headline"],
-      similarity: { status: "blocked" },
+      similarity: { status: "blocked", quoteWarning: true },
+      lead: "",
       sponsorship: { label: "광고", partnerName: null, pageBadge: null, structuredHeadline: base.title },
       internalLinkCount: 0,
       images: [{ alt: "" }],
@@ -57,11 +58,11 @@ describe("축 점수", () => {
   });
 
   it("차단 항목 하나는 그 축에서 가중치 3만큼 빠진다 — 저자 없음 GEO 9/12 → 75", () => {
-    expect(scores(art({ authors: [] }))).toEqual({ SEO: 88, AEO: 67, GEO: 75, 공통: 100 });
+    expect(scores(art({ authors: [] }))).toEqual({ SEO: 88, AEO: 75, GEO: 75, 공통: 100 });
   });
 
-  it("유사도 비교 대상 없음은 통과로 세지 않는다 — 공통 6/9 → 67", () => {
-    expect(scores(art({ similarity: { status: "no_sources" } })).공통).toBe(67);
+  it("유사도 비교 대상 없음은 통과로 세지 않는다 — 공통 7/10 → 70", () => {
+    expect(scores(art({ similarity: { status: "no_sources" } })).공통).toBe(70);
   });
 
   it("가중치는 규칙 파일 값을 쓴다 — 내부 링크 가중치 3이면 SEO 7/10 → 70", () => {

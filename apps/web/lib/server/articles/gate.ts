@@ -18,8 +18,16 @@ import {
 } from "@ltr/editorial";
 import { parseKoglUsage, parseOfficialSourceTypes } from "@/lib/admin/official-source-rules";
 import { parseRegionalJudgeFields } from "@/lib/admin/regional-rules";
-import { RULES_V1, lintArticle, type LintResult } from "@ltr/seo-lint";
-import { INTERNAL_SIMILARITY_RULES, checkSimilarity, meetsThreshold, selectThresholds, type InternalSimilaritySettings, type SimilarityResult } from "@ltr/similarity";
+import { RULES_V1, applyRuleParams, lintArticle, type LintResult } from "@ltr/seo-lint";
+import {
+  INTERNAL_SIMILARITY_RULES,
+  checkSimilarity,
+  meetsThreshold,
+  selectThresholds,
+  type InternalSimilaritySettings,
+  type RegulationSimilarityRule,
+  type SimilarityResult,
+} from "@ltr/similarity";
 import { compareRendered, newsArticle } from "@ltr/structured-data";
 import type { ArticleGraph } from "./rows";
 import { lintContext, renderedFacts, similarityDraft, similaritySources, toArticleForPublish, toArticleView, toLintArticle, type TitlePeer } from "./mapping";
@@ -35,6 +43,10 @@ export interface GateSettings {
   regionalJudgeFields?: readonly EditorialField[];
   /** 오래된 통계 경고 기준 일수 settings.stale_statistics_days (REG1-14 · W4 8단계 — 없거나 틀리면 씨앗 365) */
   staleStatisticsDays?: number;
+  /** 점검 기준값 덮어쓰기 settings.seo_lint_params (OPT-03 · W7 — `{ "<규칙 ID>": { "<이름>": 값 } }`. 없거나 틀린 항목은 규칙 파일 값) */
+  seoLintParams?: unknown;
+  /** 확정 규정 버전의 유사도 기준 (NAV-18 · OPT-06) — 있으면 '규정' 기준, 없으면 내부 기준 */
+  regulation?: RegulationSimilarityRule | null;
 }
 
 export interface GateOptions {
@@ -90,7 +102,7 @@ export function runGate(graph: ArticleGraph, settings: GateSettings, opts: GateO
   const similarity = checkSimilarity({
     draft: similarityDraft(article),
     sources: similaritySources(graph),
-    ...selectThresholds({ internal: settings.similarity }),
+    ...selectThresholds({ internal: settings.similarity, regulation: settings.regulation ?? null }),
   });
 
   const view = toArticleView(graph, viewOpts);
@@ -99,9 +111,14 @@ export function runGate(graph: ArticleGraph, settings: GateSettings, opts: GateO
   const headline = typeof jsonld.headline === "string" ? jsonld.headline : "";
 
   const lint = lintArticle(
-    toLintArticle(graph, article, view, viewOpts, { similarityStatus: similarity.status, structuredDataMismatches, structuredHeadline: headline }),
+    toLintArticle(graph, article, view, viewOpts, {
+      similarityStatus: similarity.status,
+      structuredDataMismatches,
+      structuredHeadline: headline,
+      quoteWarning: similarity.quoteWarning,
+    }),
     lintContext(opts.peers, opts.siteUrl),
-    RULES_V1,
+    applyRuleParams(RULES_V1, settings.seoLintParams).rules,
   );
 
   const evaluation = evaluatePublish(article, {
@@ -211,6 +228,7 @@ export function parseGateSettings(
       officialSourceTypes: officialSourceTypes ?? [...OFFICIAL_SOURCE_TYPES],
       regionalJudgeFields,
       staleStatisticsDays,
+      seoLintParams: byKey.get("seo_lint_params"),
     },
     problems,
   };
