@@ -27,3 +27,19 @@ export {
   type AcquisitionCause,
 } from './acquisition';
 export { calcHolding, type HoldingInput, type LandTaxType } from './holding';
+
+// 판정표 평가기 (CALC-04·13) - 값은 감수된 판정표 데이터에만 있다
+export {
+  DeterminationTableSchema,
+  LIKELIHOODS,
+  parseDeterminationTable,
+  evaluateDeterminationTable,
+  type Condition,
+  type DeterminationOutcome,
+  type DeterminationTable,
+  type Facts,
+  type Likelihood,
+  type ReductionResult,
+  type RefundResult,
+  type RequirementResult,
+} from './determination';

@@ -13,9 +13,12 @@
     "packages/tax-engine/test/transfer-*.test.ts (14개)"
   ],
   "newFiles": {
-    "packages/tax-engine/src/index.ts": "새로 씀 - 지방세 모듈만 내보냄(transfer·compare 삭제, oligopoly는 공개 진입점에 넣지 않음)",
+    "packages/tax-engine/src/index.ts": "새로 씀 - 지방세 모듈과 판정표 평가기만 내보냄(transfer·compare 삭제, oligopoly는 공개 진입점에 넣지 않음)",
     "packages/tax-engine/package.json": "새로 씀 - 이름 @ltr/tax-engine, 이 저장소 고정 버전(vitest 5.0.3·typescript 5.9.3·zod 4.6.7)",
-    "packages/tax-engine/tsconfig.json": "새로 씀"
+    "packages/tax-engine/tsconfig.json": "새로 씀",
+    "packages/tax-engine/src/determination.ts": "새로 씀(a4) - 판정표 평가기. 값 없음, 비교 연산만. 시험 test/determination.test.ts·boundary.test.ts도 새로 씀",
+    "packages/tax-engine/test/boundary.test.ts": "새로 씀 - 패키지 경계·SOURCE.json 해시 시험",
+    "packages/tax-engine/test/determination.test.ts": "새로 씀 - 판정표 평가기 시험(시험용 자료)"
   },
   "notes": [
     "zod: SM은 3.24.1, 이 저장소는 lock에 이미 있는 4.6.7을 쓴다(새 패키지 아님, 선언만 추가). 코드 변경은 schema.ts의 refine 한 줄 타입 좁히기뿐이며 복사본 시험 126개가 전부 통과한다.",

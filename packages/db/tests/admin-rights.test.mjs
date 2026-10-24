@@ -40,6 +40,13 @@ const APPEND_ONLY = new Set([
   "public.products", // 스토어 상품(W8 BIZ-01) — 지우기 0, 내리기는 status=stopped
   "public.product_links", // 자사 상품 연결(W8 BIZ-03) — 지우기 0, 내리기는 status=revoked
   "public.partner_readiness_alerts", // 제휴 준비 경고 알림(W7 NAV-17·19·20) — 추가만, 확인 칸만 UPDATE
+  "public.rulesets", // 룰셋 버전(W10-a RULE-01) - 본문 불변·삭제 0, 상태는 sign_*/approve_* 함수로만
+  "public.determination_tables", // 판정표 버전(W10-a CALC-04·13) - 룰셋과 같은 생애
+  "public.tax_calendar", // 지방세 달력 버전(W10-a CALC-16) - 룰셋과 같은 생애
+  "public.rules_audit", // 룰셋·판정표·달력 서명·승인 감사(W10-a RULE-03) - 추가만
+  "public.accuracy_cases", // 공식 결과 대조 사례(W10-a CALC-14) - 지우기 0, 철회는 retired_at
+  "public.accuracy_runs", // 정확도 대조 실행(W10-a) - 추가만
+  "public.accuracy_run_results", // 사례별 대조 결과(W10-a) - 추가만
 ]);
 let client;
 
