@@ -4,6 +4,7 @@ import { ADMIN_PATH_HEADER } from "@/lib/admin/headers";
 import { accountProxyDecision, adminProxyDecision, hasAuthCookie, isAccountPath, isMemberPath, memberProxyDecision } from "@/lib/admin/proxy-rules";
 import { authCookieOptions, isHttps } from "@/lib/server/cookie-options";
 import { gateDecision, kstDay, noticeFor, noticeHeaders, noticeHtml, probePath, publicDetailRoute, type ProbeResult, type PublicDetailRoute } from "@/lib/site/public-gate";
+import { legacyGateDecision, legacyRoute, type LegacyRoute } from "@/lib/site/legacy-redirect";
 import { regionGateDecision, regionRoute, type RegionReader, type RegionRoute } from "@/lib/site/region-route";
 
 // 백오피스 화면 경로(/admin/…)·계정 화면 경로(/account/…) 막기 — 낙관적 확인 (Next.js 인증 안내 "Optimistic checks with Proxy").
@@ -129,8 +130,23 @@ async function regionGate(request: NextRequest, route: RegionRoute): Promise<Nex
   return NextResponse.redirect(new URL(`${decision.path}${request.nextUrl.search}`, request.url), 301);
 }
 
+/** 옛 사이트 주소(W9) — 기능 키 legacy_redirects가 꺼져 있으면 null(지금 동작 그대로 아래 흐름으로) */
+async function legacyGate(request: NextRequest, route: LegacyRoute): Promise<NextResponse | null> {
+  const read = regionReader();
+  const decision = read ? await legacyGateDecision(route, read) : ({ kind: "unavailable" } as const);
+  if (decision.kind === "pass") return null;
+  if (decision.kind === "unavailable") return noticeResponse(decision);
+  if (decision.kind === "gone") return new NextResponse("이 주소의 글은 더 이상 제공하지 않습니다.", { status: 410, headers: { ...noticeHeaders(410), "content-type": "text/plain; charset=utf-8" } });
+  return NextResponse.redirect(new URL(decision.path, request.url), decision.status);
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  const legacy = legacyRoute(pathname, search);
+  if (legacy) {
+    const response = await legacyGate(request, legacy);
+    if (response) return response;
+  }
   if (pathname.startsWith("/api/projects/")) {
     if (!malformedProjectApiPath(pathname)) return NextResponse.next();
     return NextResponse.json({ error: "조건을 확인하세요", errors: ["slug: 주소 글자를 읽을 수 없습니다"] }, { status: 400, headers: { "cache-control": "no-store", "x-robots-tag": "noindex" } });

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+<title>가상 세무 블로그</title>
+<item>
+<title><![CDATA[가상 취득세 개정 안내]]></title>
+<link>https://blog.example.test/2026/10/virtual-amendment/</link>
+<dc:creator><![CDATA[가상필자]]></dc:creator>
+<content:encoded><![CDATA[<p>가상 개정 내용을 안내합니다.</p><p>시행일은 가상으로 정합니다.</p>]]></content:encoded>
+<excerpt:encoded><![CDATA[]]></excerpt:encoded>
+<wp:post_id>101</wp:post_id>
+<wp:post_date><![CDATA[2026-10-01 09:00:00]]></wp:post_date>
+<wp:post_date_gmt><![CDATA[2026-10-01 00:00:00]]></wp:post_date_gmt>
+<wp:post_name><![CDATA[virtual-amendment]]></wp:post_name>
+<wp:status><![CDATA[publish]]></wp:status>
+<wp:post_type><![CDATA[post]]></wp:post_type>
+<category domain="category" nicename="amend"><![CDATA[법령개정]]></category>
+</item>
+<item>
+<title><![CDATA[가상 비공개 초안]]></title>
+<link>https://blog.example.test/?p=102</link>
+<dc:creator><![CDATA[가상필자]]></dc:creator>
+<content:encoded><![CDATA[<p>초안입니다.</p>]]></content:encoded>
+<wp:post_id>102</wp:post_id>
+<wp:post_date><![CDATA[2026-10-02 09:00:00]]></wp:post_date>
+<wp:post_date_gmt><![CDATA[0000-00-00 00:00:00]]></wp:post_date_gmt>
+<wp:post_name><![CDATA[]]></wp:post_name>
+<wp:status><![CDATA[draft]]></wp:status>
+<wp:post_type><![CDATA[post]]></wp:post_type>
+<category domain="category" nicename="amend"><![CDATA[법령개정]]></category>
+</item>
+<item>
+<title><![CDATA[첨부 파일 항목]]></title>
+<wp:post_id>103</wp:post_id>
+<wp:post_type><![CDATA[attachment]]></wp:post_type>
+<wp:status><![CDATA[inherit]]></wp:status>
+</item>
+</channel>
+</rss>
