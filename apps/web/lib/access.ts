@@ -97,6 +97,15 @@ export const ACTIONS = {
   "local_news.manage": "지자체뉴스 - 금주 핫뉴스(후보 넣기·선정·요약·유사도 검사·발행·기획 전환)와 행사안내(회차·상태·연결·공개) 입력 (편집 책임자·관리자, W6 LG-01~14 - 광고·협찬 담당은 행사 정렬·분류 권한 없음)",
   "supply.manage": "분양 정보 — 공식 공고를 보고 항목 만들기·고치기·공개 전환 (편집 책임자·관리자, W4 17단계 PR-04 — 가격 입력 0, 홍보 원고는 sponsored 기사로만)",
   "dev_method.manage": "개발방법 비교 — 방법 내용·비교 항목 6칸 초안·숫자 요건 사실 행(새 판 + 사유) 적기 (편집 책임자·관리자, W4 18단계 PR-09·10 — 감수 서명은 review.tax_review, 점수·순위·추천 입력 0)",
+  "ruleset.read": "룰셋·판정표·달력·정확도 대조 화면 열람 (W10-a - 세무 감수위원·관리자)",
+  "ruleset.sign": "룰셋·판정표·달력 감수 서명 (세무 감수위원만 - 관리자도 못 함, RULE-04)",
+  "ruleset.approve": "룰셋·판정표·달력 활성화 승인 - approve_*() RPC 호출 (관리자만, 서명 뒤 - RULE-02)",
+  "accuracy.manage": "공식 결과 대조 사례 입력·정확도 실행 요청 (W10-a CALC-14 - 세무 감수위원·관리자)",
+  "review_item.decide": "공통 검수 큐 처리 - 승인·반려·보류 (W10-c REV-01 - 편집 책임자·관리자)",
+  "pipeline.manage": "수집 원천 등록부·이용 조건 상태·수집 실패 처리 (W10-c PIPE - 관리자만)",
+  "brief.manage": "브리핑 호 편집·발행·구독자 관리 화면 (W10-e BRIEF - 편집 책임자·관리자)",
+  "billing.manage": "디지털 구독 상품 구성·요금표·주문 조회 (W10-f - 스토어·구독 담당·관리자)",
+  "billing.readiness": "실결제 개시 기록 commerce_readiness - PG 계약·통신판매업 신고 (W10-f - 관리자만)",
   "special_law.confirm": "특례법 확인 기록 — 공포 확인·철회와 특례법 근거 행의 확인·철회 (관리자(PO)만, W4 20단계 PR-13)",
 } as const;
 export type Action = keyof typeof ACTIONS;
@@ -152,6 +161,10 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "special_law.confirm",
   // W8 - 자사 상품 카드 승인·철회. 상품 담당(store_ops) 등 편집 책임자 밖의 시도는 거부 + 감사 (BIZ-03: 상품 담당은 승인 권한 없음)
   "product.approve",
+  // W10 0차 - 감수 서명·활성화 승인·실결제 개시 기록은 허용 밖 시도를 감사에 남긴다 (RULE-02·03, PAY-07)
+  "ruleset.sign",
+  "ruleset.approve",
+  "billing.readiness",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -383,6 +396,25 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
       return has(viewer, "ad_ops") || viewer.isAdmin ? ALLOW : deny("광고·협찬 담당(ad_ops)과 관리자만 합니다");
     case "product.manage":
       return has(viewer, "store_ops") || viewer.isAdmin ? ALLOW : deny("스토어·구독 담당(store_ops)과 관리자만 합니다");
+    // W10 0차 - 2단계 공통 권한 (2단계 설계 2.3)
+    case "ruleset.read":
+      return has(viewer, "reviewer") || viewer.isAdmin ? ALLOW : deny("룰셋·판정표·정확도 대조 화면은 세무 감수위원과 관리자만 봅니다");
+    case "ruleset.sign":
+      return has(viewer, "reviewer") ? ALLOW : deny("룰셋·판정표·달력의 감수 서명은 세무 감수위원(reviewer)만 할 수 있습니다 (RULE-04)");
+    case "ruleset.approve":
+      return viewer.isAdmin ? ALLOW : deny("룰셋·판정표·달력의 활성화 승인은 관리자만 합니다 (RULE-02)");
+    case "accuracy.manage":
+      return has(viewer, "reviewer") || viewer.isAdmin ? ALLOW : deny("대조 사례 입력·정확도 실행은 세무 감수위원과 관리자만 합니다 (CALC-14)");
+    case "review_item.decide":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("공통 검수 큐의 처리는 편집 책임자와 관리자만 합니다 (REV-01)");
+    case "pipeline.manage":
+      return viewer.isAdmin ? ALLOW : deny("수집 원천 등록부와 이용 조건 상태는 관리자만 고칩니다 (PIPE)");
+    case "brief.manage":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("브리핑 호 편집·발행은 편집 책임자와 관리자만 합니다 (BRIEF)");
+    case "billing.manage":
+      return has(viewer, "store_ops") || viewer.isAdmin ? ALLOW : deny("결제 상품 구성·주문 조회는 스토어·구독 담당과 관리자만 합니다 (PAY)");
+    case "billing.readiness":
+      return viewer.isAdmin ? ALLOW : deny("실결제 개시 기록(PG 계약·통신판매업 신고)은 관리자만 남깁니다 (PAY-07)");
     case "product.approve":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("자사 상품 카드 연결의 승인·철회는 편집 책임자와 관리자만 합니다 — 상품 담당은 제안까지입니다 (BIZ-03)");
     case "brand.manage":

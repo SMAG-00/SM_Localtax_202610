@@ -40,6 +40,15 @@
     "VERCEL_TOKEN": "ci",
     "FORBIDDEN_IDENTIFIERS": "ci",
     "JOBS_BASE_URL": "server",
+    "LAW_API_OC": "server-secret",
+    "ANTHROPIC_API_KEY_OPS": "server-secret",
+    "AGENT_MODEL_OPS": "server",
+    "AGENT_EFFORT_OPS": "server",
+    "PG_MODE": "server",
+    "PG_SECRET_KEY": "server-secret",
+    "PG_WEBHOOK_SECRET": "server-secret",
+    "NEXT_PUBLIC_PG_CLIENT_KEY": "public",
+    "DATA_API_KEY": "server-secret",
     "SCHEDULE_FILE": "server"
   },
   "tooling": [

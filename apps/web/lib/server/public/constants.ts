@@ -99,6 +99,31 @@ export const FEATURE_KEYS = [
   "finance",
   // W7c - SM 전문가 연락 요청 /experts/request (전문가 소개 experts가 같이 켜져 있고 연락 요청 정책에 실사·감수 기록이 있는 승인이 있어야 켜진다 - 설계 12장 #2). 꺼지면 양식 404·진입 링크 0
   "expert_requests",
+  // W10 0차 - 2단계 기능 키 24개(마이그레이션 80, 모두 꺼짐). 각 단위(W10-a~h)가 화면과 함께 쓰고, 공개 승인 뒤에만 켠다 (2단계 설계 0.2)
+  "calc_acquisition",
+  "calc_holding",
+  "calc_refund",
+  "calc_compare",
+  "calc_reduction",
+  "calc_accuracy",
+  "calc_offline",
+  "wetax_links",
+  "tax_calendar",
+  "law_viewer",
+  "law_three",
+  "case_db",
+  "review_queue",
+  "pipelines",
+  "amendment_auto",
+  "brief_regular",
+  "amendment_alerts",
+  "ai_ops",
+  "billing",
+  "digital_subscription",
+  "paywall",
+  "education_billing",
+  "seminars",
+  "field_data",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;

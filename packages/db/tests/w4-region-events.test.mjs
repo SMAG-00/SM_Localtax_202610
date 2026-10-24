@@ -42,10 +42,10 @@ async function rejected(name, props) {
   await client.query("rollback to savepoint e");
 }
 
-test("이름 제약 — 새 이벤트 7개가 W2-c 2.1 표에 있고 제약이 받는다, 제약 값 집합 = 표(31종)", () =>
+test("이름 제약 — 새 이벤트 7개가 W2-c 2.1 표에 있고 제약이 받는다, 제약 값 집합 = 표(65종)", () =>
   tx(async () => {
     const names = designNames();
-    assert.equal(names.length, 31);
+    assert.equal(names.length, 65);
     for (const n of NEW) assert.ok(names.includes(n), `2.1 표에 ${n}`);
     const def = (await client.query("select pg_get_constraintdef(oid) d from pg_constraint where conname = 'analytics_events_name_check'")).rows[0].d;
     const inDb = [...def.matchAll(/'([a-z_]+)'::text/g)].map((m) => m[1]);

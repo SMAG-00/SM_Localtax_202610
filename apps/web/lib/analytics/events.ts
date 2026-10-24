@@ -3,7 +3,7 @@
 import { CONTENT_TYPES, FORMATS, detectPii } from "@ltr/editorial";
 import { NEXT_ACTION_KEYS, SECTION_KEYS, type SectionKey } from "@/lib/server/public/constants";
 
-/** 이벤트 이름 31종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 — DB check 제약 analytics_events.name과 같다) */
+/** 이벤트 이름 65종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 34종 — DB check 제약 analytics_events.name과 같다) */
 export const EVENT_NAMES = [
   "home_entry_clicked",
   "hub_viewed",
@@ -39,6 +39,41 @@ export const EVENT_NAMES = [
   // W8 2단계 (docs/dev/W8_설계.md 2장) — 자사 상품·스토어 카드 누름 · 주문 링크/문의 누름
   "product_clicked",
   "order_link_clicked",
+  // W10 0차 (PRD-02 11장 · 2단계 설계 2.3) - 계산기·감면·환급·위택스·법령·해석 DB·브리핑·알림·결제 측정. 입력값·금액·이메일·카드 칸 없음
+  "calc_started",
+  "calc_completed",
+  "calc_step_viewed",
+  "calc_step_left",
+  "calc_compared",
+  "calc_compare_gated",
+  "reduction_shown",
+  "reduction_expanded",
+  "refund_diagnosed",
+  "wetax_handoff",
+  "external_calculator_opened",
+  "calc_offline_used",
+  "calendar_exported",
+  "accuracy_viewed",
+  "content_to_tool",
+  "law_viewed",
+  "related_panel_opened",
+  "case_viewed",
+  "brief_subscribe_viewed",
+  "brief_subscribed",
+  "brief_confirmed",
+  "brief_opened",
+  "brief_unsubscribed",
+  "brief_link_visited",
+  "review_decided",
+  "sm_calculator_opened",
+  "amendment_alert_subscribed",
+  "amendment_alert_sent",
+  "paywall_viewed",
+  "subscription_started",
+  "subscription_cancelled",
+  "order_paid",
+  "certificate_issued",
+  "training_quote_requested",
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -78,6 +113,32 @@ export const PROP_VALUES = {
   "order_link_clicked.placement": ["article", "home", "store"],
   "order_link_clicked.mode": ["existing_channel", "request_form"],
   "dev_method_viewed.method": ["redevelopment", "reconstruction", "small-scale", "public", "trust", "renewal", "rapid-planning"],
+  // W10 0차 - PRD-02 11장 이벤트 속성의 값 목록 (W2-c 설계 2.3)
+  "calc.tool": ["acquisition", "holding", "refund", "compare"],
+  "calc.input_mode": ["wizard", "form"],
+  "calc.entry_path": ["home_card", "hub", "article", "tax_lens", "search", "region_hub", "assistant", "direct"],
+  "calc.screen": ["calc_index", "acquisition_result", "holding_result", "refund_result", "situation", "region_hub"],
+  "calc.tax_kind": ["acquisition", "property", "comprehensive", "vehicle", "refund"],
+  "link.state": ["ok", "fallback"],
+  "accuracy.via": ["badge", "hub"],
+  "view.duration_band": ["under_10", "10_to_30", "over_30"],
+  "content.kind": ["article", "tax_lens", "solution_case", "glossary", "situation", "search", "region_hub"],
+  "law.view": ["single", "three"],
+  "panel.tab": ["law", "ruling", "circular", "interpretation", "tribunal", "case"],
+  "panel.place": ["law_view", "three_view"],
+  "case.doc_type": ["ruling", "circular", "interpretation", "tribunal", "case"],
+  "case.origin": ["search", "panel", "article"],
+  "brief.route": ["page", "article", "home", "footer", "assistant"],
+  "brief.unsubscribe_route": ["mail_link", "manage"],
+  "tenure.band": ["under_30", "30_to_90", "over_90"],
+  "review.result": ["approved", "rejected", "held"],
+  "review.duration_band": ["under_15", "15_to_60", "over_60"],
+  "amendment_alert_sent.stage": ["announced", "pre_notice", "submitted", "passed", "promulgated", "effective"],
+  "paywall.content_type": ["digital_edition", "archive", "deep_commentary", "premium_brief"],
+  "paywall.via": ["article", "column", "brief", "search", "ai_search", "naver", "assistant", "expert_profile"],
+  "billing.period": ["monthly", "yearly"],
+  "order.product_kind": ["digital", "print", "course", "seminar"],
+  "training.org_type": ["public", "corporate", "association", "other"],
 } as const satisfies Record<string, readonly string[]>;
 
 type Field =
@@ -89,6 +150,7 @@ type Field =
   | { kind: "path" }
   | { kind: "region" }
   | { kind: "key" }
+  | { kind: "version" }
   | { kind: "enum"; values: readonly string[] };
 
 interface PropSpec {
@@ -111,6 +173,8 @@ const path: PropSpec = { field: { kind: "path" } };
 const region: PropSpec = { field: { kind: "region" } };
 /** 설정 키 — 프로젝트 사업 유형·단계 (영문 소문자로 시작, 소문자·숫자·_ 2~40자) */
 const key: PropSpec = { field: { kind: "key" } };
+/** 룰셋·판정표 버전 - YYYY.NN (RULE-01) */
+const version: PropSpec = { field: { kind: "version" } };
 const count = (max: number): PropSpec => ({ field: { kind: "count", max } });
 const oneOf = (values: readonly string[], optional = false): PropSpec => ({ field: { kind: "enum", values }, ...(optional ? { optional: true as const } : {}) });
 const articleProps = { article_id: id, format: oneOf(FORMATS), content_type: oneOf(CONTENT_TYPES) };
@@ -154,6 +218,40 @@ export const EVENT_SPECS: Readonly<Record<EventName, EventSpec>> = {
     props: { product_id: id, placement: oneOf(PROP_VALUES["order_link_clicked.placement"]), mode: oneOf(PROP_VALUES["order_link_clicked.mode"]), article_id: { ...id, optional: true } },
   },
   dev_method_viewed: { section: "required", props: { method: oneOf(PROP_VALUES["dev_method_viewed.method"]) } },
+  calc_started: { section: "optional", props: { tool: oneOf(PROP_VALUES["calc.tool"]), input_mode: oneOf(PROP_VALUES["calc.input_mode"]), entry_path: oneOf(PROP_VALUES["calc.entry_path"]) } },
+  calc_completed: { section: "optional", props: { tool: oneOf(PROP_VALUES["calc.tool"]), input_mode: oneOf(PROP_VALUES["calc.input_mode"]), entry_path: oneOf(PROP_VALUES["calc.entry_path"]), elapsed_sec: count(3600) } },
+  calc_step_viewed: { section: "optional", props: { tool: oneOf(PROP_VALUES["calc.tool"]), step: count(50), unsure: bool } },
+  calc_step_left: { section: "optional", props: { tool: oneOf(PROP_VALUES["calc.tool"]), step: count(50), unsure: bool } },
+  calc_compared: { section: "optional", props: { condition_count: count(10) } },
+  calc_compare_gated: { section: "optional", props: {  } },
+  reduction_shown: { section: "optional", props: { reduction_id: key, table_version: version } },
+  reduction_expanded: { section: "optional", props: { reduction_id: key, table_version: version } },
+  refund_diagnosed: { section: "optional", props: { high_count: count(10), check_count: count(10), low_count: count(10) } },
+  wetax_handoff: { section: "optional", props: { from_screen: oneOf(PROP_VALUES["calc.screen"]), tax_kind: oneOf(PROP_VALUES["calc.tax_kind"]), wetax_menu: key } },
+  external_calculator_opened: { section: "optional", props: { from_screen: oneOf(PROP_VALUES["calc.screen"]), link_state: oneOf(PROP_VALUES["link.state"]) } },
+  calc_offline_used: { section: "optional", props: { tool: oneOf(PROP_VALUES["calc.tool"]), ruleset_version: version } },
+  calendar_exported: { section: "optional", props: { year: count(2100), item_count: count(500) } },
+  accuracy_viewed: { section: "optional", props: { via: oneOf(PROP_VALUES["accuracy.via"]) } },
+  content_to_tool: { section: "optional", props: { content_kind: oneOf(PROP_VALUES["content.kind"]), tool: oneOf(PROP_VALUES["calc.tool"]), region_code: { ...region, optional: true as const } } },
+  law_viewed: { section: "optional", props: { law_id: id, as_of_used: bool, view: oneOf(PROP_VALUES["law.view"]), duration_band: oneOf(PROP_VALUES["view.duration_band"]) } },
+  related_panel_opened: { section: "optional", props: { tab: oneOf(PROP_VALUES["panel.tab"]), place: oneOf(PROP_VALUES["panel.place"]) } },
+  case_viewed: { section: "optional", props: { doc_type: oneOf(PROP_VALUES["case.doc_type"]), origin: oneOf(PROP_VALUES["case.origin"]), duration_band: oneOf(PROP_VALUES["view.duration_band"]) } },
+  brief_subscribe_viewed: { section: "none", props: { route: oneOf(PROP_VALUES["brief.route"]) } },
+  brief_subscribed: { section: "none", props: { route: oneOf(PROP_VALUES["brief.route"]) } },
+  brief_confirmed: { section: "none", props: { route: oneOf(PROP_VALUES["brief.route"]) } },
+  brief_opened: { section: "none", props: {  } },
+  brief_unsubscribed: { section: "none", props: { route: oneOf(PROP_VALUES["brief.unsubscribe_route"]), tenure_band: oneOf(PROP_VALUES["tenure.band"]) } },
+  brief_link_visited: { section: "none", props: { issue_id: id, corner: key } },
+  review_decided: { section: "none", props: { job: key, duration_band: oneOf(PROP_VALUES["review.duration_band"]), result: oneOf(PROP_VALUES["review.result"]) } },
+  sm_calculator_opened: { section: "optional", props: { from_screen: oneOf(PROP_VALUES["calc.screen"]), tax_kind: oneOf(PROP_VALUES["calc.tax_kind"]), link_state: oneOf(PROP_VALUES["link.state"]) } },
+  amendment_alert_subscribed: { section: "optional", props: { tax_count: count(20), item_count: count(50) } },
+  amendment_alert_sent: { section: "optional", props: { stage: oneOf(PROP_VALUES["amendment_alert_sent.stage"]) } },
+  paywall_viewed: { section: "optional", props: { content_type: oneOf(PROP_VALUES["paywall.content_type"]), via: oneOf(PROP_VALUES["paywall.via"]) } },
+  subscription_started: { section: "none", props: { product_id: id, period: oneOf(PROP_VALUES["billing.period"]), via: oneOf(PROP_VALUES["paywall.via"]) } },
+  subscription_cancelled: { section: "none", props: { product_id: id, tenure_band: oneOf(PROP_VALUES["tenure.band"]) } },
+  order_paid: { section: "none", props: { product_kind: oneOf(PROP_VALUES["order.product_kind"]), via: oneOf(PROP_VALUES["paywall.via"]) } },
+  certificate_issued: { section: "none", props: { course_id: id } },
+  training_quote_requested: { section: "none", props: { org_type: oneOf(PROP_VALUES["training.org_type"]) } },
 };
 
 export const isEventName = (v: unknown): v is EventName => typeof v === "string" && (EVENT_NAMES as readonly string[]).includes(v);
@@ -170,6 +268,7 @@ const PATH_MAX = 200;
 const RANK_MAX = 100;
 const REGION_CODE = /^[0-9]{10}$/;
 const KEY = /^[a-z][a-z0-9_]{1,39}$/;
+const VERSION = /^[0-9]{4}\.[0-9]{2}$/;
 /** 리퍼러 — 호스트 이름만 (소문자·숫자·점·하이픈) */
 const HOST = /^(?=.{1,253}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/;
 
@@ -189,6 +288,8 @@ function fieldError(field: Field, v: unknown): string | null {
       return typeof v === "string" && REGION_CODE.test(v) ? null : "지역 코드(숫자 10자리)여야 합니다";
     case "key":
       return typeof v === "string" && KEY.test(v) ? null : "영문 소문자로 시작하는 소문자·숫자·'_' 2~40자 키여야 합니다";
+    case "version":
+      return typeof v === "string" && VERSION.test(v) ? null : "버전(YYYY.NN)이어야 합니다";
     case "enum":
       return typeof v === "string" && field.values.includes(v) ? null : `${field.values.join("·")} 중 하나여야 합니다`;
     case "path": {
