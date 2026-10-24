@@ -54,7 +54,7 @@ const article = (ref: string): SearchHit => ({
   typeLabel: "해설",
   tier: 2,
   section: "tax",
-  sectionName: "지방세",
+  sectionName: "지방세·부동산세금",
   contentType: "explainer",
   format: null,
   sponsor: null,
@@ -62,7 +62,7 @@ const article = (ref: string): SearchHit => ({
   publishedOn: "2026-10-01",
   regionCodes: [],
 });
-const situationHit = (ref: string): SearchHit => ({ kind: "situation", ref, title: `상황 ${ref}`, snippet: null, href: `/situations/s-${ref}`, typeLabel: "상황", tier: 1, section: "tax", sectionName: "지방세", pictogram: "car-sold" });
+const situationHit = (ref: string): SearchHit => ({ kind: "situation", ref, title: `상황 ${ref}`, snippet: null, href: `/situations/s-${ref}`, typeLabel: "상황", tier: 1, section: "tax", sectionName: "지방세·부동산세금", pictogram: "car-sold" });
 const card = (slug: string, section: SituationCard["section"] = "tax"): SituationCard => ({ slug, href: `/situations/${slug}`, title: `상황 ${slug}`, subtitle: "한 줄", pictogram: "car-sold", section });
 const query = (href: string) => new URLSearchParams(href.includes("?") ? href.slice(href.indexOf("?") + 1) : "");
 
@@ -105,7 +105,7 @@ describe("URL 상태 ↔ 폼", () => {
     expect(hasFilters(options())).toBe(false);
     const o = options({ tab: "article", section: "tax", contentType: "reported_news", region: "1100000000", from: "2026-10-01", page: 2 });
     expect(hasFilters(o)).toBe(true);
-    expect(filterSummary(o, (code) => (code === "1100000000" ? "서울특별시" : null))).toEqual(["분야 지방세", "기사 유형 보도", "지역 서울특별시", "기간 2026-10-01부터"]);
+    expect(filterSummary(o, (code) => (code === "1100000000" ? "서울특별시" : null))).toEqual(["분야 지방세·부동산세금", "기사 유형 보도", "지역 서울특별시", "기간 2026-10-01부터"]);
     expect(filterSummary(options({ to: "2026-10-19" }), () => null)).toEqual(["기간 2026-10-19까지"]);
     expect(filterSummary(options({ from: "2026-10-01", to: "2026-10-19", region: "9999999999" }), () => null)).toEqual(["지역 9999999999", "기간 2026-10-01 ~ 2026-10-19"]);
     expect(parseSearchParams(query(clearFiltersHref(o)))).toEqual(options({ tab: "article" }));

@@ -37,7 +37,7 @@ export function buildFooterLinks(features: Features): NavLink[] {
     ...(features.page_terms ? [{ key: "terms", label: "이용약관", href: "/about/terms" }] : []),
     ...policy("privacy"),
     ...(features.page_no_email ? [{ key: "no_email", label: "이메일무단수집거부", href: "/about/no-email-collection" }] : []),
-    { key: "measurement", label: "측정 거부", href: "/about/measurement" },
+    { key: "measurement", label: "방문 통계 설정", href: "/about/measurement" },
     ...(features.members ? [{ key: "my", label: "내 정보", href: "/my" }] : []),
   ];
   return links;

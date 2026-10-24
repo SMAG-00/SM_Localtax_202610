@@ -41,7 +41,7 @@ describe("정의 글자 (GROW-01 '지표마다 정의·분모·분자·소유 �
     expect(DEFINITIONS.revisits.exclusions).toMatch(/방문자 ID가 없는 세션/);
   });
   test("분야 줄은 4대 분야 순서와 이름", () => {
-    expect(SECTION_ROWS.map((r) => r.label)).toEqual(["지방세", "부동산", "부동산개발금융", "지자체뉴스"]);
+    expect(SECTION_ROWS.map((r) => r.label)).toEqual(["지방세·부동산세금", "부동산재테크", "부동산금융", "지자체뉴스"]);
   });
 });
 

@@ -253,7 +253,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     partner: badgeName ? { name: badgeName } : null,
     media: media.map((m) => ({ id: num(m.id), path: m.path, rights_status: "confirmed" })),
   };
-  const view = toArticleView(viewSource, { siteUrl: site, publisherName: brand.productName, now: now.toISOString() });
+  const view = toArticleView(viewSource, { siteUrl: site, publisherName: brand.operatorName, now: now.toISOString() });
   const facts = renderedFacts(view);
   const supersededSources = new Set(sources.flatMap((s) => (s.supersedes_id === null ? [] : [num(s.supersedes_id)])));
   const underReview = new Set(reviewing.map((r) => num(r.source_id)));

@@ -169,7 +169,7 @@ test("공개 뷰 칸 — 작성자·서명자 0 / anon은 뷰만 읽고 설정 �
 
 test("홈 핵심 메시지 — PRD 문장 저장, 61자·글자 아님·경력 연수 표기 거부", async () => {
   await tx(async () => {
-    assert.ok((await setCore("부동산과 지자체의 변화를 읽고 대응하려면 지방세 이해가 필수다")).ok);
+    assert.ok((await setCore("취득·보유·상속·증여·양도 등 모든 순간 — 지방세와 부동산 세금을 알면 재테크가 보입니다")).ok);
     assert.ok((await setCore("가".repeat(60))).ok, "60자");
     assert.match((await setCore("가".repeat(61))).message, /60자/);
     assert.equal((await setCore(["시험용"])).ok, false, "글자 아님");

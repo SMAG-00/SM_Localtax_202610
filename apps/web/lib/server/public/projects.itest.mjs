@@ -226,7 +226,7 @@ describe("기능 키 켜짐 — 공개 프로젝트만 (anon)", () => {
         [SIDO, 2],
       ]);
       expect(v.chips.types.map((c) => c.value)).toEqual([null, TYPE]);
-      expect(v.breadcrumb.items.map((i) => i.name)).toEqual(["홈", "부동산", "프로젝트 트래커"]);
+      expect(v.breadcrumb.items.map((i) => i.name)).toEqual(["홈", "부동산재테크", "프로젝트 트래커"]);
       expect(v.sourceLine).toMatchObject({ source: "시험용 사업구청", baseDate: "2026-02-01" });
       const byRegion = await projects.getProjectList({ region: GU2, type: null, stage: null });
       expect(byRegion.items.map((c) => c.slug)).toEqual([w.B.slug]);
@@ -254,7 +254,7 @@ describe("기능 키 켜짐 — 공개 프로젝트만 (anon)", () => {
       expect(v.coverage).toEqual({ recorded: 2, linked: 2 });
       expect(v.articles.map((a) => a.slug)).toEqual([w.N2.slug, w.N1.slug]);
       expect(v.links).toEqual([]); // 기사 연결은 관련 기사 자리 — 확인된 연결 자리에는 공식 원문·프로젝트·지역만
-      expect(v.breadcrumb.items.map((i) => i.name)).toEqual(["홈", "부동산", "프로젝트 트래커", "시험용 하늘가구역 정비"]);
+      expect(v.breadcrumb.items.map((i) => i.name)).toEqual(["홈", "부동산재테크", "프로젝트 트래커", "시험용 하늘가구역 정비"]);
       expect(await projects.getProject(w.C.slug)).toBeNull();
       expect(await projects.getProject(`siheom-pp-none-${RUN}`)).toBeNull();
       expect(priceKeys(v)).toEqual([]);

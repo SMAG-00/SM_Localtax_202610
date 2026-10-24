@@ -84,6 +84,7 @@ export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
   ]);
   const sections = homeSections({
     coreMessage: settings.coreMessage,
+    coreHighlights: settings.coreHighlights,
     fieldPoints: fieldCardPoints(hubPoints),
     searchEnabled: settings.features.search,
     searchChips: settings.searchChips,

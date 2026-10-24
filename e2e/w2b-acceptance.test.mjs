@@ -681,7 +681,7 @@ test("3) 이어 걷기 — 사이트 안 링크 15곳을 차례로 누르고 뒤
   await go(`[data-part="category-articles"] a[href="${fx.explainer.href}"]`, fx.explainer.href, '[data-ui="article-page"]');
   await go('[data-article-part="head"] [data-part="byline"] a', `/people/${fx.reporterSlug}`, '[data-ui="person-page"]');
   // 헤더 하위 메뉴 → 칼럼 목록 (분야 데이터에서 만든 하위 메뉴, HOME-02)
-  await page.getByRole("button", { name: "지방세 하위 메뉴" }).click();
+  await page.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" }).click();
   await go('[data-menu-section="tax"] [data-part="sub-link"][href="/tax/columns"]', "/tax/columns", '[data-ui="column-list"]');
   await go(`[data-ui="column-list"] a[href="${fx.col1.href}"]`, fx.col1.href, '[data-part="series"]');
   await go('[data-ui="reporter-block"] a[href^="/people/"]', `/people/${fx.writerSlug}`, '[data-ui="person-page"]');

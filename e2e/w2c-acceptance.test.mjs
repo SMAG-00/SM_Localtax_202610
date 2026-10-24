@@ -646,7 +646,7 @@ before(async () => {
   for (let i = 1; i <= 4; i++) await insertArticle(`sc${i}`, { categoryId: fx.interpretations, solvedCase: SOLVED(i), publishedAt: next() });
   for (let i = 1; i <= 5; i++) await insertArticle(`g${i}`, { categoryId: fx.interpretations, publishedAt: next() });
   for (const label of ["pin", "wView", "wShare"]) await insertArticle(label, { categoryId: fx.interpretations, publishedAt: next() });
-  // 제휴사 A의 공동 기획·광고 기사 (부동산개발금융)
+  // 제휴사 A의 공동 기획·광고 기사 (부동산금융)
   await insertArticle("coA", { section: "finance", contentType: "sponsored", label: "co_planned", partnerId: fx.partnerA.id, title: "공동 기획 취득세 실무", publishedAt: next() });
   await insertArticle("adA", { section: "finance", contentType: "sponsored", label: "ad", partnerId: fx.partnerA.id, title: "광고 세무 상담 안내", publishedAt: next() });
   // 측정 시나리오 기사 (지방세 해설 — 다음 행동 띠 [같은 분야 더 보기])
@@ -942,7 +942,7 @@ test("5b) ART-10 제휴사를 운영 API로 비공개·계약 종료로 내려�
     type: [...li.querySelectorAll('[data-ui="article-type-badge"]')].map((e) => e.textContent),
     partner: [...li.querySelectorAll('[data-ui="partner-badge"]')].map((e) => e.textContent),
   }));
-  assert.deepEqual(card, expected, "부동산개발금융 허브 목록 카드");
+  assert.deepEqual(card, expected, "부동산금융 허브 목록 카드");
   await hub.context.close();
   const since = new Date();
   const d = await openSite(fx.coB.href);
@@ -1249,7 +1249,7 @@ test("9b) GROW-01 측정 거부·GPC — 측정 거부 화면에서 거부하거
   const R = await trackingContext();
   await R.page.goto(`${base}/about/measurement`, { waitUntil: "networkidle" });
   assert.equal(await R.page.locator('[data-ui="measurement-page"]').getAttribute("data-state"), "measuring");
-  await R.page.getByRole("button", { name: "측정 거부하기" }).click();
+  await R.page.getByRole("button", { name: "방문 통계 수집 거부" }).click();
   await R.page.waitForURL(`${base}/about/measurement?done=refuse`);
   assert.equal(await R.page.locator('[data-ui="measurement-page"]').getAttribute("data-state"), "refused");
   const sentBefore = R.sent.length;

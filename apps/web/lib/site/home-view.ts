@@ -3,12 +3,12 @@
 //  · 섹션 바탕은 보이는 섹션 순서대로 ivory ↔ ivory-dark (PRD-01A 3장 — 히어로 다음 첫 섹션이 ivory)
 //  · 형식 배지는 기사 형식 값과 1:1, 일반 기사는 배지 0 (HOME-03)
 import { ARTICLE_TYPE_BADGE_LABELS, type ArticleFormat, type ArticleTypeBadgeKind } from "@ltr/ui";
-import { SECTION_INFO, SECTION_KEYS, type HomeSectionKey } from "@/lib/server/public/constants";
+import type { HomeSectionKey } from "@/lib/server/public/constants";
 
-/** 히어로 아이브로 — 4대 분야 영문 이름 (PRD-01A 3장 홈 골격) */
-export const HERO_EYEBROW = SECTION_KEYS.map((s) => SECTION_INFO[s].eyebrow).join(" · ");
-/** 핵심 메시지에서 hermes-400으로 칠할 낱말 (PRD-00 8.10 — '지방세'만) */
-export const HERO_HIGHLIGHT = "지방세";
+/** 핵심 메시지에서 hermes-400으로 칠할 낱말 — 설정 home_core_highlights가 정한다 (PRD-00 8.10). 설정이 비었을 때(아직 안 넣음)만 쓰는 기본값 */
+export const HERO_HIGHLIGHT_FALLBACK: readonly string[] = ["지방세"];
+/** 칠할 낱말 목록 — 설정 값이 있으면 그것, 없으면 기본값 */
+export const heroHighlights = (fromSettings: readonly string[]): readonly string[] => (fromSettings.length ? fromSettings : HERO_HIGHLIGHT_FALLBACK);
 /** 홈 큰 입력창 라벨·안내 — 첫 화면 150자(R1)에 들어간다 */
 export const SEARCH_LABEL = "검색어";
 export const SEARCH_PLACEHOLDER = "예: 2026년 지방세제 개편안";

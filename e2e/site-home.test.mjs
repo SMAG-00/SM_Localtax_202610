@@ -194,9 +194,9 @@ test("빈 DB 홈 — 히어로(핵심 메시지 = 설정 값)와 4대 분야 카
   assert.equal((await page.locator("h1").textContent()).trim(), message, "핵심 메시지는 settings 한 곳에서 온다");
   const fields = await page.$$eval('[data-ui="field-cards"] a', (as) => as.map((a) => [a.textContent.trim(), a.getAttribute("href")]));
   assert.deepEqual(fields, [
-    ["지방세", "/tax"],
-    ["부동산", "/realestate"],
-    ["부동산개발금융", "/finance"],
+    ["지방세·부동산세금", "/tax"],
+    ["부동산재테크", "/realestate"],
+    ["부동산금융", "/finance"],
     ["지자체뉴스", "/local"],
   ]);
   assert.equal(await page.locator('[data-home-section] :text("준비 중")').count(), 0);
@@ -312,7 +312,7 @@ test("d·e) 기능 키가 모두 꺼지면 유틸 메뉴·정책 링크·검색 
   assert.equal(await page.locator('form[action="/search"]').count(), 0);
   // 기능 키가 모두 꺼져도 바닥글에는 측정 거부 하나만 (W2-e 6.4)
   assert.deepEqual(await page.$$eval('nav[aria-label="바닥글 메뉴"] a', (as) => as.map((a) => a.getAttribute("href"))), ["/about/measurement"]);
-  assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] [data-part="section-link"]', (as) => as.map((a) => a.textContent)), ["지방세", "부동산", "부동산개발금융", "지자체뉴스"]);
+  assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] [data-part="section-link"]', (as) => as.map((a) => a.textContent)), ["지방세·부동산세금", "부동산재테크", "부동산금융", "지자체뉴스"]);
   // 하위 메뉴 — 빈 DB에서는 분야마다 공통 '뉴스 전체'만 (기사 있는 하위 분야가 없다, HOME-02)
   assert.deepEqual(await page.$$eval('nav[aria-label="분야 메뉴"] [data-part="sub-link"]', (as) => as.map((a) => a.getAttribute("href"))), ["/news?section=tax", "/news?section=realestate", "/news?section=finance", "/news?section=local"]);
   for (const word of ["지방세봇", "지역·축제", "AI 도우미"]) assert.equal(await page.locator("header").getByText(word).count(), 0, `헤더에 ${word} 0`);
@@ -367,8 +367,8 @@ test("c) 사이트 안 이동은 화면 전환 — 워드마크로 홈, 상단 �
 
   // 허브(3단계) — 상단 메뉴·4대 분야 카드로 가고 뒤로 가기로 돌아와도 같은 문서(표식 유지), 지금 보는 분야 표시
   for (const [selector, hub, name] of [
-    ['nav[aria-label="분야 메뉴"] a[href="/tax"]', "tax", "지방세"],
-    ['[data-ui="field-cards"] a[href="/finance"]', "finance", "부동산개발금융"],
+    ['nav[aria-label="분야 메뉴"] a[href="/tax"]', "tax", "지방세·부동산세금"],
+    ['[data-ui="field-cards"] a[href="/finance"]', "finance", "부동산금융"],
   ]) {
     await page.locator(selector).click();
     await page.waitForURL(`${base}/${hub}`);
@@ -396,7 +396,7 @@ test("f) 360px — 가로 스크롤 0(메뉴 닫힘·열림), 메뉴 버튼·메
   assert.equal(await button.getAttribute("aria-expanded"), "true");
   assert.ok((await overflow()) <= 0, "메뉴 열림");
   // 펼친 분야의 하위 메뉴까지 — 닫힌 하위 메뉴(hidden)는 화면에 없으므로 보이는 것만 잰다
-  await page.getByRole("button", { name: "지방세 하위 메뉴" }).click();
+  await page.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" }).click();
   const targets = await page.$$eval('header nav a, header nav button, nav[aria-label="바닥글 메뉴"] a', (els) =>
     els.filter((e) => e.getClientRects().length > 0).map((e) => ({ t: e.textContent, ...e.getBoundingClientRect().toJSON() })),
   );

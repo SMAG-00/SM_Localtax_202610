@@ -24,7 +24,7 @@ import {
 } from "@ltr/ui";
 import { SectionTitle, Specimen } from "./specimen";
 
-// local 묶음 견본 — 지자체·부동산·부동산개발금융 16종. 날짜는 고정한 '오늘'로 보인다(견본이 날마다 바뀌지 않게)
+// local 묶음 견본 — 지자체·부동산·부동산금융 16종. 날짜는 고정한 '오늘'로 보인다(견본이 날마다 바뀌지 않게)
 const TODAY = "2026-10-17";
 /** 행사 재확인 기준 일수 — 실제 값은 settings (견본 값) */
 const RECHECK_DAYS = 14;
@@ -274,7 +274,7 @@ export function LocalSection() {
           <FieldHubHead
             field="realestate"
             eyebrow="REAL ESTATE"
-            title="부동산"
+            title="부동산재테크"
             intro="지역 개발과 정비사업의 진행을 공식 원문으로 확인합니다."
             tabs={{
               current: "projects",
@@ -387,8 +387,8 @@ export function LocalSection() {
             title="○○구역 관리처분, 무엇이 달라지나"
             summary="같은 구역을 다룬 지방세·부동산·지자체 기사를 한곳에 모았습니다."
             articles={[
-              { id: "a1", field: "지방세", card: article("입주권과 취득세 주택 수", "관리처분 뒤 입주권이 주택 수에 들어가는 때를 정리했습니다."), approval },
-              { id: "a2", field: "부동산", card: article("○○구역 관리처분계획 인가", "인가 고시 원문과 다음 단계를 봅니다."), approval },
+              { id: "a1", field: "지방세·부동산세금", card: article("입주권과 취득세 주택 수", "관리처분 뒤 입주권이 주택 수에 들어가는 때를 정리했습니다."), approval },
+              { id: "a2", field: "부동산재테크", card: article("○○구역 관리처분계획 인가", "인가 고시 원문과 다음 단계를 봅니다."), approval },
               { id: "a3", field: "지자체뉴스", card: article("강남구, 주민설명회 연다", "관리처분 내용 설명회 일정과 장소입니다."), approval },
             ]}
             taxLens={

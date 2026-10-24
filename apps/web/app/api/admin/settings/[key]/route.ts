@@ -1,4 +1,4 @@
-import { isEditableSetting, parseJsonText, sameJson, validateSettingValue } from "@/lib/admin/settings-rules";
+import { coreHighlightsErrors, isEditableSetting, parseJsonText, sameJson, validateSettingValue } from "@/lib/admin/settings-rules";
 import { financeEnableErrors } from "@/lib/admin/finance-rules";
 import { expertEnableErrors } from "@/lib/admin/expert-rules";
 import { weeklyDigestEnableErrors } from "@/lib/admin/local-news-rules";
@@ -59,6 +59,12 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   const checked = validateSettingValue(key, value, current.value);
   if (!checked.ok) return errorJson(422, "설정 값이 규칙에 맞지 않습니다", { errors: checked.errors });
   if (sameJson(value, current.value)) return json({ setting: current, unchanged: true });
+  // 홈 핵심 메시지 강조 낱말: 낱말은 지금 핵심 메시지 안에 있어야 한다 (DB 트리거 …71과 같은 규칙, 422로 낱말마다 사유)
+  if (key === "home_core_highlights") {
+    const message = await readSetting(db, "home_core_message");
+    const highlightErrors = coreHighlightsErrors(value, message?.value);
+    if (highlightErrors.length) return errorJson(422, "설정 값이 규칙에 맞지 않습니다", { errors: highlightErrors });
+  }
   // 시범 지역: 새로 넣는 코드는 오늘 유효한 행정구역 (W4 11단계 — DB 트리거 …46과 같은 규칙, 422로 칸마다 사유)
   if (key === "pilot_regions") {
     const { data, error } = await db.from("regions").select("code, parent_code, level, name, slug, valid_from, valid_to").in("code", value as string[]);

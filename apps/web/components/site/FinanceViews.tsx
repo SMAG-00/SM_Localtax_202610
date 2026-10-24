@@ -99,7 +99,7 @@ export function StructureDetail({ view }: { view: StructureView }) {
       <SiteSection id="finance-structure-head" tone="ivory" first data={{ "data-finance-part": "structure-head" }}>
         <nav aria-label="현재 위치" className="text-[15px]">
           <UiLink href="/finance" className={LINK}>
-            부동산개발금융
+            부동산금융
           </UiLink>{" "}
           ›{" "}
           <UiLink href="/finance/trust-pf" className={LINK}>

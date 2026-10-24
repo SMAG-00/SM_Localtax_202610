@@ -2,7 +2,7 @@
 // 값 목록은 docs/dev/W2-a_설계.md §2와 같고(DB check 제약과 같은 값), 칸 이름은 PRD-01A 6.1 컬럼의 camelCase다.
 // 다른 워크스페이스 패키지를 import하지 않는다 — seo-lint·similarity 결과는 PublishContext의 평범한 칸으로 받는다.
 
-/** 4대 분야 `articles.section` — 지방세 · 부동산 · 부동산개발금융 · 지자체뉴스 */
+/** 4대 분야 `articles.section` — 지방세 · 부동산 · 부동산금융 · 지자체뉴스 */
 export const SECTIONS = ["tax", "realestate", "finance", "local"] as const;
 export type Section = (typeof SECTIONS)[number];
 

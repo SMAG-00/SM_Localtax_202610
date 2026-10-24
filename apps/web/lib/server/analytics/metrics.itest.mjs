@@ -91,7 +91,7 @@ beforeAll(async () => {
   });
   // 2 지방세 허브 → 기사 29초(30초 열람 이벤트 0) — 그날 23:59:59 (한국 날짜 경계 안)
   const v2 = await seedSession({ events: [["hub_viewed", d(0), "23:59:00"], ["article_viewed", d(0), "23:59:59"]] });
-  // 3 부동산개발금융 허브 + 부동산 기사 30초 — 다른 분야 기사는 유효 방문 0 (셋째 날 — 전환일 나누기 시험)
+  // 3 부동산금융 허브 + 부동산 기사 30초 — 다른 분야 기사는 유효 방문 0 (셋째 날 — 전환일 나누기 시험)
   const v3 = await seedSession({ events: [["hub_viewed", d(2), "12:00:00", "finance"], ["article_engaged", d(2), "12:01:00", "realestate"]] });
   // 4·5 봇·편집국 — 무엇을 해도 0
   await seedSession({ bot: true, firstVisit: true, events: [["hub_viewed", d(0), "14:00:00"], ["article_engaged", d(0), "14:01:00"]] });

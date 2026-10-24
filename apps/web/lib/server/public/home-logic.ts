@@ -122,6 +122,8 @@ export function pickStories(designated: readonly CurationRow[], articles: Readon
 export interface HeroSection {
   key: "hero";
   coreMessage: string | null;
+  /** 핵심 메시지 안에서 오렌지로 칠할 낱말 (settings home_core_highlights) — 없으면 빈 목록 */
+  coreHighlights: string[];
   /**
    * 통합 검색 폼 (HOME-01 — 4단계 이후에도 통합 검색). 검색 화면(/search, W2-d)이 공개되기 전(기능 키 search 꺼짐)에는 null —
    * 없는 화면으로 가는 폼·칩을 두지 않는다 (HOME-02 빈 링크 0, 설계 9장 #18)
@@ -172,6 +174,8 @@ export type HomeSection = HeroSection | FieldsSection | LatestReportsSection | W
 
 export interface HomeInput {
   coreMessage: string | null;
+  /** 핵심 메시지 강조 낱말 — 안 주면 빈 목록 */
+  coreHighlights?: readonly string[];
   /** 4대 분야 카드의 포인트 한 줄 (감수된 분야만) — 없으면 줄 없음 */
   fieldPoints?: Partial<Record<SectionKey, string>>;
   /** 검색 화면 공개 여부 (기능 키 search) */
@@ -200,7 +204,7 @@ export function homeSections(input: HomeInput): HomeSection[] {
     // 핵심 메시지도 검색 폼도 없으면 히어로째 뺀다 (빈 섹션 0)
     hero:
       input.coreMessage || input.searchEnabled
-        ? { key: "hero", coreMessage: input.coreMessage, search: input.searchEnabled ? { action: "/search", chips: input.searchChips } : null }
+        ? { key: "hero", coreMessage: input.coreMessage, coreHighlights: [...(input.coreHighlights ?? [])], search: input.searchEnabled ? { action: "/search", chips: input.searchChips } : null }
         : null,
     fields: { key: "fields", cards: SECTION_KEYS.map((s) => ({ section: s, name: SECTION_INFO[s].name, href: SECTION_INFO[s].href })), points: { ...(input.fieldPoints ?? {}) } },
     latest_reports: input.latestReports.length ? { key: "latest_reports", items: input.latestReports.slice(0, LIMITS.homeLatestReports) } : null,

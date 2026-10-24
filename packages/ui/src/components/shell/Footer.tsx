@@ -61,6 +61,7 @@ export function Footer({ disclaimer, links, info = [] }: FooterProps) {
           </dl>
         )}
         <p className="mt-6 text-[13px] font-semibold text-navy-300">{brand.productName}</p>
+        <p className="mt-1 text-[13px] text-navy-300">운영 {brand.operatorName}</p>
       </div>
     </footer>
   );

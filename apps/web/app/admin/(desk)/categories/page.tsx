@@ -20,7 +20,7 @@ export default async function CategoriesPage() {
     <>
       <PageTitle
         title="분야"
-        description="허브는 4대 분야(지방세·부동산·부동산개발금융·지자체뉴스)로 정해져 있습니다. 그 아래 하위 분야를 더하고, 고치고, 순서를 바꿉니다."
+        description="허브는 4대 분야(지방세·부동산·부동산금융·지자체뉴스)로 정해져 있습니다. 그 아래 하위 분야를 더하고, 고치고, 순서를 바꿉니다."
       />
       <div className="space-y-8">
         {SECTIONS.map((section) => {

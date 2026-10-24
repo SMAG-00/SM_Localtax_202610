@@ -24,7 +24,7 @@ export const localTopicHref = (topic: LocalTopic) => `${SECTION_INFO.local.href}
 // 지자체 허브 블록(LG-08) ② 지방세·지방재정 ③ 부동산·개발 에 담는 편집 분야는 설정 local_block_fields가 정한다 (W4 4단계 — region-hub-logic.ts, 코드 상수에서 옮겼다)
 
 /** 뉴스 전체(/news)의 허브 탭 글자 (PRD-01A 3장 화면 표 — 탭 지방세·부동산·개발금융·지자체) */
-export const NEWS_TAB_LABELS: Readonly<Record<SectionKey, string>> = { tax: "지방세", realestate: "부동산", finance: "개발금융", local: "지자체" };
+export const NEWS_TAB_LABELS: Readonly<Record<SectionKey, string>> = { tax: "지방세·부동산세금", realestate: "부동산재테크", finance: "부동산금융", local: "지자체" };
 
 /** anon이 읽는 설정 키 (DB 정책 settings_public_read와 같은 목록) */
 export const PUBLIC_SETTING_KEYS = [
@@ -37,6 +37,9 @@ export const PUBLIC_SETTING_KEYS = [
   "next_action_priority",
   "popular_rules",
 ] as const;
+
+/** anon이 읽는 설정 키 가운데 settings_public_read 목록 밖에서 따로 열린 것 (W2-b 설계 2.3 표는 그대로 — 따로 연 정책 settings_public_core_highlights) */
+export const EXTRA_PUBLIC_SETTING_KEYS = ["home_core_highlights"] as const;
 
 /** 기능 공개 목록 (settings.feature_flags) — 없거나 false면 닫힘 */
 export const FEATURE_KEYS = [

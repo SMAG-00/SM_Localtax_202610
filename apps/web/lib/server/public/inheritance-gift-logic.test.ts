@@ -62,7 +62,7 @@ describe("상황이 갖춰야 할 것", () => {
     expect(situationMissing({ ...ok, link: { kind: "sm_calculator", key: "acquisition" } })).toMatch(/외부 계산기 연결/);
     expect(situationMissing({ ...ok, checklist: null })).toMatch(/체크리스트 고지/);
     expect(situationMissing({ ...ok, checklist: { items: ["x"], notice: " " } })).toMatch(/체크리스트 고지/);
-    expect(situationMissing({ ...ok, section: "tax" })).toMatch(/부동산 분야/);
+    expect(situationMissing({ ...ok, section: "tax" })).toMatch(/부동산재테크 분야/);
     expect(situationMissing(undefined)).toBe("상황이 없습니다");
   });
   it("목록 전체 검사는 상황마다 한 줄", () => {

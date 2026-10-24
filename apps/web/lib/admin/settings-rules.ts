@@ -13,7 +13,7 @@ import { checkWindowsSetting } from "@/lib/readiness/windows";
 import { hasClaimToken } from "@/lib/brand/claim";
 // 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
-import { SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings";
+import { CORE_HIGHLIGHTS_MAX, SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings";
 import { localBlockFieldsErrors } from "@/lib/server/public/region-hub-logic";
 import { searchTopicsErrors } from "@/lib/server/public/search-classify";
 import { REGION_INDEX_LIMITS, pilotRegionsErrors, regionIndexThresholdErrors } from "@/lib/server/public/region-index-logic";
@@ -133,6 +133,29 @@ export function coreMessageErrors(value: unknown): string[] {
   return errors;
 }
 
+/** 강조 낱말 한 개의 글자 수 상한 (DB 트리거 core_highlights_guard와 같다) */
+export const CORE_HIGHLIGHT_WORD_MAX = 30;
+
+/**
+ * 홈 핵심 메시지 강조 낱말 (home_core_highlights) — 글자 목록 1~5개, 낱말마다 비지 않고 30자 이하·서로 다름.
+ * message를 주면(저장 때 현재 핵심 메시지) 낱말마다 그 메시지 안에 있어야 한다. DB 트리거(…71)도 같은 규칙
+ */
+export function coreHighlightsErrors(value: unknown, message?: unknown): string[] {
+  if (!Array.isArray(value)) return ['값: 글자 목록이어야 합니다 — 예: ["지방세", "재테크"]'];
+  if (value.length < 1 || value.length > CORE_HIGHLIGHTS_MAX) return [`값: 강조 낱말은 1~${CORE_HIGHLIGHTS_MAX}개여야 합니다 (지금 ${value.length}개)`];
+  const errors: string[] = [];
+  const seen = new Set<string>();
+  value.forEach((w, i) => {
+    if (typeof w !== "string" || w.trim() === "") return void errors.push(`[${i}]: 비지 않은 글자여야 합니다`);
+    const word = w.trim();
+    if (chars(word) > CORE_HIGHLIGHT_WORD_MAX) errors.push(`[${i}]: ${CORE_HIGHLIGHT_WORD_MAX}자 이하여야 합니다 (지금 ${chars(word)}자)`);
+    if (seen.has(word)) errors.push(`[${i}]: 같은 낱말이 앞에 있습니다 ('${word}')`);
+    seen.add(word);
+    if (typeof message === "string" && !message.includes(word)) errors.push(`[${i}]: 홈 핵심 메시지 안에 없는 낱말입니다 ('${word}') — 메시지에 있는 글자 그대로 적으세요`);
+  });
+  return errors;
+}
+
 /** 칼럼 의견 고지 문구 상한 — 칼럼 상세 머리 아래 고지 한 줄 (W3 설계 2.2 · 12장 #8) */
 export const OPINION_NOTICE_MAX = 300;
 
@@ -237,6 +260,11 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     guide: `따옴표로 감싼 문구 한 줄 — ${SCREEN_SENTENCE_MAX}자 이하, 경력 연수 표기('50년' 등) 0. 바꾸면 배포 없이 다음 요청부터 홈 히어로에 보입니다`,
     check: (value) => coreMessageErrors(value),
   },
+  home_core_highlights: {
+    label: "홈 핵심 메시지 강조 낱말 (HOME-01 · CORE-02)",
+    guide: `["지방세", "부동산 세금", "재테크"] — 핵심 메시지 안의 낱말 1~${CORE_HIGHLIGHTS_MAX}개(글자 그대로), 나온 곳마다 오렌지로 칠합니다. 핵심 메시지를 먼저 바꾼 뒤 이 값을 맞추세요`,
+    check: (value) => coreHighlightsErrors(value),
+  },
   column_opinion_notice: {
     label: "칼럼 의견 고지 문구 (TX-16)",
     guide: `따옴표로 감싼 문구 한 줄 — PO 감수본, ${OPINION_NOTICE_MAX}자 이하, 경력 연수 표기('50년' 등) 0. 비우면("") 새 칼럼 발행이 막힙니다. 바꾸면 배포 없이 다음 요청부터 칼럼 상세에 보입니다`,
@@ -339,12 +367,12 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
   },
   inheritance_gift_situations: {
     label: "상속·증여 상황 목록 (FAM-02)",
-    guide: `["상황-slug", ...] - 상황 ${IG_LIMITS.situations}종까지. 목록의 상황은 부동산 분야이고 외부 계산기 연결(안심 상속증여계산기)과 체크리스트 고지가 있어야 합니다. 빈 목록([])이면 상황 카드 줄이 없습니다`,
+    guide: `["상황-slug", ...] - 상황 ${IG_LIMITS.situations}종까지. 목록의 상황은 부동산재테크 분야이고 외부 계산기 연결(안심 상속증여계산기)과 체크리스트 고지가 있어야 합니다. 빈 목록([])이면 상황 카드 줄이 없습니다`,
     check: (value) => inheritanceSituationsErrors(value),
   },
   // -- W5 개발금융 (docs/dev/W5_설계.md 2장) - DB 트리거(...60 finance_settings_guard)와 같은 검사 --
   finance_legal_review: {
-    label: "개발금융 법률 검토 기록 (DF-05)",
+    label: "부동산금융 법률 검토 기록 (DF-05)",
     guide: '{ "reviewer": "검토자", "reviewed_on": "YYYY-MM-DD", "conclusion": "approved" } - approved여야 기능 키 finance를 켤 수 있습니다. 비우려면 {}',
     check: (value) => legalReviewSettingErrors(value),
   },

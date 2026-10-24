@@ -53,7 +53,7 @@ describe("toListItem", () => {
     expect(item).toMatchObject({
       href: "/news/acquisition-tax-2026",
       section: "realestate",
-      sectionName: "부동산",
+      sectionName: "부동산재테크",
       subsection: "프로젝트 트래커",
       typeLabel: "해설",
       format: null,

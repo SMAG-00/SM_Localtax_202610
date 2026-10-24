@@ -279,7 +279,7 @@ test("b) 목록 — 공개 2(초안 0) · 카드 전수 지역·단계·출처·
   assert.equal((r.html.match(/data-ui="source-line"/g) ?? []).length, 1, "데이터 출처 줄 1");
   // 이동 줄 = BreadcrumbList
   const crumbs = [...(r.html.match(/<nav aria-label="현재 위치"[\s\S]*?<\/nav>/)?.[0] ?? "").matchAll(/<a [^>]*>([^<]+)<\/a>/g)].map((m) => m[1]);
-  assert.deepEqual(crumbs, ["홈", "부동산", "프로젝트 트래커"]);
+  assert.deepEqual(crumbs, ["홈", "부동산재테크", "프로젝트 트래커"]);
   const bl = jsonLd(r.html).find((n) => n["@type"] === "BreadcrumbList");
   assert.deepEqual(
     bl.itemListElement.map((i) => i.name),
@@ -372,7 +372,7 @@ test("c) 상세 — 전체 단계 4 · 원문 연결률 100%(새 창) · 고정�
   const bl = jsonLd(r.html).find((n) => n["@type"] === "BreadcrumbList");
   assert.deepEqual(
     bl.itemListElement.map((i) => i.name),
-    ["홈", "부동산", "프로젝트 트래커", fx.P1.name],
+    ["홈", "부동산재테크", "프로젝트 트래커", fx.P1.name],
   );
   assert.equal(bl.itemListElement.at(-1).item, `${SITE}${p}`);
   assert.deepEqual(

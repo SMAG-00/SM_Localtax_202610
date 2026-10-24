@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { brand } from "../../brand";
-import { Hero } from "./Hero";
+import { Hero, highlightRanges } from "./Hero";
 import { Footer } from "./Footer";
 
 const tokens = (el: Element | null) => (el?.getAttribute("class") ?? "").split(/\s+/);
@@ -29,11 +29,11 @@ describe("히어로", () => {
     expect(glow.textContent).toBe("");
   });
 
-  it("제목은 h1 — 2.6rem → 640px 이상 3.75rem · 900 · 자간 좁게 · 행간 1.15", () => {
+  it("제목은 h1 — 2rem → 640px 이상 2.75rem → 1024px 이상 3.75rem · 900 · 자간 좁게 · 낱말 단위 줄바꿈", () => {
     render(<Hero title="지방세 소식을 쉽게" />);
     const h1 = screen.getByRole("heading", { level: 1, name: "지방세 소식을 쉽게" });
     expect(tokens(h1)).toEqual(
-      expect.arrayContaining(["text-[2.6rem]", "sm:text-[3.75rem]", "font-black", "tracking-tight", "leading-[1.15]", "text-white"]),
+      expect.arrayContaining(["text-[2rem]", "sm:text-[2.75rem]", "lg:text-[3.75rem]", "font-black", "tracking-tight", "leading-[1.2]", "sm:leading-[1.15]", "text-white", "[word-break:keep-all]"]),
     );
   });
 
@@ -45,11 +45,44 @@ describe("히어로", () => {
     expect([...marked].map((m) => m.textContent)).toEqual(["한곳에서"]);
   });
 
-  it("강조 단어가 두 번 나와도 첫 번째만 칠한다", () => {
+  it("강조 단어가 두 번 나오면 나온 곳을 모두 칠한다", () => {
     render(<Hero title="세금 알기, 세금 읽기" highlight="세금" />);
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(h1.textContent).toBe("세금 알기, 세금 읽기");
-    expect([...h1.querySelectorAll(".text-hermes-400")].map((m) => m.textContent)).toEqual(["세금"]);
+    expect([...h1.querySelectorAll(".text-hermes-400")].map((m) => m.textContent)).toEqual(["세금", "세금"]);
+  });
+
+  it("강조 낱말을 여러 개 주면 낱말마다 칠하고 제목 글자는 그대로다 (홈 핵심 메시지 3곳)", () => {
+    const message = "취득·보유·상속·증여·양도 등 모든 순간 — 지방세와 부동산 세금을 알면 재테크가 보입니다";
+    render(<Hero title={message} highlight={["지방세", "부동산 세금", "재테크"]} />);
+    const h1 = screen.getByRole("heading", { level: 1, name: (name) => name.replace(/\s/g, "") === message.replace(/\s/g, "") });
+    expect(h1.textContent).toBe(message);
+    expect([...h1.querySelectorAll(".text-hermes-400")].map((m) => m.textContent)).toEqual(["지방세", "부동산 세금", "재테크"]);
+  });
+
+  it("줄표(—)가 있으면 앞뒤 덩어리로 나눠 앞 덩어리는 약 60% 크기 윗줄, 뒤 덩어리는 제목 크기 아랫줄, 줄표는 보이지 않고 글자 내용은 원문과 같다", () => {
+    render(<Hero title="취득·보유 등 모든 순간 — 지방세를 알면 재테크가 보입니다" highlight={["지방세", "재테크"]} />);
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1.textContent).toBe("취득·보유 등 모든 순간 — 지방세를 알면 재테크가 보입니다");
+    const [first, dash, second] = [...h1.children];
+    expect(first!.textContent).toBe("취득·보유 등 모든 순간");
+    // 제목 크기(2rem · 2.75rem · 3.75rem)의 60% 안팎 = 1.2rem · 1.65rem · 2.25rem
+    expect(tokens(first!)).toEqual(expect.arrayContaining(["block", "text-[1.2rem]", "sm:text-[1.65rem]", "lg:text-[2.25rem]"]));
+    expect(dash!.textContent).toBe(" — ");
+    expect(tokens(dash!)).toContain("hidden");
+    expect(tokens(dash!)).not.toContain("sm:inline");
+    expect(second!.textContent).toBe("지방세를 알면 재테크가 보입니다");
+    expect(tokens(second!)).toContain("block");
+    expect(tokens(second!).some((t) => t.includes("text-["))).toBe(false); // 뒤 덩어리는 제목 크기를 그대로 받는다
+    expect(h1.querySelectorAll("h1, h2, h3").length).toBe(0); // 제목 요소는 하나
+    expect([...second!.querySelectorAll(".text-hermes-400")].map((m) => m.textContent)).toEqual(["지방세", "재테크"]);
+  });
+
+  it("줄표가 없는 제목은 덩어리를 나누지 않는다", () => {
+    render(<Hero title="지방세 소식을 쉽게" highlight="지방세" />);
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1.querySelector(".hidden")).toBeNull();
+    expect(h1.querySelector(".block")).toBeNull();
   });
 
   it("강조 단어가 제목에 없거나 빈 글자면 칠하지 않는다", () => {
@@ -89,6 +122,29 @@ describe("히어로", () => {
     const { container } = render(<Hero title="지방세 소식" />);
     expect(container.querySelector('[data-ui="eyebrow"]')).toBeNull();
     expect(container.querySelectorAll("p").length).toBe(0);
+  });
+});
+
+describe("강조 낱말 위치 계산 (highlightRanges)", () => {
+  it("긴 낱말을 먼저 잡고 겹치는 곳은 칠하지 않는다 — '부동산 세금'과 '세금'을 함께 주면 '부동산 세금'만", () => {
+    expect(highlightRanges("부동산 세금과 취득 세금", ["세금", "부동산 세금"])).toEqual([
+      { text: "부동산 세금", marked: true },
+      { text: "과 취득 ", marked: false },
+      { text: "세금", marked: true },
+    ]);
+  });
+
+  it("글자 하나(옛 호출)도 그대로 받고, 빈 글자·공백·제목에 없는 낱말은 무시한다", () => {
+    expect(highlightRanges("지방세 안내", "지방세")).toEqual([
+      { text: "지방세", marked: true },
+      { text: " 안내", marked: false },
+    ]);
+    expect(highlightRanges("지방세 안내", ["", "  ", "양도"])).toEqual([{ text: "지방세 안내", marked: false }]);
+    expect(highlightRanges("지방세 안내", undefined)).toEqual([{ text: "지방세 안내", marked: false }]);
+  });
+
+  it("같은 낱말을 두 번 줘도 한 번만 센다", () => {
+    expect(highlightRanges("재테크 재테크", ["재테크", "재테크"]).filter((p) => p.marked).length).toBe(2);
   });
 });
 

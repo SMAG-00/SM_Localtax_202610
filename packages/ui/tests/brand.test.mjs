@@ -20,6 +20,14 @@ test("제품명·워드마크 값이 비어 있지 않다", () => {
   assert.ok(brand.wordmark.lead.length > 0 && brand.wordmark.tail.length > 0);
 });
 
+test("사이트 이름은 「김의효 지방세연구」, 워드마크는 앞뒤 낱말을 띄어쓰기로 이은 같은 글자, 운영 주체는 따로 SM(선명) (PO 결정 2026-10-24)", () => {
+  assert.equal(brand.productName, "김의효 지방세연구");
+  assert.equal(`${brand.wordmark.lead} ${brand.wordmark.tail}`, brand.productName);
+  assert.ok(!/[·]/.test(brand.productName));
+  assert.equal(brand.operatorName, "SM(선명)");
+  assert.notEqual(brand.operatorName, brand.productName);
+});
+
 test("제품명 문자열이 brand.ts 한 곳에만 있다", () => {
   const hits = files.filter((f) => read(f).includes(brand.productName));
   assert.deepEqual(hits, ["packages/ui/src/brand.ts"]);

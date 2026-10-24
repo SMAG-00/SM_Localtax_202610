@@ -107,7 +107,7 @@ export const OTHER_METRICS: readonly OtherMetric[] = [
   {
     id: "tax-link",
     name: "지방세 연결률",
-    definition: "비지방세 분야(부동산·부동산개발금융·지자체뉴스) 기사 세션 중 「지방세로 읽기」·해설·계산기로 이동한 비율",
+    definition: "비지방세 분야(부동산·부동산금융·지자체뉴스) 기사 세션 중 「지방세로 읽기」·해설·계산기로 이동한 비율",
     owner: "01B CORE-03",
     status: "수집 전",
     note: "「지방세로 읽기」 이동 이벤트가 아직 없습니다 (01B)",

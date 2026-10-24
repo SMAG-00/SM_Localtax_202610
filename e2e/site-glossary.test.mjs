@@ -214,15 +214,15 @@ test("c) 분야 거르개(탭 — JS 없이 링크) · 용어 쪽 /glossary/[번
   const { context, page } = await open(`${base}/glossary`, { javaScriptEnabled: false });
   const tabs = await page.$$eval('[data-ui="tab-nav"] a', (as) => as.map((a) => [a.textContent, a.getAttribute("href"), a.getAttribute("aria-current")]));
   assert.deepEqual(tabs[0], ["전체", "/glossary", "page"]);
-  for (const [label, href] of [["지방세", "/glossary?section=tax"], ["부동산", "/glossary?section=realestate"], ["부동산개발금융", "/glossary?section=finance"], ["지자체뉴스", "/glossary?section=local"]]) {
+  for (const [label, href] of [["지방세·부동산세금", "/glossary?section=tax"], ["부동산재테크", "/glossary?section=realestate"], ["부동산금융", "/glossary?section=finance"], ["지자체뉴스", "/glossary?section=local"]]) {
     assert.ok(tabs.some((t) => t[0] === label && t[1] === href), `${label} 탭`);
   }
-  await page.locator('[data-ui="tab-nav"] a', { hasText: "부동산개발금융" }).click();
+  await page.locator('[data-ui="tab-nav"] a', { hasText: "부동산금융" }).click();
   await page.waitForURL((url) => url.searchParams.get("section") === "finance");
   const ids = await page.$$eval("[data-glossary-term]", (els) => els.map((e) => Number(e.getAttribute("data-glossary-term"))));
   assert.ok(ids.includes(T.fin.id), "개발금융 용어");
   for (const k of ["short", "long", "prefix", "latin"]) assert.ok(!ids.includes(T[k].id), `${k}는 다른 분야`);
-  assert.equal(await page.locator('[data-ui="tab-nav"] a[aria-current="page"]').textContent(), "부동산개발금융");
+  assert.equal(await page.locator('[data-ui="tab-nav"] a[aria-current="page"]').textContent(), "부동산금융");
   // 다른 분야 쪽의 관련 용어는 용어 쪽 주소로 (지방세 쪽에서 본 개발금융 용어 — 여기선 거꾸로 빈 칸 확인만)
   await page.goto(`${base}/glossary?section=nope`, { waitUntil: "load" });
   assert.equal(await page.locator('[data-ui="tab-nav"] a[aria-current="page"]').textContent(), "전체", "모르는 분야 값은 전체");

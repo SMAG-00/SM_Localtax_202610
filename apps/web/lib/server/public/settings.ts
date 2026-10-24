@@ -7,6 +7,8 @@ import { FEATURE_KEYS, NEXT_ACTION_KEYS, SECTION_KEYS, type Features, type NextA
 export interface PublicSettings {
   /** 홈 핵심 메시지 (HOME-01 · CORE-02) — 비었으면 null */
   coreMessage: string | null;
+  /** 핵심 메시지 안에서 오렌지로 칠할 낱말 (home_core_highlights) — 메시지에 없는 낱말·모양이 틀린 값은 뺀다, 없으면 빈 목록 */
+  coreHighlights: string[];
   /** 추천 검색어 칩 — 3~6개일 때만, 아니면 빈 목록(칩 줄 숨김) */
   searchChips: string[];
   /** 허브 한 줄 소개 (CAT-02) */
@@ -24,6 +26,8 @@ export interface PublicSettings {
 
 export const SEARCH_CHIPS_MIN = 3;
 export const SEARCH_CHIPS_MAX = 6;
+/** 핵심 메시지 강조 낱말 개수 상한 (설정 검사·DB 트리거와 같다) */
+export const CORE_HIGHLIGHTS_MAX = 5;
 const DEFAULT_HUB_LIMIT = 4;
 const DEFAULT_CONFIRM_STAGE: ProgressStageKey = "promulgated";
 
@@ -45,6 +49,13 @@ export function parseSearchChips(value: unknown): string[] {
   if (chips.some((c) => c === null)) return [];
   const unique = [...new Set(chips as string[])];
   return unique.length >= SEARCH_CHIPS_MIN && unique.length <= SEARCH_CHIPS_MAX && unique.length === chips.length ? unique : [];
+}
+
+/** 핵심 메시지 강조 낱말 — 글자 목록에서 빈 글자·중복·메시지에 없는 낱말을 뺀다 (모양이 틀리면 빈 목록 = 칠하지 않음, 닫힌 쪽) */
+export function parseCoreHighlights(value: unknown, message: string | null): string[] {
+  if (!Array.isArray(value) || message === null) return [];
+  const words = value.map(text).filter((w): w is string => w !== null && message.includes(w));
+  return [...new Set(words)].slice(0, CORE_HIGHLIGHTS_MAX);
 }
 
 export function parsePriority(value: unknown): NextActionKey[] {
@@ -70,6 +81,7 @@ export function parsePublicSettings(rows: readonly { key: string; value: unknown
   const limit = v.get("hub_situation_limit");
   return {
     coreMessage: text(v.get("home_core_message")),
+    coreHighlights: parseCoreHighlights(v.get("home_core_highlights"), text(v.get("home_core_message"))),
     searchChips: parseSearchChips(v.get("home_search_chips")),
     hubIntros: intros,
     confirmStage: (PROGRESS_STAGE_ORDER as readonly unknown[]).includes(stage) ? (stage as ProgressStageKey) : DEFAULT_CONFIRM_STAGE,

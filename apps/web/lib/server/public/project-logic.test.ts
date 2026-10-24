@@ -244,7 +244,7 @@ describe("단계 타임라인 — 전체 단계 목록 + 공개 기록 (12장 #9
 describe("이동 줄 = BreadcrumbList (OPT-02)", () => {
   test("홈 > 부동산 > 프로젝트 트래커 > 이름 · 구조화 데이터 이름 = 화면 글자 · 사이트 주소 없으면 0", () => {
     const crumbs = projectCrumbs({ name: "시험용 가상구역 재개발", href: projectHref("siheom-gasang-1") });
-    expect(crumbs.map((c) => c.name)).toEqual(["홈", "부동산", "프로젝트 트래커", "시험용 가상구역 재개발"]);
+    expect(crumbs.map((c) => c.name)).toEqual(["홈", "부동산재테크", "프로젝트 트래커", "시험용 가상구역 재개발"]);
     const bc = projectBreadcrumb(crumbs, "https://e2e.example.test");
     expect(bc?.items.map((i) => i.name)).toEqual(crumbs.map((c) => c.name));
     expect(bc?.items.at(-1)?.url).toBe("https://e2e.example.test/realestate/projects/siheom-gasang-1");

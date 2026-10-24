@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Chip, Eyebrow, FieldCards, Hero, HomeSearch, ProgressStageBadge, UiLink, brand, cx } from "@ltr/ui";
 import type { AmendmentsSection, ColumnSection, HomeData, HomeSection, StoryCard, TrackerCard } from "@/lib/server/public";
-import { HERO_EYEBROW, HERO_HIGHLIGHT, SEARCH_LABEL, SEARCH_PLACEHOLDER, SECTION_HEADINGS, sectionTones, type SectionTone } from "@/lib/site/home-view";
+import { SEARCH_LABEL, SEARCH_PLACEHOLDER, SECTION_HEADINGS, heroHighlights, sectionTones, type SectionTone } from "@/lib/site/home-view";
 import { ArticleItem } from "./ArticleItem";
 import { ClaimBasisLink } from "./ClaimBasisLink";
 import { MeasureHomeEntry } from "./Measure";
@@ -164,7 +164,7 @@ export function HomeSections({ home }: { home: HomeData }) {
       {home.unavailable && <UnavailableNotice className="mx-auto max-w-5xl px-4 pt-10" />}
       {hero && (
         <div data-home-section="hero">
-          <Hero eyebrow={HERO_EYEBROW} title={hero.coreMessage ?? undefined} highlight={HERO_HIGHLIGHT}>
+          <Hero title={hero.coreMessage ?? undefined} highlight={[...heroHighlights(hero.coreHighlights)]}>
             {hero.search && <HomeSearch label={SEARCH_LABEL} placeholder={SEARCH_PLACEHOLDER} suggestions={hero.search.chips} />}
           </Hero>
         </div>

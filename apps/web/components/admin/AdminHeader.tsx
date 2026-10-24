@@ -15,7 +15,7 @@ export function AdminHeader({ viewer }: { viewer: Viewer }) {
           prefetch={false}
           className="mr-auto inline-flex min-h-11 items-center text-[17px] font-extrabold tracking-tight text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400"
         >
-          {brand.wordmark.lead} <span className="text-hermes-500">·</span> 편집국
+          {brand.productName} <span className="text-hermes-500">·</span> 편집국
         </Link>
         <div className="flex min-w-0 flex-wrap items-center gap-2 text-[14px] text-navy-100">
           <span data-testid="viewer-email" className="[overflow-wrap:anywhere]">

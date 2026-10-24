@@ -6,7 +6,7 @@ import { mailEnv } from "../env";
 import { mailConfigured } from "../mail/config";
 import { toListItems, type ArticleListItem, type Lookups } from "./cards";
 import type { LocalTopic } from "@ltr/ui";
-import { LOCAL_TOPICS, PUBLIC_SETTING_KEYS, type SectionKey } from "./constants";
+import { EXTRA_PUBLIC_SETTING_KEYS, LOCAL_TOPICS, PUBLIC_SETTING_KEYS, type SectionKey } from "./constants";
 import { pageOf, publicDb, rowsOf } from "./db";
 import {
   ARTICLE_LIST_COLUMNS,
@@ -40,7 +40,7 @@ export const readCompanyInfo = cache(async (): Promise<unknown> => {
 // 기능 키는 '켜짐'이 아니라 의존(게시본·메일 설정)까지 채운 '실제로 열린' 값으로 내보낸다 (W2-e 6.3) — 링크와 화면이 같은 판정을 쓴다
 export const readPublicSettings = cache(async (): Promise<PublicSettings> => {
   const [rows, published] = await Promise.all([
-    rowsOf<{ key: string; value: unknown }>(publicDb().from("settings").select("key, value").in("key", [...PUBLIC_SETTING_KEYS]), "공개 설정"),
+    rowsOf<{ key: string; value: unknown }>(publicDb().from("settings").select("key, value").in("key", [...PUBLIC_SETTING_KEYS, ...EXTRA_PUBLIC_SETTING_KEYS]), "공개 설정"),
     readPublishedDocKeys(),
   ]);
   const s = parsePublicSettings(rows);

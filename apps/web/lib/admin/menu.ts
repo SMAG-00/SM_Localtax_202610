@@ -47,7 +47,7 @@ const RULES: readonly MenuRule[] = [
   // 개발방법 비교 — 7개 방법의 내용·비교 항목·숫자 요건 사실 행(편집 책임자·관리자)과 세무 감수 서명(세무 감수위원) (PR-09·10 · W4 19단계)
   { id: "dev-methods", label: "개발방법 비교", href: "/admin/dev-methods", when: (a) => a.has("dev_method.manage") || a.has("review.tax_review"), paths: ["/admin/dev-methods"] },
   // 개발금융 - 구조 해설 초안·법률 확인(편집 책임자·관리자)과 세무 감수 서명(세무 감수위원), 통계·규제·사례·칼럼 소속 (W5 DF-01~05·09)
-  { id: "finance", label: "개발금융", href: "/admin/finance", when: (a) => a.has("finance.manage") || a.has("review.tax_review"), paths: ["/admin/finance"] },
+  { id: "finance", label: "부동산금융", href: "/admin/finance", when: (a) => a.has("finance.manage") || a.has("review.tax_review"), paths: ["/admin/finance"] },
   // 지자체뉴스 - 금주 핫뉴스(후보 선정·유사도·발행)와 행사안내(회차·상태·연결) 입력 (W6 LG-01~14) - 편집 책임자·관리자
   { id: "local-news", label: "지자체뉴스", href: "/admin/local-news", when: (a) => a.has("local_news.manage"), paths: ["/admin/local-news"] },
   {

@@ -47,7 +47,7 @@ function prdLegacyMap() {
   const cats = prdCategories();
   const sectionCode = new Map(cats.map((c) => [c.sectionName, c.section]));
   return tableAfter(PRD00, "**기존 8개 카테고리 대응**").map(([legacy, target]) => {
-    // 가장 먼저 나오는 분야 이름 (같은 위치면 긴 이름 — '부동산' / '부동산개발금융')
+    // 가장 먼저 나오는 분야 이름 (같은 위치면 긴 이름 — '부동산' / '부동산금융')
     let best = null;
     for (const [name, code] of sectionCode) {
       const at = target.indexOf(name);

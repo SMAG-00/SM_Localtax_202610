@@ -23,7 +23,7 @@ describe("지자체 허브 블록 (LG-08·REG1-02)", () => {
       <LocalHubBlocks
         sources={block("자료")}
         events={block("행사")}
-        realEstate={block("부동산")}
+        realEstate={block("부동산재테크")}
         localTax={block("지방세")}
         weekly={block("핫뉴스")}
       />,
@@ -40,7 +40,7 @@ describe("지자체 허브 블록 (LG-08·REG1-02)", () => {
       <LocalHubBlocks
         weekly={block("핫뉴스")}
         localTax={block("지방세")}
-        realEstate={block("부동산")}
+        realEstate={block("부동산재테크")}
         events={block("행사")}
         sources={block("자료")}
         // @ts-expect-error 블록 순서는 코드 고정이라 order prop이 타입에 없다
@@ -51,7 +51,7 @@ describe("지자체 허브 블록 (LG-08·REG1-02)", () => {
   });
 
   it("기능 플래그로 꺼진 블록(값 없음)은 빠지고 나머지 순서는 그대로다", () => {
-    const { container } = render(<LocalHubBlocks localTax={block("지방세")} realEstate={block("부동산")} sources={block("자료")} />);
+    const { container } = render(<LocalHubBlocks localTax={block("지방세")} realEstate={block("부동산재테크")} sources={block("자료")} />);
     expect(blockKeys(container)).toEqual(["localTax", "realEstate", "sources"]);
   });
 
@@ -62,7 +62,7 @@ describe("지자체 허브 블록 (LG-08·REG1-02)", () => {
   });
 
   it("기사가 없는 블록은 빈 카드나 관광 정보로 채우지 않고 블록째 뺀다", () => {
-    const { container } = render(<LocalHubBlocks weekly={block("핫뉴스")} localTax={{ items: [] }} realEstate={block("부동산")} />);
+    const { container } = render(<LocalHubBlocks weekly={block("핫뉴스")} localTax={{ items: [] }} realEstate={block("부동산재테크")} />);
     expect(blockKeys(container)).toEqual(["weekly", "realEstate"]);
     expect(container.textContent).not.toMatch(/관광|명소|맛집/);
   });
@@ -297,10 +297,10 @@ describe("분야 허브 머리 (RP-02)", () => {
   const taxPoint = { points: ["관리처분 단계의 취득세 쟁점을 먼저 확인합니다."], basisDate: "2026-10-01", links: [{ label: "정비사업 지방세 해설 보기", href: "/tax/explainers/redevelopment" }] };
 
   it("아이브로(허브 영문명)·제목·한 줄 소개·하위 분야 탭(링크)을 보인다", () => {
-    const { container } = render(<FieldHubHead field="realestate" eyebrow="REAL ESTATE" title="부동산" intro="지역 개발과 정비사업의 진행을 원문으로 확인합니다." tabs={tabs} />);
+    const { container } = render(<FieldHubHead field="realestate" eyebrow="REAL ESTATE" title="부동산재테크" intro="지역 개발과 정비사업의 진행을 원문으로 확인합니다." tabs={tabs} />);
     expect(container.firstElementChild?.getAttribute("data-ui")).toBe("field-hub-head");
     expect(screen.getByText("REAL ESTATE")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("부동산");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("부동산재테크");
     expect(screen.getByText("지역 개발과 정비사업의 진행을 원문으로 확인합니다.")).toBeTruthy();
     expect(screen.getByRole("link", { name: "프로젝트" }).getAttribute("aria-current")).toBe("page");
   });
@@ -311,7 +311,7 @@ describe("분야 허브 머리 (RP-02)", () => {
   });
 
   it("골격 순서 = 머리(아이브로·제목·소개) → 분야 지방세 포인트 → 하위 분야 탭 (CAT-02 '머리 → 지방세 포인트 → 탭')", () => {
-    const { container } = render(<FieldHubHead field="realestate" eyebrow="REAL ESTATE" title="부동산" intro="소개" tabs={tabs} taxPoint={taxPoint} />);
+    const { container } = render(<FieldHubHead field="realestate" eyebrow="REAL ESTATE" title="부동산재테크" intro="소개" tabs={tabs} taxPoint={taxPoint} />);
     const order = [...container.querySelectorAll('[data-ui="eyebrow"], h1, p, [data-ui="field-tax-point"], [data-ui="tab-nav"]')]
       .filter((el) => !el.closest('[data-ui="field-tax-point"]') || el.getAttribute("data-ui") === "field-tax-point")
       .map((el) => el.getAttribute("data-ui") ?? el.tagName.toLowerCase());
@@ -330,9 +330,9 @@ describe("분야 허브 머리 (RP-02)", () => {
 
   it("한 줄 소개가 없거나 빈칸이면 소개 문단째 없다 — 빈 문단 0", () => {
     for (const intro of [undefined, null, "  "]) {
-      const { container, unmount } = render(<FieldHubHead field="finance" eyebrow="DEVELOPMENT FINANCE" title="부동산개발금융" intro={intro} tabs={tabs} />);
+      const { container, unmount } = render(<FieldHubHead field="finance" eyebrow="DEVELOPMENT FINANCE" title="부동산금융" intro={intro} tabs={tabs} />);
       expect(container.querySelectorAll("header > p:not([data-ui])")).toHaveLength(0);
-      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("부동산개발금융");
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("부동산금융");
       unmount();
     }
   });
@@ -431,14 +431,14 @@ describe("이슈 묶음 머리 (CORE-04)", () => {
       <IssueBundleHead
         title="○○구역 관리처분, 무엇이 달라지나"
         summary="같은 구역을 다룬 부동산·지방세 기사를 한곳에 모았습니다."
-        articles={[art("r1", "부동산"), art("t1", "지방세"), art("l1", "지자체뉴스")]}
+        articles={[art("r1", "부동산재테크"), art("t1", "지방세·부동산세금"), art("l1", "지자체뉴스")]}
         taxLens={<aside data-slot="tax-lens">지방세로 읽기</aside>}
       />,
     );
     expect(container.firstElementChild?.getAttribute("data-ui")).toBe("issue-bundle-head");
     expect(screen.getByText("ISSUE")).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("○○구역 관리처분, 무엇이 달라지나");
-    expect([...container.querySelectorAll("[data-issue-field]")].map((el) => el.getAttribute("data-issue-field"))).toEqual(["지방세", "부동산", "지자체뉴스"]);
+    expect([...container.querySelectorAll("[data-issue-field]")].map((el) => el.getAttribute("data-issue-field"))).toEqual(["지방세·부동산세금", "부동산재테크", "지자체뉴스"]);
     expect(container.querySelectorAll('[data-slot="tax-lens"]').length).toBe(1);
   });
 
@@ -447,7 +447,7 @@ describe("이슈 묶음 머리 (CORE-04)", () => {
       <IssueBundleHead
         title="제목"
         summary="요약"
-        articles={[art("t1", "지방세"), art("r1", "부동산"), art("r2", "부동산", false), { ...art("f1", "부동산개발금융"), approval: { ...approval, reason: "" } }]}
+        articles={[art("t1", "지방세·부동산세금"), art("r1", "부동산재테크"), art("r2", "부동산재테크", false), { ...art("f1", "부동산금융"), approval: { ...approval, reason: "" } }]}
         taxLens={<aside>박스</aside>}
       />,
     );
@@ -458,14 +458,14 @@ describe("이슈 묶음 머리 (CORE-04)", () => {
   });
 
   it("승인된 기사가 서로 다른 분야 2개 미만이면 묶음을 그리지 않는다", () => {
-    const { container } = render(<IssueBundleHead title="제목" summary="요약" articles={[art("r1", "부동산"), art("r2", "부동산"), art("t1", "지방세", false)]} taxLens={<aside>박스</aside>} />);
+    const { container } = render(<IssueBundleHead title="제목" summary="요약" articles={[art("r1", "부동산재테크"), art("r2", "부동산재테크"), art("t1", "지방세·부동산세금", false)]} taxLens={<aside>박스</aside>} />);
     expect(container.innerHTML).toBe("");
   });
 });
 
 describe("블록 앵커 (W4 22단계 — 부동산 허브 지역 칩이 ③ 블록으로 닿는다)", () => {
   it("③ 부동산·개발 블록은 id=realestate, 다섯 블록의 id는 서로 다르고 제목과 이어져 있다", () => {
-    const { container } = render(<LocalHubBlocks weekly={block("핫뉴스")} localTax={block("지방세")} realEstate={block("부동산")} events={block("행사")} sources={block("자료")} />);
+    const { container } = render(<LocalHubBlocks weekly={block("핫뉴스")} localTax={block("지방세")} realEstate={block("부동산재테크")} events={block("행사")} sources={block("자료")} />);
     const ids = [...container.querySelectorAll("[data-hub-block]")].map((el) => el.id);
     expect(ids).toEqual(["weekly", "local-tax", "realestate", "events", "official"]);
     expect(new Set(ids).size).toBe(5);

@@ -197,8 +197,8 @@ for (const role of ["anon", "authenticated"]) {
       const r = await attempt("select key from public.settings order by key", [], role);
       assert.ok(r.ok, r.message);
       // 뒤 단계가 키 한 줄씩 따로 연 공개 정책 — W2-e company_info(바닥글 회사 정보) · W4 4단계 local_block_fields(지자체 허브 블록 대응, W4 설계 2.2) ·
-      // W4 10단계 search_topics(검색 주제 사전, W4 설계 2.2) · W4 11단계 pilot_regions(시범 지역 — /local 시·도 카드 표시, W4 설계 2.2. 임계값 region_index_threshold는 비공개) · W4 23단계 inheritance_gift_notice·inheritance_gift_situations(상속·증여 안내 고지·상황 목록)
-      const later = (await attempt("select key from public.settings where key = any($1::text[])", [["company_info", "local_block_fields", "pilot_regions", "search_topics", "inheritance_gift_notice", "inheritance_gift_situations"]])).rows.map((x) => x.key);
+      // W4 10단계 search_topics(검색 주제 사전, W4 설계 2.2) · W4 11단계 pilot_regions(시범 지역 — /local 시·도 카드 표시, W4 설계 2.2. 임계값 region_index_threshold는 비공개) · W4 23단계 inheritance_gift_notice·inheritance_gift_situations(상속·증여 안내 고지·상황 목록) · 마이그레이션 71 home_core_highlights(홈 핵심 메시지 강조 낱말)
+      const later = (await attempt("select key from public.settings where key = any($1::text[])", [["company_info", "local_block_fields", "pilot_regions", "search_topics", "inheritance_gift_notice", "inheritance_gift_situations", "home_core_highlights"]])).rows.map((x) => x.key);
       assert.deepEqual(r.rows.map((x) => x.key), [...designList("settings.public_keys"), ...later].sort());
       for (const key of ["forbidden_phrases", "fear_phrases", "similarity_internal"]) {
         const p = await attempt("select count(*)::int n from public.settings where key = $1", [key], role);

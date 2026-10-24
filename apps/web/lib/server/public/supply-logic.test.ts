@@ -176,13 +176,13 @@ describe("이동 줄·구조화 데이터·출처 줄", () => {
   test("이동 줄 홈 > 부동산 > 분양 정보 = BreadcrumbList(같은 값) · 사이트 주소 없으면 null", () => {
     expect(supplyCrumbs()).toEqual([
       { name: "홈", href: "/" },
-      { name: "부동산", href: "/realestate" },
+      { name: "부동산재테크", href: "/realestate" },
       { name: "분양 정보", href: "/realestate/supply" },
     ]);
     expect(supplyBreadcrumb(supplyCrumbs(), "https://e2e.example.test")).toEqual({
       items: [
         { name: "홈", url: "https://e2e.example.test/" },
-        { name: "부동산", url: "https://e2e.example.test/realestate" },
+        { name: "부동산재테크", url: "https://e2e.example.test/realestate" },
         { name: "분양 정보", url: "https://e2e.example.test/realestate/supply" },
       ],
     });

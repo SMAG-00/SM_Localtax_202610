@@ -54,7 +54,7 @@ export interface SituationFacts {
 export function situationMissing(s: SituationFacts | undefined): string | null {
   if (!s) return "상황이 없습니다";
   const missing: string[] = [];
-  if (s.section !== "realestate") missing.push("부동산 분야 상황");
+  if (s.section !== "realestate") missing.push("부동산재테크 분야 상황");
   if (!s.link || s.link.kind !== "external_calculator" || s.link.key !== "inheritance_gift") missing.push("외부 계산기 연결");
   const c = s.checklist;
   const notice = typeof c === "object" && c !== null && !Array.isArray(c) ? (c as Record<string, unknown>).notice : undefined;

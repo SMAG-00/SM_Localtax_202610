@@ -1,7 +1,7 @@
 import { Eyebrow, TabNav, type TabNavItem } from "../base";
 import { FieldTaxPoint, type FieldTaxPointProps } from "./FieldTaxPoint";
 
-/** 4대 분야 허브 — 지방세 /tax · 부동산 /realestate · 부동산개발금융 /finance · 지자체뉴스 /local */
+/** 4대 분야 허브 — 지방세 /tax · 부동산 /realestate · 부동산금융 /finance · 지자체뉴스 /local */
 export type FieldHub = "tax" | "realestate" | "finance" | "local";
 
 type Common = {

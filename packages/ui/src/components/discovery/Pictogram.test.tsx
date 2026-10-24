@@ -38,7 +38,7 @@ describe("픽토그램 세트 구성", () => {
 
   it("4대 분야·지자체 허브 블록 라벨이 PRD 글자 그대로다", () => {
     const labelsOf = (group: string) => PICTOGRAM_NAMES.filter((n) => PICTOGRAMS[n].group === group).map((n) => PICTOGRAMS[n].label);
-    expect(labelsOf("field")).toEqual(["지방세", "부동산", "부동산개발금융", "지자체뉴스"]);
+    expect(labelsOf("field")).toEqual(["지방세·부동산세금", "부동산재테크", "부동산금융", "지자체뉴스"]);
     expect(labelsOf("hub")).toEqual(["금주 핫뉴스", "지방세·지방재정", "부동산·개발", "행사안내"]);
   });
 

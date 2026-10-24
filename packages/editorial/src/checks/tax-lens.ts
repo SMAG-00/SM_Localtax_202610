@@ -3,7 +3,7 @@ import { finding, toSaveValidation, type Finding, type SaveValidation } from "..
 import type { ArticleForPublish, ContentType, PublishContext, Section, TaxLens } from "../model";
 import { findPhrases, isBlank, taxLensUnit, unitLocation, type TextUnit } from "../text";
 
-/** 박스 요구 분야 — 부동산 · 부동산개발금융 · 지자체뉴스 (tax는 대상 아님) */
+/** 박스 요구 분야 — 부동산 · 부동산금융 · 지자체뉴스 (tax는 대상 아님) */
 const TARGET_SECTIONS: ReadonlySet<Section> = new Set(["realestate", "finance", "local"]);
 /** 박스 요구 유형 — sponsored 제외, digest는 적용 방식이 결정 안건(01B 11장)이라 지금은 넣지 않는다 */
 const TARGET_TYPES: ReadonlySet<ContentType> = new Set(["reported_news", "explainer", "guide", "opinion"]);

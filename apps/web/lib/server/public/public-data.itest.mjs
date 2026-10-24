@@ -235,7 +235,7 @@ afterAll(async () => {
 const idsOf = (items) => items.map((i) => Number(i.id));
 
 describe("화면 틀·홈·허브·뉴스 전체 (HOME-01·02·04 · CAT-02)", () => {
-  test("헤더 — 상단 4개, 지방세 하위 메뉴에 공개 기사가 있는 '해석' + 뉴스 전체, 기능이 꺼져 유틸·정책 링크 0", async () => {
+  test("헤더 — 상단 4개, 지방세·부동산세금 하위 메뉴에 공개 기사가 있는 '해석' + 뉴스 전체, 기능이 꺼져 유틸·정책 링크 0", async () => {
     const chrome = await api.getSiteChrome();
     expect(chrome.sections.map((s) => s.href)).toEqual(["/tax", "/realestate", "/finance", "/local"]);
     const tax = chrome.sections[0].children.map((c) => c.href);
@@ -248,7 +248,7 @@ describe("화면 틀·홈·허브·뉴스 전체 (HOME-01·02·04 · CAT-02)", (
   test("홈 — 히어로·4대 분야 카드가 먼저, 최신 자체 취재는 편집 승인된 보도기사만", async () => {
     const home = await api.getHomeData();
     expect(home.sections.slice(0, 2).map((s) => s.key)).toEqual(["hero", "fields"]);
-    expect(home.sections[0].coreMessage).toBe("부동산과 지자체의 변화를 읽고 대응하려면 지방세 이해가 필수다");
+    expect(home.sections[0].coreMessage).toBe("취득·보유·상속·증여·양도 등 모든 순간 — 지방세와 부동산 세금을 알면 재테크가 보입니다");
     const latest = home.sections.find((s) => s.key === "latest_reports");
     expect(latest).toBeDefined();
     expect(idsOf(latest.items)).toContain(Number(w.report.id));
@@ -257,7 +257,7 @@ describe("화면 틀·홈·허브·뉴스 전체 (HOME-01·02·04 · CAT-02)", (
 
   test("지방세 허브 — 상황 카드는 공개 상황만, 최신 목록에 초안·금주 핫뉴스 0, 관련 용어 칩", async () => {
     const hub = await api.getHubData("tax");
-    expect(hub.name).toBe("지방세");
+    expect(hub.name).toBe("지방세·부동산세금");
     expect(hub.situations.map((s) => s.slug)).toContain(w.situation.slug);
     expect(hub.situations.map((s) => s.slug)).not.toContain(w.hiddenSituation.slug);
     expect(idsOf(hub.latest)).toEqual(expect.arrayContaining([Number(w.report.id), Number(w.explainer.id)]));
@@ -316,7 +316,7 @@ describe("화면 틀·홈·허브·뉴스 전체 (HOME-01·02·04 · CAT-02)", (
     expect(list.category.needsDisclaimer).toBe(true);
     expect(await api.getCategoryList("tax", `no-such-${RUN}`)).toBeNull();
     const empty = await api.getCategoryList("finance", w.emptyCategory.slug);
-    expect(empty).toMatchObject({ total: 0, noindex: true, hubHref: "/finance", items: [], hub: { name: "부동산개발금융", href: "/finance" } });
+    expect(empty).toMatchObject({ total: 0, noindex: true, hubHref: "/finance", items: [], hub: { name: "부동산금융", href: "/finance" } });
     expect(empty.tabs.map((t) => t.id)).not.toContain(w.emptyCategory.slug);
     expect(list.tabs.map((t) => t.id)).toContain("interpretations");
     expect(await api.getCategoryList("local", "reporting")).toBeNull();

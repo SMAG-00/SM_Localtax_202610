@@ -25,7 +25,7 @@ export default async function HubPointsPage() {
     <>
       <PageTitle
         title="허브 지방세 포인트"
-        description="부동산·부동산개발금융·지자체뉴스 허브 머리에 보이는 '이 분야의 지방세 포인트'입니다. 문구 3줄까지·기준일·지방세 해설 링크가 필요하고, 세무 감수 서명 뒤에만 공개됩니다. 초안을 고치면 서명이 지워집니다."
+        description="부동산·부동산금융·지자체뉴스 허브 머리에 보이는 '이 분야의 지방세 포인트'입니다. 문구 3줄까지·기준일·지방세 해설 링크가 필요하고, 세무 감수 서명 뒤에만 공개됩니다. 초안을 고치면 서명이 지워집니다."
       />
       <div className="space-y-8">
         {HUB_POINT_SECTIONS.map((section) => {

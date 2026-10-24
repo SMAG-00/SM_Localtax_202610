@@ -86,7 +86,7 @@ describe("이름표는 값 목록과 1:1이다 (빠진 값·없는 값 0)", () =
 
 describe("labelOf · optionsOf", () => {
   test("모르는 값은 값 그대로, null은 '없음'", () => {
-    expect(labelOf(SECTION_LABELS, "tax")).toBe("지방세");
+    expect(labelOf(SECTION_LABELS, "tax")).toBe("지방세·부동산세금");
     expect(labelOf(SECTION_LABELS, "unknown-x")).toBe("unknown-x");
     expect(labelOf(SECTION_LABELS, null)).toBe("없음");
   });

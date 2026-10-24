@@ -222,21 +222,21 @@ export const PICTOGRAMS: Record<PictogramName, PictogramDef> = {
   // ── 4대 분야 ───────────────────────────────────────────
   "field-local-tax": {
     group: "field",
-    label: "지방세",
+    label: "지방세·부동산세금",
     // 영수증 + 채운 인장
     lines: [path("M5.5 3.5 H18.5 V20.5 L16.33 19 L14.17 20.5 L12 19 L9.83 20.5 L7.67 19 L5.5 20.5 Z"), path("M8.5 7.5 H15.5 M8.5 11 H13")],
     point: circle(14.5, 15, 2),
   },
   "field-real-estate": {
     group: "field",
-    label: "부동산",
+    label: "부동산재테크",
     // 집과 높은 건물 + 집의 채운 문
     lines: [path("M2.5 13 L7.5 8.5 L12.5 13"), path("M4 11.75 V20.5 M11 11.75 V20.5"), path("M13.5 20.5 V4 H20.5 V20.5"), path("M16 7.5 H18 M16 11 H18 M16 14.5 H18"), path("M2 20.5 H22")],
     point: rect(6.5, 15.5, 2, 5, 0.5),
   },
   "field-development-finance": {
     group: "field",
-    label: "부동산개발금융",
+    label: "부동산금융",
     // 건물 + 쌓인 동전 + 떨어지는 채운 동전 (개발 자금)
     lines: [
       path("M4.5 20.5 V4.5 H12.5 V20.5"),

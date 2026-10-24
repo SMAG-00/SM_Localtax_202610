@@ -142,7 +142,7 @@ describe("검색 결과 (SRCH-01 — 실제 API·anon 키)", () => {
   test("기사 보기 값 — /news 주소·유형 배지·한국 날짜, 용어는 용어사전 화면 전이라 링크 0, 같은 등급 안 용어가 기사보다 먼저", async () => {
     const r = await api.searchSite(options({ q: `${M} 취득세` }));
     const art = r.items.find((i) => i.ref === String(w.title.id));
-    expect(art).toMatchObject({ kind: "article", href: `/news/it-search-title-${RUN}`, typeLabel: "해설", publishedOn: "2026-10-02", sectionName: "지방세", tier: 1 });
+    expect(art).toMatchObject({ kind: "article", href: `/news/it-search-title-${RUN}`, typeLabel: "해설", publishedOn: "2026-10-02", sectionName: "지방세·부동산세금", tier: 1 });
     const term = r.items.find((i) => i.kind === "glossary");
     expect(term).toMatchObject({ href: null, typeLabel: "용어", snippet: "부동산을 살 때 내는 지방세", tier: 0 });
     expect(r.items[0].kind).toBe("glossary");

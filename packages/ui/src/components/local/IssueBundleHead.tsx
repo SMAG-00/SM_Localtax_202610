@@ -3,8 +3,8 @@ import { Chip, Eyebrow } from "../base";
 import { filled } from "./dates";
 
 /** 4대 분야 */
-export type IssueField = "지방세" | "부동산" | "부동산개발금융" | "지자체뉴스";
-const FIELD_ORDER: readonly IssueField[] = ["지방세", "부동산", "부동산개발금융", "지자체뉴스"];
+export type IssueField = "지방세·부동산세금" | "부동산재테크" | "부동산금융" | "지자체뉴스";
+const FIELD_ORDER: readonly IssueField[] = ["지방세·부동산세금", "부동산재테크", "부동산금융", "지자체뉴스"];
 
 export type IssueArticle = {
   id: string;

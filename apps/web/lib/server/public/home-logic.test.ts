@@ -135,7 +135,7 @@ describe("최신 자체 취재 (HOME-04)", () => {
 
 describe("홈 섹션 순서 (HOME-01)", () => {
   const empty: HomeInput = {
-    coreMessage: "부동산과 지자체의 변화를 읽고 대응하려면 지방세 이해가 필수다",
+    coreMessage: "취득·보유·상속·증여·양도 등 모든 순간 — 지방세와 부동산 세금을 알면 재테크가 보입니다",
     searchEnabled: false,
     searchChips: [],
     latestReports: [],
@@ -150,30 +150,35 @@ describe("홈 섹션 순서 (HOME-01)", () => {
   test("내용이 없는 섹션은 빠지고 히어로·4대 분야 카드만 남는다", () => {
     const s = homeSections(empty);
     expect(s.map((x) => x.key)).toEqual(["hero", "fields"]);
-    expect(s[0]).toEqual({ key: "hero", coreMessage: empty.coreMessage, search: null });
+    expect(s[0]).toEqual({ key: "hero", coreMessage: empty.coreMessage, coreHighlights: [], search: null });
   });
 
   test("검색 화면이 공개되기 전(기능 키 search 꺼짐)에는 검색 폼·추천 검색어 칩 0 — 칩이 지정돼 있어도", () => {
     const hero = homeSections({ ...empty, searchChips: ["취득세", "개편안", "책임준공"] })[0]!;
-    expect(hero).toEqual({ key: "hero", coreMessage: empty.coreMessage, search: null });
+    expect(hero).toEqual({ key: "hero", coreMessage: empty.coreMessage, coreHighlights: [], search: null });
   });
 
   test("검색 화면이 공개되면 히어로에 /search로 제출하는 폼과 지정한 칩", () => {
     const hero = homeSections({ ...empty, searchEnabled: true, searchChips: ["취득세", "개편안", "책임준공"] })[0]!;
-    expect(hero).toEqual({ key: "hero", coreMessage: empty.coreMessage, search: { action: "/search", chips: ["취득세", "개편안", "책임준공"] } });
+    expect(hero).toEqual({ key: "hero", coreMessage: empty.coreMessage, coreHighlights: [], search: { action: "/search", chips: ["취득세", "개편안", "책임준공"] } });
+  });
+
+  test("강조 낱말은 히어로 구역에 그대로 실린다 (settings home_core_highlights → 히어로)", () => {
+    const hero = homeSections({ ...empty, coreHighlights: ["지방세", "부동산 세금", "재테크"] })[0]!;
+    expect(hero).toEqual({ key: "hero", coreMessage: empty.coreMessage, coreHighlights: ["지방세", "부동산 세금", "재테크"], search: null });
   });
 
   test("핵심 메시지가 비고 검색도 닫혀 있으면 히어로째 뺀다 — 검색만 열려 있으면 검색 폼만 있는 히어로", () => {
     expect(homeSections({ ...empty, coreMessage: null }).map((x) => x.key)).toEqual(["fields"]);
-    expect(homeSections({ ...empty, coreMessage: null, searchEnabled: true })[0]).toEqual({ key: "hero", coreMessage: null, search: { action: "/search", chips: [] } });
+    expect(homeSections({ ...empty, coreMessage: null, searchEnabled: true })[0]).toEqual({ key: "hero", coreMessage: null, coreHighlights: [], search: { action: "/search", chips: [] } });
   });
 
-  test("4대 분야 카드는 정확히 4장 — 지방세 /tax · 부동산 /realestate · 부동산개발금융 /finance · 지자체뉴스 /local", () => {
+  test("4대 분야 카드는 정확히 4장 — 지방세 /tax · 부동산 /realestate · 부동산금융 /finance · 지자체뉴스 /local", () => {
     const fields = homeSections(empty).find((x) => x.key === "fields")!;
     expect(fields.key === "fields" && fields.cards.map((c) => [c.name, c.href])).toEqual([
-      ["지방세", "/tax"],
-      ["부동산", "/realestate"],
-      ["부동산개발금융", "/finance"],
+      ["지방세·부동산세금", "/tax"],
+      ["부동산재테크", "/realestate"],
+      ["부동산금융", "/finance"],
       ["지자체뉴스", "/local"],
     ]);
   });

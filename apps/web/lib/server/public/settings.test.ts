@@ -1,7 +1,7 @@
 // 공개 설정 읽기 — 모양이 틀리면 닫힌 쪽(꺼짐·숨김·기본값)으로 (설계 2.4)
 import { describe, expect, test } from "vitest";
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "./constants";
-import { CLOSED_FEATURES, parseFeatures, parsePriority, parsePublicSettings, parseSearchChips } from "./settings";
+import { CLOSED_FEATURES, CORE_HIGHLIGHTS_MAX, parseCoreHighlights, parseFeatures, parsePriority, parsePublicSettings, parseSearchChips } from "./settings";
 
 /** W2-c 설계 2.5 popular_rules 씨앗 */
 const POPULAR_SEED = { version: "2026-10-18.1", window_hours: 168, dedupe_minutes: 30, exclude_content_types: ["digest", "sponsored"], sidebar_size: 5, list_size: 20 };
@@ -11,7 +11,8 @@ describe("parsePublicSettings", () => {
   test("씨앗 값 그대로 — 핵심 메시지, 칩 0개, 기능 모두 꺼짐, 우선순위, 상한 4, 확정 기준 공포", () => {
     const s = parsePublicSettings(
       rows({
-        home_core_message: "부동산과 지자체의 변화를 읽고 대응하려면 지방세 이해가 필수다",
+        home_core_message: "취득·보유·상속·증여·양도 등 모든 순간 — 지방세와 부동산 세금을 알면 재테크가 보입니다",
+        home_core_highlights: ["지방세", "부동산 세금", "재테크"],
         home_search_chips: [],
         hub_intros: {},
         amendment_confirmed_stage: "promulgated",
@@ -22,7 +23,8 @@ describe("parsePublicSettings", () => {
       }),
     );
     expect(s).toEqual({
-      coreMessage: "부동산과 지자체의 변화를 읽고 대응하려면 지방세 이해가 필수다",
+      coreMessage: "취득·보유·상속·증여·양도 등 모든 순간 — 지방세와 부동산 세금을 알면 재테크가 보입니다",
+      coreHighlights: ["지방세", "부동산 세금", "재테크"],
       searchChips: [],
       hubIntros: {},
       confirmStage: "promulgated",
@@ -31,6 +33,16 @@ describe("parsePublicSettings", () => {
       nextActionPriority: [...NEXT_ACTION_KEYS],
       popular: { sidebarSize: 5, listSize: 20, windowHours: 168 },
     });
+  });
+
+  test("강조 낱말 — 메시지에 없는 낱말·빈 글자·중복·5개 초과는 빼고, 모양이 틀리면 빈 목록(칠하지 않음)", () => {
+    const msg = "취득·보유·상속·증여·양도 등 모든 순간 — 지방세와 부동산 세금을 알면 재테크가 보입니다";
+    expect(parseCoreHighlights(["재테크", " 지방세 ", "재테크", "", "없는낱말", 3], msg)).toEqual(["재테크", "지방세"]);
+    expect(parseCoreHighlights(["지방세", "부동산 세금", "재테크", "양도", "증여", "상속", "취득"], msg)).toHaveLength(CORE_HIGHLIGHTS_MAX);
+    expect(parseCoreHighlights("지방세", msg)).toEqual([]);
+    expect(parseCoreHighlights(["지방세"], null)).toEqual([]);
+    expect(parsePublicSettings(rows({ home_core_message: msg })).coreHighlights).toEqual([]);
+    expect(parsePublicSettings(rows({ home_core_message: msg, home_core_highlights: ["재테크", "없는낱말"] })).coreHighlights).toEqual(["재테크"]);
   });
 
   test("행이 하나도 없으면 — 메시지 없음, 기능 꺼짐, 기본 우선순위·상한·기준", () => {

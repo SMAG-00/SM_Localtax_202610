@@ -204,8 +204,8 @@ test("e) 측정 거부 API — 폼 거부는 303 + 거부 쿠키(스크립트가
 
 test("e) 측정 거부 화면 — 지금 상태와 반대 버튼 하나, GPC 신호면 'GPC 신호를 받아'", async () => {
   const html = async (headers) => (await fetch(`${base}/about/measurement`, { headers })).text();
-  assert.match(await html({}), /data-state="measuring"[\s\S]*측정 거부하기/);
-  assert.match(await html({ cookie: "ltr_optout=1" }), /data-state="refused"[\s\S]*측정 허용하기/);
+  assert.match(await html({}), /data-state="measuring"[\s\S]*방문 통계 수집 거부/);
+  assert.match(await html({ cookie: "ltr_optout=1" }), /data-state="refused"[\s\S]*다시 허용/);
   assert.match(await html({ "sec-gpc": "1" }), /data-state="gpc"[\s\S]*GPC 신호를 받아/);
 });
 
@@ -330,7 +330,7 @@ test("j) 사람 브라우저 — 기사 열람·허브 열람·홈 분야 카드
     assert.ok(vid?.httpOnly, "방문자 쿠키 HttpOnly");
     assert.ok(!(await page.evaluate(() => document.cookie)).includes("ltr_vid"), "스크립트가 방문자 ID를 읽지 못한다");
 
-    // 홈 → 4대 분야 카드(부동산개발금융) — 클릭 이벤트와 허브 열람이 겹쳐도 방문자 ID는 하나
+    // 홈 → 4대 분야 카드(부동산금융) — 클릭 이벤트와 허브 열람이 겹쳐도 방문자 ID는 하나
     await page.goto(`${base}/`, { waitUntil: "networkidle" });
     const before = requests.length;
     await page.locator('[data-ui="field-cards"] a[href="/finance"]').click();
@@ -375,13 +375,13 @@ test("j) GPC를 켠 브라우저 — 기사·허브·분야 카드를 다녀도 
   }
 });
 
-test("j) 측정 거부 화면에서 [측정 거부하기] → 그 뒤 화면들은 /api/events 요청 0, [측정 허용하기] → 다시 보낸다", async () => {
+test("j) 측정 거부 화면에서 [방문 통계 수집 거부] → 그 뒤 화면들은 /api/events 요청 0, [다시 허용] → 다시 보낸다", async () => {
   const { context, requests } = await openContext();
   try {
     const page = await context.newPage();
     await page.goto(`${base}/about/measurement`, { waitUntil: "networkidle" });
     assert.equal(await page.locator('[data-ui="measurement-page"]').getAttribute("data-state"), "measuring");
-    await page.getByRole("button", { name: "측정 거부하기" }).click();
+    await page.getByRole("button", { name: "방문 통계 수집 거부" }).click();
     await page.waitForURL(`${base}/about/measurement?done=refuse`);
     assert.equal(await page.locator('[data-part="notice"]').textContent(), "측정 거부를 저장했습니다.");
     assert.equal(await page.locator('[data-ui="measurement-page"]').getAttribute("data-state"), "refused");
@@ -393,7 +393,7 @@ test("j) 측정 거부 화면에서 [측정 거부하기] → 그 뒤 화면들�
     assert.equal(requests.length, 0, "측정 거부 뒤 전송 0");
 
     await page.goto(`${base}/about/measurement`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "측정 허용하기" }).click();
+    await page.getByRole("button", { name: "다시 허용" }).click();
     await page.waitForURL(`${base}/about/measurement?done=allow`);
     const viewed = eventResponse(page);
     await page.goto(`${base}${fx.article.href}`, { waitUntil: "domcontentloaded" });

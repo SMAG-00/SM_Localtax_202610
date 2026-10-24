@@ -73,9 +73,9 @@ describe("뉴스 전체 탭 (CAT-02 '허브 탭 4개')", () => {
   test("[전체] + 4대 분야 탭 — 글자는 PRD-01A 3장 화면 표(지방세·부동산·개발금융·지자체)", () => {
     expect(newsTabs().map((t) => [t.label, t.href])).toEqual([
       ["전체", "/news"],
-      ["지방세", "/news?section=tax"],
-      ["부동산", "/news?section=realestate"],
-      ["개발금융", "/news?section=finance"],
+      ["지방세·부동산세금", "/news?section=tax"],
+      ["부동산재테크", "/news?section=realestate"],
+      ["부동산금융", "/news?section=finance"],
       ["지자체", "/news?section=local"],
     ]);
   });
@@ -134,6 +134,6 @@ describe("쪽 번호·닫힌 허브", () => {
 
   test("닫힌 허브 — 머리(이름·아이브로·주소)만 있고 탭·목록·상황 카드·용어 0, noindex 아님", () => {
     const hub = closedHubData("finance");
-    expect(hub).toMatchObject({ name: "부동산개발금융", eyebrow: "DEVELOPMENT FINANCE", href: "/finance", tabs: [], latest: [], situations: [], terms: [], blocks: null, noindex: false, unavailable: true });
+    expect(hub).toMatchObject({ name: "부동산금융", eyebrow: "DEVELOPMENT FINANCE", href: "/finance", tabs: [], latest: [], situations: [], terms: [], blocks: null, noindex: false, unavailable: true });
   });
 });

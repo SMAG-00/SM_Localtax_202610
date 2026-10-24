@@ -1,4 +1,4 @@
-// local 묶음 — 지자체·부동산·부동산개발금융 영역 컴포넌트 16종 (PRD-00 8.6)
+// local 묶음 — 지자체·부동산·부동산금융 영역 컴포넌트 16종 (PRD-00 8.6)
 export { FieldHubHead, type FieldHubHeadProps, type FieldHub } from "./FieldHubHead";
 export { RegionHubHead, regionCrumbs, type RegionCrumb, type RegionHubHeadProps, type RegionRef } from "./RegionHubHead";
 export { LocalHubBlocks, type LocalHubBlocksProps, type HubBlockContent, type HubBlockGroup } from "./LocalHubBlocks";

@@ -6,8 +6,8 @@ export const FIELD_ORDER = ["tax", "realestate", "finance", "local"] as const;
 export type FieldSection = (typeof FIELD_ORDER)[number];
 
 export const FIELDS: Record<FieldSection, { name: string; href: string; pictogram: PictogramName }> = {
-  tax: { name: "지방세", href: "/tax", pictogram: "field-local-tax" },
-  realestate: { name: "부동산", href: "/realestate", pictogram: "field-real-estate" },
-  finance: { name: "부동산개발금융", href: "/finance", pictogram: "field-development-finance" },
+  tax: { name: "지방세·부동산세금", href: "/tax", pictogram: "field-local-tax" },
+  realestate: { name: "부동산재테크", href: "/realestate", pictogram: "field-real-estate" },
+  finance: { name: "부동산금융", href: "/finance", pictogram: "field-development-finance" },
   local: { name: "지자체뉴스", href: "/local", pictogram: "field-local-news" },
 };

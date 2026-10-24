@@ -91,7 +91,7 @@ const footerLinks = [
   { label: "고객센터", href: "#" },
   { label: "이용약관", href: "#" },
   { label: "이메일무단수집거부", href: "#" },
-  { label: "측정 거부", href: "#" },
+  { label: "방문 통계 설정", href: "#" },
 ];
 
 const note = "mb-2 text-[13px] font-semibold text-navy-600";

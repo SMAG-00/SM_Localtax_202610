@@ -1,7 +1,7 @@
 // 편집국 화면 이름표 — DB 값 → 쉬운 한국어 이름 (UX-01 말투). 값 목록은 W2-a 설계 §2와 같다 (labels.test.ts가 값 목록과 대조).
 // 브라우저에서도 쓰는 순수 모듈이다 — 서버 전용 모듈을 불러오지 않는다.
 
-export const SECTION_LABELS = { tax: "지방세", realestate: "부동산", finance: "부동산개발금융", local: "지자체뉴스" } as const;
+export const SECTION_LABELS = { tax: "지방세·부동산세금", realestate: "부동산재테크", finance: "부동산금융", local: "지자체뉴스" } as const;
 
 export const CONTENT_TYPE_LABELS = {
   reported_news: "보도",

@@ -47,7 +47,7 @@ export interface ViewOptions {
   now: string;
 }
 
-export const SECTION_NAMES: Record<string, string> = { tax: "지방세", realestate: "부동산", finance: "부동산개발금융", local: "지자체뉴스" };
+export const SECTION_NAMES: Record<string, string> = { tax: "지방세·부동산세금", realestate: "부동산재테크", finance: "부동산금융", local: "지자체뉴스" };
 
 const pick = <T extends string>(values: readonly T[], v: unknown): T | null =>
   typeof v === "string" && (values as readonly string[]).includes(v) ? (v as T) : null;

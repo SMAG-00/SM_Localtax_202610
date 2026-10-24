@@ -55,9 +55,9 @@ describe("설계 문서 2.3과 같은 목록", () => {
 
   test("4대 분야 이름·주소 (HOME-01·HOME-02)", () => {
     expect(Object.values(SECTION_INFO).map((s) => [s.name, s.href])).toEqual([
-      ["지방세", "/tax"],
-      ["부동산", "/realestate"],
-      ["부동산개발금융", "/finance"],
+      ["지방세·부동산세금", "/tax"],
+      ["부동산재테크", "/realestate"],
+      ["부동산금융", "/finance"],
       ["지자체뉴스", "/local"],
     ]);
   });

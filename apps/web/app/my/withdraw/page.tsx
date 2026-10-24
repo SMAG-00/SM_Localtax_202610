@@ -20,7 +20,7 @@ export default async function WithdrawPage({ searchParams }: Props) {
   return (
     <main className="mx-auto w-full max-w-md px-4 py-16">
       <p className="text-[17px] font-extrabold tracking-tight text-navy-900">
-        {brand.wordmark.lead} <span className="text-hermes-500">·</span> 내 화면
+        {brand.productName} <span className="text-hermes-500">·</span> 내 화면
       </p>
       <div className="mt-8 rounded-2xl border border-navy-100 bg-white p-6">
         <Eyebrow>WITHDRAW</Eyebrow>

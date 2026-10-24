@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { parseGateSettings } from "@/lib/server/articles/gate";
 import { ANALYTICS_SETTING_KEYS, parseCollectSettings } from "@/lib/analytics/settings";
 import { designSeeds } from "@/lib/analytics/test-design";
-import { isEditableSetting, parseJsonText, sameJson, validateSettingValue } from "./settings-rules";
+import { coreHighlightsErrors, isEditableSetting, parseJsonText, sameJson, validateSettingValue } from "./settings-rules";
 
 const SIM = {
   version: "similarity-internal-2026-10-17.1",
@@ -127,9 +127,30 @@ describe("W2-b 공개 설정 — 관리자 화면이 고치는 값과 공개 데
     for (const claim of ["지방세 50년의 시험용 메시지", "시험용 50 년", "시험용 ５０년", "시험용 오십 년", "시험용 반세기", "Fifty Years 시험용"]) {
       expect(errorsOf(validateSettingValue("home_core_message", claim, null)), claim).toEqual([expect.stringMatching(/^값: .*경력 연수 표기/)]);
     }
-    for (const ok of ["1950년 이후 시험용 메시지", "50년대 시험용 메시지", "부동산과 지자체의 변화를 읽고 대응하려면 지방세 이해가 필수다"]) {
+    for (const ok of ["1950년 이후 시험용 메시지", "50년대 시험용 메시지", "취득·보유·상속·증여·양도 등 모든 순간 — 지방세와 부동산 세금을 알면 재테크가 보입니다"]) {
       expect(validateSettingValue("home_core_message", ok, null).ok, ok).toBe(true);
     }
+  });
+
+  test("핵심 메시지 강조 낱말 — 메시지 안 낱말 1~5개는 통과, 메시지에 없는 낱말·0개·6개·빈 글자·중복·31자·글자 목록 아님은 거부 (HOME-01)", () => {
+    const msg = "취득·보유·상속·증여·양도 등 모든 순간 — 지방세와 부동산 세금을 알면 재테크가 보입니다";
+    expect(isEditableSetting("home_core_highlights")).toBe(true);
+    expect(coreHighlightsErrors(["지방세", "부동산 세금", "재테크"], msg)).toEqual([]);
+    expect(coreHighlightsErrors(["지방세"], msg)).toEqual([]);
+    expect(coreHighlightsErrors(["지방세", "부동산 세금", "재테크", "양도", "증여"], msg)).toEqual([]);
+    expect(coreHighlightsErrors(["지방세", "없는낱말"], msg)).toEqual([expect.stringMatching(/^\[1\]: 홈 핵심 메시지 안에 없는 낱말입니다 \('없는낱말'\)/)]);
+    expect(coreHighlightsErrors([], msg)).toEqual([expect.stringMatching(/1~5개/)]);
+    expect(coreHighlightsErrors(["지", "방", "세", "재", "테", "크"], msg)).toEqual([expect.stringMatching(/1~5개/)]);
+    expect(coreHighlightsErrors(["  "], msg)).toEqual([expect.stringMatching(/비지 않은 글자/)]);
+    expect(coreHighlightsErrors(["지방세", "지방세"], msg)).toEqual([expect.stringMatching(/같은 낱말이 앞에/)]);
+    expect(coreHighlightsErrors(["가".repeat(31)])).toEqual([expect.stringMatching(/30자 이하/)]);
+    expect(coreHighlightsErrors("지방세", msg)).toEqual([expect.stringMatching(/글자 목록/)]);
+  });
+
+  test("핵심 메시지 강조 낱말 — 설정 화면 검사(validateSettingValue)는 모양만 보고, 메시지 안에 있는지는 저장 API가 같은 함수에 메시지를 넘겨 본다", () => {
+    expect(validateSettingValue("home_core_highlights", ["지방세", "재테크"], null).ok).toBe(true);
+    expect(errorsOf(validateSettingValue("home_core_highlights", [], null))[0]).toMatch(/1~5개/);
+    expect(coreHighlightsErrors(["지방세"], "시험용 메시지")).toHaveLength(1);
   });
 
   test("칼럼 의견 고지 문구 — 운영 설정 화면에서 고친다: 빈 글자(발행 거부 상태)·300자 통과, 글자 아님·여러 줄·301자·경력 연수 표기 거부 (W3 6단계 · 12장 #8)", () => {

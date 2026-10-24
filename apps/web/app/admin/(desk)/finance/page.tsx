@@ -13,7 +13,7 @@ import { ForbiddenView } from "@/components/admin/ForbiddenView";
 //  · 구조 해설 - 초안(편집 책임자·관리자) → 법률 확인 → 세무 감수 서명(감수위원). 고치면 법률 확인이 지워지고 공개는 마지막 승인본을 유지
 //  · 통계·규제 - 추가만 시계열 (원문 주소·제공기관·원본 스냅샷 필수). 사례·칼럼 - 기사마다 반론 기록·소속 항목
 // 금융 내용은 사람이 공식 원문을 보고 넣습니다 (채워 넣는 기본값 0). 투자 권유 문구는 저장 단계에서 거부됩니다.
-export const metadata: Metadata = { title: "개발금융" };
+export const metadata: Metadata = { title: "부동산금융" };
 export const dynamic = "force-dynamic";
 
 const STATUS: Record<string, { label: string; tone: "amber" | "emerald" | "navy" }> = {
@@ -35,7 +35,7 @@ export default async function FinancePage() {
   return (
     <>
       <PageTitle
-        title="개발금융"
+        title="부동산금융"
         description="구조 해설·규제·통계 트래커·사례 구조·칼럼 소속 항목을 입력합니다. 내용은 공식 원문을 보고 적고, 구조 해설은 법률 확인과 세무 감수 서명이 모두 있어야 공개됩니다. 투자 권유·수익률 순위·상품 가입 링크는 받지 않습니다."
       />
       <div className="space-y-8">
@@ -129,9 +129,9 @@ export default async function FinancePage() {
               <FinanceForm kind="regulation" id="fin-reg" />
             </Panel>
 
-            <Panel id="finance-articles" title="개발금융 기사 - 사례 구조·칼럼 소속" description="사례 기사(하위 분야 사례)는 구조 기록이 있어야 발행됩니다. 실명 기업을 다루면 반론 요청일·방법·답변 상태가 필요합니다. 칼럼(의견 기사)은 소속 금융사·신탁사 항목이 필요합니다.">
+            <Panel id="finance-articles" title="부동산금융 기사 - 사례 구조·칼럼 소속" description="사례 기사(하위 분야 사례)는 구조 기록이 있어야 발행됩니다. 실명 기업을 다루면 반론 요청일·방법·답변 상태가 필요합니다. 칼럼(의견 기사)은 소속 금융사·신탁사 항목이 필요합니다.">
               {board.articles.length === 0 ? (
-                <EmptyNote>개발금융 분야 기사가 없습니다.</EmptyNote>
+                <EmptyNote>부동산금융 분야 기사가 없습니다.</EmptyNote>
               ) : (
                 <ul className="space-y-6" data-testid="finance-article-list">
                   {board.articles.map((a) => {

@@ -10,31 +10,32 @@ const tokens = (el: Element | null) => (el?.getAttribute("class") ?? "").split(/
 const pairs = (links: HTMLElement[]) => links.map((a) => [a.textContent, a.getAttribute("href")]);
 
 describe("헤더 — 워드마크", () => {
-  it("bg-navy-800 머리에 brand 워드마크를 홈 링크로 두고, 가운뎃점만 hermes-500이다", () => {
+  it("bg-navy-800 머리에 brand 워드마크를 홈 링크로 두고, 가운뎃점 없이 띄어쓰기로 잇는다", () => {
     const { container } = render(<Header />);
     const root = container.firstElementChild!;
     expect(root.tagName).toBe("HEADER");
     expect(root.getAttribute("data-ui")).toBe("header");
     expect(tokens(root)).toContain("bg-navy-800");
 
-    const home = screen.getByRole("link", { name: `${brand.wordmark.lead} · ${brand.wordmark.tail}` });
+    const home = screen.getByRole("link", { name: `${brand.wordmark.lead} ${brand.wordmark.tail}` });
     expect(home.getAttribute("href")).toBe("/");
-    expect(home.textContent).toBe("SM(선명) · 지방세");
+    expect(home.textContent).toBe(`${brand.wordmark.lead} ${brand.wordmark.tail}`);
+    expect(home.textContent).toBe(brand.productName);
+    expect(home.textContent).not.toContain("·");
     expect(tokens(home)).toEqual(expect.arrayContaining(["text-[17px]", "font-extrabold", "text-white"]));
-    const dot = within(home).getByText("·");
-    expect(tokens(dot)).toContain("text-hermes-500");
+    expect(within(home).queryByText("·")).toBeNull();
     expect(tokens(home)).not.toContain("text-hermes-500");
   });
 });
 
 describe("헤더 — 상단 메뉴 (4대 분야)", () => {
-  it("상단 메뉴는 정확히 4개 — 지방세·부동산·부동산개발금융·지자체뉴스 순서와 경로", () => {
+  it("상단 메뉴는 정확히 4개 — 지방세·부동산세금·부동산재테크·부동산금융·지자체뉴스 순서와 경로", () => {
     render(<Header />);
     const nav = screen.getByRole("navigation", { name: "분야 메뉴" });
     expect(pairs(within(nav).getAllByRole("link"))).toEqual([
-      ["지방세", "/tax"],
-      ["부동산", "/realestate"],
-      ["부동산개발금융", "/finance"],
+      ["지방세·부동산세금", "/tax"],
+      ["부동산재테크", "/realestate"],
+      ["부동산금융", "/finance"],
       ["지자체뉴스", "/local"],
     ]);
   });
@@ -137,7 +138,7 @@ describe("헤더 — 360px 메뉴 열기 버튼 (공개·닫기)", () => {
     await userEvent.keyboard("{Enter}");
     expect(button.getAttribute("aria-expanded")).toBe("true");
     await userEvent.tab();
-    expect(document.activeElement?.textContent).toBe("지방세");
+    expect(document.activeElement?.textContent).toBe("지방세·부동산세금");
     await userEvent.keyboard("{Escape}");
     expect(button.getAttribute("aria-expanded")).toBe("false");
     expect(document.activeElement).toBe(button);
@@ -160,7 +161,7 @@ describe("헤더 — 360px 메뉴 열기 버튼 (공개·닫기)", () => {
       </LinkProvider>,
     );
     const button = screen.getByRole("button", { name: "메뉴" });
-    for (const name of ["부동산", "검색"]) {
+    for (const name of ["부동산재테크", "검색"]) {
       await userEvent.click(button);
       expect(button.getAttribute("aria-expanded")).toBe("true");
       await userEvent.click(screen.getByRole("link", { name }));
@@ -190,8 +191,8 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
 
   it("하위 메뉴를 줘도 상단 메뉴는 정확히 4개 — 펼침 단추는 하위 메뉴가 있는 분야에만", () => {
     render(<Header submenus={SUB} />);
-    expect(topLinks()).toEqual(["지방세", "부동산", "부동산개발금융", "지자체뉴스"]);
-    expect(screen.getAllByRole("button", { name: /하위 메뉴$/ }).map((b) => b.textContent)).toEqual(["지방세 하위 메뉴", "지자체뉴스 하위 메뉴"]);
+    expect(topLinks()).toEqual(["지방세·부동산세금", "부동산재테크", "부동산금융", "지자체뉴스"]);
+    expect(screen.getAllByRole("button", { name: /하위 메뉴$/ }).map((b) => b.textContent)).toEqual(["지방세·부동산세금 하위 메뉴", "지자체뉴스 하위 메뉴"]);
     // 닫힌 하위 메뉴는 hidden — 화면 읽기·탭 이동에도 없다
     expect(screen.queryByRole("link", { name: "해석" })).toBeNull();
     expect(document.querySelectorAll('[data-part="sub-link"]')).toHaveLength(3);
@@ -199,7 +200,7 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
 
   it("펼침 단추로 열고 닫는다 — 링크는 그대로 허브로 가고, 한 번에 하나만 열린다", async () => {
     render(<Header submenus={SUB} />);
-    const tax = screen.getByRole("button", { name: "지방세 하위 메뉴" });
+    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
     const local = screen.getByRole("button", { name: "지자체뉴스 하위 메뉴" });
     expect(tax.getAttribute("aria-expanded")).toBe("false");
     await userEvent.click(tax);
@@ -209,7 +210,7 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
       ["해석", "/tax/interpretations"],
       ["뉴스 전체", "/news?section=tax"],
     ]);
-    expect(screen.getByRole("link", { name: "지방세" }).getAttribute("href")).toBe("/tax");
+    expect(screen.getByRole("link", { name: "지방세·부동산세금" }).getAttribute("href")).toBe("/tax");
     await userEvent.click(local);
     expect(tax.getAttribute("aria-expanded")).toBe("false");
     expect(local.getAttribute("aria-expanded")).toBe("true");
@@ -221,7 +222,7 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
     render(<Header submenus={SUB} />);
     const menu = screen.getByRole("button", { name: "메뉴" });
     await userEvent.click(menu);
-    const tax = screen.getByRole("button", { name: "지방세 하위 메뉴" });
+    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
     await userEvent.click(tax);
     screen.getByRole("link", { name: "해석" }).focus();
     await userEvent.keyboard("{Escape}");
@@ -250,7 +251,7 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
     );
     const menu = screen.getByRole("button", { name: "메뉴" });
     await userEvent.click(menu);
-    const tax = screen.getByRole("button", { name: "지방세 하위 메뉴" });
+    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
     await userEvent.click(tax);
     await userEvent.click(screen.getByRole("link", { name: "해석" }));
     expect(tax.getAttribute("aria-expanded")).toBe("false");
@@ -264,20 +265,20 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
         <button type="button">바깥</button>
       </>,
     );
-    const tax = screen.getByRole("button", { name: "지방세 하위 메뉴" });
+    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
     await userEvent.click(tax);
     await userEvent.click(screen.getByRole("button", { name: "바깥" }));
     expect(tax.getAttribute("aria-expanded")).toBe("false");
     await userEvent.click(tax);
     screen.getByRole("link", { name: "뉴스 전체" }).focus();
     await userEvent.tab();
-    expect(document.activeElement?.textContent).toBe("부동산");
+    expect(document.activeElement?.textContent).toBe("부동산재테크");
     expect(tax.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("펼침 단추·하위 메뉴 항목의 터치 영역 44px(min-h-11) 이상", async () => {
     render(<Header submenus={SUB} />);
-    const tax = screen.getByRole("button", { name: "지방세 하위 메뉴" });
+    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
     expect(tokens(tax)).toEqual(expect.arrayContaining(["min-h-11", "min-w-11"]));
     await userEvent.click(tax);
     for (const a of within(document.getElementById(tax.getAttribute("aria-controls")!)!).getAllByRole("link")) expect(tokens(a)).toContain("min-h-11");

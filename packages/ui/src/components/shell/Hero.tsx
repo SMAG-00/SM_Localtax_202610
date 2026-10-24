@@ -1,16 +1,66 @@
 import type { ReactNode } from "react";
 import { Eyebrow } from "../base";
 
-/** 강조 단어(처음 나온 곳 하나)만 hermes-400으로 칠한다 (PRD-00 8.4) */
-function withHighlight(title: string, highlight?: string): ReactNode {
-  const word = highlight?.trim();
-  const at = word ? title.indexOf(word) : -1;
-  if (!word || at < 0) return title;
+/**
+ * 강조할 낱말들을 hermes-400으로 칠한다 (PRD-00 8.4) — 낱말마다 나오는 곳을 모두, 긴 낱말부터 먼저 잡고 겹치는 곳은 칠하지 않는다.
+ * 순수 함수라 시험이 직접 부른다. 칠할 곳이 없으면 글자 그대로 돌려준다
+ */
+export function highlightRanges(text: string, highlight?: string | readonly string[]): { text: string; marked: boolean }[] {
+  const words = [...new Set((Array.isArray(highlight) ? highlight : [highlight]).map((w) => (typeof w === "string" ? w.trim() : "")).filter((w) => w !== ""))].sort(
+    (a, b) => b.length - a.length,
+  );
+  const taken: [number, number][] = [];
+  for (const word of words) {
+    for (let at = text.indexOf(word); at >= 0; at = text.indexOf(word, at + word.length)) {
+      const end = at + word.length;
+      if (!taken.some(([s, e]) => at < e && end > s)) taken.push([at, end]);
+    }
+  }
+  taken.sort((a, b) => a[0] - b[0]);
+  const out: { text: string; marked: boolean }[] = [];
+  let cursor = 0;
+  for (const [s, e] of taken) {
+    if (s > cursor) out.push({ text: text.slice(cursor, s), marked: false });
+    out.push({ text: text.slice(s, e), marked: true });
+    cursor = e;
+  }
+  if (cursor < text.length) out.push({ text: text.slice(cursor), marked: false });
+  return out;
+}
+
+function withHighlight(text: string, highlight?: string | readonly string[]): ReactNode {
+  const parts = highlightRanges(text, highlight);
+  if (!parts.some((p) => p.marked)) return text;
+  return parts.map((p, i) =>
+    p.marked ? (
+      <span key={i} className="text-hermes-400">
+        {p.text}
+      </span>
+    ) : (
+      p.text
+    ),
+  );
+}
+
+/** 제목 속 첫 줄표(—) 앞뒤 — 줄표 자리에서 두 덩어리로 나눈다 */
+const DASH_SPLIT = /^(.+?)(\s*—\s*)(.+)$/s;
+
+/**
+ * 제목 그리기 — 줄표(—)가 있으면 앞뒤를 덩어리 둘로 나눈다. 앞 덩어리는 윗줄에 뒤 덩어리 글자 크기의 약 60%로 작게(PO 결정 2026-10-24),
+ * 뒤 덩어리는 제목 크기 그대로 아랫줄에 둔다. 줄표는 화면에 보이지 않는다(display:none) — 글자 내용(textContent)은 원문과 같고 제목 요소는 하나(h1)다
+ */
+function renderTitle(title: string, highlight?: string | readonly string[]): ReactNode {
+  const m = DASH_SPLIT.exec(title);
+  if (!m) return withHighlight(title, highlight);
   return (
     <>
-      {title.slice(0, at)}
-      <span className="text-hermes-400">{word}</span>
-      {title.slice(at + word.length)}
+      <span data-part="title-lead" className="mb-2 block text-[1.2rem] leading-[1.3] sm:mb-3 sm:text-[1.65rem] lg:text-[2.25rem]">
+        {withHighlight(m[1]!, highlight)}
+      </span>
+      <span className="hidden">{m[2]}</span>
+      <span data-part="title-main" className="block">
+        {withHighlight(m[3]!, highlight)}
+      </span>
     </>
   );
 }
@@ -22,8 +72,8 @@ export type HeroProps = {
   eyebrow?: string;
   /** 핵심 메시지 — settings 한 곳에서 온 문구 (HOME-01). 비면 제목 요소 0 — 페이지 제목(h1)은 쓰는 쪽이 따로 둔다 */
   title?: string;
-  /** 제목 안에서 hermes-400으로 칠할 단어 */
-  highlight?: string;
+  /** 제목 안에서 hermes-400으로 칠할 낱말 — 글자 하나 또는 여러 개 (낱말마다 나오는 곳을 모두, 긴 낱말 먼저) */
+  highlight?: string | readonly string[];
   description?: ReactNode;
   /** 아래 자리 — 홈 큰 입력창 등 */
   children?: ReactNode;
@@ -47,7 +97,7 @@ export function Hero({ eyebrow, title, highlight, description, children, titleLe
       <div className="relative mx-auto max-w-5xl px-4 py-20 sm:py-28">
         {eyebrow && <Eyebrow tone="dark">{eyebrow}</Eyebrow>}
         {title?.trim() && (
-          <Title className="mt-6 text-[2.6rem] leading-[1.15] font-black tracking-tight text-white sm:text-[3.75rem]">{withHighlight(title.trim(), highlight)}</Title>
+          <Title className="mt-6 [word-break:keep-all] break-words text-[2rem] leading-[1.2] font-black tracking-tight text-white sm:text-[2.75rem] sm:leading-[1.15] lg:text-[3.75rem]">{renderTitle(title.trim(), highlight)}</Title>
         )}
         {description && <p className="mt-7 max-w-2xl text-[18px] leading-[1.75] text-navy-100">{description}</p>}
         {children && <div className="mt-10">{children}</div>}

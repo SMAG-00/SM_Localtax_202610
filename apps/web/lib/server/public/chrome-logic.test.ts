@@ -19,9 +19,9 @@ describe("헤더 메뉴 (HOME-02)", () => {
   test("상단 메뉴는 4대 분야 정확히 4개, 이 순서", () => {
     const c = buildChrome(CATEGORIES, new Map(), CLOSED_FEATURES);
     expect(c.sections.map((s) => [s.label, s.href])).toEqual([
-      ["지방세", "/tax"],
-      ["부동산", "/realestate"],
-      ["부동산개발금융", "/finance"],
+      ["지방세·부동산세금", "/tax"],
+      ["부동산재테크", "/realestate"],
+      ["부동산금융", "/finance"],
       ["지자체뉴스", "/local"],
     ]);
   });

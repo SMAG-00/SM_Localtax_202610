@@ -2,7 +2,7 @@
 // 문구는 법률 검토 전 초안이다 [결정 안건 — 설계 9장 #7]. 안내 문장은 60자 이하(R8).
 import type { MeasurementChoice, MeasurementState } from "@/lib/analytics/consent";
 
-export const MEASUREMENT_TITLE = "측정 거부";
+export const MEASUREMENT_TITLE = "방문 통계 수집 설정";
 
 export const MEASUREMENT_EXPLANATION = [
   "어떤 글이 읽히는지 알려고 무작위 방문자 번호를 씁니다.",
@@ -31,6 +31,6 @@ export interface MeasurementView {
 
 export function measurementView(state: MeasurementState, done: string | undefined): MeasurementView {
   const notice = done === "refuse" || done === "allow" ? DONE[done] : null;
-  const button: MeasurementView["button"] = state === "refused" ? { choice: "allow", label: "측정 허용하기" } : { choice: "refuse", label: "측정 거부하기" };
+  const button: MeasurementView["button"] = state === "refused" ? { choice: "allow", label: "다시 허용" } : { choice: "refuse", label: "방문 통계 수집 거부" };
   return { status: STATUS[state], notice, button };
 }

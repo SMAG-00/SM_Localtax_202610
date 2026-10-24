@@ -1,7 +1,15 @@
 // 홈 화면 값 (HOME-01 · HOME-03 · PRD-01A 3장 홈 골격)
 import { describe, expect, test } from "vitest";
 import { HOME_SECTION_KEYS } from "@/lib/server/public/constants";
-import { HERO_EYEBROW, SECTION_HEADINGS, formatBadge, sectionTones, typeBadgeKind } from "./home-view";
+import { HERO_HIGHLIGHT_FALLBACK, SECTION_HEADINGS, heroHighlights, formatBadge, sectionTones, typeBadgeKind } from "./home-view";
+
+describe("히어로 강조 낱말", () => {
+  test("설정에 낱말이 있으면 그대로, 비어 있으면(아직 안 넣음) 기본값 '지방세' 하나", () => {
+    expect(heroHighlights(["지방세", "부동산 세금", "재테크"])).toEqual(["지방세", "부동산 세금", "재테크"]);
+    expect(heroHighlights([])).toEqual(HERO_HIGHLIGHT_FALLBACK);
+    expect(HERO_HIGHLIGHT_FALLBACK).toEqual(["지방세"]);
+  });
+});
 
 describe("섹션 바탕 — 보이는 순서대로 ivory ↔ ivory-dark", () => {
   test("모든 섹션이 보이면 4대 분야부터 ivory, 다음 ivory-dark … (히어로는 세지 않는다)", () => {
@@ -46,9 +54,5 @@ describe("섹션 머리 글자", () => {
     expect(Object.keys(SECTION_HEADINGS)).toEqual(HOME_SECTION_KEYS.filter((k) => k !== "hero"));
     expect(SECTION_HEADINGS.latest_reports.title).toBe("최신 자체 취재");
     expect(SECTION_HEADINGS.amendments.title).toBe("개정 트래커 하이라이트");
-  });
-
-  test("히어로 아이브로는 4대 분야 영문 이름 순서", () => {
-    expect(HERO_EYEBROW).toBe("LOCAL TAX · REAL ESTATE · DEVELOPMENT FINANCE · LOCAL");
   });
 });

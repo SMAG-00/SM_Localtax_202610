@@ -162,7 +162,7 @@ describe("감수 줄·박스·관련 프로젝트 키", () => {
     expect(isMethodSlug("Trust")).toBe(false);
     expect(isMethodSlug("../x")).toBe(false);
     const crumbs = devMethodCrumbs({ name: "시험", href: "/realestate/development-methods/trust" });
-    expect(crumbs.map((c) => c.name)).toEqual(["홈", "부동산", "개발방법 비교", "시험"]);
+    expect(crumbs.map((c) => c.name)).toEqual(["홈", "부동산재테크", "개발방법 비교", "시험"]);
     expect(devMethodBreadcrumb(crumbs, undefined)).toBeNull();
     expect(devMethodBreadcrumb(crumbs, "https://x.test")!.items[2]).toEqual({ name: "개발방법 비교", url: "https://x.test/realestate/development-methods" });
   });

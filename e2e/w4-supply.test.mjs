@@ -386,7 +386,7 @@ test("d) 가격 요소 0 — 목록·허브·프로젝트 화면 글자·입력 
     nodes[0].itemListElement.map((i) => [i.name, i.item]),
     [
       ["홈", `${SITE}/`],
-      ["부동산", `${SITE}/realestate`],
+      ["부동산재테크", `${SITE}/realestate`],
       ["분양 정보", `${SITE}/realestate/supply`],
     ],
   );

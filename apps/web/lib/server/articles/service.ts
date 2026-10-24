@@ -26,7 +26,7 @@ export const nowIso = () => new Date().toISOString();
 /** 발행 판정 한 번 (점검 패널·발행 API 공용) */
 export async function gateFor(db: SupabaseClient, graph: ArticleGraph, now: string, settings?: GateSettings): Promise<GateResult> {
   const [s, peers] = await Promise.all([settings ? Promise.resolve(settings) : loadGateSettings(db), loadTitlePeers(db, graph.article)]);
-  return runGate(graph, s, { now, siteUrl: siteUrl(), publisherName: brand.productName, peers });
+  return runGate(graph, s, { now, siteUrl: siteUrl(), publisherName: brand.operatorName, peers });
 }
 
 /** 판정 항목 때문에 거부 — 422 { error, failed: 차단 ID[], findings } */

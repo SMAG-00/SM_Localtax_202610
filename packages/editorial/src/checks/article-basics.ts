@@ -10,7 +10,7 @@ export function checkArticleBasics(article: ArticleForPublish): Finding[] {
   const out: Finding[] = [];
   const type = article.contentType;
   if (article.section === null) {
-    out.push(finding("art01.section-required", "분야(지방세·부동산·부동산개발금융·지자체뉴스)를 골라 주세요"));
+    out.push(finding("art01.section-required", "분야(지방세·부동산·부동산금융·지자체뉴스)를 골라 주세요"));
   }
   if (type === null) {
     out.push(finding("art01.content-type-required", "기사 유형을 골라 주세요 — 분류 전 이관 기사는 발행할 수 없습니다"));

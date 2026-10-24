@@ -9,9 +9,9 @@ export type HeaderUtilityKey = "calc" | "experts" | "store" | "edu" | "search";
 
 /** 상단 메뉴 — 정확히 4개, 이 순서 (PRD_최종 §4.1, HOME-02) */
 export const HEADER_SECTIONS: ReadonlyArray<{ key: HeaderSectionKey; label: string; href: string }> = [
-  { key: "tax", label: "지방세", href: "/tax" },
-  { key: "realestate", label: "부동산", href: "/realestate" },
-  { key: "finance", label: "부동산개발금융", href: "/finance" },
+  { key: "tax", label: "지방세·부동산세금", href: "/tax" },
+  { key: "realestate", label: "부동산재테크", href: "/realestate" },
+  { key: "finance", label: "부동산금융", href: "/finance" },
   { key: "local", label: "지자체뉴스", href: "/local" },
 ];
 
@@ -54,8 +54,8 @@ export function Header({ utilities = [], currentSection, account, submenus = {} 
           href="/"
           className="order-1 mr-auto inline-flex min-h-11 items-center text-[17px] font-extrabold tracking-tight text-white transition hover:text-hermes-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:mr-4"
         >
-          {/* 띄어쓰기는 가운뎃점 span 밖에 둔다 — 화면 읽기 이름이 "SM(선명) · 지방세"로 붙지 않게 */}
-          {brand.wordmark.lead} <span className="text-hermes-500">·</span> {brand.wordmark.tail}
+          {/* 워드마크 — 앞 낱말과 뒤 낱말을 띄어쓰기 하나로 잇는다 (가운뎃점 없음) */}
+          {brand.wordmark.lead} {brand.wordmark.tail}
         </UiLink>
         <HeaderNav sections={sections} utilities={utilityLinks} currentSection={currentSection} />
         {account && (

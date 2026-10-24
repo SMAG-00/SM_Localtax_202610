@@ -41,7 +41,7 @@ const point = { points: ["취득세 신고 기한을 먼저 확인합니다."], 
 const approval = { by: "편집자 A", at: "2026-10-15T10:00:00+09:00", reason: "같은 구역" };
 
 const SAMPLES: Record<string, ReactElement> = {
-  "분야 허브 머리": <local.FieldHubHead field="realestate" eyebrow="REAL ESTATE" title="부동산" intro="소개" />,
+  "분야 허브 머리": <local.FieldHubHead field="realestate" eyebrow="REAL ESTATE" title="부동산재테크" intro="소개" />,
   "지역 허브 머리": <local.RegionHubHead sido={{ name: "서울특별시", href: "/local/seoul" }} />,
   "지자체 허브 블록": <local.LocalHubBlocks events={{ items: [] }} />,
   "분야 필터": <local.TopicFilter basePath="/local/seoul" />,
@@ -97,8 +97,8 @@ const SAMPLES: Record<string, ReactElement> = {
       title="제목"
       summary="요약"
       articles={[
-        { id: "1", field: "지방세", card: <p>기사 1</p>, approval },
-        { id: "2", field: "부동산", card: <p>기사 2</p>, approval },
+        { id: "1", field: "지방세·부동산세금", card: <p>기사 1</p>, approval },
+        { id: "2", field: "부동산재테크", card: <p>기사 2</p>, approval },
       ]}
       taxLens={<aside>지방세로 읽기</aside>}
     />

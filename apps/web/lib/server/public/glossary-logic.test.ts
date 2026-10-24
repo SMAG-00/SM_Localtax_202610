@@ -96,9 +96,9 @@ describe("색인 화면 값 — 묶음·차례·분야 거르개", () => {
   test("분야 탭 — 전체 + 용어가 있는 분야(4대 분야 차례), 분야를 고르면 그 분야 용어만", () => {
     expect(all.tabs.map((t) => [t.id, t.label, t.href, t.count])).toEqual([
       ["all", "전체", "/glossary", 7],
-      ["tax", "지방세", "/glossary?section=tax", 6],
-      ["realestate", "부동산", "/glossary?section=realestate", 1],
-      ["finance", "부동산개발금융", "/glossary?section=finance", 1],
+      ["tax", "지방세·부동산세금", "/glossary?section=tax", 6],
+      ["realestate", "부동산재테크", "/glossary?section=realestate", 1],
+      ["finance", "부동산금융", "/glossary?section=finance", 1],
     ]);
     const fin = glossaryIndexView(rows, "finance");
     expect(fin.section).toBe("finance");

@@ -768,7 +768,7 @@ test("10) GLO-01 용어 200개가 가나다 색인에서 모두 찾힌다 · 묶
   const nav = await page.$$eval('[data-part="glossary-index"] li', (lis) => lis.map((li) => li.textContent.trim()));
   assert.deepEqual(nav.slice(0, 14), INITIALS.slice(0, 14));
   // 4대 분야마다 1개 이상 (탭 = JS 없이 링크)
-  for (const [key, label] of [["tax", "지방세"], ["realestate", "부동산"], ["finance", "부동산개발금융"], ["local", "지자체뉴스"]]) {
+  for (const [key, label] of [["tax", "지방세·부동산세금"], ["realestate", "부동산재테크"], ["finance", "부동산금융"], ["local", "지자체뉴스"]]) {
     const sec = await open(`${base}/glossary?section=${key}`, { javaScriptEnabled: false });
     const ids = await sec.page.$$eval("[data-glossary-term]", (els) => els.map((e) => Number(e.getAttribute("data-glossary-term"))));
     const expected = (await db.query("select id from public.glossary_terms where visible and $1 = any(section)", [key])).rows.map((r) => Number(r.id)).sort((a, b) => a - b);

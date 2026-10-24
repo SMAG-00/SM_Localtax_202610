@@ -32,9 +32,9 @@ describe("기사 카드", () => {
 
   it("분야 칩은 4대 분야 이름이고 하위 분야를 함께 쓸 수 있다", () => {
     const { rerender } = render(<ArticleCard {...BASE} />);
-    expect(screen.getByText("부동산").getAttribute("data-ui")).toBe("chip");
+    expect(screen.getByText("부동산재테크").getAttribute("data-ui")).toBe("chip");
     rerender(<ArticleCard {...BASE} section="finance" subsection="신탁" />);
-    expect(screen.getByText("부동산개발금융 › 신탁").getAttribute("data-ui")).toBe("chip");
+    expect(screen.getByText("부동산금융 › 신탁").getAttribute("data-ui")).toBe("chip");
   });
 
   it("발행일은 고정폭 <time>이고 datetime 값이 같다", () => {
