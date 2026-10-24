@@ -328,6 +328,6 @@ test("consents 기본값 — version_ref 빈 목록 · 동의 시각 자동 · �
   }));
 
 test("구독자(subscribers) 표는 만들지 않았다 — 사전 알림 신청은 consents에만 있다 (HOME-06 · 설계 3.3)", async () => {
-  const { rows } = await client.query("select table_name from information_schema.tables where table_schema = 'public' and table_name in ('subscribers', 'orders', 'expert_requests')");
+  const { rows } = await client.query("select table_name from information_schema.tables where table_schema = 'public' and table_name in ('subscribers', 'orders')");
   assert.deepEqual(rows, []);
 });

@@ -87,7 +87,7 @@ export function DateText({ value, withTime = false, className }: { value: string
 export const MONO = "font-mono text-[13px] tracking-wide text-navy-600";
 
 export type ExpertLinks = {
-  /** [전문가 직접 찾기] — `/experts?field=` 분야 코드 (EXPL-06) */
+  /** [SM 전문가 보기] — `/experts?field=` 분야 코드 (EXPL-06) */
   findHref: string;
   /** [SM 전문가에게 연락 받기] — 연락 요청이 닫혀 있으면 넘기지 않는다 (버튼 0) */
   requestHref?: string;
@@ -97,7 +97,7 @@ export type ExpertLinks = {
 export function ExpertButtons({ links }: { links: ExpertLinks }) {
   return (
     <div className="mt-4 flex flex-wrap gap-2">
-      <DarkButton href={links.findHref}>전문가 직접 찾기</DarkButton>
+      <DarkButton href={links.findHref}>SM 전문가 보기</DarkButton>
       {links.requestHref && <DarkButton href={links.requestHref}>SM 전문가에게 연락 받기</DarkButton>}
     </div>
   );

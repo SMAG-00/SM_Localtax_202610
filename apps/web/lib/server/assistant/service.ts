@@ -73,7 +73,7 @@ async function expertButtons(result: Pick<TurnResult, "experts">): Promise<Reply
   if (!result.experts) return null;
   const avail = await expertAvailability().catch(() => ({ find: false, request: false }));
   const findHref = avail.find ? (result.experts.field ? `/experts?field=${encodeURIComponent(result.experts.field)}` : "/experts") : null;
-  const requestHref = avail.request ? "/experts/request" : null;
+  const requestHref = avail.request ? "/experts/request?source=assistant" : null;
   return findHref || requestHref ? { findHref, requestHref } : null;
 }
 

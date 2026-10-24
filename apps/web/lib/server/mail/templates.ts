@@ -1,5 +1,5 @@
 // 메일 본문 (W2-e 설계 8.1) — 순수 함수. 링크와 "요청하지 않았다면 무시하세요" 수준의 짧은 안내문만 둔다(약관·동의 문구는 되풀이하지 않는다).
-export const MAIL_TEMPLATES = ["signup_confirm", "signup_exists_notice", "signup_resend", "password_reset", "inquiry_receipt", "brief_confirm"] as const;
+export const MAIL_TEMPLATES = ["signup_confirm", "signup_exists_notice", "signup_resend", "password_reset", "inquiry_receipt", "brief_confirm", "expert_request_notice"] as const;
 export type MailTemplate = (typeof MAIL_TEMPLATES)[number];
 export interface MailVars {
   /** 확인 링크 (signup_confirm) */
@@ -9,6 +9,8 @@ export interface MailVars {
   /** 접수 번호·문의 종류 이름 (inquiry_receipt — 본문·연락처는 되풀이하지 않는다) */
   refCode?: string;
   kindLabel?: string;
+  /** 담당자 알림 (expert_request_notice) - 접수 번호·분야 이름·보안 화면 주소만. 이름·연락처·요약은 싣지 않는다 (EXPL-16) */
+  categoryLabel?: string;
   /** 사전 알림 철회 링크 (brief_confirm) */
   unsubscribeLink?: string;
 }
@@ -47,6 +49,11 @@ export function renderMail(template: MailTemplate, vars: MailVars): { subject: s
       return {
         subject: `[${SERVICE}] 브리핑 알림 신청 확인`,
         text: ["브리핑 사전 알림 신청을 마치려면 아래 링크를 열고 [신청 확정하기] 버튼을 눌러 주세요.", "", url(vars.link, "link"), "", "신청을 철회하려면 아래 링크를 열어 주세요.", url(vars.unsubscribeLink, "unsubscribeLink"), "", IGNORE].join("\n"),
+      };
+    case "expert_request_notice":
+      return {
+        subject: `[${SERVICE}] SM 전문가 연락 요청이 접수되었습니다`,
+        text: [`접수 번호: ${vars.refCode ?? ""}`, `분야: ${vars.categoryLabel ?? ""}`, "", "내용은 로그인한 보안 화면에서만 볼 수 있습니다.", url(vars.link, "link")].join("\n"),
       };
     case "signup_exists_notice":
       return {

@@ -23,7 +23,7 @@ function summarize(body: Record<string, unknown>): string | null {
   return null;
 }
 
-export function OpForm({ id, op, label, submit, fields, initial, ctx = {} }: { id: string; op: string; label: string; submit: string; fields: LnField[]; initial?: Values; ctx?: Record<string, unknown> }) {
+export function OpForm({ id, op, label, submit, fields, initial, ctx = {}, endpoint = "/api/admin/local-news" }: { id: string; op: string; label: string; submit: string; fields: LnField[]; initial?: Values; ctx?: Record<string, unknown>; endpoint?: string }) {
   const hydrated = useHydrated();
   const router = useRouter();
   const [v, setV] = useState<Values>(initial ?? {});
@@ -41,7 +41,7 @@ export function OpForm({ id, op, label, submit, fields, initial, ctx = {} }: { i
       else if (typeof val === "string" && val.trim() !== "") body[f.name] = val.trim();
     }
     setPending(true);
-    const r = await adminApi("POST", "/api/admin/local-news", body);
+    const r = await adminApi("POST", endpoint, body);
     setPending(false);
     if (r.status === 200 || r.status === 201) {
       setDone(summarize(r.body) ?? `${label} - 저장했습니다.`);
@@ -85,7 +85,7 @@ export function OpForm({ id, op, label, submit, fields, initial, ctx = {} }: { i
 }
 
 /** 폼 없이 op 하나를 보내는 버튼 (유사도 검사·기획 전환·발행·내리기 등) */
-export function OpButton({ id, op, label, ctx, tone = "dark" }: { id: string; op: string; label: string; ctx: Record<string, unknown>; tone?: "dark" }) {
+export function OpButton({ id, op, label, ctx, tone = "dark", endpoint = "/api/admin/local-news" }: { id: string; op: string; label: string; ctx: Record<string, unknown>; tone?: "dark"; endpoint?: string }) {
   void tone;
   const hydrated = useHydrated();
   const router = useRouter();
@@ -94,7 +94,7 @@ export function OpButton({ id, op, label, ctx, tone = "dark" }: { id: string; op
   async function run() {
     setPending(true);
     setMsg(null);
-    const r = await adminApi("POST", "/api/admin/local-news", { op, ...ctx });
+    const r = await adminApi("POST", endpoint, { op, ...ctx });
     setPending(false);
     if (r.status === 200 || r.status === 201) {
       setMsg({ ok: true, text: summarize(r.body) ?? `${label} - 완료했습니다.`, details: [] });

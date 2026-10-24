@@ -137,17 +137,17 @@ describe("답변 카드 (1단계 AI 도우미 — CHAT-04 · CHAT-16 · CHAT-17)
     expect(screen.getByRole("button", { name: "아니에요" }).getAttribute("aria-pressed")).toBe("false");
     expect(onFeedback).toHaveBeenCalledWith("helpful");
     expect(screen.getByRole("status").textContent).toContain("의견을 보내 주셔서 고맙습니다");
-    expect(screen.queryByRole("link", { name: "전문가 직접 찾기" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "SM 전문가 보기" })).toBeNull();
   });
 
   it("[아니에요] 뒤에 전문가 연결 두 버튼(어두운 버튼, 같은 비중)이 나온다", async () => {
     const user = userEvent.setup();
     const onFeedback = vi.fn();
     render(<AnswerCard {...answer} onFeedback={onFeedback} experts={{ findHref: "/experts?field=local-tax", requestHref: "/experts/request" }} />);
-    expect(screen.queryByRole("link", { name: "전문가 직접 찾기" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "SM 전문가 보기" })).toBeNull();
     await user.click(screen.getByRole("button", { name: "아니에요" }));
     expect(onFeedback).toHaveBeenCalledWith("not-helpful");
-    const find = screen.getByRole("link", { name: "전문가 직접 찾기" });
+    const find = screen.getByRole("link", { name: "SM 전문가 보기" });
     const request = screen.getByRole("link", { name: "SM 전문가에게 연락 받기" });
     expect(find.getAttribute("href")).toBe("/experts?field=local-tax");
     expect(request.getAttribute("href")).toBe("/experts/request");
@@ -159,7 +159,7 @@ describe("답변 카드 (1단계 AI 도우미 — CHAT-04 · CHAT-16 · CHAT-17)
     const user = userEvent.setup();
     render(<AnswerCard {...answer} experts={{ findHref: "/experts" }} />);
     await user.click(screen.getByRole("button", { name: "아니에요" }));
-    expect(screen.getByRole("link", { name: "전문가 직접 찾기" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "SM 전문가 보기" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "SM 전문가에게 연락 받기" })).toBeNull();
   });
 });
@@ -267,7 +267,7 @@ describe("AI 도우미 패널 (CHAT-01 · CHAT-08 · CHAT-10 · CHAT-16 · CHAT-
     const primaries = container.querySelectorAll('[data-ui="primary-button"]');
     expect(primaries.length).toBe(1);
     expect(primaries[0].textContent).toBe("보내기");
-    expect(within(log).getAllByRole("link", { name: "전문가 직접 찾기" }).every((a) => a.getAttribute("data-ui") === "dark-button")).toBe(true);
+    expect(within(log).getAllByRole("link", { name: "SM 전문가 보기" }).every((a) => a.getAttribute("data-ui") === "dark-button")).toBe(true);
   });
 
   it("메시지 종류 — 질문·답변 카드('AI 답변')·범위 안내(사유·갈 곳·기준일·두 버튼)·'검색 결과만'(AI 답변 배지 0)", () => {
@@ -284,7 +284,7 @@ describe("AI 도우미 패널 (CHAT-01 · CHAT-08 · CHAT-10 · CHAT-16 · CHAT-
     expect(searchOnly.textContent).toContain("검색 결과만");
     expect(searchOnly.textContent).not.toContain("AI 답변");
     expect(within(searchOnly).getByRole("link", { name: "취득세 신고 안내" }).getAttribute("href")).toBe("/news/acquisition-guide");
-    expect(within(searchOnly).getByRole("link", { name: "전문가 직접 찾기" })).toBeTruthy();
+    expect(within(searchOnly).getByRole("link", { name: "SM 전문가 보기" })).toBeTruthy();
   });
 
   function Harness({ onClose }: { onClose: () => void }) {

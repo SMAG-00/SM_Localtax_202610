@@ -28,6 +28,11 @@ const APPEND_ONLY = new Set([
   "public.local_events", // 행사 회차(W6 LG-09) — 지우기 0, 내리기는 published=false
   "public.event_status_history", // 행사 상태 이력(W6 LG-12) — 읽기만, 트리거가 쓴다
   "public.event_links", // 행사 연결(W6 LG-14) — 읽기·추가·지우기
+  "public.expert_categories", // 전문가 분류(W7c EXPL-01) — 지우기 0, 닫기는 active=false
+  "public.expert_profiles", // 전문가 프로필(W7c EXPL-07) — 지우기 0, 내리기는 철회 기록
+  "public.expert_profile_events", // 프로필 상태 기록(W7c EXPL-03) — 읽기만, 트리거가 쓴다
+  "public.expert_requests", // 연락 요청(W7c EXPL-19·21) — 지우기 0, 개인 칸은 파기 함수로만 비운다
+  "public.expert_request_events", // 연락 요청 상태 기록(W7c EXPL-21) — 읽기만, 트리거가 쓴다
   "public.article_tombstones",
 ]);
 let client;

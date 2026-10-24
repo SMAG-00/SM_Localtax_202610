@@ -36,7 +36,12 @@ export async function purgePrivacy(db: SupabaseClient, now: Date): Promise<Recor
   const throttle = await db.rpc("throttle_purge", { p_older_than_hours: rules.throttleHours });
   if (throttle.error) throw new Error(`시도 기록 정리 실패 (${throttle.error.code})`);
 
+  // SM 전문가 연락 요청 (W7c EXPL-21) - 보관 기간 지난 요청의 이름·연락처·요약 파기 (DB 함수 - 멱등, 건수만 남긴다)
+  const purgedRequests = await db.rpc("expert_requests_purge", { p_now: now.toISOString() });
+  if (purgedRequests.error) throw new Error(`전문가 연락 요청 파기 실패 (${purgedRequests.error.code})`);
+
   return {
+    expertRequestsPurged: Number(purgedRequests.data),
     unconfirmedSignups,
     unconfirmedPrereg: counts.unconfirmed_prereg,
     revokedConsents: counts.revoked_consents,

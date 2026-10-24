@@ -26,6 +26,9 @@ export function featureNeeds(key: FeatureKey): FeatureNeeds | null {
       return { docs: ["terms", "privacy"], features: [], mail: true };
     case "brief":
       return { docs: ["privacy"], features: [], mail: true };
+    // SM 전문가 연락 요청 (W7c) - 전문가 소개가 같이 열려 있어야 한다. 메일 설정은 필요 없다(없으면 알림 없이 저장만)
+    case "expert_requests":
+      return { docs: [], features: ["experts"], mail: false };
     default:
       return null;
   }

@@ -1,5 +1,6 @@
 import { isEditableSetting, parseJsonText, sameJson, validateSettingValue } from "@/lib/admin/settings-rules";
 import { financeEnableErrors } from "@/lib/admin/finance-rules";
+import { expertEnableErrors } from "@/lib/admin/expert-rules";
 import { weeklyDigestEnableErrors } from "@/lib/admin/local-news-rules";
 import { featureEnableErrors } from "@/lib/policy/feature-open";
 import { brandRecords } from "@/lib/server/admin/brand-records";
@@ -143,6 +144,18 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
     const sidosRow = await readSetting(db, "digest_sidos");
     const gateErrors = weeklyDigestEnableErrors(sidosRow?.value);
     if (gateErrors.length) return errorJson(422, "금주 핫뉴스를 켤 수 없습니다 - 시범 시·도 설정이 필요합니다", { errors: gateErrors });
+  }
+
+  // 전문가 소개·SM 전문가 연락 요청 켜기 (W7c - 설계 12장 #2): 고지문 승인 · 연락 요청 정책 승인. DB 트리거(...65 expert_flag_guard · ...66 expert_request_flag_guard)가 같은 조건을 다시 본다
+  if (key === "feature_flags") {
+    const next = parseFeatures(value);
+    const prev = parseFeatures(current.value);
+    const turningOn = { experts: next.experts && !prev.experts, expert_requests: next.expert_requests && !prev.expert_requests };
+    if (turningOn.experts || turningOn.expert_requests) {
+      const [notice, policy] = await Promise.all([readSetting(db, "expert_notice"), readSetting(db, "expert_request_policy")]);
+      const gateErrors = expertEnableErrors(turningOn, next, notice?.value, policy?.value);
+      if (gateErrors.length) return errorJson(422, "전문가 소개·연락 요청을 켤 수 없습니다 - 고지문과 연락 요청 정책의 법률 검토 승인 기록이 필요합니다", { errors: gateErrors });
+    }
   }
 
   const saved = await writeSetting(db, current, value, actorOf(viewer));

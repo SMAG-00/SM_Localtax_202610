@@ -94,6 +94,8 @@ export const FEATURE_KEYS = [
   "inheritance_gift",
   // W5 - 개발금융 W5 화면(구조 해설 /finance/trust-pf/[slug]·허브 규제 통계 트래커·사례 구조 블록·칼럼 소속 줄) - 법률 검토 기록(finance_legal_review approved)이 있어야 켜진다 (설계 12장 #1). 꺼지면 공개 뷰 0행
   "finance",
+  // W7c - SM 전문가 연락 요청 /experts/request (전문가 소개 experts가 같이 켜져 있고 연락 요청 정책에 실사·감수 기록이 있는 승인이 있어야 켜진다 - 설계 12장 #2). 꺼지면 양식 404·진입 링크 0
+  "expert_requests",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;
@@ -218,6 +220,8 @@ const HELP_FORM_PATHS = ["/help/report", "/help/subscribe", "/help/ad", "/help/c
 const POLICY_ROOTS = ["/about", "/help"] as const;
 /** 기능 키로 여는 화면 — 유틸 메뉴 화면과 그 아래(HOME-02) · 트래커 상세(01B W3) · 시·도·시·군·구 허브(01B W4). self = 그 주소 자체도 */
 const FEATURE_PREFIXES: ReadonlyArray<{ prefix: string; feature: FeatureKey; self: boolean }> = [
+  // SM 전문가 연락 요청 (W7c) - 유틸 메뉴 /experts보다 먼저 판정한다 (find가 첫 항목을 고른다)
+  { prefix: "/experts/request", feature: "expert_requests", self: true },
   ...UTILITY_LINKS.map((u) => ({ prefix: u.href, feature: u.key, self: true })),
   // `/tax/amendments` 자체는 하위 분야 목록이다 (설계 9장 #28) — 트래커 상세 `/tax/amendments/[slug]`만
   { prefix: "/tax/amendments", feature: "amendments", self: false },
