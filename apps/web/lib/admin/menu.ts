@@ -77,6 +77,8 @@ const RULES: readonly MenuRule[] = [
   { id: "metrics", label: "측정 지표", href: "/admin/metrics", when: (a) => a.has("metrics.read"), paths: ["/admin/metrics"] },
   // 기사 생산·제휴 준비 대시보드·규정 버전 (NAV-13·14) — 편집 책임자·관리자 (PRD-01A 3장)
   { id: "readiness", label: "제휴 준비", href: "/admin/news-readiness", when: (a) => a.has("readiness.read"), paths: ["/admin/news-readiness"] },
+  // 검색 최적화 (OPT-01·07·08·09) — 색인 전환 점검·신선도 검수·AI 검색 표본. 편집 책임자·관리자 (W7)
+  { id: "seo", label: "검색 최적화", href: "/admin/seo", when: (a) => a.has("seo.read"), paths: ["/admin/seo"] },
   // 문의함 (ADM-03) — 종류별 열람 역할이 하나라도 있는 사람 (W2-e 7.3)
   { id: "inquiries", label: "문의함", href: "/admin/inquiries", when: (a) => a.has("inquiry.read"), paths: ["/admin/inquiries"] },
   { id: "pages", label: "정책 페이지", href: "/admin/pages", when: (a) => a.has("policy.edit"), paths: ["/admin/pages"] },

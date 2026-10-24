@@ -343,6 +343,12 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
   return (
     <article data-ui="article-page" data-article-id={a.id} data-format={a.format ?? "general"} data-content-type={a.contentType ?? "none"}>
       <JsonLd content={jsonLd} />
+      {a.freshnessReview && (
+        <p data-part="freshness-review" role="status" className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-2 px-4 pt-4 text-[15px] text-navy-700">
+          <Chip>{UNDER_REVIEW_LABEL}</Chip>
+          <span>법령 개정 사항을 반영해야 하는지 확인하고 있습니다. 확인이 끝나면 이 표시가 사라집니다.</span>
+        </p>
+      )}
       {/* 측정 (W2-c — article_viewed · 30초 article_engaged). 그리는 것 0 */}
       {a.contentType && <MeasureArticle articleId={a.id} section={a.section} format={a.format ?? "general"} contentType={a.contentType} />}
       {/* 다음 행동 띠 누름 → next_action_clicked (W2-c 3단계 — 첫 방문 깔때기). 그리는 것 0 */}

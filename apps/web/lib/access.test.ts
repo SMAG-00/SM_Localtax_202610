@@ -105,6 +105,9 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "readiness.read":         [X, O, X, X, X, X, X, O, X], // NAV-13·14 기사 생산·제휴 준비 대시보드 — PRD-01A 3장 '편집 책임자·관리자만'
   "readiness.requirements": [X, O, X, X, X, X, X, O, X], // NAV-13 규정 버전 등록·확정 — 같은 화면의 담당자(편집 책임자·관리자)
   "query_terms.read":       [X, O, X, X, X, X, X, O, X], // SRCH-03 검색어 집계 — 동의어 사전을 고치는 사람(편집 책임자·관리자)과 같다 (W2-d 설계 8.3)
+  "seo.read":               [X, O, X, X, X, X, X, O, X], // W7 검색 최적화 화면 — 편집 책임자·관리자 (OPT-01·07·08·09)
+  "seo.write":              [X, O, X, X, X, X, X, O, X], // W7 신선도 검수 처리·핵심 질문·AI 검색 표본 입력 (OPT-07·09)
+  "readiness.records":      [X, O, X, X, X, X, X, O, X], // W7 규정 판단 값·부정평가 기록·월 지표 재계산 (NAV-16~20)
   "inquiry.read": [O, O, X, O, O, X, X, O, X], // 문의 — 대상 없이는 하나라도 다룰 종류가 있는 역할 (종류별은 아래 표)
   "inquiry.update": [O, O, X, O, O, X, X, O, X], // 문의 — 대상 없이는 하나라도 다룰 종류가 있는 역할 (종류별은 아래 표)
   "inquiry.contact_view": [O, O, X, O, O, X, X, O, X], // 문의 — 대상 없이는 하나라도 다룰 종류가 있는 역할 (종류별은 아래 표)

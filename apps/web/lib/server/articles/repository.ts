@@ -1,5 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { kstDate } from "@/lib/analytics/metrics";
+import { loadActiveRules } from "@/lib/server/readiness/monthly";
 import { OFFICIAL_SOURCE_TYPES, REGIONAL_JUDGE_FIELDS_DEFAULT, type EditorialField } from "@ltr/editorial";
 import type { ArticleResource } from "@/lib/access";
 import { parseOfficialSourceTypes } from "@/lib/admin/official-source-rules";
@@ -165,6 +167,13 @@ export async function loadGateSettings(db: Db): Promise<GateSettings> {
     rows<{ term: string; plain: string | null }>(db.from("glossary_terms").select("term, plain").eq("jargon", true), "glossary_terms 읽기"),
   ]);
   const { settings, problems } = parseGateSettings(settingRows, glossary);
+  // 확정된 규정 버전의 유사도 기준 (NAV-18 · OPT-06) — 없으면 내부 기준. 읽지 못해도 내부 기준으로 판정한다(발행 판정이 멈추지 않게, 서버 로그에 남김)
+  try {
+    const rules = await loadActiveRules(db, kstDate(Date.now()));
+    settings.regulation = rules.find((r) => r.similarity)?.similarity ?? null;
+  } catch (err) {
+    console.error("[gate] 규정 유사도 기준을 읽지 못해 내부 기준을 씁니다:", err instanceof Error ? err.message : "알 수 없는 오류");
+  }
   if (problems.length > 0) {
     console.error("[settings] 발행 판정 설정 문제:", problems.join(" / "));
     throw new HttpError(503, "발행 판정 설정(금지 표현·공포 표현 사전)을 읽지 못했습니다 — 관리자에게 알려 주세요");

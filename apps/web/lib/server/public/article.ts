@@ -113,6 +113,8 @@ export interface ArticleDetail {
   sources: (PublicSourceRow & { under_review: boolean })[];
   corrections: CorrectionEntry[];
   updates: UpdateEntry[];
+  /** 법령 개정 신선도 검수 중 (W7 OPT-07 - 공개 뷰 public_freshness_reviews). 개정 이름·법령 내용은 담지 않는다 */
+  freshnessReview: boolean;
   amendment: { title: string; href: string | null; stage: TrackerState; banner: { stageLabel: string; changedAt: string } | null } | null;
   taxLens: TaxLensView | null;
   /** 「지방세로 읽기」 박스 옆 국세 연결 카드 (FAM-08 · W4 23단계) - 박스 세목에 상속세·증여세가 있고 inheritance_gift가 켜졌을 때만 */
@@ -169,7 +171,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   // 기자와 「지방세로 읽기」 서명 감수위원 — 공개 인물만 읽힌다(RLS). 비공개 감수위원이면 박스 0 (BR-03)
   const personIds = [...new Set([a.author_id, lens?.reviewed_by ?? null].filter((x): x is number => x !== null).map(num))];
 
-  const [settings, categories, regions, people, partner, media, sources, corrections, revisions, tagRows, situation, popular, glossary, reviewing, links] = await Promise.all([
+  const [settings, categories, regions, people, partner, media, sources, corrections, revisions, tagRows, situation, popular, glossary, reviewing, links, freshness] = await Promise.all([
     readPublicSettings(),
     readCategories(),
     readRegions(),
@@ -187,6 +189,8 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     rowsOf<{ source_id: number }>(db.from("public_source_reviews").select("source_id").eq("article_id", id), "원문 검수 표시"),
     // 확인된 지역 연결 (W4 13단계 — 마이그레이션 …48 공개 뷰). 읽지 못하면 연결 0(기사 화면은 그대로)
     readArticleLinks(id, now),
+    // 신선도 검수 중 표시 (W7 OPT-07 - 마이그레이션 …73 공개 뷰). 열린 항목이 있는 공개 기사만 1행
+    rowsOf<{ article_id: number }>(db.from("public_freshness_reviews").select("article_id").eq("article_id", id), "신선도 검수 표시"),
   ]);
 
   const category = a.category_id === null ? undefined : categories.find((c) => num(c.id) === num(a.category_id));
@@ -299,6 +303,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     sources: sources.filter((s) => !supersededSources.has(num(s.id))).map((s) => ({ ...s, under_review: underReview.has(num(s.id)) })),
     corrections: correctionEntries(corrections),
     updates: updateEntries(revisions),
+    freshnessReview: freshness.length > 0,
     amendment:
       amendment && stage
         ? {

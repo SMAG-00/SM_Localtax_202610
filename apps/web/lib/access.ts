@@ -71,6 +71,9 @@ export const ACTIONS = {
   "readiness.read": "기사 생산·제휴 준비 대시보드 열람 (NAV-13·14)",
   "readiness.requirements": "제휴 규정 버전 등록·고치기·확정 (NAV-13)",
   "query_terms.read": "검색어 집계 열람 (SRCH-03 — 편집 기획 참고)",
+  "seo.read": "검색 최적화 화면 열람 — 색인 전환 점검·신선도 검수·AI 검색 표본 (OPT-01·07·08·09)",
+  "seo.write": "신선도 검수 처리·핵심 질문 50개 등록·AI 검색 표본 입력 (OPT-07·09)",
+  "readiness.records": "제휴 규정 판단 값·부정평가 위험 기록·월 지표 재계산·경고 확인 (NAV-16~20)",
   "policy.edit": "정책 문서 초안 편집 (문서별 고치는 사람 — lib/policy/docs.ts)",
   "policy.publish": "정책 문서 게시 승인 (법률 검토 승인 기록 필수)",
   "inquiry.read": "문의 열람 (문의 종류별 역할 — INQUIRY_READERS)",
@@ -115,6 +118,8 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "settings.edit",
   "situation.publish",
   "readiness.requirements",
+  "readiness.records",
+  "seo.write",
   "policy.publish",
   "inquiry.update",
   "inquiry.contact_view",
@@ -352,6 +357,14 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     // 같게 편집 책임자·관리자만. 가린 값·정규형 합계만 읽는 일이라 거부는 감사 대상이 아니다 (W2-d 설계 8.3 · 12장)
     case "query_terms.read":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("검색어 집계는 편집 책임자와 관리자만 봅니다");
+
+    // 검색 최적화(W7 — OPT-01·07·08·09)·제휴 준비 기록(NAV-16~20) — 편집 책임자·관리자. 크롤러 정책·기능 키 같은 설정 변경은 기존 설정 화면(관리자)이 한다
+    case "seo.read":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("검색 최적화 화면은 편집 책임자와 관리자만 봅니다");
+    case "seo.write":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("신선도 검수·AI 검색 표본은 편집 책임자와 관리자만 처리합니다");
+    case "readiness.records":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("제휴 규정 판단 값·부정평가 기록은 편집 책임자와 관리자만 적습니다 (NAV-13·20)");
 
     // 정책 문서 — 편집은 편집 책임자·광고·협찬 담당·관리자(문서별 세부는 canEditPolicy), 게시 승인은 관리자만 (W2-e 10.1)
     case "policy.edit":

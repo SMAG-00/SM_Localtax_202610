@@ -6,6 +6,8 @@ import { purgeQueryTerms } from "./analytics/query-terms";
 import { purgePrivacy } from "./accounts/retention";
 import { checkLinks } from "./links/check";
 import { scanSourceExpiry } from "./source-review/service";
+import { closeReadinessMonths } from "./readiness/monthly";
+import { collectSearchConsole, submitIndexNow } from "./seo/jobs";
 
 // 배치 작업(@ltr/workflows 목록)에 넘기는 서버 기능 — 작업 경로(/api/jobs/[job])가 service_role 클라이언트로 만든다.
 // 작업 목록은 '어떤 이름이 무엇을 하는가'만 정하고, DB 읽기·쓰기는 여기 서버 모듈이 한다.
@@ -17,5 +19,8 @@ export function jobServices(db: SupabaseClient): JobServices {
     purgePrivacy: (now) => purgePrivacy(db, now),
     checkLinks: (now) => checkLinks(db, now),
     scanSourceExpiry: (now) => scanSourceExpiry(db, now),
+    collectSearchConsole: (now) => collectSearchConsole(db, now),
+    submitIndexNow: (now) => submitIndexNow(now),
+    closeReadinessMonths: (now) => closeReadinessMonths(db, now),
   };
 }

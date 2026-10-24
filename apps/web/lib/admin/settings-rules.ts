@@ -22,6 +22,7 @@ import { phraseError } from "./dictionary-rules";
 import { blockedDomainsErrors, legalReviewSettingErrors, rebuttalWaitErrors } from "./finance-rules";
 import { digestSidosErrors, digestSourcesErrors, digestSummaryMaxErrors, eventBlockedDomainsErrors, eventRecheckErrors } from "./local-news-rules";
 import { PROJECT_LIMITS, projectStageListsErrors, projectTypesErrors } from "./project-rules";
+import { nextIntakeErrors, readinessWarnErrors } from "@/lib/readiness/monthly";
 import { crawlerPolicyErrors, indexnowErrors, newsSitemapHoursErrors, seoLintParamsErrors } from "@/lib/seo/settings";
 import { EXPIRY_DAYS_DEFAULT, EXPIRY_DAYS_MAX, EXPIRY_DAYS_MIN, expiryDaysErrors } from "@/lib/source-review/rules";
 
@@ -240,6 +241,16 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     guide:
       '{ "seo.keyword-density": { "maxPercent": 8 }, "aeo.lead-answer": { "maxSentences": 2 } } — 규칙 파일 기본값을 덮어씁니다. 규칙 ID와 기준 이름은 규칙 파일(packages/seo-lint/rules)에 있는 것만, 정수·글자 형식이 맞는 값만 적용됩니다(틀린 항목은 무시). 차단 항목의 등급·가중치는 바꿀 수 없습니다. 비우려면 {}. 바꾸면 배포 없이 다음 점검부터',
     check: (value) => seoLintParamsErrors(value),
+  },
+  readiness_warn: {
+    label: "제휴 준비 경고 기준 (NAV-17)",
+    guide: '{ "columnShareMax": 0.3 } — 월 마감 때 칼럼(opinion) 비중이 이 비율(0~1)을 넘으면 경고 알림 1건을 냅니다. 비어 있으면({}) 칼럼 비중 경고 기준이 없습니다. 기준 숫자는 규정 원문을 보고 정합니다',
+    check: (value) => readinessWarnErrors(value),
+  },
+  news_next_intake: {
+    label: "다음 접수 목표 (NAV-16)",
+    guide: '{ "label": "공고 이름", "target_month": "2027-03" } — 다음 접수 공고를 확인한 뒤 적습니다. 비어 있으면({}) 제휴 준비 화면 머리에 ‘목표 접수 미정’이 보입니다. 선정은 외부 결정이라 ‘선정 예정’·‘제휴 확정’ 같은 표현은 쓸 수 없습니다',
+    check: (value) => nextIntakeErrors(value),
   },
   crawler_policy: {
     label: "크롤러 정책 (OPT-08)",

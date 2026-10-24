@@ -58,7 +58,13 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   const denied = await authorize(viewer, "article.edit", target, resource);
   if (denied) return denied;
 
-  const parsed = parseArticleInput(await readJson(request), "patch");
+  const rawBody = await readJson(request);
+  // 최초 발행일(first_published_at)은 어떤 경로로도 바꿀 수 없다 - 날짜 조작 금지 (OPT-10). DB 트리거가 한 번 더 막고, 시도는 감사 로그에 남긴다
+  if ("first_published_at" in rawBody || "firstPublishedAt" in rawBody) {
+    await writeAudit(db, { actor: actorOf(viewer), action: "article.first_published_at.denied", target, before: { first_published_at: before.first_published_at }, after: null, reason: "최초 발행일 변경 시도 거부 (OPT-10)" });
+    return errorJson(422, "최초 발행일은 바꿀 수 없습니다 (OPT-10)", { errors: ["first_published_at: 바꿀 수 없는 칸입니다"] });
+  }
+  const parsed = parseArticleInput(rawBody, "patch");
   if (!parsed.ok) return errorJson(422, "입력값을 확인하세요", { errors: parsed.errors });
   const input = parsed.value;
   if (input.contentType !== undefined && input.contentType !== before.content_type) {

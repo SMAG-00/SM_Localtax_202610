@@ -34,6 +34,10 @@ const APPEND_ONLY = new Set([
   "public.expert_requests", // 연락 요청(W7c EXPL-19·21) — 지우기 0, 개인 칸은 파기 함수로만 비운다
   "public.expert_request_events", // 연락 요청 상태 기록(W7c EXPL-21) — 읽기만, 트리거가 쓴다
   "public.article_tombstones",
+  "public.freshness_review_queue", // 신선도 검수 큐(W7 OPT-07) — 읽기·처리(UPDATE)만, 지우기 0, 트리거가 만든다
+  "public.ai_citation_samples", // AI 검색 인용 표본(W7 OPT-09) — 지우기 0, 칸은 함수로 만들고 사람이 입력만
+  "public.partner_readiness_monthly", // 월 마감 행(W7 NAV-17) — 추가만, 수정·삭제는 트리거가 거부
+  "public.partner_readiness_alerts", // 제휴 준비 경고 알림(W7 NAV-17·19·20) — 추가만, 확인 칸만 UPDATE
 ]);
 let client;
 

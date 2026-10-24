@@ -21,6 +21,12 @@ export interface JobServices {
   checkLinks(now: Date): Promise<Record<string, unknown>>;
   /** W4 6단계 공식 자료 시점 만료 — 확인일(한국 날짜)부터 기준 일수를 넘긴 공식 자료마다 검수 큐 1건, 실행 키 = 한국 날짜 (REG1-13). 결과는 수뿐 */
   scanSourceExpiry(now: Date): Promise<Record<string, unknown>>;
+  /** W7 서치 콘솔 질의 수집 — 최근 3일을 덮어쓰기로 query_terms(source search_console)에 저장. 설정이 없으면 skipped (OPT-01) */
+  collectSearchConsole(now: Date): Promise<Record<string, unknown>>;
+  /** W7 IndexNow 전송 — 설정이 꺼져 있거나 색인 관문이 닫혀 있으면 요청 0 (OPT-01) */
+  submitIndexNow(now: Date): Promise<Record<string, unknown>>;
+  /** W7 제휴 준비 월 마감 — 직전 완결 달(과 빠진 최근 달) 행을 만들고 경고 알림을 낸다. 마감 행은 바꾸지 않는다 (NAV-17) */
+  closeReadinessMonths(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -39,6 +45,12 @@ export const jobs: Record<string, Job> = {
   "link-check": async ({ now, services }) => ({ detail: await services.checkLinks(now), revalidatePublic: true }),
   // 공식 자료 시점 만료 (하루 한 번, 한국 날짜 00시대 — 같은 날 두 번이면 한 벌) — 기사 화면 '검토 중' 표시가 바뀌므로 공개 화면 캐시를 비운다
   "source-expiry": async ({ now, services }) => ({ detail: await services.scanSourceExpiry(now), revalidatePublic: true }),
+  // 서치 콘솔 질의 수집 (하루 한 번) — 검색어 집계 화면 숫자가 바뀐다
+  "search-console-daily": async ({ now, services }) => ({ detail: await services.collectSearchConsole(now) }),
+  // IndexNow 전송 (하루 한 번) — 설정이 꺼져 있으면 아무 요청도 보내지 않는다
+  "indexnow-submit": async ({ now, services }) => ({ detail: await services.submitIndexNow(now) }),
+  // 제휴 준비 월 마감 (하루 한 번, 같은 달은 이미 마감된 행을 건너뛴다) — 대시보드 숫자가 바뀐다
+  "readiness-monthly": async ({ now, services }) => ({ detail: await services.closeReadinessMonths(now), revalidatePublic: false }),
 };
 
 export function findJob(name: string): Job | undefined {
