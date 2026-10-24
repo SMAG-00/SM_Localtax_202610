@@ -139,7 +139,9 @@ test("a) 국세 검사 — 저장소 통과·위반 파일을 실제로 잡음·
 test("b) 홈 — 핵심 메시지 1개(설정·'50년' 거부·바로 반영) · 4대 분야 카드 4장(링크 카드·404 0·같은 크기)", async () => {
   const home = await page("/");
   const core = (await one("select value from public.settings where key = 'home_core_message'")).value;
-  assert.equal(visible(home.html).split(core).length - 1, 1, "핵심 메시지 1개");
+  // 홈 히어로는 줄표(—) 앞뒤를 두 덩어리로 나눠 보인다(2026-10-24 PO — 줄표는 숨김) → 덩어리마다 정확히 1번
+  const coreParts = core.split(" — ").map((t) => t.trim()).filter(Boolean);
+  for (const part of coreParts) assert.equal(visible(home.html).split(part).length - 1, 1, `핵심 메시지 1개: ${part}`);
   const hrefs = [...fieldCards(home.html).matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(hrefs, ["/tax", "/realestate", "/finance", "/local"], "카드 정확히 4장");
   for (const h of hrefs) assert.equal((await page(h)).status, 200, `${h} 404 0`);
@@ -154,7 +156,7 @@ test("b) 홈 — 핵심 메시지 1개(설정·'50년' 거부·바로 반영) ·
   assert.equal((await api("PATCH", "/settings/home_core_message", u.admin, { value: next })).status, 200);
   const after = visible((await page("/")).html);
   assert.equal(after.split(next).length - 1, 1, "바꾼 문구가 다음 요청부터 1개");
-  assert.ok(!after.includes(core), "옛 문구 0");
+  for (const part of coreParts) assert.ok(!after.includes(part), `옛 문구 0: ${part}`);
 
   // 카드 4장 같은 크기 — 한 분야에만 포인트 한 줄이 있어도 (d에서 서명 뒤 다시 본다)
   for (const width of [360, 1280]) {
