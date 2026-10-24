@@ -101,3 +101,5 @@ step "W7c 수용 E2E (SM 전문가 소개·연락 요청 - 권한(기자·광고
 step "W7 색인·구조화 데이터 E2E (W7 2~3단계 - off: robots 전체 차단·Sitemap 줄 0·사이트맵·RSS 404·전 페이지 noindex / on인데 AI 학습 정책 미결정이면 닫힘 / 정책 갖춤: 사이트맵 전 주소 200·noindex 0·canonical 자기 주소·뉴스 사이트맵·RSS에 광고·협찬 0·lastmod=최초 발행일 / 기사·허브 JSON-LD 오류 0·새 분야 이름·발행 기관 SM(선명))"; node --test --test-concurrency=1 e2e/w7-seo.test.mjs
 
 step "W7 수용 E2E (4~5단계 - 기자 403 / 개정 공포 기록 -> 법령 기준일 있는 공개 기사에만 신선도 큐 + 검토 중 표시, 변경 없음 처리는 수정일 그대로 / 핵심 질문 49·51문항 422·50문항 활성화·표본 50 x 엔진·인용률 분모 / 최초 발행일 변경 시도 422+감사 / 월 마감 12개월·두 번 실행 행 불변·조합 220·0 지표 알림 / 규정 판단 값·확정 뒤 422·규정 유사도 기준 / 부정평가 누적 창)"; node --test --test-concurrency=1 e2e/w7-acceptance.test.mjs
+
+step "W8 수용 E2E (스토어 - 권한(기자 403·편집 책임자 보드 403·상품 담당은 제안까지, 승인 403 + 거부 감사)·허용 도메인 밖 주소/할인 표기/확인일 없는 판매 중/판차 없는 도서 422 / 키 꺼짐 /store·카드 0 / 기사 -> 자사 상품 카드 1개(자사 상품 표시)·기사당 두 번째 승인 409·홈 카드 1개·바깥 주문 링크 새 창·가격/결제 요소 0 / 문의함 방식은 page_help 열림 때만·구독 상품은 확인 기록 승인 뒤에만 / 판매 중지 즉시 0 / 카드 누름 product_clicked·주문 링크 order_link_clicked + 수익 집계)"; node --test --test-concurrency=1 e2e/w8-acceptance.test.mjs

@@ -5,6 +5,7 @@ import { SEARCH_LABEL, SEARCH_PLACEHOLDER, SECTION_HEADINGS, heroHighlights, sec
 import { ArticleItem } from "./ArticleItem";
 import { ClaimBasisLink } from "./ClaimBasisLink";
 import { MeasureHomeEntry } from "./Measure";
+import { OwnProductBlock } from "./StoreViews";
 import { UnavailableNotice } from "./Unavailable";
 
 // 홈 섹션 (HOME-01 · HOME-03 · HOME-04 · PRD-01A 3장 홈 골격) — 홈 데이터(getHomeData)가 정한 순서·섹션만 그린다 (내용 0건 섹션은 데이터에 없다).
@@ -141,8 +142,13 @@ function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: stri
     case "column":
       return <ColumnBody section={section} />;
     // 금주 핫뉴스(01B W6)·자사 상품·전문가 소개(01C)는 그 작업이 데이터와 화면을 함께 만든다 — 지금 홈 데이터에는 늘 없다
-    case "weekly_hot":
     case "product":
+      return (
+        <div className="mt-8 max-w-md">
+          <OwnProductBlock card={{ id: section.product.id ?? 0, title: section.product.title, summary: section.product.summary, detailHref: section.product.href, placement: "home", articleId: null, adPolicyHref: section.product.adPolicyHref ?? null }} />
+        </div>
+      );
+    case "weekly_hot":
     case "experts":
       return null;
   }

@@ -163,7 +163,7 @@ export interface ColumnSection {
 }
 export interface ProductSection {
   key: "product";
-  product: { title: string; href: string; summary: string };
+  product: { id?: number; title: string; href: string; summary: string; adPolicyHref?: string | null };
 }
 export interface ExpertsSection {
   key: "experts";

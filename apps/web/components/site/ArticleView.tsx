@@ -32,6 +32,7 @@ import { CardNewsSlider } from "./CardNewsSlider";
 import { popularClickItems } from "@/lib/site/popular-view";
 import { MeasureArticle, MeasureClicks, MeasureNextActions, MeasurePartnerContent } from "./Measure";
 import { ShareButton } from "./ShareButton";
+import { OwnProductBlock } from "./StoreViews";
 import { UNDER_REVIEW_LABEL, sourceCards } from "@/lib/site/source-cards";
 import { OfficialSourceCardView } from "./OfficialSourceCardView";
 import { TEXT_LINK } from "./SiteSection";
@@ -419,7 +420,13 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
               )
             );
           case "product":
-            return null;
+            return (
+              a.product && (
+                <Part key={part} part={part} tone={tone(part)} rail={rail}>
+                  <OwnProductBlock card={a.product} section={a.section} />
+                </Part>
+              )
+            );
           case "disclaimer":
             return (
               <Part key={part} part={part} tone={tone(part)} rail={rail}>

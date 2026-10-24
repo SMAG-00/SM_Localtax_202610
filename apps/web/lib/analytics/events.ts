@@ -3,7 +3,7 @@
 import { CONTENT_TYPES, FORMATS, detectPii } from "@ltr/editorial";
 import { NEXT_ACTION_KEYS, SECTION_KEYS, type SectionKey } from "@/lib/server/public/constants";
 
-/** 이벤트 이름 29종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 — DB check 제약 analytics_events.name과 같다) */
+/** 이벤트 이름 31종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 — DB check 제약 analytics_events.name과 같다) */
 export const EVENT_NAMES = [
   "home_entry_clicked",
   "hub_viewed",
@@ -36,6 +36,9 @@ export const EVENT_NAMES = [
   "region_to_realestate_clicked",
   "project_viewed",
   "dev_method_viewed",
+  // W8 2단계 (docs/dev/W8_설계.md 2장) — 자사 상품·스토어 카드 누름 · 주문 링크/문의 누름
+  "product_clicked",
+  "order_link_clicked",
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -70,6 +73,10 @@ export const PROP_VALUES = {
   "regional_source_opened.source_type": ["ordinance", "notice", "budget_settlement", "local_tax_revenue", "realestate_transaction", "redevelopment"],
   "region_to_tax_clicked.target": ["situation", "explainer", "official_source"],
   "region_to_realestate_clicked.target": ["project", "project_list", "supply", "supply_list"],
+  // W8 2단계 — 위치는 product_links.placement(article·home) + 스토어 목록, 주문 방식은 products.order_mode (설계 W8 2장)
+  "product_clicked.placement": ["article", "home", "store"],
+  "order_link_clicked.placement": ["article", "home", "store"],
+  "order_link_clicked.mode": ["existing_channel", "request_form"],
   "dev_method_viewed.method": ["redevelopment", "reconstruction", "small-scale", "public", "trust", "renewal", "rapid-planning"],
 } as const satisfies Record<string, readonly string[]>;
 
@@ -141,6 +148,11 @@ export const EVENT_SPECS: Readonly<Record<EventName, EventSpec>> = {
   region_to_tax_clicked: { section: "required", props: { region_code: region, target: oneOf(PROP_VALUES["region_to_tax_clicked.target"]) } },
   region_to_realestate_clicked: { section: "required", props: { region_code: region, target: oneOf(PROP_VALUES["region_to_realestate_clicked.target"]) } },
   project_viewed: { section: "required", props: { region_code: region, project_type: key, stage: key } },
+  product_clicked: { section: "optional", props: { product_id: id, placement: oneOf(PROP_VALUES["product_clicked.placement"]), article_id: { ...id, optional: true } } },
+  order_link_clicked: {
+    section: "optional",
+    props: { product_id: id, placement: oneOf(PROP_VALUES["order_link_clicked.placement"]), mode: oneOf(PROP_VALUES["order_link_clicked.mode"]), article_id: { ...id, optional: true } },
+  },
   dev_method_viewed: { section: "required", props: { method: oneOf(PROP_VALUES["dev_method_viewed.method"]) } },
 };
 

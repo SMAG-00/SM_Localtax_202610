@@ -63,6 +63,7 @@ export const ACTIONS = {
   "audit.read": "감사 기록 조회",
   "sponsored.manage": "광고·협찬·제휴 콘텐츠 등록·광고 상품 운영",
   "product.manage": "스토어 상품·주문 경로·구독 운영",
+  "product.approve": "자사 상품 카드 연결 승인·철회 (편집 책임자·관리자 — 상품 담당은 제안까지, BIZ-03)",
   "brand.manage": "인물 페이지·표준 약력·증빙·동의 기록",
   "brand.approve": "브랜드 공개 승인 — 증빙 승인·동의서 기록/철회·경력 표시 승인·광고 규정 감수 기록·brand_copy 켜기 (관리자·PO만, W3 설계 6장)",
   "expert.manage": "전문가 등재·연락 요청 처리",
@@ -149,6 +150,8 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "dev_method.manage",
   // W4 20단계 — 특례법 확인 기록은 관리자(PO)만. 그 밖의 역할의 시도는 거부 + 감사 (W4 설계 6장)
   "special_law.confirm",
+  // W8 - 자사 상품 카드 승인·철회. 상품 담당(store_ops) 등 편집 책임자 밖의 시도는 거부 + 감사 (BIZ-03: 상품 담당은 승인 권한 없음)
+  "product.approve",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -380,6 +383,8 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
       return has(viewer, "ad_ops") || viewer.isAdmin ? ALLOW : deny("광고·협찬 담당(ad_ops)과 관리자만 합니다");
     case "product.manage":
       return has(viewer, "store_ops") || viewer.isAdmin ? ALLOW : deny("스토어·구독 담당(store_ops)과 관리자만 합니다");
+    case "product.approve":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("자사 상품 카드 연결의 승인·철회는 편집 책임자와 관리자만 합니다 — 상품 담당은 제안까지입니다 (BIZ-03)");
     case "brand.manage":
       return has(viewer, "brand_ops") || viewer.isAdmin ? ALLOW : deny("브랜드 관리 담당(brand_ops)과 관리자만 합니다");
     // 증빙 승인·동의서·경력 표시 승인·광고 규정 감수·brand_copy — 관리자(PO)만. 브랜드 관리 담당은 증빙 등록·약력 연결까지 (W3 설계 6장 · BR-08)

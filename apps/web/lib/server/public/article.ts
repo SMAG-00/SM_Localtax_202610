@@ -43,6 +43,7 @@ import { firstPlayableVideo, type MediaView } from "./media-logic";
 import { getLensNationalCard } from "./inheritance-gift";
 import type { LinkPair } from "./inheritance-gift-logic";
 import { readPopularSidebar } from "./rankings";
+import { getArticleProduct, type OwnCardView } from "./store";
 import { readArticleLinks } from "./regional-links";
 import type { RegionalLinkItem } from "./regional-links-logic";
 import { readArticleList, readCategories, readPublicSettings, readRegions } from "./reads";
@@ -126,8 +127,8 @@ export interface ArticleDetail {
   related: ArticleListItem[];
   /** 확인된 지역 연결 (W4 13단계 — REG1-10) — 편집자가 확인한 연결 중 도착 화면이 지금 열린 것만(기사·공식 원문·지역 허브). 후보 0 */
   links: RegionalLinkItem[];
-  /** 자사 상품 카드 (01C BIZ-03) — 01C 전 null */
-  product: null;
+  /** 자사 상품 카드 (01C BIZ-03 · W8) — 승인된 product_links 연결이 있을 때만, 기사당 1개 이하. 기능 키 store 꺼짐이면 DB를 읽지 않고 null */
+  product: OwnCardView | null;
   /** 많이 본 기사 사이드바 (ART-11) — 지금 보는 기사를 뺀 popular_rules.sidebar_size건, 집계 전이면 빈 목록 */
   popular: ArticleListItem[];
   policyLinks: { key: string; label: string; href: string }[];
@@ -320,7 +321,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     nextActions: selectNextActions(settings.nextActionPriority, targets, settings.features),
     related,
     links,
-    product: null,
+    product: await getArticleProduct(settings.features, id),
     popular,
     // 정책 링크 7종 + [광고·제휴 문의](page_advertise) — 모두 실제로 열린 기능일 때만 (W2-e 6.4)
     policyLinks: [

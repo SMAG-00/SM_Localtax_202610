@@ -6,6 +6,7 @@ import { LIMITS } from "./constants";
 import { publicDb, rowsOf } from "./db";
 import { activeCurations, closedHomeSections, homeSections, latestReports, pickStories, pickTrackers, type AmendmentsSection, type HomeSection } from "./home-logic";
 import { getSignatureHome } from "./signature";
+import { getHomeProduct } from "./store";
 import { readHubTaxPoints } from "./hub-points";
 import { fieldCardPoints } from "./hub-point-logic";
 import { readArticleList, readPublicSettings } from "./reads";
@@ -73,14 +74,15 @@ export async function getHomeAmendments(now: Date = new Date()): Promise<{ today
 
 export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
   const db = publicDb();
-  const [settings, latest, amendments, signature, hubPoints] = await Promise.all([
-    readPublicSettings(),
+  const settings = await readPublicSettings();
+  const [latest, amendments, signature, hubPoints, homeProduct] = await Promise.all([
     readArticleList(db, { contentType: "reported_news", reportedApproved: true, limit: LIMITS.homeLatestReports }),
     getHomeAmendments(now),
     // 김의효 칼럼 영역 (BR-04 — W3 8단계): 기능 키 tax_columns + 공개 회차가 있을 때만, 아니면 빈 목록 → 섹션째 숨김
     getSignatureHome(),
     // 4대 분야 카드의 '이 분야의 지방세 포인트' 한 줄 (CORE-02 — W3 9단계): 감수 서명이 있는 분야만
     readHubTaxPoints(),
+    getHomeProduct(settings.features),
   ]);
   const sections = homeSections({
     coreMessage: settings.coreMessage,
@@ -95,7 +97,8 @@ export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
       : { items: [], source: "none" },
     stories: amendments.section?.stories ?? [],
     column: signature.length ? { key: "column", items: signature } : null,
-    product: null,
+    // 자사 상품 카드 1개 (BIZ-03 · W8): 승인된 홈 연결이 있을 때만, 없으면 섹션째 숨김. 기능 키 store 꺼짐이면 DB를 읽지 않는다
+    product: homeProduct ? { key: "product", product: { id: homeProduct.id, title: homeProduct.title, href: homeProduct.detailHref, summary: homeProduct.summary, adPolicyHref: homeProduct.adPolicyHref } } : null,
     experts: null,
   });
   return { today: amendments.today, sections };
