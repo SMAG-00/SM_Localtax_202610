@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @ltr/web dev",
+    "dev:local": "node scripts/dev-local.mjs",
     "build": "pnpm --filter @ltr/web build",
     "start": "pnpm --filter @ltr/web start",
     "typecheck": "pnpm -r --if-present typecheck",
