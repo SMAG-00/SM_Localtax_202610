@@ -17,6 +17,7 @@ step "버전 고정";            node scripts/check-pins.mjs
 step "커밋 작성자";          node scripts/check-commit-authors.mjs
 step "SM 플랫폼 식별자";      node scripts/check-forbidden-ids.mjs
 step "국세 미산출 (TX-06 — 세율표·계산 함수·rulesets 국세 세목·계산 경로·공개 입력 칸 0)"; node scripts/check-national-tax.mjs
+step "룰셋 파일 검사 (RULE-01·CALC-08 - 버전 파일 고치기 0·번들은 서명본만)"; node scripts/check-rules.mjs
 step "마이그레이션 RLS";      node packages/db/scripts/lint-migrations.mjs packages/db/supabase/migrations
 step "디자인 린트";           node scripts/check-design.mjs
 step "화면 고정 문구 숫자 (W4 2.12 — 개발방법·프로젝트 화면 소스의 숫자 요건 0)"; node scripts/check-fixed-numbers.mjs

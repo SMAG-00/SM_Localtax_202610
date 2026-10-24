@@ -1,0 +1,4 @@
+{
+  "$comment": "번들 룰셋(장애 폴백·오프라인 계산) - 감수 서명된 버전만 올릴 수 있다(CALC-08, scripts/check-rules.mjs). 서명 기록: 서명자 표시·서명 시각·파일 SHA-256",
+  "versions": []
+}

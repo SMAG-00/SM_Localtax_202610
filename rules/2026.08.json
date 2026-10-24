@@ -1,0 +1,949 @@
+{
+  "version": "2026.08",
+  "status": "draft",
+  "effective_from": "2026-08-01",
+  "source_laws": [
+    {
+      "law_id": "001649",
+      "law_name": "지방세법",
+      "시행일자": "2026-01-01",
+      "확인일자": "2026-07-12"
+    },
+    {
+      "law_id": "011178",
+      "law_name": "지방세특례제한법",
+      "시행일자": "2026-01-01",
+      "확인일자": "2026-07-12"
+    },
+    {
+      "law_id": "001565",
+      "law_name": "소득세법",
+      "시행일자": "2026-07-01",
+      "확인일자": "2026-07-16"
+    },
+    {
+      "law_id": "001563",
+      "law_name": "법인세법",
+      "시행일자": "2026-01-01",
+      "확인일자": "2026-07-12"
+    },
+    {
+      "law_id": "009873",
+      "law_name": "종합부동산세법",
+      "시행일자": "2026-01-01",
+      "확인일자": "2026-07-12"
+    },
+    {
+      "law_id": "001584",
+      "law_name": "조세특례제한법",
+      "시행일자": "2026-07-01",
+      "확인일자": "2026-07-16"
+    },
+    {
+      "law_id": "001568",
+      "law_name": "인지세법",
+      "시행일자": "2026-01-01",
+      "확인일자": "2026-07-12"
+    },
+    {
+      "law_id": "001569",
+      "law_name": "농어촌특별세법",
+      "시행일자": "2026-01-01",
+      "확인일자": "2026-07-12"
+    }
+  ],
+  "acquisition": {
+    "heavy_base_rate": 0.02,
+    "standard": {
+      "paid_general": {
+        "main": {
+          "rate": 0.04,
+          "condition": "농지 외 부동산의 유상승계취득 (주택 유상취득 제외)",
+          "law": "지방세법 §11①7나"
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.004,
+            "condition": "(표준세율 4% − 중과기준세율 2%) × 20%",
+            "law": "지방세법 §151①1"
+          },
+          "rural_special": {
+            "rate": 0.002,
+            "condition": "표준세율 2% 적용분 × 10%",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": false
+          }
+        }
+      },
+      "paid_farmland": {
+        "main": {
+          "rate": 0.03,
+          "condition": "농지의 유상승계취득",
+          "law": "지방세법 §11①7가"
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.002,
+            "condition": "(표준세율 3% − 중과기준세율 2%) × 20%",
+            "law": "지방세법 §151①1"
+          },
+          "rural_special": {
+            "rate": 0.002,
+            "condition": "표준세율 2% 적용분 × 10%",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": false
+          }
+        }
+      },
+      "inheritance_general": {
+        "main": {
+          "rate": 0.028,
+          "condition": "농지 외 부동산의 상속취득",
+          "law": "지방세법 §11①1나"
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.0016,
+            "condition": "(표준세율 2.8% − 중과기준세율 2%) × 20%",
+            "law": "지방세법 §151①1"
+          },
+          "rural_special": {
+            "rate": 0.002,
+            "condition": "표준세율 2% 적용분 × 10%",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": true
+          }
+        }
+      },
+      "inheritance_farmland": {
+        "main": {
+          "rate": 0.023,
+          "condition": "농지의 상속취득",
+          "law": "지방세법 §11①1가"
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.0006,
+            "condition": "(표준세율 2.3% − 중과기준세율 2%) × 20%",
+            "law": "지방세법 §151①1"
+          },
+          "rural_special": {
+            "rate": 0.002,
+            "condition": "표준세율 2% 적용분 × 10%",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": false
+          }
+        }
+      },
+      "gift": {
+        "main": {
+          "rate": 0.035,
+          "condition": "무상취득(증여). 상속 제외",
+          "law": "지방세법 §11①2"
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.003,
+            "condition": "(표준세율 3.5% − 중과기준세율 2%) × 20%",
+            "law": "지방세법 §151①1"
+          },
+          "rural_special": {
+            "rate": 0.002,
+            "condition": "표준세율 2% 적용분 × 10%",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": true
+          }
+        }
+      },
+      "original": {
+        "main": {
+          "rate": 0.028,
+          "condition": "원시취득(신축·재축 등)",
+          "law": "지방세법 §11①3"
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.0016,
+            "condition": "(표준세율 2.8% − 중과기준세율 2%) × 20%",
+            "law": "지방세법 §151①1"
+          },
+          "rural_special": {
+            "rate": 0.002,
+            "condition": "표준세율 2% 적용분 × 10%",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": true
+          }
+        }
+      }
+    },
+    "house_paid": {
+      "national_housing_area_sqm": 85,
+      "brackets": [
+        {
+          "main": {
+            "up_to": 600000000,
+            "rate": 0.01,
+            "condition": "주택 유상취득, 취득당시가액 6억원 이하",
+            "law": "지방세법 §11①8"
+          },
+          "surtax": {
+            "local_education": {
+              "rate": 0.001,
+              "condition": "주택 유상취득: 취득세율 × 50% × 20% = 1% × 0.5 × 0.2",
+              "law": "지방세법 §151①1 단서"
+            },
+            "rural_special": {
+              "rate": 0.002,
+              "condition": "표준세율 2% 적용분 × 10%. 국민주택규모(전용 85㎡) 이하 비과세",
+              "law": "농어촌특별세법 §4 11호, §5①6",
+              "exempt_under_national_housing": true
+            }
+          }
+        },
+        {
+          "main": {
+            "up_to": 900000000,
+            "formula": "HOUSE_PAID_6TO9_LINEAR",
+            "condition": "주택 유상취득, 6억원 초과 9억원 이하. 세율(%) = (취득가액 × 2 ÷ 3억 − 3), 소수점 다섯째자리에서 반올림하여 넷째자리까지",
+            "law": "지방세법 §11①8"
+          },
+          "surtax": {
+            "local_education": {
+              "formula": "HOUSE_PAID_6TO9_LINEAR",
+              "condition": "주택 유상취득: 취득세율 × 50% × 20% (= 산식세율 × 0.1). 엔진이 본세율에 0.1을 곱해 산출",
+              "law": "지방세법 §151①1 단서"
+            },
+            "rural_special": {
+              "rate": 0.002,
+              "condition": "표준세율 2% 적용분 × 10%. 국민주택규모(전용 85㎡) 이하 비과세",
+              "law": "농어촌특별세법 §4 11호, §5①6",
+              "exempt_under_national_housing": true
+            }
+          }
+        },
+        {
+          "main": {
+            "up_to": null,
+            "rate": 0.03,
+            "condition": "주택 유상취득, 취득당시가액 9억원 초과",
+            "law": "지방세법 §11①8"
+          },
+          "surtax": {
+            "local_education": {
+              "rate": 0.003,
+              "condition": "주택 유상취득: 취득세율 × 50% × 20% = 3% × 0.5 × 0.2",
+              "law": "지방세법 §151①1 단서"
+            },
+            "rural_special": {
+              "rate": 0.002,
+              "condition": "표준세율 2% 적용분 × 10%. 국민주택규모(전용 85㎡) 이하 비과세",
+              "law": "농어촌특별세법 §4 11호, §5①6",
+              "exempt_under_national_housing": true
+            }
+          }
+        }
+      ]
+    },
+    "heavy": {
+      "corporation": {
+        "main": {
+          "rate": 0.12,
+          "condition": "법인의 주택 유상취득 (주택 수 무관)",
+          "law": "지방세법 §13의2①1",
+          "REVIEW_REQUIRED": true,
+          "note": "2022.12 정부 완화방안(법인 6%) 발표 후 지방세법 개정 경과 확인 필요. 2026년 시행 세율 반드시 검수."
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.004,
+            "condition": "중과세 주택 취득 시 지방교육세 0.4%",
+            "law": "지방세법 §151①1",
+            "REVIEW_REQUIRED": true,
+            "note": "본세율 개정 시 연동 검수 필요"
+          },
+          "rural_special": {
+            "rate": 0.01,
+            "condition": "취득세 12% 중과 시 농특세 1.0%. 국민주택규모 이하 비과세",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": true,
+            "REVIEW_REQUIRED": true,
+            "note": "본세율 개정 시 연동 검수 필요"
+          }
+        }
+      },
+      "adjusted_2house": {
+        "main": {
+          "rate": 0.08,
+          "condition": "개인, 조정대상지역 내 2주택 (취득 후 주택 수 기준)",
+          "law": "지방세법 §13의2①1",
+          "REVIEW_REQUIRED": true,
+          "note": "2022.12 정부 완화방안(조정 2주택 중과 폐지) 발표. 2026년 시행 여부 반드시 검수."
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.004,
+            "condition": "중과세 주택 취득 시 지방교육세 0.4%",
+            "law": "지방세법 §151①1",
+            "REVIEW_REQUIRED": true
+          },
+          "rural_special": {
+            "rate": 0.006,
+            "condition": "취득세 8% 중과 시 농특세 0.6%. 국민주택규모 이하 비과세",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": true,
+            "REVIEW_REQUIRED": true
+          }
+        }
+      },
+      "adjusted_3house_plus": {
+        "main": {
+          "rate": 0.12,
+          "condition": "개인, 조정대상지역 내 3주택 이상",
+          "law": "지방세법 §13의2①2",
+          "REVIEW_REQUIRED": true,
+          "note": "2022.12 완화방안(3주택 6%) 발표. 2026년 시행 세율 검수 필요."
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.004,
+            "condition": "중과세 주택 취득 시 지방교육세 0.4%",
+            "law": "지방세법 §151①1",
+            "REVIEW_REQUIRED": true
+          },
+          "rural_special": {
+            "rate": 0.01,
+            "condition": "취득세 12% 중과 시 농특세 1.0%. 국민주택규모 이하 비과세",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": true,
+            "REVIEW_REQUIRED": true
+          }
+        }
+      },
+      "non_adjusted_3house": {
+        "main": {
+          "rate": 0.08,
+          "condition": "개인, 비조정대상지역 3주택",
+          "law": "지방세법 §13의2①2",
+          "REVIEW_REQUIRED": true
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.004,
+            "condition": "중과세 주택 취득 시 지방교육세 0.4%",
+            "law": "지방세법 §151①1",
+            "REVIEW_REQUIRED": true
+          },
+          "rural_special": {
+            "rate": 0.006,
+            "condition": "취득세 8% 중과 시 농특세 0.6%. 국민주택규모 이하 비과세",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": true,
+            "REVIEW_REQUIRED": true
+          }
+        }
+      },
+      "non_adjusted_4house_plus": {
+        "main": {
+          "rate": 0.12,
+          "condition": "개인, 비조정대상지역 4주택 이상",
+          "law": "지방세법 §13의2①3",
+          "REVIEW_REQUIRED": true
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.004,
+            "condition": "중과세 주택 취득 시 지방교육세 0.4%",
+            "law": "지방세법 §151①1",
+            "REVIEW_REQUIRED": true
+          },
+          "rural_special": {
+            "rate": 0.01,
+            "condition": "취득세 12% 중과 시 농특세 1.0%. 국민주택규모 이하 비과세",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": true,
+            "REVIEW_REQUIRED": true
+          }
+        }
+      },
+      "gift_adjusted": {
+        "threshold_price": 300000000,
+        "main": {
+          "rate": 0.12,
+          "condition": "조정대상지역 내 시가표준액 3억원 이상 주택의 무상취득(증여)",
+          "law": "지방세법 §13의2②",
+          "REVIEW_REQUIRED": true,
+          "note": "2022.12 완화방안(6%) 발표. 2026년 시행 세율 검수 필요."
+        },
+        "surtax": {
+          "local_education": {
+            "rate": 0.004,
+            "condition": "중과세 무상취득 시 지방교육세 0.4%",
+            "law": "지방세법 §151①1",
+            "REVIEW_REQUIRED": true
+          },
+          "rural_special": {
+            "rate": 0.01,
+            "condition": "취득세 12% 중과 시 농특세 1.0%. 국민주택규모 이하 비과세",
+            "law": "농어촌특별세법 §5①6",
+            "exempt_under_national_housing": true,
+            "REVIEW_REQUIRED": true
+          }
+        }
+      }
+    },
+    "luxury": {
+      "surcharge_rate": 0.08,
+      "rural_special_surcharge_rate": 0.008,
+      "condition": "사치성재산(고급주택·고급오락장·고급선박) 취득 시 표준세율 + 중과기준세율(2%)×4 = +8%p. 별장은 2023년 중과 대상에서 제외됨",
+      "law": "지방세법 §13⑤",
+      "REVIEW_REQUIRED": true,
+      "note": "중과분에 대한 농특세(+0.8%p) 가산 여부 및 지방교육세 처리 방식 검수 필요"
+    },
+    "corporate_metropolitan": {
+      "main": {
+        "rate": 0.08,
+        "condition": "대도시 내 법인 설립·전입 후 5년 이내 부동산 취득. 표준세율(4%)×3 − 중과기준세율(2%)×2 = 8%",
+        "law": "지방세법 §13②",
+        "REVIEW_REQUIRED": true,
+        "note": "산식 적용 결과값. 표준세율이 4%가 아닌 물건은 별도 산정 필요"
+      },
+      "surtax": {
+        "local_education": {
+          "rate": 0.012,
+          "condition": "대도시 법인 중과 시 지방교육세 = (표준세율 − 2%) × 20% × 3 = 1.2%",
+          "law": "지방세법 §151①1",
+          "REVIEW_REQUIRED": true,
+          "note": "중과 시 지방교육세 3배 적용 여부 검수 필요"
+        },
+        "rural_special": {
+          "rate": 0.002,
+          "condition": "표준세율 2% 적용분 × 10%",
+          "law": "농어촌특별세법 §5①6",
+          "exempt_under_national_housing": false,
+          "REVIEW_REQUIRED": true
+        }
+      }
+    },
+    "stamp_tax": {
+      "house_exemption_under": 100000000,
+      "condition": "부동산 소유권 이전 관련 증서. 주택의 경우 기재금액 1억원 이하 비과세",
+      "law": "인지세법 §3①1, §6 5호",
+      "brackets": [
+        {
+          "up_to": 10000000,
+          "amount": 0,
+          "condition": "기재금액 1천만원 이하 (비과세)",
+          "law": "인지세법 §3①1"
+        },
+        {
+          "up_to": 30000000,
+          "amount": 20000,
+          "condition": "1천만원 초과 3천만원 이하",
+          "law": "인지세법 §3①1"
+        },
+        {
+          "up_to": 50000000,
+          "amount": 40000,
+          "condition": "3천만원 초과 5천만원 이하",
+          "law": "인지세법 §3①1"
+        },
+        {
+          "up_to": 100000000,
+          "amount": 70000,
+          "condition": "5천만원 초과 1억원 이하",
+          "law": "인지세법 §3①1"
+        },
+        {
+          "up_to": 1000000000,
+          "amount": 150000,
+          "condition": "1억원 초과 10억원 이하",
+          "law": "인지세법 §3①1"
+        },
+        {
+          "up_to": null,
+          "amount": 350000,
+          "condition": "10억원 초과",
+          "law": "인지세법 §3①1"
+        }
+      ]
+    },
+    "housing_bond": {
+      "discount_rate": 0.08,
+      "condition": "제1종 국민주택채권 매입 후 즉시매도 시 실부담액 = 매입액 × 할인율",
+      "law": "주택도시기금법 §8, 동법 시행령 §8 별표",
+      "REVIEW_REQUIRED": true,
+      "note": "할인율은 채권 시장금리에 따라 매일 변동한다. 이 값은 자리표시자이며 절대 그대로 쓰지 말 것. 매입율 구간표(지역별 차등)도 반드시 검수 필요.",
+      "purchase_rate_brackets": [
+        {
+          "up_to": 50000000,
+          "rate": 0.013,
+          "condition": "시가표준액 2천만원 이상 5천만원 미만 (특별시·광역시)",
+          "law": "주택도시기금법 시행령 별표",
+          "REVIEW_REQUIRED": true
+        },
+        {
+          "up_to": 100000000,
+          "rate": 0.019,
+          "condition": "5천만원 이상 1억원 미만 (특별시·광역시)",
+          "law": "주택도시기금법 시행령 별표",
+          "REVIEW_REQUIRED": true
+        },
+        {
+          "up_to": 160000000,
+          "rate": 0.023,
+          "condition": "1억원 이상 1억6천만원 미만 (특별시·광역시)",
+          "law": "주택도시기금법 시행령 별표",
+          "REVIEW_REQUIRED": true
+        },
+        {
+          "up_to": 260000000,
+          "rate": 0.026,
+          "condition": "1억6천만원 이상 2억6천만원 미만 (특별시·광역시)",
+          "law": "주택도시기금법 시행령 별표",
+          "REVIEW_REQUIRED": true
+        },
+        {
+          "up_to": 600000000,
+          "rate": 0.031,
+          "condition": "2억6천만원 이상 6억원 미만 (특별시·광역시)",
+          "law": "주택도시기금법 시행령 별표",
+          "REVIEW_REQUIRED": true
+        },
+        {
+          "up_to": null,
+          "rate": 0.037,
+          "condition": "6억원 이상 (특별시·광역시)",
+          "law": "주택도시기금법 시행령 별표",
+          "REVIEW_REQUIRED": true
+        }
+      ]
+    }
+  },
+  "holding": {
+    "property_tax": {
+      "house": {
+        "fair_market_ratio": 0.6,
+        "brackets": [
+          {
+            "up_to": 60000000,
+            "rate": 0.001,
+            "condition": "주택 과세표준 6천만원 이하",
+            "law": "지방세법 §111①3가"
+          },
+          {
+            "up_to": 150000000,
+            "rate": 0.0015,
+            "deduction": 30000,
+            "condition": "6천만원 초과 1억5천만원 이하",
+            "law": "지방세법 §111①3가"
+          },
+          {
+            "up_to": 300000000,
+            "rate": 0.0025,
+            "deduction": 180000,
+            "condition": "1억5천만원 초과 3억원 이하",
+            "law": "지방세법 §111①3가"
+          },
+          {
+            "up_to": null,
+            "rate": 0.004,
+            "deduction": 630000,
+            "condition": "3억원 초과",
+            "law": "지방세법 §111①3가"
+          }
+        ],
+        "single_house_special": {
+          "applies_under": 900000000,
+          "condition": "1세대 1주택으로서 공시가격 9억원 이하인 주택의 특례세율",
+          "law": "지방세법 §111의2",
+          "REVIEW_REQUIRED": true,
+          "note": "특례세율의 일몰기한(적용 종료연도) 확인 필요. 2026년 적용 여부 검수.",
+          "brackets": [
+            {
+              "up_to": 60000000,
+              "rate": 0.0005,
+              "condition": "1세대1주택 특례, 과세표준 6천만원 이하",
+              "law": "지방세법 §111의2①",
+              "REVIEW_REQUIRED": true
+            },
+            {
+              "up_to": 150000000,
+              "rate": 0.001,
+              "deduction": 30000,
+              "condition": "1세대1주택 특례, 6천만원 초과 1억5천만원 이하",
+              "law": "지방세법 §111의2①",
+              "REVIEW_REQUIRED": true
+            },
+            {
+              "up_to": 300000000,
+              "rate": 0.002,
+              "deduction": 180000,
+              "condition": "1세대1주택 특례, 1억5천만원 초과 3억원 이하",
+              "law": "지방세법 §111의2①",
+              "REVIEW_REQUIRED": true
+            },
+            {
+              "up_to": null,
+              "rate": 0.0035,
+              "deduction": 630000,
+              "condition": "1세대1주택 특례, 3억원 초과",
+              "law": "지방세법 §111의2①",
+              "REVIEW_REQUIRED": true
+            }
+          ],
+          "fair_market_ratio_brackets": [
+            {
+              "up_to": 300000000,
+              "ratio": 0.43,
+              "condition": "1세대1주택, 공시가격 3억원 이하",
+              "law": "지방세법 시행령 §109",
+              "REVIEW_REQUIRED": true,
+              "note": "공정시장가액비율은 시행령으로 매년 조정된다. 2026년 값 반드시 검수."
+            },
+            {
+              "up_to": 600000000,
+              "ratio": 0.44,
+              "condition": "1세대1주택, 3억원 초과 6억원 이하",
+              "law": "지방세법 시행령 §109",
+              "REVIEW_REQUIRED": true
+            },
+            {
+              "up_to": null,
+              "ratio": 0.45,
+              "condition": "1세대1주택, 6억원 초과",
+              "law": "지방세법 시행령 §109",
+              "REVIEW_REQUIRED": true
+            }
+          ]
+        }
+      },
+      "building": {
+        "rate": 0.0025,
+        "condition": "일반 건축물 (골프장·고급오락장·주거지역 공장 제외)",
+        "law": "지방세법 §111①2다"
+      },
+      "land": {
+        "fair_market_ratio": 0.7,
+        "comprehensive": [
+          {
+            "up_to": 50000000,
+            "rate": 0.002,
+            "condition": "종합합산 과세표준 5천만원 이하",
+            "law": "지방세법 §111①1가"
+          },
+          {
+            "up_to": 100000000,
+            "rate": 0.003,
+            "deduction": 50000,
+            "condition": "5천만원 초과 1억원 이하",
+            "law": "지방세법 §111①1가"
+          },
+          {
+            "up_to": null,
+            "rate": 0.005,
+            "deduction": 250000,
+            "condition": "1억원 초과",
+            "law": "지방세법 §111①1가"
+          }
+        ],
+        "separate": [
+          {
+            "up_to": 200000000,
+            "rate": 0.002,
+            "condition": "별도합산 과세표준 2억원 이하",
+            "law": "지방세법 §111①1나"
+          },
+          {
+            "up_to": 1000000000,
+            "rate": 0.003,
+            "deduction": 200000,
+            "condition": "2억원 초과 10억원 이하",
+            "law": "지방세법 §111①1나"
+          },
+          {
+            "up_to": null,
+            "rate": 0.004,
+            "deduction": 1200000,
+            "condition": "10억원 초과",
+            "law": "지방세법 §111①1나"
+          }
+        ],
+        "special": {
+          "farmland_forest": {
+            "rate": 0.0007,
+            "condition": "분리과세 - 전·답·과수원·목장용지·임야",
+            "law": "지방세법 §111①1다1"
+          },
+          "factory": {
+            "rate": 0.002,
+            "condition": "분리과세 - 공장용지 등",
+            "law": "지방세법 §111①1다3"
+          },
+          "luxury": {
+            "rate": 0.04,
+            "condition": "분리과세 - 골프장·고급오락장용 토지",
+            "law": "지방세법 §111①1다2"
+          }
+        }
+      },
+      "urban_area": {
+        "rate": 0.0014,
+        "condition": "도시지역분. 재산세 과세표준 × 0.14%",
+        "law": "지방세법 §112①2"
+      },
+      "local_education": {
+        "rate": 0.2,
+        "condition": "재산세액(도시지역분 제외) × 20%",
+        "law": "지방세법 §151①2"
+      },
+      "regional_resource": {
+        "condition": "지역자원시설세(소방분). 건축물·주택 시가표준액 기준 누진",
+        "law": "지방세법 §146③",
+        "REVIEW_REQUIRED": true,
+        "note": "과세표준 구간 및 세율은 조례로 정할 수 있어 지자체별 상이. 표준 구간으로 산정하며 반드시 검수 필요.",
+        "brackets": [
+          {
+            "up_to": 6000000,
+            "rate": 0.0004,
+            "condition": "시가표준액 600만원 이하",
+            "law": "지방세법 §146③",
+            "REVIEW_REQUIRED": true
+          },
+          {
+            "up_to": 13000000,
+            "rate": 0.0005,
+            "deduction": 600,
+            "condition": "600만원 초과 1,300만원 이하",
+            "law": "지방세법 §146③",
+            "REVIEW_REQUIRED": true
+          },
+          {
+            "up_to": 26000000,
+            "rate": 0.0006,
+            "deduction": 1900,
+            "condition": "1,300만원 초과 2,600만원 이하",
+            "law": "지방세법 §146③",
+            "REVIEW_REQUIRED": true
+          },
+          {
+            "up_to": 39000000,
+            "rate": 0.0008,
+            "deduction": 7100,
+            "condition": "2,600만원 초과 3,900만원 이하",
+            "law": "지방세법 §146③",
+            "REVIEW_REQUIRED": true
+          },
+          {
+            "up_to": 64000000,
+            "rate": 0.001,
+            "deduction": 14900,
+            "condition": "3,900만원 초과 6,400만원 이하",
+            "law": "지방세법 §146③",
+            "REVIEW_REQUIRED": true
+          },
+          {
+            "up_to": null,
+            "rate": 0.0012,
+            "deduction": 27700,
+            "condition": "6,400만원 초과",
+            "law": "지방세법 §146③",
+            "REVIEW_REQUIRED": true
+          }
+        ]
+      }
+    },
+    "comprehensive_real_estate_tax": {
+      "house": {
+        "basic_deduction": 900000000,
+        "single_house_deduction": 1200000000,
+        "fair_market_ratio": 0.6,
+        "tax_burden_cap": 1.5,
+        "individual_2house_under": [
+          {
+            "up_to": 300000000,
+            "rate": 0.005,
+            "condition": "2주택 이하, 과세표준 3억원 이하",
+            "law": "종합부동산세법 §9①1"
+          },
+          {
+            "up_to": 600000000,
+            "rate": 0.007,
+            "deduction": 600000,
+            "condition": "3억원 초과 6억원 이하",
+            "law": "종합부동산세법 §9①1"
+          },
+          {
+            "up_to": 1200000000,
+            "rate": 0.01,
+            "deduction": 2400000,
+            "condition": "6억원 초과 12억원 이하",
+            "law": "종합부동산세법 §9①1"
+          },
+          {
+            "up_to": 2500000000,
+            "rate": 0.013,
+            "deduction": 6000000,
+            "condition": "12억원 초과 25억원 이하",
+            "law": "종합부동산세법 §9①1"
+          },
+          {
+            "up_to": 5000000000,
+            "rate": 0.015,
+            "deduction": 11000000,
+            "condition": "25억원 초과 50억원 이하",
+            "law": "종합부동산세법 §9①1"
+          },
+          {
+            "up_to": 9400000000,
+            "rate": 0.02,
+            "deduction": 36000000,
+            "condition": "50억원 초과 94억원 이하",
+            "law": "종합부동산세법 §9①1"
+          },
+          {
+            "up_to": null,
+            "rate": 0.027,
+            "deduction": 101800000,
+            "condition": "94억원 초과",
+            "law": "종합부동산세법 §9①1"
+          }
+        ],
+        "individual_3house_plus": [
+          {
+            "up_to": 300000000,
+            "rate": 0.005,
+            "condition": "3주택 이상, 과세표준 3억원 이하",
+            "law": "종합부동산세법 §9①2"
+          },
+          {
+            "up_to": 600000000,
+            "rate": 0.007,
+            "deduction": 600000,
+            "condition": "3억원 초과 6억원 이하",
+            "law": "종합부동산세법 §9①2"
+          },
+          {
+            "up_to": 1200000000,
+            "rate": 0.01,
+            "deduction": 2400000,
+            "condition": "6억원 초과 12억원 이하",
+            "law": "종합부동산세법 §9①2"
+          },
+          {
+            "up_to": 2500000000,
+            "rate": 0.02,
+            "deduction": 14400000,
+            "condition": "12억원 초과 25억원 이하",
+            "law": "종합부동산세법 §9①2"
+          },
+          {
+            "up_to": 5000000000,
+            "rate": 0.03,
+            "deduction": 39400000,
+            "condition": "25억원 초과 50억원 이하",
+            "law": "종합부동산세법 §9①2"
+          },
+          {
+            "up_to": 9400000000,
+            "rate": 0.04,
+            "deduction": 89400000,
+            "condition": "50억원 초과 94억원 이하",
+            "law": "종합부동산세법 §9①2"
+          },
+          {
+            "up_to": null,
+            "rate": 0.05,
+            "deduction": 183400000,
+            "condition": "94억원 초과",
+            "law": "종합부동산세법 §9①2"
+          }
+        ],
+        "corporation_2house_under": {
+          "rate": 0.027,
+          "condition": "법인 2주택 이하. 기본공제 및 세부담상한 미적용",
+          "law": "종합부동산세법 §9②1",
+          "REVIEW_REQUIRED": true,
+          "note": "법인 정율세율 및 기본공제 배제 유지 여부 검수 필요"
+        },
+        "corporation_3house_plus": {
+          "rate": 0.05,
+          "condition": "법인 3주택 이상. 기본공제 및 세부담상한 미적용",
+          "law": "종합부동산세법 §9②2",
+          "REVIEW_REQUIRED": true
+        },
+        "tax_credit": {
+          "combined_limit": 0.8,
+          "elderly": [
+            {
+              "from_age": 60,
+              "rate": 0.2,
+              "condition": "1세대1주택, 만 60세 이상 65세 미만",
+              "law": "종합부동산세법 §9⑥"
+            },
+            {
+              "from_age": 65,
+              "rate": 0.3,
+              "condition": "1세대1주택, 만 65세 이상 70세 미만",
+              "law": "종합부동산세법 §9⑥"
+            },
+            {
+              "from_age": 70,
+              "rate": 0.4,
+              "condition": "1세대1주택, 만 70세 이상",
+              "law": "종합부동산세법 §9⑥"
+            }
+          ],
+          "long_term": [
+            {
+              "from_years": 5,
+              "rate": 0.2,
+              "condition": "1세대1주택, 보유 5년 이상 10년 미만",
+              "law": "종합부동산세법 §9⑧"
+            },
+            {
+              "from_years": 10,
+              "rate": 0.4,
+              "condition": "1세대1주택, 보유 10년 이상 15년 미만",
+              "law": "종합부동산세법 §9⑧"
+            },
+            {
+              "from_years": 15,
+              "rate": 0.5,
+              "condition": "1세대1주택, 보유 15년 이상",
+              "law": "종합부동산세법 §9⑧"
+            }
+          ]
+        }
+      },
+      "rural_special": {
+        "rate": 0.2,
+        "condition": "종합부동산세액 × 20%",
+        "law": "농어촌특별세법 §5①8"
+      }
+    }
+  },
+  "oligopoly": {
+    "threshold": 0.5,
+    "deemed_acquisition": {
+      "rate": 0.02,
+      "condition": "과점주주(지분 50% 초과)의 법인 부동산등 간주취득. 중과기준세율 2% 적용",
+      "law": "지방세법 §7⑤, §15②3"
+    },
+    "surtax": {
+      "local_education": {
+        "applies": false,
+        "rate": 0,
+        "condition": "간주취득세는 중과기준세율(2%)을 적용하므로 (표준세율−2%)=0 → 지방교육세 미부과로 해석",
+        "law": "지방세법 §151①1",
+        "REVIEW_REQUIRED": true,
+        "note": "과점주주 간주취득세에 지방교육세를 부과하는지 실무 해석이 갈린다. applies=true로 바꾸면 엔진이 rate를 적용한다. 세무본부 확정 필요."
+      },
+      "rural_special": {
+        "rate": 0.002,
+        "condition": "간주취득세 과세표준 × 2% × 10%",
+        "law": "농어촌특별세법 §5①6",
+        "REVIEW_REQUIRED": true
+      }
+    }
+  }
+}

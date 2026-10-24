@@ -1,0 +1,194 @@
+{
+  "$comment": "SM 부동산 세금 플랫폼 엔진의 가지치기 복사 기록 (2단계 설계 4.2). 원본 폴더는 읽기만 했다. verbatim = 줄바꿈(LF)만 맞춘 같은 내용.",
+  "source": {
+    "repo": "12_RealEstate_Tax_Platform",
+    "commit": "ce87823f0aa616e01f1334382e53c1e87eea3568",
+    "copiedOn": "2026-10-25"
+  },
+  "excluded": [
+    "packages/tax-engine/src/transfer.ts",
+    "packages/tax-engine/src/compare.ts",
+    "packages/tax-engine/test/compare.test.ts",
+    "packages/tax-engine/test/transfer.test.ts",
+    "packages/tax-engine/test/transfer-*.test.ts (14개)"
+  ],
+  "newFiles": {
+    "packages/tax-engine/src/index.ts": "새로 씀 - 지방세 모듈만 내보냄(transfer·compare 삭제, oligopoly는 공개 진입점에 넣지 않음)",
+    "packages/tax-engine/package.json": "새로 씀 - 이름 @ltr/tax-engine, 이 저장소 고정 버전(vitest 5.0.3·typescript 5.9.3·zod 4.6.7)",
+    "packages/tax-engine/tsconfig.json": "새로 씀"
+  },
+  "notes": [
+    "zod: SM은 3.24.1, 이 저장소는 lock에 이미 있는 4.6.7을 쓴다(새 패키지 아님, 선언만 추가). 코드 변경은 schema.ts의 refine 한 줄 타입 좁히기뿐이며 복사본 시험 126개가 전부 통과한다.",
+    "룰셋 값은 SM이 이미 가진 AI 작성·미감수 값이다. 감수 서명 전에는 draft로만 두며 공개 계산에 쓰지 않는다(CALC-14 게이트).",
+    "복사본 시험은 SM 현행 동작을 고정한 기준선이지 법령 정답 판정이 아니다."
+  ],
+  "files": [
+    {
+      "source": "packages/tax-engine/src/acquisition.ts",
+      "copy": "packages/tax-engine/src/acquisition.ts",
+      "sourceSha256": "c28250f2f6c8b0e3e92205492dd34a5aa5c4d4b9e4ce3633d139e35427abb28b",
+      "copySha256": "b41484c3a8e293908d692906a334570235566df5ad30d0f31cc127ee04ba0cb6",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/src/holding.ts",
+      "copy": "packages/tax-engine/src/holding.ts",
+      "sourceSha256": "ca050c065094eafd93fe1ffbca4bc32649914df53c29a104e16e77d5f89c7470",
+      "copySha256": "a26540cc0208ca7b7ba3e75af202e3c48e3eee0c5d4c5e7983180ddcb3e413b2",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/src/oligopoly.ts",
+      "copy": "packages/tax-engine/src/oligopoly.ts",
+      "sourceSha256": "1a6333ad1aed07c9fa915034c43f5ca9364ce297893fd81a30862b44a78e0f73",
+      "copySha256": "3c083e3d4972fb868d1b0cb24b509c20a7817d5f67d5a7153607ac68e68e1ae7",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/src/brackets.ts",
+      "copy": "packages/tax-engine/src/brackets.ts",
+      "sourceSha256": "a0c89d07bf39e8bb2833841e881ccdcf1c08f3c8aed17356e70b0e653ac74896",
+      "copySha256": "a0c89d07bf39e8bb2833841e881ccdcf1c08f3c8aed17356e70b0e653ac74896",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/src/formulas.ts",
+      "copy": "packages/tax-engine/src/formulas.ts",
+      "sourceSha256": "1bb53d3e38ec542d8177c241ef89b143d0225ccab56ea8c3812738a2b6d8f1f7",
+      "copySha256": "1bb53d3e38ec542d8177c241ef89b143d0225ccab56ea8c3812738a2b6d8f1f7",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/src/money.ts",
+      "copy": "packages/tax-engine/src/money.ts",
+      "sourceSha256": "ae50e79badfbde65e0eedad2ae9b780f3a13c1343c9fe547bf022057a061fc93",
+      "copySha256": "dda757a03a54fe7fdb0e18fe72dcf65623b953f143d174e395780dfce95de84b",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/src/dates.ts",
+      "copy": "packages/tax-engine/src/dates.ts",
+      "sourceSha256": "c12ed8008eb67b2a2fa12aadbcb2ee0c6f3018954eda3c3853b2d390d071363c",
+      "copySha256": "8f46c1a60865832a0572dd7f4b9aa0402df1de3314540615ff25af48390cbe02",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/src/types.ts",
+      "copy": "packages/tax-engine/src/types.ts",
+      "sourceSha256": "d73a292a6790ea0f1f0fe048e1ea4a3dc751fa92ed8405bf615051a36befb7a6",
+      "copySha256": "d73a292a6790ea0f1f0fe048e1ea4a3dc751fa92ed8405bf615051a36befb7a6",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/src/version.ts",
+      "copy": "packages/tax-engine/src/version.ts",
+      "sourceSha256": "b9bbfeac6d7db523a39abe30aafab2f898d2213215111f42888da2ef5f71ae0f",
+      "copySha256": "b9bbfeac6d7db523a39abe30aafab2f898d2213215111f42888da2ef5f71ae0f",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/src/schema.ts",
+      "copy": "packages/tax-engine/src/schema.ts",
+      "sourceSha256": "1573ef0d792bb40924147685647eb59685709072b93dab669369a9dd74d07418",
+      "copySha256": "d9156250830a589ba2b1556628d63a85279f3e28e100e08fe15dfb2752c02ebc",
+      "status": "pruned",
+      "note": "양도 구역(TransferSchema)과 RulesetSchema.transfer 삭제. zod 4 타입 호환을 위해 rateOrFormula의 refine 한 줄을 좁혀 읽도록 고침(동작 같음). 룰셋 최상위 status(초안 표시, 선택)를 받도록 추가"
+    },
+    {
+      "source": "packages/tax-engine/src/result.ts",
+      "copy": "packages/tax-engine/src/result.ts",
+      "sourceSha256": "bdd331dc2d093095d5540968f9e90ef35cdfe1107ace172a7cfcb4966d7dc0dd",
+      "copySha256": "7e3430b88adc5ed9a5aa3cec13c3709a3cc311bc395f3e8061ac98f824228382",
+      "status": "pruned",
+      "note": "양도 중간 단계(TransferBreakdown)·CalcResult.breakdown·ResultBuilder.setBreakdown 삭제"
+    },
+    {
+      "source": "packages/tax-engine/test/acquisition.test.ts",
+      "copy": "packages/tax-engine/test/acquisition.test.ts",
+      "sourceSha256": "9e75193f65fb2eee2a675069f4ad0dbc30b958d147b8ad290cd48ca5b71d8473",
+      "copySha256": "3d5d46e9e1d7b43ebafc721a82cce106730073b23d7f31657f1f1fa378c183c0",
+      "status": "modified"
+    },
+    {
+      "source": "packages/tax-engine/test/holding.test.ts",
+      "copy": "packages/tax-engine/test/holding.test.ts",
+      "sourceSha256": "729a73e2a1f687096f63e60d9f3236b1112a7a95b934101d9604ae143864515d",
+      "copySha256": "b3fa291b4b7439339caa1482e49b4eff8ff55cd65458ac6ea803f27a16b11ec7",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/test/oligopoly.test.ts",
+      "copy": "packages/tax-engine/test/oligopoly.test.ts",
+      "sourceSha256": "bf70d087c3dd09bb0821c88ec355966bff6c65310863ebe7672e9016e105b1e9",
+      "copySha256": "878670da45c597d0ccce81b6552d45bb789eae292971719326522aa36afc5a97",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/test/core.test.ts",
+      "copy": "packages/tax-engine/test/core.test.ts",
+      "sourceSha256": "3d776c6c6b1ddf41bf33ac57498f80f993ac56a16ba9e1c68d42bc20538fa816",
+      "copySha256": "3d776c6c6b1ddf41bf33ac57498f80f993ac56a16ba9e1c68d42bc20538fa816",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/test/purity.test.ts",
+      "copy": "packages/tax-engine/test/purity.test.ts",
+      "sourceSha256": "cca0db8ec60691bf2f6cb327422358060e32567a3a227b05169934bb7a294c75",
+      "copySha256": "cca0db8ec60691bf2f6cb327422358060e32567a3a227b05169934bb7a294c75",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/test/redevelopment.test.ts",
+      "copy": "packages/tax-engine/test/redevelopment.test.ts",
+      "sourceSha256": "c96657daf959ab519d408f2822738b1ceb57e40095af5d0f267ed85b00882814",
+      "copySha256": "1302b7d6649e86d6b2ff106bd8441f5c98b0280ec77f2e74f795fa38eca85ff5",
+      "status": "verbatim"
+    },
+    {
+      "source": "packages/tax-engine/test/schema.test.ts",
+      "copy": "packages/tax-engine/test/schema.test.ts",
+      "sourceSha256": "f9e14ef1ceddbfef9ceee74c7871fd99930ce9691433b8b0a0a38d1637f96686",
+      "copySha256": "9f867479093b851e5bc0e2e22200f9baa1d61b93acea96e704fc273b0123284a",
+      "status": "modified"
+    },
+    {
+      "source": "packages/tax-engine/test/ruleset.ts",
+      "copy": "packages/tax-engine/test/ruleset.ts",
+      "sourceSha256": "cc46559d9d6654b3a19287b221ffc948d2cdcdf3f27e2602655a2d6f52976e92",
+      "copySha256": "108cb04ce2b0919012f66598b13b0fcbe655ccc88e7e8fd62fd86fe2c6aa9818",
+      "status": "modified",
+      "note": "주석 한 줄에서 국세 낱말 삭제"
+    },
+    {
+      "source": "packages/tax-engine/vitest.config.ts",
+      "copy": "packages/tax-engine/vitest.config.ts",
+      "sourceSha256": "13e014ba3174593dd924287d9239d08ee7a2bd5be67549089b1f3a5195394150",
+      "copySha256": "13e014ba3174593dd924287d9239d08ee7a2bd5be67549089b1f3a5195394150",
+      "status": "verbatim"
+    },
+    {
+      "source": "rules/2026.01.json",
+      "copy": "rules/2026.01.json",
+      "sourceSha256": "9bd862a7387b60e3e1cf11ca7ca99c025de188222ed03420485cf8f3582d7ae9",
+      "copySha256": "296c6a921d33b9328b1d9a0a73681f5a9c928c7bb5daf64303b7d2a16031d57e",
+      "status": "pruned",
+      "note": "최상위 transfer 구역 삭제, 최상위 status=draft 추가, 2칸 들여쓰기로 다시 씀. 값은 SM이 가진 AI 작성·미감수 값 - 감수 서명 전에는 draft"
+    },
+    {
+      "source": "rules/2026.07.json",
+      "copy": "rules/2026.07.json",
+      "sourceSha256": "ab4639052bd89393eddb688f1c600201ce800524bb41444c54b2421220ff0851",
+      "copySha256": "d6853cd651171d0e04c0331c3bc6936c058f38c0f3a46f36060f1401c7822232",
+      "status": "pruned",
+      "note": "최상위 transfer 구역 삭제, 최상위 status=draft 추가, 2칸 들여쓰기로 다시 씀. 값은 SM이 가진 AI 작성·미감수 값 - 감수 서명 전에는 draft"
+    },
+    {
+      "source": "rules/2026.08.json",
+      "copy": "rules/2026.08.json",
+      "sourceSha256": "abf367cab7696788154c5f243f6755926f041098d8fe241b8702945b23b4ba5f",
+      "copySha256": "b9724df6e49f1b3268037782e4360d7e3e515a4aecbe8b0631117fb522704ceb",
+      "status": "pruned",
+      "note": "최상위 transfer 구역 삭제, 최상위 status=draft 추가, 2칸 들여쓰기로 다시 씀. 값은 SM이 가진 AI 작성·미감수 값 - 감수 서명 전에는 draft"
+    }
+  ]
+}
