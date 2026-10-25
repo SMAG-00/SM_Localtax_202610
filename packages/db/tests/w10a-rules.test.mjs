@@ -34,6 +34,8 @@ async function attempt(sql, params = [], role = null) {
 }
 async function tx(fn) {
   await client.query("begin");
+  // 다른 시험 파일이 amendment_events를 truncate하면 외래키로 이어진 우리 표까지 잠그려 한다 - 같은 순서로 먼저 잠가 교착(deadlock)을 피한다
+  await client.query("lock table public.amendment_events in row share mode");
   try {
     return await fn();
   } finally {

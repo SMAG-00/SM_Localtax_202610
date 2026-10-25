@@ -47,6 +47,23 @@ const APPEND_ONLY = new Set([
   "public.accuracy_cases", // 공식 결과 대조 사례(W10-a CALC-14) - 지우기 0, 철회는 retired_at
   "public.accuracy_runs", // 정확도 대조 실행(W10-a) - 추가만
   "public.accuracy_run_results", // 사례별 대조 결과(W10-a) - 추가만
+  "public.data_sources", // 수집 원천 등록부(W10-c) - 지우기 0, 이용 조건은 상태로
+  "public.review_items", // 공통 검수 큐(W10-c REV-02) - 읽기·추가만, 상태는 review_item_transition 함수로만, 지우기 0
+  "public.review_item_events", // 검수 전이 기록(W10-c) - 추가만
+  "public.laws", // 감시 대상 법령 등록부(W10-c) - 지우기 0, 감시 끄기는 watch=false
+  "public.law_versions", // 법령 개정판(W10-c PIPE-01) - 추가만
+  "public.law_articles", // 법령 조문(W10-c) - 개정판마다 새 행, 추가만
+  "public.law_events", // 법령 변경 감지 기록(W10-c) - 추가만
+  "public.law_watch_state", // 법령별 최근 확인 상태(W10-c) - 읽기·추가·고치기, 지우기 0
+  "public.legal_doc_aliases", // 해석 원천 번호 대응(W10-c) - 추가만
+  "public.product_plans", // 디지털 구독 요금제(W10-f PAY-01) - 읽기·추가·고치기, 지우기 0, 내리기는 status=retired
+  "public.commerce_readiness", // 실결제 준비 확인 기록(W10-f) - 읽기·추가 + 철회 시각만 고치기, 지우기 0
+  "public.paid_bodies", // 유료 본문(W10-f BIZ-04) - service_role만(anon·authenticated 0), 지우기 0
+  "public.subscriptions", // 구독(W10-f PAY-02) - 읽기만, 쓰기는 billing_* 함수로만
+  "public.orders", // 주문(W10-f) - 읽기만, 쓰기는 billing_* 함수로만, 지우기 0
+  "public.renewal_notices", // 갱신·가격 변경 사전 고지 기록(W10-f PAY-05) - 읽기만, 추가만(함수)
+  "public.payment_events", // PG 웹훅 수신 기록(W10-f PAY-02) - 읽기만, 함수로만 추가
+  "public.entitlements", // 권한(W10-f PAY-03) - 읽기만, 부여·회수는 billing_* 함수로만
 ]);
 let client;
 
