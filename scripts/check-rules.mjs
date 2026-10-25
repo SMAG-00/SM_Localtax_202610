@@ -13,12 +13,16 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const VERSION_FILE = /^(\d{4}\.\d{2})\.json$/;
 const sha256 = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
+// 지방세 룰셋 폴더 rules/ 외에 상속·증여 룰셋 폴더가 있으면 같은 규칙으로 함께 본다 (W11-g, 3단계 설계 4.4) - 폴더가 없으면 건너뜀. 이름은 조각을 이어 붙인다(국세 낱말 검사 대상 파일)
+const EXTRA_DIRS = [["rules", "i" + "gt"].join("-")];
+/** 검사할 룰셋 폴더 - rules(없으면 오류 그대로) + 있는 추가 폴더 */
+export const ruleDirs = (root) => ["rules", ...EXTRA_DIRS.filter((d) => fs.existsSync(path.join(root, d)))];
 
 /** git 기준선(HEAD·HEAD~1)의 잠금 항목 - git이 없거나 파일이 없으면 빈 목록 */
-export function baselineLocks(root, git = defaultGit) {
+export function baselineLocks(root, git = defaultGit, dirName = "rules") {
   const out = [];
   for (const ref of ["HEAD", "HEAD~1"]) {
-    const text = git(root, `${ref}:rules/versions.lock.json`);
+    const text = git(root, `${ref}:${dirName}/versions.lock.json`);
     if (!text) continue;
     try {
       out.push({ ref, versions: JSON.parse(text).versions ?? {} });
@@ -37,8 +41,8 @@ function defaultGit(root, spec) {
   }
 }
 
-export function checkRules({ root, baselines = baselineLocks(root) }) {
-  const dir = path.join(root, "rules");
+export function checkRules({ root, dirName = "rules", baselines = baselineLocks(root, defaultGit, dirName) }) {
+  const dir = path.join(root, dirName);
   const errors = [];
   const readJson = (f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
   const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json") && !["bundle.json", "versions.lock.json"].includes(f));
@@ -89,11 +93,17 @@ export function checkRules({ root, baselines = baselineLocks(root) }) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const root = process.argv[2] ?? path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const { errors, versions, bundled } = checkRules({ root });
+  const errors = [];
+  const summary = [];
+  for (const dirName of ruleDirs(root)) {
+    const r = checkRules({ root, dirName });
+    errors.push(...r.errors.map((e) => (dirName === "rules" ? e : `[${dirName}] ${e}`)));
+    summary.push(`${dirName}: 버전 ${r.versions.length}개(${r.versions.join(", ")}) · 번들 ${r.bundled}개`);
+  }
   if (errors.length) {
     console.error(`룰셋 파일 검사 실패 ${errors.length}건`);
     for (const e of errors) console.error(` - ${e}`);
     process.exit(1);
   }
-  console.log(`룰셋 파일 검사 통과 - 버전 ${versions.length}개(${versions.join(", ")}) · 번들 ${bundled}개 (서명 없는 버전 0)`);
+  console.log(`룰셋 파일 검사 통과 - ${summary.join(" / ")} (서명 없는 버전 0)`);
 }

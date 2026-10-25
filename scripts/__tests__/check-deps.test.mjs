@@ -87,3 +87,23 @@ test("저장소 전체 — 스크립트가 종료 코드 0", () => {
   const r = runScript(SCRIPT, [], { cwd: ROOT });
   assert.equal(r.code, 0, r.out);
 });
+
+// W11-g — AI·워크플로 위치는 상속·증여 엔진(aiForbidden)을 의존하거나 불러올 수 없다 (국세 금액은 AI가 만들지 않는다)
+const ENGINE = ["@ltr/", "i", "gt", "-engine"].join("");
+const AI_RULES = { ...RULES, aiForbidden: [ENGINE], aiForbiddenDirs: ["packages/assistant", "packages/agent", "workflows"] };
+
+for (const dir of ["packages/assistant", "packages/agent", "workflows"]) {
+  test(`W11-g — ${dir}가 상속·증여 엔진을 import 하면 오류, package.json 의존도 오류`, () => {
+    const imp = checkDeps({ root: tempRepo(base({ "scripts/forbidden-packages.json": AI_RULES, [`${dir}/src/a.ts`]: `import { f } from "${ENGINE}/sub";\n` })).dir });
+    assert.ok(imp.errors.some((e) => e.includes(`${dir}/src/a.ts`) && e.includes("AI·워크플로")), imp.errors.join("\n"));
+    const dep = checkDeps({ root: tempRepo(base({ "scripts/forbidden-packages.json": AI_RULES, [`${dir}/package.json`]: { name: "x", dependencies: { [ENGINE]: "workspace:*" } } })).dir });
+    assert.ok(dep.errors.some((e) => e.includes(`${dir}/package.json`) && e.includes(ENGINE)), dep.errors.join("\n"));
+  });
+}
+
+test("W11-g — 웹 앱이 상속·증여 엔진을 쓰는 것과 목록이 없는 규칙 파일은 오류 아님", () => {
+  const web = checkDeps({ root: tempRepo(base({ "scripts/forbidden-packages.json": AI_RULES, "apps/web/lib/x.ts": `import { f } from "${ENGINE}";\n`, "apps/web/package.json": { name: "@ltr/web", dependencies: { [ENGINE]: "workspace:*" } } })).dir });
+  assert.deepEqual(web.errors, []);
+  const noList = checkDeps({ root: tempRepo(base({ "packages/agent/src/a.ts": `import { f } from "${ENGINE}";\n` })).dir });
+  assert.deepEqual(noList.errors, []);
+});

@@ -57,6 +57,9 @@ export function checkDeps({ root }) {
   const isVercelOnly = matcher(rules.vercelOnly);
   const isAiSdk = matcher(rules.aiSdk);
   const allowed = (file) => rules.aiSdkAllowed.some((dir) => file === dir || file.startsWith(`${dir}/`));
+  // W11-g — AI·워크플로 위치(aiForbiddenDirs)가 불러오면 안 되는 패키지(aiForbidden). 목록이 없으면 검사 안 함
+  const isAiForbidden = matcher(rules.aiForbidden ?? []);
+  const inAiDir = (file) => (rules.aiForbiddenDirs ?? []).some((dir) => file === dir || file.startsWith(`${dir}/`));
   const errors = [];
   const files = tracked(root);
 
@@ -66,6 +69,7 @@ export function checkDeps({ root }) {
       for (const name of Object.keys(pkg[field] ?? {})) {
         if (isVercelOnly(name)) errors.push(`${f}: Vercel 전용 서비스 패키지 ${name} (${field}) — 사내 서버 이전을 막는다 (FND-08)`);
         if (isAiSdk(name) && !allowed(f)) errors.push(`${f}: AI SDK ${name} (${field}) — 1단계에는 ${rules.aiSdkAllowed.join("·")}에서만 쓴다 (FND-01)`);
+        if (isAiForbidden(name) && inAiDir(f)) errors.push(`${f}: AI·워크플로 쪽이 ${name} (${field})에 의존한다 — AI는 국세 금액을 만들지 않는다 (PRD 원칙 4)`);
       }
     }
   }
@@ -74,6 +78,15 @@ export function checkDeps({ root }) {
   if (fs.existsSync(lockPath)) {
     for (const name of lockPackages(fs.readFileSync(lockPath, "utf8"))) {
       if (isVercelOnly(name)) errors.push(`pnpm-lock.yaml: Vercel 전용 서비스 패키지 ${name}가 간접 의존성으로 들어왔다 (FND-08)`);
+    }
+  }
+
+  for (const f of files.filter((f) => CODE_EXT.test(f) && !SKIP_DIR.test(f) && inAiDir(f))) {
+    const full = path.join(root, f);
+    if (!fs.existsSync(full)) continue;
+    for (const spec of importsOf(fs.readFileSync(full, "utf8"))) {
+      const name = packageOf(spec);
+      if (name && isAiForbidden(name)) errors.push(`${f}: AI·워크플로 쪽이 '${spec}'를 불러온다 — AI는 국세 금액을 만들지 않는다 (PRD 원칙 4)`);
     }
   }
 

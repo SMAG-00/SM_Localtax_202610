@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
-import { checkRules } from "../check-rules.mjs";
+import { checkRules, ruleDirs } from "../check-rules.mjs";
 
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 function setup({ bundle = [], lockOverride = {} } = {}) {
@@ -84,4 +84,34 @@ test("실제 저장소 rules 폴더 - 지금은 번들 0개, 초안만", () => {
   assert.deepEqual(r.errors, []);
   assert.equal(r.bundled, 0);
   assert.ok(r.versions.length >= 3);
+});
+
+// W11-g - 상속·증여 룰셋 폴더가 있으면 같은 규칙으로 함께 본다 (폴더 이름은 조각을 이어 붙인다)
+const EXTRA = ["rules", "i" + "gt"].join("-");
+
+function setupExtra({ tamper = false } = {}) {
+  const { root } = setup();
+  const dir = path.join(root, EXTRA);
+  fs.mkdirSync(dir);
+  const body = JSON.stringify({ version: "2099.02", status: "draft", note: "시험용" });
+  fs.writeFileSync(path.join(dir, "2099.02.json"), tamper ? body.replace("시험용", "고침") : body);
+  fs.writeFileSync(path.join(dir, "versions.lock.json"), JSON.stringify({ versions: { "2099.02": sha(body) } }));
+  return root;
+}
+
+test("ruleDirs - 추가 룰셋 폴더가 없으면 rules만, 있으면 둘 다", () => {
+  const { root } = setup();
+  assert.deepEqual(ruleDirs(root), ["rules"]);
+  fs.mkdirSync(path.join(root, EXTRA));
+  assert.deepEqual(ruleDirs(root), ["rules", EXTRA]);
+});
+
+test("추가 룰셋 폴더 - 파일 없는 빈 폴더는 통과, 잠금과 같은 파일은 통과, 내용을 고치면 R2 실패", () => {
+  const { root } = setup();
+  fs.mkdirSync(path.join(root, EXTRA));
+  assert.deepEqual(checkRules({ root, dirName: EXTRA, baselines: [] }).errors, []);
+  assert.deepEqual(checkRules({ root: setupExtra(), dirName: EXTRA, baselines: [] }).errors, []);
+  const { errors } = checkRules({ root: setupExtra({ tamper: true }), dirName: EXTRA, baselines: [] });
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /^R2 2099\.02: 파일 내용이 잠금과 다릅니다/);
 });

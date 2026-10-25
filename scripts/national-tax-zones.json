@@ -1,0 +1,21 @@
+{
+  "$comment": "상속·증여 묶음 낱말의 허용 구역 원본(W11-g, docs/dev/3단계_설계.md 4.4) - scripts/check-national-tax.mjs가 읽는다. 구역 안에서는 상속·증여 묶음에 NT1~NT5를 적용하지 않지만 양도 묶음 NT1~NT5와 NT7(양도 낱말·부담부증여 이름·calc_cgt 0)은 그대로 적용한다. referenceFiles는 이름만 언급하는 참조 파일(상속·증여 묶음 NT1~NT5와 NT8 면제). 이 파일과 forbidden-packages.json은 구역 이름을 적는 설정 파일이라 참조 파일에 둔다.",
+  "prd_ref": "docs/PRD/PRD_최종.md",
+  "allowedZones": [
+    "packages/igt-engine/**",
+    "rules-igt/**",
+    "apps/web/app/(site)/calc/{gift-tax,inheritance-tax}/**",
+    "apps/web/components/site/igt/**",
+    "apps/web/lib/igt/**",
+    "packages/db/supabase/migrations/*_w11g_*.sql",
+    "packages/db/tests/w11g-*",
+    "e2e/w11g-*"
+  ],
+  "referenceFiles": [
+    "apps/web/lib/server/public/constants.ts",
+    "apps/web/lib/calc/tool-link.ts",
+    "e2e/w4-inheritance-gift.test.mjs",
+    "scripts/national-tax-zones.json",
+    "scripts/forbidden-packages.json"
+  ]
+}
