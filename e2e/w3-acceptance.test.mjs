@@ -153,7 +153,8 @@ const modified = (html) => html.match(/"dateModified":"([^"]+)"/)?.[1] ?? null;
 const markCount = (html) => (html.match(/data-part="review-mark"/g) ?? []).length;
 const cardsOf = (html) => [...html.matchAll(/data-link-card="([^"]+)"/g)].map((m) => m[1]);
 /** /calc 묶음 — SM 카드 목록(외부 계산기 절 앞까지)·외부 계산기 목록 */
-const smPart = (html) => html.slice(html.indexOf('data-part="sm-cards"'), html.includes('id="calc-external"') ? html.indexOf('id="calc-external"') : undefined);
+// W10-b 허브: 세목 카드는 한 목록(tool-cards) - 게이트가 닫힌 동안은 SM 카드만 들어 있다
+const smPart = (html) => html.slice(html.indexOf('data-part="tool-cards"'), html.includes('id="calc-external"') ? html.indexOf('id="calc-external"') : undefined);
 const externalPart = (html) => (html.includes('data-part="external-cards"') ? html.slice(html.indexOf('data-part="external-cards"')) : "");
 /** 카드 하나 — 다음 카드 또는 목록 끝까지 (끊긴 카드 안에는 대체 안내 목록이 들어 있다) */
 const cardBlock = (html, key) => html.match(new RegExp(`<li data-link-card="${key}"[\\s\\S]*?</li>\\s*(?=<li data-link-card|</ul>\\s*(?:</section>|</main>))`))?.[0] ?? "";
@@ -196,6 +197,9 @@ async function removeOwnRows() {
     await db.query("delete from public.article_legal_docs where article_id = any($1::bigint[]) or legal_doc_id > $2", [articleIds, marks.legal_docs]);
     await db.query("delete from public.interpretation_articles where article_id = any($1::bigint[])", [articleIds]);
     await db.query("delete from public.column_meta where article_id = any($1::bigint[])", [articleIds]);
+    // W10-d 표 — 외래 키 검사를 끈 세션에서는 legal_docs 삭제가 아래 표로 번지지 않는다(제품은 on delete cascade). 이 시험이 만든 문서의 원문·공개 보류를 함께 지운다
+    await db.query("delete from public.legal_doc_texts where legal_doc_id > $1", [marks.legal_docs]);
+    await db.query("delete from public.legal_doc_holds where legal_doc_id > $1", [marks.legal_docs]);
     for (const t of MARKED) await db.query(`delete from public.${t} where id > $1`, [marks[t]]);
     for (const s of linksSnapshot) {
       const cols = Object.keys(s).filter((k) => k !== "id");

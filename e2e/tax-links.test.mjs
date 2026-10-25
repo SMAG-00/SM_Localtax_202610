@@ -113,7 +113,10 @@ test("a) 권한·입력 — 기자 403 · 주소 형식 422 · 기능 키 꺼짐
   assert.equal((await setLink(id, {})).status, 422, "바꿀 칸이 없으면 거부");
   const list = await api("GET", "/official-links", u.editor);
   assert.equal(list.status, 200);
-  assert.equal(list.body.links.length, 8, "SM 5 + 외부 1 + 대체 2");
+  const byKind = (kinds) => list.body.links.filter((l) => kinds.includes(l.kind)).length;
+  assert.equal(byKind(["sm_calculator", "external_calculator", "fallback"]), 8, "SM 5 + 외부 1 + 대체 2");
+  assert.equal(byKind(["nts_guide", "law_center", "edu_site"]), 3, "W10-b 마이그레이션 84가 더한 국세청 안내·법령정보센터·교육원 3줄");
+  assert.equal(list.body.links.length, 11, "그 밖의 종류 0");
   assert.ok(list.body.links.every((l) => l.url === null && l.status === "unchecked"), "시드는 주소 비움·점검 전");
 
   await setFeatures([]);
@@ -141,7 +144,8 @@ test("b) /calc — SM 카드 정확히 5장·이동 주소 = 저장 주소·새 
 
   const { status, html } = await page("/calc");
   assert.equal(status, 200);
-  const smBlock = /data-part="sm-cards"[\s\S]*?<\/ul>\s*(?=<section|<\/main>)/.exec(html)?.[0] ?? "";
+  // W10-b 허브: 세목 카드는 한 목록(tool-cards)이고, 게이트가 닫힌 동안은 SM 카드만 들어 있다 - 뒤에 오는 안내·바깥 계산기 영역 앞에서 끊는다
+  const smBlock = /data-part="tool-cards"[\s\S]*?<\/ul>\s*(?=<ul data-part="in-site-tools"|<details|<section|<\/div>)/.exec(html)?.[0] ?? "";
   assert.deepEqual(cardsOf(smBlock), keys, "SM 카드 정확히 5장·순서");
   for (const key of keys) {
     assert.equal(hrefOf(html, key), urls[key], `${key} 이동 주소가 저장 주소와 글자 단위 일치`);

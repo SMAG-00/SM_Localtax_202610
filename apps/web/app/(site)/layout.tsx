@@ -41,7 +41,8 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
       </a>
       <PathBreadcrumbJsonLd site={siteUrl()} />
       <SiteHeader utilities={headerUtilityKeys(c.utilities)} submenus={headerSubmenus(c.sections)} shortcuts={headerShortcuts(c.shortcuts)} />
-      <main id="main" tabIndex={-1} className="focus:outline-none">
+      {/* 본문은 화면 한 장 높이 이상 — 짧은 화면에서도 바닥글(저작권·열린보도원칙 문단 등 긴 글)이 첫 화면에 들어오지 않는다 (R1 첫 화면 글자 수) */}
+      <main id="main" tabIndex={-1} className="min-h-screen focus:outline-none">
         {children}
       </main>
       <Footer
