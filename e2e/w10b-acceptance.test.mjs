@@ -92,6 +92,7 @@ async function purge() {
     await db.query("delete from public.rulesets where id = any($1::bigint[])", [created.rulesets]);
     await db.query("delete from public.agent_runs where job in ('accuracy-run','link-check') and started_at >= $1", [since]);
     await db.query("delete from public.wetax_link_checks where at >= $1", [since]);
+    await db.query("delete from public.official_link_checks where at >= $1", [since]); // 점검 배치는 실행 키(ISO 주)마다 한 벌만 기록한다 - 뒤 시험(tax-links 등)의 첫 실행이 건너뛰어지지 않게 이 시험의 기록을 지운다
     await db.query("delete from public.review_item_events where item_id in (select id from public.review_items where source_key like 'wetax:%')");
     await db.query("delete from public.review_items where source_key like 'wetax:%'");
     await db.query("commit");

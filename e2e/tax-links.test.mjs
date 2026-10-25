@@ -79,6 +79,8 @@ before(async () => {
   await staff.removeLeftover(ADMIN_EMAIL);
   await staff.snapshotOperations();
   snapshot = (await db.query("select * from public.official_links order by id")).rows;
+  // 앞 시험이 같은 주(실행 키)에 남긴 점검 기록이 있으면 첫 실행이 건너뛰어진다 - 이 시험이 다루는 연결의 기록은 처음에 비운다
+  await db.query("delete from public.official_link_checks where link_id = any($1::bigint[])", [snapshot.map((x) => x.id)]);
   u.editor = await staff.createUser({ label: "links-editor", roles: ["editor"], person: { name: "연결 시험 편집자", roles: ["editor"] } });
   u.reporter = await staff.createUser({ label: "links-reporter", roles: ["reporter"], person: { name: "연결 시험 기자", roles: ["reporter"] } });
   u.admin = await staff.createUser({ label: "links-admin", email: ADMIN_EMAIL });
@@ -166,10 +168,10 @@ test("c) 점검 배치 — 2xx ok · 404·500·시간 초과 broken · 같은 �
   // 연속 2회 실패에 broken (FAM-04) - 지난 주 점검에서도 실패했다고 보고 실패 횟수를 1로 둔다
   await db.query("update public.official_links set fail_count = 1 where url is not null");
   const first = await runJob();
-  assert.equal(first.targets, 7, "주소가 있는 활성 연결 7건");
-  assert.equal(first.ok, 4, "acquisition·property_tax·외부·위택스");
-  assert.equal(first.broken, 3, "404·500·시간 초과");
-  assert.equal(first.skipped, 0);
+  assert.equal(first.targets, 7, `주소가 있는 활성 연결 7건 - ${JSON.stringify(first)}`);
+  assert.equal(first.ok, 4, `acquisition·property_tax·외부·위택스 - ${JSON.stringify(first)}`);
+  assert.equal(first.broken, 3, `404·500·시간 초과 - ${JSON.stringify(first)}`);
+  assert.equal(first.skipped, 0, `첫 실행은 건너뜀 0 - ${JSON.stringify(first)}`);
   const st = Object.fromEntries((await db.query("select key, status, check_method, last_ok_at from public.official_links where url is not null")).rows.map((r) => [r.key, r]));
   assert.equal(st.acquisition.status, "ok");
   assert.equal(st.property_tax.status, "ok");
@@ -242,4 +244,32 @@ test("d) broken 카드는 안내 + 대체 안내 · 복구되면 ok · 수동 �
   const stale = await runJob();
   assert.equal(stale.staleBeforeRun, 1, "7일 전 점검은 경고 0, 8일 전 점검은 경고 1");
   assert.equal(stale.ok, 2, "그 두 건만 다시 점검");
+});
+
+test("e) 연속 실패 규칙 — 첫 실패는 이전 상태 유지(실패 횟수 1·pending), 다음 주에도 실패하면 broken(횟수 2), 성공하면 횟수 0", async () => {
+  const id = await linkId("sm_calculator", "registration"); // 앞 시험에서 /boom(500) 주소가 저장돼 있다
+  await db.query("update public.official_links set status = 'ok', fail_count = 0, last_ok_at = now() where id = $1", [id]);
+  await db.query("delete from public.official_link_checks where link_id = $1", [id]);
+  const state = async () => (await one("select status, fail_count from public.official_links where id = $1", [id]));
+
+  const first = await runJob();
+  assert.equal(first.pending, 1, `첫 실패는 pending - ${JSON.stringify(first)}`);
+  assert.equal(first.broken, 0, "첫 실패는 broken이 아니다");
+  assert.deepEqual({ ...(await state()) }, { status: "ok", fail_count: 1 }, "첫 실패는 이전 상태 유지 + 횟수 1");
+
+  const sameWeek = await runJob();
+  assert.equal(sameWeek.skipped, 7, "같은 주 재실행은 건너뜀");
+  assert.deepEqual({ ...(await state()) }, { status: "ok", fail_count: 1 }, "같은 주 재실행은 횟수를 올리지 않는다");
+
+  await db.query("delete from public.official_link_checks where link_id = $1", [id]); // 다음 주 점검을 흉내
+  const second = await runJob();
+  assert.equal(second.broken, 1, `연속 두 번째 실패는 broken - ${JSON.stringify(second)}`);
+  assert.deepEqual({ ...(await state()) }, { status: "broken", fail_count: 2 });
+
+  // 주소가 고쳐지면(성공) 횟수 0·ok로 복구
+  assert.equal((await setLink(id, { url: `${fakeBase}/ok/registration` })).status, 200);
+  await db.query("delete from public.official_link_checks where link_id = $1", [id]);
+  const healed = await runJob();
+  assert.equal(healed.ok, 1);
+  assert.deepEqual({ ...(await state()) }, { status: "ok", fail_count: 0 });
 });
