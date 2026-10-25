@@ -195,6 +195,6 @@ begin
   select array_agg(t.m[1] order by t.ord) into v_names from regexp_matches(v_def, '''([a-z_]+)''', 'g') with ordinality as t(m, ord);
   v_names := v_names || array(select n from unnest(array['institution_inquiry_submitted', 'org_seat_accepted', 'report_previewed']) as n where n <> all (v_names));
   alter table public.analytics_events drop constraint analytics_events_name_check;
-  execute format('alter table public.analytics_events add constraint analytics_events_name_check check (name = any (%L::text[]))', v_names);
+  execute format('alter table public.analytics_events add constraint analytics_events_name_check check (name in (%s))', (select string_agg(quote_literal(n), ', ' order by o) from unnest(v_names) with ordinality as u(n, o)));
 end;
 $$;

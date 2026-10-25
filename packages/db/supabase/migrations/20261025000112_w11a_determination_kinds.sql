@@ -45,7 +45,7 @@ create table public.requirement_dictionary (
   topic text not null check (topic ~ '^[a-z][a-z0-9_]{1,39}$'),
   version text not null check (version ~ '^[0-9]{4}\.[0-9]{2}$'),
   status text not null default 'draft' check (status in ('draft', 'reviewed', 'active', 'retired')),
-  body jsonb not null check (jsonb_typeof(body) = 'object' and body ? 'as_of' and jsonb_typeof(body -> 'fields') = 'array' and jsonb_array_length(body -> 'fields') <= 100),
+  body jsonb not null check (jsonb_typeof(body) = 'object' and body ? 'as_of' and coalesce(jsonb_typeof(body -> 'fields'), '') = 'array' and jsonb_array_length(body -> 'fields') <= 100),
   body_sha256 text not null,
   source_ref text not null check (char_length(btrim(source_ref)) between 1 and 200),
   basis_event_id bigint references public.amendment_events (id),

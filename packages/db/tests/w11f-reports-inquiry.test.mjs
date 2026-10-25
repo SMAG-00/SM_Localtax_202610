@@ -50,10 +50,11 @@ const BODY = "시험용 본문입니다. 지어낸 문장이며 실제 리포트
 
 async function mkReport({ publish = true, sale = true, preview = PREVIEW } = {}) {
   const slug = uniq("rpt");
-  await client.query("insert into public.premium_reports (slug, title, period_label, edited_by) values ($1, '시험 리포트', '2026-Q4', 'test')", [slug]);
+  const title = `시험 리포트 ${seq}`; // (period_label, title)은 유일 - 호출마다 제목을 달리한다
+  await client.query("insert into public.premium_reports (slug, title, period_label, edited_by) values ($1, $2, '2026-Q4', 'test')", [slug, title]);
   await client.query(
     `insert into public.paid_bodies (kind, ref_key, title, preview, body, sale_allowed, rights_ref, sale_confirmed_on, edited_by)
-     values ('premium_report', $1, '시험 리포트', $2, $3, $4, $5, $6, 'test')`,
+     values ('premium_report', $1, '${title}', $2, $3, $4, $5, $6, 'test')`,
     [slug, preview, BODY, sale, sale ? "시험용 권리 확인 위치" : null, sale ? "2026-10-25" : null]);
   if (publish) {
     await client.query(

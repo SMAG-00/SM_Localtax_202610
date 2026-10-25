@@ -73,7 +73,8 @@ test("설정 씨앗 4개는 빈 객체이고 공개 설정 키 목록에 없다"
   tx(async () => {
     for (const k of NEW_SETTINGS) {
       const row = (await client.query("select value from public.settings where key = $1", [k])).rows[0];
-      assert.deepEqual(row?.value, {}, `${k}는 빈 객체`);
+      // institution_inquiry_policy는 W11-f 134가 보존 기간 365일 한 칸을 씨앗으로 채운다 (법률 검토 대상 값은 아님 - 나머지 3개는 빈 객체)
+      assert.deepEqual(row?.value, k === "institution_inquiry_policy" ? { retention_days: 365 } : {}, k === "institution_inquiry_policy" ? `${k}는 retention_days 365` : `${k}는 빈 객체`);
     }
     const pub = (await client.query("select value from public.settings where key = 'public_keys'")).rows[0]?.value;
     const publicKeys = Array.isArray(pub) ? pub : [];
@@ -90,9 +91,12 @@ test("review_items - 새 종류 3개는 저장되고 종류별 필수 체크 키
 
 test("review_items - 모르는 종류는 거부되고, 이전 종류의 필수 체크 키는 그대로다", () =>
   tx(async () => {
+    // 만들기 트리거는 모르는 종류의 필수 체크 키를 null로 만들어 NOT NULL이 먼저 걸리므로, 종류 제약(23514) 자체를 보려고 이 트랜잭션 안에서만 트리거를 끈다 (tx는 롤백)
+    await client.query("alter table public.review_items disable trigger review_items_before_insert");
     await client.query("savepoint e");
-    await assert.rejects(client.query("insert into public.review_items (kind, source_key, title) values ('guide_old', 'w11-0-test', '시험용 항목')"), (err) => err.code === "23514");
+    await assert.rejects(client.query("insert into public.review_items (kind, source_key, title, required_checks) values ('guide_old', 'w11-0-test', '시험용 항목', '{}')"), (err) => err.code === "23514" && /review_items_kind_check/.test(err.constraint ?? err.message));
     await client.query("rollback to savepoint e");
+    await client.query("alter table public.review_items enable trigger review_items_before_insert");
     assert.deepEqual((await client.query("select public.review_required_checks('pipeline_failure') c")).rows[0].c, ["cause_noted"]);
     assert.equal((await client.query("select public.review_required_checks('unknown_kind') c")).rows[0].c, null);
   }));

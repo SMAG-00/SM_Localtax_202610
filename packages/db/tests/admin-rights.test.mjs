@@ -58,6 +58,18 @@ const APPEND_ONLY = new Set([
   "public.legal_doc_aliases", // 해석 원천 번호 대응(W10-c) - 추가만
   "public.product_plans", // 디지털 구독 요금제(W10-f PAY-01) - 읽기·추가·고치기, 지우기 0, 내리기는 status=retired
   "public.commerce_readiness", // 실결제 준비 확인 기록(W10-f) - 읽기·추가 + 철회 시각만 고치기, 지우기 0
+  "public.guides", // 감수 가이드 본문(W11-a) - 지우기 0, 고치기 0, 새 판은 guide_versions로
+  "public.guide_versions", // 감수 가이드 판 기록(W11-a) - 읽기·추가만
+  "public.guides_audit", // 감수 가이드 감사 기록(W11-a) - 추가만
+  "public.requirement_dictionary", // 요건 사전 버전(W11-a) - 룰셋과 같은 생애, 본문 불변·삭제 0, 상태는 sign_*/approve_* 함수로만
+  "public.orgs", // 기관(W11-f) - 지우기 0, 종료는 상태로
+  "public.org_contracts", // 기관 계약(W11-f) - 지우기 0
+  "public.org_seats", // 기관 좌석(W11-f) - 읽기만, 초대·수락·회수는 함수로만
+  "public.org_admins", // 기관 관리자(W11-f) - 지우기 0
+  "public.org_security_reviews", // 기관 보안 검토 기록(W11-f) - 읽기·추가만
+  "public.premium_reports", // 프리미엄 리포트(W11-f) - 지우기 0
+  "public.institution_inquiries", // 기관 견적 요청(W11-f) - 지우기 0, 개인 칸은 파기 함수로만
+  "public.tax_invoice_requests", // 세금계산서 요청(W11-f) - 읽기만, 접수·처리는 함수로만
   "public.paid_bodies", // 유료 본문(W10-f BIZ-04) - service_role만(anon·authenticated 0), 지우기 0
   "public.subscriptions", // 구독(W10-f PAY-02) - 읽기만, 쓰기는 billing_* 함수로만
   "public.orders", // 주문(W10-f) - 읽기만, 쓰기는 billing_* 함수로만, 지우기 0
