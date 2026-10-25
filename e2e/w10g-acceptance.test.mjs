@@ -164,7 +164,10 @@ test("c) 결제·수료증 후보 경로는 키를 다 켜도 404 (연결 방식
   assert.equal((await get("/my/certificates")).status, 307, "로그아웃 상태의 /my/*는 로그인으로 307");
   const appDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "apps", "web", "app");
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? [path.join(d, e.name), ...walk(path.join(d, e.name))] : []));
-  assert.deepEqual(walk(appDir).filter((d) => /[\/](certificates?|checkout|enroll)$/.test(d)), [], "수료증·결제·수강 신청 라우트 폴더 0 (연결 방식)");
+  // 수료증·수강 신청은 어디에도 없고, 결제는 교육 경로 아래에만 없으면 된다 (디지털 구독 결제 /api/billing/checkout는 W10-f 몫). 경로 구분자는 /로 맞춘다(윈도·리눅스 같게)
+  const rel = (d) => path.relative(appDir, d).split(path.sep).join("/");
+  const eduRoutes = walk(appDir).map(rel).filter((r) => /(^|\/)(certificates?|enroll)$/.test(r) || (/(^|\/)edu(\/|$)/.test(r) && /(^|\/)(checkout|pay)$/.test(r)));
+  assert.deepEqual(eduRoutes, [], "수료증·수강 신청 라우트 폴더 0, 교육 경로 아래 결제 폴더 0 (연결 방식)");
   for (const p of ["/api/edu/checkout", "/api/edu/enroll", "/api/edu/certificates", "/api/edu/pay"]) {
     const res = await fetch(`${base}${p}`, { method: "POST", headers: { origin: base, "content-type": "application/json" }, body: "{}" });
     assert.equal(res.status, 404, p);
