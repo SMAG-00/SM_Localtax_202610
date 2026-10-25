@@ -52,7 +52,7 @@ async function purge() {
     await db.query("delete from public.realestate_weekly_audit where issue_id = any($1::bigint[])", [created.issues]);
     await db.query("delete from public.realestate_weekly_items where issue_id = any($1::bigint[])", [created.issues]);
     await db.query("delete from public.realestate_weekly_issues where id = any($1::bigint[])", [created.issues]);
-    await db.query("delete from public.audit_log where action like 'campaign.%' and at >= $1", [staff.startedAt.toISOString()]).catch(() => {});
+    await db.query("delete from public.audit_logs where action like 'campaign.%' and at >= $1", [staff.startedAt.toISOString()]);
     await db.query("commit");
   } catch (err) {
     await db.query("rollback");
@@ -61,11 +61,20 @@ async function purge() {
 }
 const statusOf = async (id) => (await db.query("select status from public.campaign_landings where id = $1", [id])).rows[0]?.status;
 
+async function startAll() {
+  server = await startServer({ NEXT_PUBLIC_SUPABASE_URL: sb.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: sb.anonKey, SUPABASE_SERVICE_ROLE_KEY: sb.serviceRoleKey, ADMIN_EMAILS: ADMIN_EMAIL, NEXT_PUBLIC_SITE_URL: SITE });
+  base = server.base;
+}
+/** 공개 데이터 캐시(30초 재검증)를 새로 시작하려고 서버를 다시 띄운다 - 새 배포와 같은 출발점. 기능 키·공개 행을 바꾼 직후 공개 화면을 볼 때 쓴다 (w10b와 같다) */
+async function restart() {
+  await server?.stop?.();
+  await startAll();
+}
+
 before(async () => {
   sb = localSupabase();
   buildWeb();
-  server = await startServer({ NEXT_PUBLIC_SUPABASE_URL: sb.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: sb.anonKey, SUPABASE_SERVICE_ROLE_KEY: sb.serviceRoleKey, ADMIN_EMAILS: ADMIN_EMAIL, NEXT_PUBLIC_SITE_URL: SITE });
-  base = server.base;
+  await startAll();
   staff = new StaffFixture(sb);
   await staff.connect();
   db = staff.db;
@@ -89,12 +98,14 @@ after(async () => {
 
 test("a) 헤더·홈 - 키 shortcuts 꺼짐이면 바로가기 줄·카드 0, 켜짐이면 나오고 AI 계산기 글자·쿼리 주소 0", async () => {
   await setFlags({ shortcuts: false, calc: true });
+  await restart();
   const off = await page("/");
   assert.equal(off.status, 200);
   assert.ok(!off.text.includes('aria-label="바로가기"'), "꺼짐: 바로가기 줄 0");
   assert.ok(!off.text.includes('data-part="shortcut-cards"'), "꺼짐: 홈 카드 0");
 
   await setFlags({ shortcuts: true, calc: true });
+  await restart();
   const on = await page("/");
   assert.ok(on.text.includes('aria-label="바로가기"'), "켜짐: 바로가기 줄");
   assert.ok(on.text.includes('data-part="shortcut-cards"'), "켜짐: 홈 카드");
@@ -108,10 +119,12 @@ test("a) 헤더·홈 - 키 shortcuts 꺼짐이면 바로가기 줄·카드 0, �
 
 test("b) 재테크 포인트 - 키 꺼짐·공개 호 0이면 404, 기자 호 만들기 200·발행 403, 편집 책임자는 3건 미만 발행 422", async () => {
   await setFlags({ realestate_weekly: false });
+  await restart();
   assert.equal((await page("/realestate/weekly")).status, 404, "키 꺼짐");
   await setFlags({ realestate_weekly: true });
+  await restart();
   assert.equal((await page("/realestate/weekly")).status, 404, "공개 호 0");
-  assert.equal((await page("/realestate/weekly/2026-43")).status, 404, "호별도 404");
+  assert.equal((await page("/realestate/weekly/2001-01")).status, 404, "호별도 404");
   assert.equal((await page("/realestate/weekly/abc")).status, 404, "주 모양이 틀리면 404");
 
   const week = `9${String(Date.now()).slice(-3)}-${String(1 + (Date.now() % 52)).padStart(2, "0")}`;
@@ -146,7 +159,7 @@ test("c) 캠페인 작성·승인 - 문구·보조 링크 검사 422, 광고 담
   assert.equal(row.copy_check_hash, row.content_hash, "문구 검사 통과 해시");
 
   assert.equal((await camp(u.adOps, { op: "approve", id })).status, 403, "광고 담당 승인 403");
-  const denied = await db.query("select count(*)::int n from public.audit_log where action = 'campaign.approve.denied' and at >= $1", [staff.startedAt.toISOString()]);
+  const denied = await db.query("select count(*)::int n from public.audit_logs where action = 'campaign.approve.denied' and at >= $1", [staff.startedAt.toISOString()]);
   assert.ok(denied.rows[0].n >= 1, "거부 감사");
   const early = await camp(u.admin, { op: "approve", id });
   assert.equal(early.status, 409, "제출 전 승인");
@@ -161,21 +174,25 @@ test("c) 캠페인 작성·승인 - 문구·보조 링크 검사 422, 광고 담
   const ok = await camp(u.admin, { op: "approve", id });
   assert.equal(ok.status, 200, JSON.stringify(ok.body));
   assert.equal(await statusOf(id), "approved");
-  assert.equal(Number((await db.query("select count(*)::int n from public.campaign_audit where landing_id = $1", [id])).rows[0].n), 6, "시도마다 감사 1행: 거부 2 + 제출 1 + 검토 1 + 승인 거부 1 + 승인 1");
+  assert.equal(Number((await db.query("select count(*)::int n from public.campaign_audit where landing_id = $1", [id])).rows[0].n), 5, "함수 시도마다 감사 1행: 제출 전 승인 거부 1 + 제출 1 + 검토 없음 거부 1 + 검토 1 + 승인 1 (권한 거부 403은 audit_logs에 따로 남는다 - 위에서 확인)");
 });
 
 test("d) 랜딩 화면 - 키 꺼짐 404, 켜짐 200(noindex·입력 칸 0·주 버튼 1), 초안·철회 404, 승인 뒤 수정 404, 기간 끝 307, 임의 태그 글자 0", async () => {
   const key = `e2e-w10i-${run}-a`;
   await setFlags({ campaign_landings: false });
+  await restart();
   assert.equal((await page(`/go/${key}`)).status, 404, "키 꺼짐");
   await setFlags({ campaign_landings: true, calc: true, calc_acquisition: true });
+  await restart();
   const live = await page(`/go/${key}?utm_source=evil-tag-value&utm_campaign=evil-campaign&gclid=evil-click-id`);
   assert.equal(live.status, 200);
   assert.match(live.headers.get("x-robots-tag") ?? "", /noindex/);
   assert.match(live.text, /<meta name="robots" content="[^"]*noindex/);
   assert.ok(live.text.includes("시험용 취득세 안내"));
   assert.ok(!/<input|<textarea|<select/.test(live.text), "입력 칸 0");
-  assert.ok(!/evil-(tag-value|campaign|click-id)/.test(live.text), "임의 태그 글자 0");
+  // 프레임워크(Next)가 요청 주소를 흐름 데이터 <script>에 그대로 싣는다 - 그건 화면 글자가 아니므로 스크립트를 뺀 화면 HTML로 본다
+  const visible = live.text.replace(/<script[\s\S]*?<\/script>/g, "");
+  assert.ok(!/evil-(tag-value|campaign|click-id)/.test(visible), "임의 태그 글자 0");
   assert.equal((live.text.match(/data-testid="campaign-landing"/g) ?? []).length, 1);
   assert.equal((await page("/go/no-such-campaign")).status, 404, "없는 키");
   assert.equal((await page("/robots.txt")).text.includes("/go"), false, "robots.txt Disallow에 넣지 않음");
@@ -185,6 +202,7 @@ test("d) 랜딩 화면 - 키 꺼짐 404, 켜짐 200(noindex·입력 칸 0·주 �
   const edit = await camp(u.adOps, { ...input(key, { secondaryTarget: "expert_request" }), op: "update", id, title: "시험용 바뀐 제목" });
   assert.equal(edit.status, 200, JSON.stringify(edit.body));
   assert.equal(await statusOf(id), "draft");
+  await restart();
   assert.equal((await page(`/go/${key}`)).status, 404, "승인 뒤 수정 -> 404");
 
   // 기간이 끝난 승인 캠페인 - 도착 화면으로 307
@@ -196,10 +214,12 @@ test("d) 랜딩 화면 - 키 꺼짐 404, 켜짐 200(noindex·입력 칸 0·주 �
   await camp(u.adOps, { op: "submit", id: eid });
   await camp(u.admin, { op: "review", id: eid, reviewer: "시험용 검토자", basisRef: "시험용 검토 문서", scope: ["표시광고법"], result: "approved" });
   assert.equal((await camp(u.admin, { op: "approve", id: eid })).status, 200);
+  await restart();
   const ended = await page(`/go/${endedKey}`);
   assert.equal(ended.status, 307, "기간 끝 307");
   assert.ok(!(ended.headers.get("location") ?? "").includes("utm_"), "도착 주소에 태그 0");
   await camp(u.admin, { op: "withdraw", id: eid });
+  await restart();
   assert.equal((await page(`/go/${endedKey}`)).status, 404, "철회 404");
   await setFlags({ campaign_landings: false, shortcuts: false });
 });
