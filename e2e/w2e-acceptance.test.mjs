@@ -393,7 +393,8 @@ test("4) 시나리오 6 정책 페이지 링크 전수 — 바닥글·기사 하
   assert.equal(fx.crawled.get(`/zz-없는-화면-${run}`).status, 404, "없는 주소는 404(오류 화면도 크롤링 대상)");
   const home = fx.crawled.get("/");
   const hrefs = footerHrefs(home.html);
-  assert.deepEqual(hrefs, ["/about", "/about/editorial-policy", "/about/ethics", "/about/corrections", "/about/ad-policy", "/help/report", "/about/terms", "/about/privacy", "/about/measurement", "/my"]);
+  // 옛 사이트 바닥글 순서(회사 소개·개인정보처리방침·이용약관 …) 뒤에 편집 원칙류·고객센터 (PRD-01A HELP-05, 2026-10-25 PO)
+  assert.deepEqual(hrefs, ["/about", "/about/privacy", "/about/terms", "/about/editorial-policy", "/about/ethics", "/about/corrections", "/about/ad-policy", "/help/report", "/about/measurement", "/my"]);
   const article = fx.crawled.get(`/news/${fx.taxSlug}`);
   assert.deepEqual(footerHrefs(article.html), hrefs, "기사 화면 바닥글도 같은 링크");
   const policyLinks = [...article.html.matchAll(/href="(\/(?:about|help|brief|signup)[^"#]*)"/g)].map((m) => m[1]);
