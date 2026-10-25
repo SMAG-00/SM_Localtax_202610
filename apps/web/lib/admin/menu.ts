@@ -40,6 +40,7 @@ const RULES: readonly MenuRule[] = [
   { id: "review", label: "공통 검수", href: "/admin/review", when: (a) => a.has("review_item.decide"), paths: ["/admin/review"] },
   { id: "pipelines", label: "수집 파이프라인", href: "/admin/pipelines", when: (a) => a.has("pipeline.manage"), paths: ["/admin/pipelines"] },
   // 룰셋·판정표·달력 (RULE-01~04 — W10-a) 세무 감수위원 서명·관리자 승인 / 정확도 대조 (CALC-14·FAM-07) — 세무 감수위원·관리자
+  { id: "guides", label: "감수 가이드", href: "/admin/guides", when: (a) => a.has("guide.edit") || a.has("guide.sign") || a.has("guide.publish"), paths: ["/admin/guides"] },
   { id: "rulesets", label: "룰셋·판정표", href: "/admin/rulesets", when: (a) => a.has("ruleset.read"), paths: ["/admin/rulesets"] },
   { id: "accuracy", label: "정확도 대조", href: "/admin/accuracy", when: (a) => a.has("accuracy.manage"), paths: ["/admin/accuracy"] },
   // 지역 기사 판정판 — 별도 상품 검토 큐·편집 분야 승인 대기·보류 (REG1-14·17 — W4 8단계) — 편집 책임자·관리자

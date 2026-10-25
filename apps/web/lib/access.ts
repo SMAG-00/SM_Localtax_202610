@@ -107,8 +107,9 @@ export const ACTIONS = {
   "billing.manage": "디지털 구독 상품 구성·요금표·주문 조회 (W10-f - 스토어·구독 담당·관리자)",
   "billing.readiness": "실결제 개시 기록 commerce_readiness - PG 계약·통신판매업 신고 (W10-f - 관리자만)",
   // W11 0차 - 3단계 공통 권한 (3단계 설계 3장). 서명은 세무 감수위원만, 공개·승인은 관리자 (역할은 늘리지 않음)
+  "guide.edit": "가이드 초안 만들기·새 버전 초안 (W11-a - 편집 책임자·관리자, 서명·공개는 별도 권한)",
   "guide.sign": "가이드 버전 감수 서명 (W11-a - 세무 감수위원만, 관리자도 못 함)",
-  "guide.publish": "가이드 초안 만들기·서명된 버전 공개 - 가이드 RPC 호출 (W11-a - 관리자만, 서명 뒤)",
+  "guide.publish": "서명된 가이드 버전 공개 - guide_publish() 호출 (W11-a - 관리자만, 서명 뒤)",
   "issue_graph.edit": "쟁점 태그 제안·쟁점 지도 초안 편집 (W11-d - 편집 책임자·관리자)",
   "issue_graph.sign": "쟁점 지도 버전 감수 서명 (W11-d - 세무 감수위원만)",
   "issue_tag.approve": "쟁점 태그 사전·결정례 태그 승인 (W11-d - 편집 책임자·관리자)",
@@ -434,10 +435,12 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     case "billing.readiness":
       return viewer.isAdmin ? ALLOW : deny("실결제 개시 기록(PG 계약·통신판매업 신고)은 관리자만 남깁니다 (PAY-07)");
     // W11 0차 - 3단계 공통 권한 (3단계 설계 3장)
+    case "guide.edit":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("가이드 초안 작성은 편집 책임자와 관리자만 합니다");
     case "guide.sign":
       return has(viewer, "reviewer") ? ALLOW : deny("가이드의 감수 서명은 세무 감수위원(reviewer)만 할 수 있습니다");
     case "guide.publish":
-      return viewer.isAdmin ? ALLOW : deny("가이드 초안 만들기와 공개는 관리자만 합니다 (서명 뒤)");
+      return viewer.isAdmin ? ALLOW : deny("가이드 공개는 관리자만 합니다 (서명 뒤)");
     case "issue_graph.edit":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("쟁점 태그·지도 편집은 편집 책임자와 관리자만 합니다 (LINK)");
     case "issue_graph.sign":

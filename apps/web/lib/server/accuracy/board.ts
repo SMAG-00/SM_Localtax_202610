@@ -53,7 +53,7 @@ export async function loadRulesBoard(db: SupabaseClient) {
   for (const kind of RULE_KINDS) {
     const { data, error } = await db
       .from(RULE_KIND_TABLE[kind])
-      .select(kind === "determination_table" ? `${COLUMNS}, kind` : COLUMNS)
+      .select(kind === "determination_table" ? `${COLUMNS}, kind` : kind === "requirement_dictionary" ? `${COLUMNS}, kind:topic` : COLUMNS)
       .order("version", { ascending: false })
       .limit(100);
     if (error) throw dbError(error, `${RULE_KIND_TABLE[kind]} 조회`);

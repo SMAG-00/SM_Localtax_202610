@@ -108,6 +108,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "billing.manage": [X, X, X, X, O, X, X, O, X],
   "billing.readiness": [X, X, X, X, X, X, X, O, X],
   // W11 0차 - 3단계 공통 권한 (3단계 설계 3장): 서명은 감수위원(2)만, 공개·승인은 관리자(7)만
+  "guide.edit": [X, O, X, X, X, X, X, O, X],
   "guide.sign": [X, X, O, X, X, X, X, X, X],
   "guide.publish": [X, X, X, X, X, X, X, O, X],
   "issue_graph.edit": [X, O, X, X, X, X, X, O, X],

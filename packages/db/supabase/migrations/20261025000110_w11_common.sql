@@ -3,7 +3,7 @@
 -- · 기능 키 10개를 꺼진 채로 미리 넣는다 (이미 있는 키는 건드리지 않는다). 공개 승인 전에는 모두 닫힘. 지자체 허브 자리 redevelopment_status·ordinance_texts는 W4가 이미 둔 키를 쓴다.
 -- · 설정 키 씨앗 4개 - 값은 빈 객체. 실제 값(보유 연수 상한·미리보기 길이·보존 기간·경고 일수)은 감수·PO 결정 입력이라 AI가 쓰지 않는다. 비어 있으면 해당 기능은 열리지 않는다.
 -- · review_items 종류 3개(guide_stale·issue_graph_stale·ordinance_change)와 종류별 필수 체크 키를 더한다. 키는 처리 과정의 라벨이고 법·세무 내용이 아니다.
--- · 직원 권한 이름(guide.sign 등 10개)은 DB가 아니라 apps/web/lib/access.ts ACTIONS에 있다 - 역할 표는 고치지 않는다.
+-- · 직원 권한 이름(guide.edit·guide.sign 등 11개)은 DB가 아니라 apps/web/lib/access.ts ACTIONS에 있다 - 역할 표는 고치지 않는다.
 -- 기존 표 칸·제약·값은 바꾸지 않고 더하기만 한다 (이름·종류 제약은 값만 늘린 같은 이름 제약으로 바꾼다).
 
 alter table public.analytics_events drop constraint analytics_events_name_check;
