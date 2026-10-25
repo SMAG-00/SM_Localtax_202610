@@ -433,6 +433,6 @@ test("m) 홈에는 계산기 카드 줄이 없다 - 계산기는 바로가기 '�
   assert.equal(count(home.text, /data-tool-card=/g), 0, "홈 계산기 카드 0");
   const hub = await html("/calc");
   assert.equal(hub.status, 200);
-  assert.equal(count(hub.text, /data-tool-card="acquisition"/g), 1, "계산기 모음에 취득세 카드 1장");
-  assert.equal(count(hub.text, /data-tool-card="holding"/g), 1, "계산기 모음에 재산세 카드 1장");
+  assert.equal(count(hub.text, /data-link-card="self_acquisition"/g), 1, "계산기 모음에 취득세 카드 1장");
+  assert.equal(count(hub.text, /data-link-card="self_property"/g), 1, "계산기 모음에 재산세·종부세 카드 1장");
 });
