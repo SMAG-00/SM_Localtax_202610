@@ -27,6 +27,16 @@ export interface JobServices {
   submitIndexNow(now: Date): Promise<Record<string, unknown>>;
   /** W7 제휴 준비 월 마감 — 직전 완결 달(과 빠진 최근 달) 행을 만들고 경고 알림을 낸다. 마감 행은 바꾸지 않는다 (NAV-17) */
   closeReadinessMonths(now: Date): Promise<Record<string, unknown>>;
+  /** W10-f 결제 정리 — 오래 끝나지 않은 주문을 PG 조회로 정리, 만기 구독 갱신 결제(고지 기록 없으면 거부), 만기 정리, 카드번호 패턴 스캔. 결과는 수뿐 */
+  reconcileBilling(now: Date): Promise<Record<string, unknown>>;
+  /** W10-f 가격 변경 사전 고지 기록 — 요금제 금액이 마지막 고지와 다른 자동갱신 구독에 고지 기록을 남긴다. 결과는 수뿐 */
+  recordRenewalNotices(now: Date): Promise<Record<string, unknown>>;
+  /** W10-c 법령 감시 — 기능 키 pipelines·LAW_API_OC·원천 이용 조건 중 하나라도 틀리면 요청 0으로 건너뛴다 (PIPE-01). 결과는 수와 이유뿐 */
+  runLawPipeline(now: Date): Promise<Record<string, unknown>>;
+  /** W10-c 행정규칙·해석·결정례 수집 — 원천마다 같은 관문 (PIPE-02~04) */
+  runDocPipelines(now: Date): Promise<Record<string, unknown>>;
+  /** W10-a 정확도 대조 실행 - 활성 룰셋으로 확인된 대조 사례 전부를 엔진에 돌려 기록한다. AI 없음. 활성 룰셋·확인된 사례가 없으면 건너뜀, 엔진이 거부한 사례가 있으면 실패 (CALC-14) */
+  runAccuracy(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -51,6 +61,16 @@ export const jobs: Record<string, Job> = {
   "indexnow-submit": async ({ now, services }) => ({ detail: await services.submitIndexNow(now) }),
   // 제휴 준비 월 마감 (하루 한 번, 같은 달은 이미 마감된 행을 건너뛴다) — 대시보드 숫자가 바뀐다
   "readiness-monthly": async ({ now, services }) => ({ detail: await services.closeReadinessMonths(now), revalidatePublic: false }),
+  // 결제 정리 (하루 한 번) — 주문 상태는 PG 조회가 정한다. 공개 화면 값은 바뀌지 않는다
+  "billing-reconcile": async ({ now, services }) => ({ detail: await services.reconcileBilling(now), revalidatePublic: false }),
+  // 가격 변경 사전 고지 기록 (하루 한 번, 같은 금액은 한 번만 기록)
+  "renewal-notice": async ({ now, services }) => ({ detail: await services.recordRenewalNotices(now), revalidatePublic: false }),
+  // 법령 변경 감시 (하루 한 번) — 후보는 검수 큐에만 쌓이고 공개 화면은 바뀌지 않는다
+  "pipeline-law": async ({ now, services }) => ({ detail: await services.runLawPipeline(now), revalidatePublic: false }),
+  // 행정규칙·해석·결정례 수집 (하루 한 번) — 후보 문서는 권리 확인 전까지 공개되지 않는다
+  "pipeline-docs": async ({ now, services }) => ({ detail: await services.runDocPipelines(now), revalidatePublic: false }),
+  // 정확도 대조 (하루 한 번) - 공개 게이트 뷰가 읽는 실행 기록을 최신으로 맞춘다. 공개 화면 값은 바뀌지 않는다(게이트 상태는 다음 요청부터 반영)
+  "accuracy-run": async ({ now, services }) => ({ detail: await services.runAccuracy(now), revalidatePublic: false }),
 };
 
 export function findJob(name: string): Job | undefined {

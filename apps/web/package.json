@@ -16,6 +16,7 @@
     "@ltr/seo-lint": "workspace:*",
     "@ltr/similarity": "workspace:*",
     "@ltr/structured-data": "workspace:*",
+    "@ltr/tax-engine": "workspace:*",
     "@ltr/ui": "workspace:*",
     "@ltr/workflows": "workspace:*",
     "@supabase/ssr": "0.12.7",

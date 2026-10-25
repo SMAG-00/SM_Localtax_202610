@@ -47,6 +47,7 @@
     "PG_MODE": "server",
     "PG_SECRET_KEY": "server-secret",
     "PG_WEBHOOK_SECRET": "server-secret",
+    "PG_FAKE_URL": "server",
     "NEXT_PUBLIC_PG_CLIENT_KEY": "public",
     "DATA_API_KEY": "server-secret",
     "SCHEDULE_FILE": "server"

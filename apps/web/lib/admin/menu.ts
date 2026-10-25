@@ -36,6 +36,12 @@ const RULES: readonly MenuRule[] = [
   { id: "hub-points", label: "허브 지방세 포인트", href: "/admin/hub-points", when: (a) => a.has("hub_point.edit") || a.has("review.tax_review"), paths: ["/admin/hub-points"] },
   // 원문 검수 큐 (REG1-13 — W4 6단계) — 편집 책임자·관리자
   { id: "source-review", label: "원문 검수", href: "/admin/source-review", when: (a) => a.has("source_review.resolve"), paths: ["/admin/source-review"] },
+  // 공통 검수 큐 (REV-01~03 — W10-c) — 편집 책임자·관리자. 수집 파이프라인 원천·실행 (PIPE — W10-c) — 관리자만
+  { id: "review", label: "공통 검수", href: "/admin/review", when: (a) => a.has("review_item.decide"), paths: ["/admin/review"] },
+  { id: "pipelines", label: "수집 파이프라인", href: "/admin/pipelines", when: (a) => a.has("pipeline.manage"), paths: ["/admin/pipelines"] },
+  // 룰셋·판정표·달력 (RULE-01~04 — W10-a) 세무 감수위원 서명·관리자 승인 / 정확도 대조 (CALC-14·FAM-07) — 세무 감수위원·관리자
+  { id: "rulesets", label: "룰셋·판정표", href: "/admin/rulesets", when: (a) => a.has("ruleset.read"), paths: ["/admin/rulesets"] },
+  { id: "accuracy", label: "정확도 대조", href: "/admin/accuracy", when: (a) => a.has("accuracy.manage"), paths: ["/admin/accuracy"] },
   // 지역 기사 판정판 — 별도 상품 검토 큐·편집 분야 승인 대기·보류 (REG1-14·17 — W4 8단계) — 편집 책임자·관리자
   { id: "regions", label: "지역 기사 판정", href: "/admin/regions", when: (a) => a.has("regional.judge"), paths: ["/admin/regions"] },
   // 프로젝트 트래커 — 프로젝트·단계 기록·정정·공개 전환·지역 연결 (PR-02·03 — W4 14단계) — 편집 책임자·관리자

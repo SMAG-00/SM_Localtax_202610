@@ -85,7 +85,7 @@ test("popular-hourly는 UTC 매시 5분에 한 번씩 — 24개 시간대마다 
   assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T07:05:00Z")), ["popular-hourly"]);
   assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T07:06:00Z")), []);
   const daily = DAY_MINUTES.flatMap((d) => dueJobs(SCHEDULE, d)).filter((j) => j !== "popular-hourly");
-  assert.deepEqual(daily.sort(), ["analytics-retention", "indexnow-submit", "link-check", "privacy-retention", "readiness-monthly", "scheduler-heartbeat", "search-console-daily", "source-expiry"]);
+  assert.deepEqual(daily.sort(), ["accuracy-run", "analytics-retention", "billing-reconcile", "indexnow-submit", "link-check", "pipeline-docs", "pipeline-law", "privacy-retention", "readiness-monthly", "renewal-notice", "scheduler-heartbeat", "search-console-daily", "source-expiry"]);
 });
 
 test("일정 파일의 작업은 모두 작업 목록(workflows)에 있다 — 없는 작업을 부르는 일정 0", async () => {

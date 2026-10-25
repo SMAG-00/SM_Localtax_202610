@@ -32,6 +32,9 @@ importers:
       '@ltr/structured-data':
         specifier: workspace:*
         version: link:../../packages/structured-data
+      '@ltr/tax-engine':
+        specifier: workspace:*
+        version: link:../../packages/tax-engine
       '@ltr/ui':
         specifier: workspace:*
         version: link:../../packages/ui
