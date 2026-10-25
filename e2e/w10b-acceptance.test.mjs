@@ -427,12 +427,12 @@ test("l) 해시 미리 채움·공유 - 기사에서 가져온 값 표시, 요�
   await ctxt.close();
 });
 
-test("m) 홈 계산기 카드 - 취득세·재산세 카드는 세목마다 정확히 1장, 환급 진단은 서명된 판정표가 없어 0장", async () => {
+test("m) 홈에는 계산기 카드 줄이 없다 - 계산기는 바로가기 '부동산 세금 계산기'(/calc)에서 연다 (2026-10-26 PO)", async () => {
   const home = await html("/");
   assert.equal(home.status, 200);
-  assert.equal(count(home.text, /data-tool-card="acquisition"/g), 1);
-  assert.equal(count(home.text, /data-tool-card="holding"/g), 1);
-  assert.equal(count(home.text, /data-tool-card="refund"/g), 0);
-  assert.equal(count(home.text, /data-tool-kind="self"/g), 2);
-  assert.ok(home.text.includes('href="/calc/acquisition"') && home.text.includes('href="/calc/holding"'), "카드 주소에 입력값 0");
+  assert.equal(count(home.text, /data-tool-card=/g), 0, "홈 계산기 카드 0");
+  const hub = await html("/calc");
+  assert.equal(hub.status, 200);
+  assert.equal(count(hub.text, /data-tool-card="acquisition"/g), 1, "계산기 모음에 취득세 카드 1장");
+  assert.equal(count(hub.text, /data-tool-card="holding"/g), 1, "계산기 모음에 재산세 카드 1장");
 });

@@ -118,7 +118,7 @@ function ColumnBody({ section }: { section: ColumnSection }) {
 }
 
 /** 섹션 안 내용 — 아직 화면이 없는 섹션은 null (섹션째 그리지 않는다 — 빈 섹션 0) */
-function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: string, cardImages: ComponentProps<typeof FieldCards>["images"], toolsRow: ReactNode = null): ReactNode | null {
+function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: string, cardImages: ComponentProps<typeof FieldCards>["images"]): ReactNode | null {
   switch (section.key) {
     case "shortcuts":
       return (
@@ -138,7 +138,6 @@ function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: stri
       return (
         <div className="mt-8">
           <FieldCards points={section.points} images={cardImages} />
-          {toolsRow}
           {/* 측정 (W2-c — 카드를 누르면 home_entry_clicked). 그리는 것 0 */}
           <MeasureHomeEntry />
         </div>
@@ -170,13 +169,12 @@ function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: stri
   }
 }
 
-export function HomeSections({ home, heroMedia = null, cardImages, toolsRow = null }: {
-  /** 홈 계산기 픽토그램 카드 한 줄 (HOME-08) - 4대 분야 카드 안, 카드가 없으면 null */
-  toolsRow?: ReactNode; home: HomeData; /** 홈 전체 화면 배경 (설정 hero_media.home) — 없으면 지금의 어두운 그라데이션 */ heroMedia?: ResolvedHeroMedia | null; /** 4대 분야 카드 바탕 그림 */ cardImages?: ComponentProps<typeof FieldCards>["images"] }) {
+export function HomeSections({ home, heroMedia = null, cardImages }: {
+  home: HomeData; /** 홈 전체 화면 배경 (설정 hero_media.home) — 없으면 지금의 어두운 그라데이션 */ heroMedia?: ResolvedHeroMedia | null; /** 4대 분야 카드 바탕 그림 */ cardImages?: ComponentProps<typeof FieldCards>["images"] }) {
   const hero = home.sections.find((s): s is Extract<HomeSection, { key: "hero" }> => s.key === "hero");
   const blocks = home.sections.flatMap((s) => {
     if (s.key === "hero") return [];
-    const body = sectionBody(s, home.today, cardImages, toolsRow);
+    const body = sectionBody(s, home.today, cardImages);
     return body === null ? [] : [{ key: s.key, body }];
   });
   const tones = new Map(sectionTones(blocks.map((b) => b.key)).map((t) => [t.key, t.tone]));
