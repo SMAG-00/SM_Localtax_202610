@@ -69,23 +69,34 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const SCHEDULE = JSON.parse(fs.readFileSync(path.join(ROOT, "apps", "web", "vercel.json"), "utf8")).crons;
 const DAY_MINUTES = Array.from({ length: 24 * 60 }, (_, m) => new Date(Date.UTC(2026, 9, 18, 0, m)));
 
-test("일정 파일의 줄마다 하루 한 번만 돈다 (Vercel Hobby 배포 조건) — 하루 1,440분 중 맞는 분이 정확히 1개", () => {
+// 한 주(일~토, 2026-10-18~24) 1주일치 분 — 요일을 지정한 주간 줄(W10-e 브리핑 초안·발행)은 일주일에 정확히 1번, 어느 날이든 하루 1번을 넘지 않는다
+const WEEK_MINUTES = Array.from({ length: 7 * 24 * 60 }, (_, m) => new Date(Date.UTC(2026, 9, 18, 0, m)));
+
+test("일정 파일의 줄마다 하루 한 번만 돈다 (Vercel Hobby 배포 조건) — 매일 줄은 하루 1,440분 중 맞는 분이 정확히 1개, 요일을 지정한 주간 줄은 일주일에 정확히 1개", () => {
   assert.ok(SCHEDULE.length >= 3);
   for (const { path: p, schedule } of SCHEDULE) {
     const c = parseCron(schedule);
-    const hits = DAY_MINUTES.filter((d) => matches(c, d)).length;
-    assert.equal(hits, 1, `${p} ${schedule}: 하루 ${hits}번`);
+    const weekly = schedule.trim().split(/\s+/)[4] !== "*";
+    if (weekly) {
+      const hits = WEEK_MINUTES.filter((d) => matches(c, d));
+      assert.equal(hits.length, 1, `${p} ${schedule}: 주간 줄이 일주일에 ${hits.length}번`);
+    } else {
+      const hits = DAY_MINUTES.filter((d) => matches(c, d)).length;
+      assert.equal(hits, 1, `${p} ${schedule}: 하루 ${hits}번`);
+    }
   }
 });
 
-test("popular-hourly는 UTC 매시 5분에 한 번씩 — 24개 시간대마다 정확히 1번, 다른 작업은 하루 1번", () => {
+test("popular-hourly는 UTC 매시 5분에 한 번씩 — 24개 시간대마다 정확히 1번, 다른 작업은 하루 1번 (기준 일요일 — 일요일 줄 brief-draft 포함, 월요일 줄 brief-publish는 월요일 UTC 01:00)", () => {
   const perHour = Array.from({ length: 24 }, () => 0);
   for (const d of DAY_MINUTES) for (const job of dueJobs(SCHEDULE, d)) if (job === "popular-hourly") perHour[d.getUTCHours()] += 1;
   assert.deepEqual(perHour, Array.from({ length: 24 }, () => 1));
   assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T07:05:00Z")), ["popular-hourly"]);
   assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T07:06:00Z")), []);
   const daily = DAY_MINUTES.flatMap((d) => dueJobs(SCHEDULE, d)).filter((j) => j !== "popular-hourly");
-  assert.deepEqual(daily.sort(), ["accuracy-run", "analytics-retention", "billing-reconcile", "indexnow-submit", "link-check", "pipeline-docs", "pipeline-field-data", "pipeline-law", "privacy-retention", "readiness-monthly", "renewal-notice", "scheduler-heartbeat", "search-console-daily", "source-expiry"]);
+  assert.deepEqual(daily.sort(), ["accuracy-run", "amendment-alert", "amendment-detect", "analytics-retention", "billing-reconcile", "brief-draft", "brief-reconfirm", "indexnow-submit", "link-check", "ops-ai-budget", "pipeline-docs", "pipeline-field-data", "pipeline-law", "privacy-retention", "readiness-monthly", "renewal-notice", "scheduler-heartbeat", "search-console-daily", "source-expiry"]);
+  assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-19T01:00:00Z")), ["brief-publish"], "월요일 UTC 01:00(한국 10:00)에 브리핑 발행");
+  assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T01:00:00Z")), [], "일요일 같은 시각에는 발행 0");
 });
 
 test("일정 파일의 작업은 모두 작업 목록(workflows)에 있다 — 없는 작업을 부르는 일정 0", async () => {

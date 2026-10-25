@@ -77,6 +77,11 @@ const APPEND_ONLY = new Set([
   "public.field_candidate_checks", // 분야 후보 확인 기록(W10-h) - 읽기·추가만
   "public.field_publications", // 분야 공개 반영 기록(W10-h) - 읽기·추가만
   "public.finance_case_entries", // 개발금융 사례 항목(W10-h) - 읽기·추가·고치기, 지우기 0
+  "public.campaign_landings", // 캠페인 랜딩(W10-i GROW) - 읽기·추가·고치기, 지우기 0, 상태는 함수로
+  "public.campaign_ad_reviews", // 캠페인 광고 심의 기록(W10-i) - 읽기·추가만
+  "public.campaign_audit", // 캠페인 감사 기록(W10-i) - 읽기·추가만
+  "public.realestate_weekly_issues", // 재테크 포인트 주간 호(W10-i) - 읽기·추가·고치기, 지우기 0
+  "public.realestate_weekly_audit", // 재테크 포인트 감사 기록(W10-i) - 읽기·추가만
 ]);
 let client;
 

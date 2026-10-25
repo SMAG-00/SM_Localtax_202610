@@ -92,7 +92,7 @@ test("측정 이벤트 4개 허용, 세션 진입 경로 campaign 허용, 모르
   await tx(async () => {
     const ins = (name, entry = "direct") =>
       attempt(
-        `insert into public.analytics_events (name, session_id, first_visit, stage, entry, is_bot, props) values ($1, gen_random_uuid(), true, 2, $2, false, '{}'::jsonb)`,
+        `insert into public.analytics_events (name, session_id, first_visit, stage, entry, is_bot, is_staff, props) values ($1, gen_random_uuid(), true, 2, $2, false, false, '{}'::jsonb)`,
         [name, entry],
       );
     for (const n of ["shortcut_clicked", "realestate_weekly_viewed", "campaign_landing_viewed", "campaign_cta_clicked"]) assert.equal((await ins(n)).ok, true, n);

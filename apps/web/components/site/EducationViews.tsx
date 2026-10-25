@@ -100,7 +100,7 @@ export function EduListPage({ view }: { view: EduListView }) {
                   <SessionList course={c} />
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-4">
-                  <ApplyLink href={c.applyHref} label="교육원에서 신청하기 ↗" />
+                  <ApplyLink href={c.applyHref} label="교육원에서 신청하기" />
                 </div>
                 <SourceLine source={c.provider_name} verifiedOn={c.sessionsVerifiedOn} />
               </li>
@@ -142,7 +142,7 @@ export function CourseDetailPage({ view }: { view: CourseDetailView }) {
           <SessionList course={c} />
         </div>
         <p className="mt-4 flex flex-wrap items-center gap-4">
-          <ApplyLink href={c.applyHref} label="교육원에서 신청하기 ↗" />
+          <ApplyLink href={c.applyHref} label="교육원에서 신청하기" />
           {view.quoteOpen && (
             <UiLink href={QUOTE_HREF} data-part="quote-entry" className={`${TEXT_LINK} inline-flex min-h-11 items-center`}>
               위탁교육 견적 요청
@@ -260,7 +260,7 @@ export function SeminarDetailPage({ view }: { view: SeminarDetailView }) {
         </p>
         {s.status !== "종료" && s.status !== "취소" && (
           <p className="mt-4">
-            <ApplyLink href={s.applyHref} label="신청 안내 보기 ↗" />
+            <ApplyLink href={s.applyHref} label="신청 안내 보기" />
           </p>
         )}
         <SourceLine source={s.organizer_name} verifiedOn={s.verifiedOn} />

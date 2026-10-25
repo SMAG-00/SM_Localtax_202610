@@ -20,6 +20,8 @@ step "편집국 API E2E (역할별 403·감사 로그·발행 판정)"; node --t
 step "운영 API E2E (분야·사전·설정·제휴사·회원 정지 — 403·422·감사 로그)"; node --test --test-concurrency=1 e2e/admin-settings-api.test.mjs
 step "홈 배치 API E2E (편집 책임자 201·편집국 외 403·7장째 409·끝난 카드 공개 0)"; node --test --test-concurrency=1 e2e/admin-home-api.test.mjs
 step "브라우저 설치 (Playwright Chromium)";  pnpm exec playwright install --with-deps chromium
+step "W10-b 수용 E2E (계산기 화면·위택스 - 게이트 닫힘 SM 카드 1장·열림 자체 카드 전환·질문형 한 화면 1질문·총액=명세 합계·360px·위택스 바로가기 카드·주소 점검)"; node --test --test-concurrency=1 e2e/w10b-acceptance.test.mjs
+step "W10-h 수용 E2E (분야 데이터 연동 - 기자 403·Cron 비밀값 없으면 401·키 꺼짐 flag_off·주소 칸 비어 no_endpoint·승인 전 공개 0→승인→반영 1행·멱등)"; node --test --test-concurrency=1 e2e/w10h-acceptance.test.mjs
 step "W10-i 수용 E2E (바로가기·캠페인 랜딩 - 키 꺼짐 바로가기 줄·카드 0/켜짐 줄·카드·AI 계산기 글자 0·쿼리 주소 0 / 재테크 포인트 키 꺼짐·호 0 404·기자 발행 403·3건 미만 422·8건·투자 권유 표현 422 / 캠페인 금지 표현·보조 링크 2개 422·광고 담당 승인 403+감사·검토 없이 승인 409·검토 뒤 승인 200 / 랜딩 noindex 메타+X-Robots-Tag·입력 칸 0·임의 태그 글자 0·승인 뒤 수정 404·기간 끝 307·철회 404)"; node --test --test-concurrency=1 e2e/w10i-acceptance.test.mjs
 step "계정 기반 E2E (W2-e 1단계 — 로그인 5번 실패 후 6번째 429+retry-after·다른 IP/계정 영향 0·성공하면 짝/계정 횟수 초기화·없는 계정 같은 429·이메일/IP 한도와 설정 변경 즉시 적용·열쇠 없으면 503·표에 원문 0 / 비밀번호 바꾸기 401·403·틀린 현재 비밀번호 422→6번째 429·규칙 위반 422·바꾸면 다른 기기 세션 끊김·감사 로그 1건에 비밀번호 0 / 실제 브라우저 머리말 링크→칸 오류→완료→재로그인·로그인 전 next 유지·noindex)"; node --test --test-concurrency=1 e2e/account-security.test.mjs
 step "가입·인증 E2E (W2-e 2-A — 메일 설정 없음/members 꺼짐이면 404·실제 브라우저 가입→로컬 수신함 메일→확인 버튼→/my·같은 주소 재가입 같은 문장+계정 추가 0·역할 값 무시·봇/Origin 거부·메일 서버 장애 시 로그인은 되고 가입은 503+임시 계정 0·서버 기록에 비밀번호/주소 0)"; node --test --test-concurrency=1 e2e/account-signup.test.mjs

@@ -120,7 +120,7 @@ test("설계 문서 2장의 표를 모두 읽었다 (시험 대상이 빠지지 
   assert.deepEqual(VALUES.get("situations.section"), ["tax", "realestate", "finance", "local"]);
   assert.deepEqual(VALUES.get("home_curations.kind"), ["tracker", "story"]);
   assert.deepEqual(RESERVED.get("regions.slug"), ["events", "weekly", "places", "festivals", "food", "life"]);
-  assert.equal(PUBLIC.get("home_sections").length, 8, "홈 섹션 8개 (HOME-01)");
+  assert.equal(PUBLIC.get("home_sections").length, 9, "홈 섹션 9개 (HOME-01 + W10-i 바로가기)");
   assert.equal(PUBLIC.get("policy_links").length, 7, "기사 하단 정책 링크 7종 (ART-02)");
 });
 

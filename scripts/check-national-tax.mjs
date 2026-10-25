@@ -330,7 +330,9 @@ export function scanRepo(root) {
   let scanned = 0;
   for (const f of files) {
     const full = path.join(root, f);
-    if (!fs.existsSync(full) || fs.statSync(full).size > MAX_BYTES) continue;
+    if (!fs.existsSync(full)) continue;
+    const st = fs.statSync(full);
+    if (st.isDirectory() || st.size > MAX_BYTES) continue; // 다른 작업 트리(.claude/worktrees)가 폴더 한 줄로 잡힐 때 건너뜀
     const buf = fs.readFileSync(full);
     if (buf.includes(0)) continue; // 바이너리
     scanned++;
