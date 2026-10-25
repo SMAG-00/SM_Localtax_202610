@@ -40,10 +40,11 @@ if (!status) {
   process.exit(1);
 }
 
-/** 이 PC 전용 시험용 관리자 — 이미 있으면 그대로 둡니다 */
+/** 이 PC 전용 시험용 관리자 — 이미 있으면 그대로 둡니다.
+ *  시험용 DB를 초기화(db reset)하면 계정만 사라지고 로그인 정보 파일은 남으므로, 파일의 비밀번호로 계정을 다시 만듭니다 */
 async function ensureLocalAdmin() {
-  if (fs.existsSync(ADMIN_FILE)) return;
-  const password = crypto.randomBytes(12).toString("base64url");
+  const saved = fs.existsSync(ADMIN_FILE) ? /비밀번호:\s*(\S+)/.exec(fs.readFileSync(ADMIN_FILE, "utf8"))?.[1] : undefined;
+  const password = saved ?? crypto.randomBytes(12).toString("base64url");
   const res = await fetch(`${status.API_URL}/auth/v1/admin/users`, {
     method: "POST",
     headers: { apikey: status.SERVICE_ROLE_KEY, authorization: `Bearer ${status.SERVICE_ROLE_KEY}`, "content-type": "application/json" },
@@ -55,6 +56,10 @@ async function ensureLocalAdmin() {
   }
   if (res.status === 422) {
     console.log(`시험용 관리자 계정(${ADMIN_EMAIL})이 이미 있습니다. 비밀번호를 잊었으면 시험용 DB를 초기화하세요(supabase db reset).`);
+    return;
+  }
+  if (saved) {
+    console.log(`시험용 관리자 계정을 다시 만들었습니다(시험용 DB 초기화 뒤) — 로그인 정보는 ${ADMIN_FILE} 그대로입니다.`);
     return;
   }
   fs.mkdirSync(path.dirname(ADMIN_FILE), { recursive: true });
