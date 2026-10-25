@@ -1,5 +1,5 @@
 // W11 0차 DB - 3단계 공통 (마이그레이션 20261025000110, docs/dev/3단계_설계.md 2.1 · docs/dev/W11-a_설계.md 1장)
-//  · 이벤트 이름 제약 82종 = W2-c 설계 2.1 표, 새 이벤트 13개는 저장되고 비슷한 이름은 거부
+//  · 이벤트 이름 제약 85종 = W2-c 설계 2.1 표, 새 이벤트 13개는 저장되고 비슷한 이름은 거부
 //  · 기능 키 10개는 꺼진 채로 있고 이전 키 값은 그대로, 설정 씨앗 4개는 빈 객체이며 공개 키가 아님
 //  · review_items 종류 3개가 저장되고 종류별 필수 체크 키가 붙으며, 모르는 종류는 거부
 // 모든 시험은 거래 안에서 돌고 되돌린다 (남는 행 0).
@@ -41,11 +41,11 @@ const insertEvent = (name) =>
     [name],
   );
 
-test("이벤트 이름 제약 - 제약 값 집합은 W2-c 2.1 표 82종과 같고 새 13개가 모두 표에 있다", () =>
+test("이벤트 이름 제약 - 제약 값 집합은 W2-c 2.1 표 85종과 같고 새 13개가 모두 표에 있다", () =>
   tx(async () => {
     const line = W2C.split("\n").find((l) => l.startsWith("| analytics_events.name "));
     const names = [...line.matchAll(/`([a-z_]+)`/g)].map((m) => m[1]);
-    assert.equal(names.length, 82);
+    assert.equal(names.length, 85);
     for (const n of NEW_EVENTS) assert.ok(names.includes(n), `2.1 표에 ${n}`);
     const def = (await client.query("select pg_get_constraintdef(oid) d from pg_constraint where conname = 'analytics_events_name_check'")).rows[0].d;
     const inDb = [...def.matchAll(/'([a-z_]+)'::text/g)].map((m) => m[1]);

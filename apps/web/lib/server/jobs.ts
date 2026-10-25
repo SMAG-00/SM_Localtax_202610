@@ -7,6 +7,7 @@ import { purgePrivacy } from "./accounts/retention";
 import { getBillingRuntime } from "./billing/runtime";
 import { reconcile, recordRenewalNotices } from "./billing/service";
 import { checkLinks } from "./links/check";
+import { closeExpiredContracts, purgeInquiries } from "./org/service";
 import { scanSourceExpiry } from "./source-review/service";
 import { closeReadinessMonths } from "./readiness/monthly";
 import { collectSearchConsole, submitIndexNow } from "./seo/jobs";
@@ -34,6 +35,8 @@ export function jobServices(db: SupabaseClient): JobServices {
       return { ...(await reconcile(db, runtime?.adapter ?? null, runtime?.config ?? null, now)) };
     },
     recordRenewalNotices: async (now) => ({ ...(await recordRenewalNotices(db, now)) }),
+    purgeInstitutionInquiries: (now) => purgeInquiries(db, now),
+    closeExpiredOrgContracts: (now) => closeExpiredContracts(db, now),
     runLawPipeline: (now) => runLawPipeline(db, now),
     runDocPipelines: (now) => runDocPipelines(db, now),
     runFieldPipelines: (now) => runFieldPipelines(db, now),

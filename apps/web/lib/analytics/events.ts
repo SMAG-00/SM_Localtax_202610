@@ -3,7 +3,7 @@
 import { CONTENT_TYPES, FORMATS, detectPii } from "@ltr/editorial";
 import { NEXT_ACTION_KEYS, SECTION_KEYS, type SectionKey } from "@/lib/server/public/constants";
 
-/** 이벤트 이름 82종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 34종 + W10-i 4종 + W11 13종 — DB check 제약 analytics_events.name과 같다) */
+/** 이벤트 이름 85종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 34종 + W10-i 4종 + W11 13종 + W11-f 3종 — DB check 제약 analytics_events.name과 같다) */
 export const EVENT_NAMES = [
   "home_entry_clicked",
   "hub_viewed",
@@ -93,6 +93,10 @@ export const EVENT_NAMES = [
   "institution_inquiry_sent",
   "premium_report_viewed",
   "org_seat_invited",
+  // W11-f - 기관 견적 요청 접수 · 기관 좌석 초대 수락 · 프리미엄 리포트 미리보기(잠금 화면) 보기. 속성 칸 없음(기관·회원·리포트 식별 값 0)
+  "institution_inquiry_submitted",
+  "org_seat_accepted",
+  "report_previewed",
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -305,6 +309,9 @@ export const EVENT_SPECS: Readonly<Record<EventName, EventSpec>> = {
   institution_inquiry_sent: { section: "none", props: { product_id: id, org_type: oneOf(PROP_VALUES["institution.org_type"]) } },
   premium_report_viewed: { section: "none", props: { report_id: id, seated: bool } },
   org_seat_invited: { section: "none", props: { org_type: oneOf(PROP_VALUES["institution.org_type"]) } },
+  institution_inquiry_submitted: { section: "none", props: {} },
+  org_seat_accepted: { section: "none", props: {} },
+  report_previewed: { section: "none", props: {} },
 };
 
 export const isEventName = (v: unknown): v is EventName => typeof v === "string" && (EVENT_NAMES as readonly string[]).includes(v);

@@ -120,9 +120,9 @@ export const ACTIONS = {
   "issue_tag.approve": "쟁점 태그 사전·결정례 태그 승인 (W11-d - 편집 책임자·관리자)",
   "ordinance.manage": "자치법규 연결·확인일 갱신 (W11-e - 편집 책임자·관리자)",
   "ordinance_summary.sign": "조례 편집 요약 감수 서명 (W11-e - 세무 감수위원만)",
-  "org.manage": "기관·계약·좌석 운영 (W11-f - 스토어·구독 담당·관리자)",
-  "org_security.approve": "기관 보안·개인정보 확인표 승인 - 승인 전 좌석 개통 0 (W11-f - 관리자만)",
-  "report.publish": "프리미엄 리포트 발행 (W11-f - 편집 책임자·관리자, 세무 감수 + 편집 승인 뒤)",
+  "org.manage": "기관·계약·좌석·세금계산서 발행 기록·견적 요청 관리 (W11-f BIZ-07 - 스토어·구독 담당·관리자)",
+  "org_security.approve": "기관 보안·개인정보 확인표 승인 기록 (W11-f BIZ-07 - 관리자(PO)만)",
+  "report.publish": "프리미엄 리포트 편집·감수 기록·발행 (W11-f BIZ-07 - 편집 책임자·관리자)",
   "special_law.confirm": "특례법 확인 기록 — 공포 확인·철회와 특례법 근거 행의 확인·철회 (관리자(PO)만, W4 20단계 PR-13)",
 } as const;
 export type Action = keyof typeof ACTIONS;
