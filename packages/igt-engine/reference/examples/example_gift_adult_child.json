@@ -1,0 +1,14 @@
+{
+  "_설명": "성인 자녀가 아버지로부터 현금 5억원 증여 — 표준 사례 (공제 5천만, 과세표준 4.5억)",
+  "type": "gift",
+  "gift_date": "2026-08-10",
+  "donor_relationship": "lineal_ascendant",
+  "recipient_is_minor": false,
+  "recipient_is_resident": true,
+  "gift_value": 500000000,
+  "deduction_used_10y": 0,
+  "prior_gifts_same_donor_10y": [],
+  "marriage_birth": { "applicable": false },
+  "generation_skip": false,
+  "filed_on_time": true
+}

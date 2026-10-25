@@ -1,0 +1,22 @@
+{
+  "_설명": "배우자 + 자녀 2명, 상속재산 10억 — 일괄공제 5억 + 배우자공제 최소 5억으로 세액 0이 되는 대표 사례",
+  "type": "inheritance",
+  "death_date": "2026-03-15",
+  "decedent_resident": true,
+  "assets": {
+    "real_estate": 700000000,
+    "financial": 300000000
+  },
+  "deemed_assets": {},
+  "debts": 0,
+  "public_charges": 0,
+  "funeral_expenses": 0,
+  "heirs": {
+    "spouse_exists": true,
+    "children_count": 2
+  },
+  "spouse_actual_inheritance": 400000000,
+  "net_financial_assets": 300000000,
+  "prior_gifts": {},
+  "filed_on_time": true
+}
