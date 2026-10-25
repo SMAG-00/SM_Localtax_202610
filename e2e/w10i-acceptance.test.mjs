@@ -2,7 +2,8 @@
 // standalone 빌드를 로컬 Supabase에 붙인다. 기능 키는 시험 안에서 켜고 끝나면 운영 설정 스냅샷으로 되돌린다.
 // 캠페인 문구·검토 기록은 전부 시험용 가짜다. 브라우저가 필요한 항목(클릭 측정 전송·GPC 전송 0·360px 배치·계산 결과 -> 상담 요청 흐름)은 이 파일 밖 체크리스트(DEPLOY)로 둔다.
 //  a) 헤더·홈 - 키 shortcuts 꺼짐: 바로가기 줄·홈 카드 0 / 켜짐: 줄과 카드, 'AI 계산기' 글자 0, 바로가기 주소에 쿼리·해시 0
-//  b) 재테크 포인트 - 키 꺼짐·공개 호 0 -> 404, 기자 호 만들기 200·발행 403, 편집 책임자 3건 미만 발행 422
+//  a2) 바로가기는 메뉴 - 키 shortcuts만 켜면 도착 키·공개 호 없이도 4개, 네 도착 모두 200(준비 중 안내, noindex) / shortcuts 꺼짐이면 도착 404 그대로
+//  b) 재테크 포인트 - shortcuts 꺼짐: 키 꺼짐·공개 호 0 -> 404 / shortcuts 켜짐 + 호 0 -> 200 준비 중, 기자 호 만들기 200·발행 403, 편집 책임자 3건 미만 발행 422
 //  c) 캠페인 작성·승인 - 금지 표현·보조 링크 2개 422 / 광고 담당 작성·제출 200, 승인 403+감사 / 관리자 승인: 검토 기록 없음 409 -> 검토 후 200, 작성자 본인 승인 거부
 //  d) 랜딩 화면 - 키 꺼짐 404 / 켜짐 200 + noindex 메타·X-Robots-Tag·입력 칸 0·주 버튼 1 / 초안·철회 404 / 승인 뒤 제목 수정 -> 404 / 기간 끝 307 / 임의 태그 문자열 화면에 0
 import { test, before, after } from "node:test";
@@ -117,14 +118,53 @@ test("a) 헤더·홈 - 키 shortcuts 꺼짐이면 바로가기 줄·카드 0, �
   assert.ok(heroAt > 0, "카드는 본문 안");
 });
 
-test("b) 재테크 포인트 - 키 꺼짐·공개 호 0이면 404, 기자 호 만들기 200·발행 403, 편집 책임자는 3건 미만 발행 422", async () => {
-  await setFlags({ realestate_weekly: false });
+test("a2) 바로가기는 메뉴 - 키 shortcuts만 켜면 도착 키·공개 호가 없어도 4개가 보이고, 네 도착이 모두 404 없이 200이다 (PO 2026-10-26)", async () => {
+  // 도착 키를 모두 끄고 바로가기만 켠다 (공개 호 0은 시험 DB 기본 상태가 아닐 수 있어 도착 화면의 준비 중 상태는 키 꺼짐으로 만든다)
+  await setFlags({ shortcuts: true, calc: false, expert_requests: false, brief_regular: false, realestate_weekly: false });
+  await restart();
+  const home = await page("/");
+  assert.equal(home.status, 200);
+  const nav = home.text.split('aria-label="바로가기"')[1].split("</nav>")[0];
+  const hrefs = [...nav.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(hrefs.length, 4, `헤더 바로가기 4개: ${hrefs.join(",")}`);
+  assert.equal(hrefs.at(-1), "/experts/request", "상담 요청은 마지막");
+  assert.ok(hrefs.includes("/calc") && hrefs.includes("/realestate/weekly"));
+  assert.ok(hrefs.some((h) => h === "/brief" || /^\/brief\/\d{4}-\d{2}-\d{2}$/.test(h)), "법령·해석은 /brief 또는 최신 호");
+  const cards = home.text.split('data-part="shortcut-cards"')[1] ?? "";
+  for (const h of hrefs) assert.ok(cards.includes(`href="${h}"`), `홈 카드에도 ${h}`);
+  for (const h of hrefs) {
+    const res = await page(h);
+    assert.equal(res.status, 200, `${h} 200 (404 아님)`);
+  }
+  const weekly = await page("/realestate/weekly");
+  assert.ok(weekly.text.includes("이번 주 재테크 포인트를 준비하고 있습니다"), "재테크 포인트 준비 중 문구");
+  assert.match(weekly.text, /<meta name="robots" content="[^"]*noindex/, "준비 중 화면은 noindex");
+  assert.ok(weekly.text.includes('href="/realestate"'), "부동산재테크 허브 링크");
+  assert.match((await page("/calc")).text, /준비하고 있습니다/, "계산기 키 꺼짐 -> 준비 중");
+  assert.match((await page("/experts/request")).text, /준비하고 있습니다/, "상담 요청 닫힘 -> 준비 중");
+  assert.match((await page("/experts/request")).text, /<meta name="robots" content="[^"]*noindex/);
+  const brief = await page("/brief");
+  assert.ok(brief.text.includes("첫 호를 준비하고 있습니다") || brief.text.includes('data-testid="brief-archive"'), "/brief는 빈 상태 또는 아카이브");
+
+  // 바로가기 키가 꺼지면 도착은 예전처럼 404 (메뉴가 없으면 빈 화면도 없다)
+  await setFlags({ shortcuts: false });
+  await restart();
+  for (const p of ["/realestate/weekly", "/calc", "/experts/request"]) assert.equal((await page(p)).status, 404, `${p} 바로가기 꺼짐 -> 404`);
+});
+
+test("b) 재테크 포인트 - 바로가기 꺼짐·키 꺼짐이면 404, 바로가기 켜짐·공개 호 0이면 200 준비 중, 기자 호 만들기 200·발행 403, 편집 책임자는 3건 미만 발행 422", async () => {
+  await setFlags({ shortcuts: false, realestate_weekly: false });
   await restart();
   assert.equal((await page("/realestate/weekly")).status, 404, "키 꺼짐");
   await setFlags({ realestate_weekly: true });
   await restart();
-  assert.equal((await page("/realestate/weekly")).status, 404, "공개 호 0");
-  assert.equal((await page("/realestate/weekly/2001-01")).status, 404, "호별도 404");
+  assert.equal((await page("/realestate/weekly")).status, 404, "바로가기 꺼짐 + 공개 호 0");
+  await setFlags({ shortcuts: true });
+  await restart();
+  const empty = await page("/realestate/weekly");
+  assert.equal(empty.status, 200, "바로가기 켜짐 + 공개 호 0 -> 준비 중 200");
+  assert.ok(empty.text.includes("이번 주 재테크 포인트를 준비하고 있습니다"));
+  assert.equal((await page("/realestate/weekly/2001-01")).status, 404, "호별은 404 그대로");
   assert.equal((await page("/realestate/weekly/abc")).status, 404, "주 모양이 틀리면 404");
 
   const week = `9${String(Date.now()).slice(-3)}-${String(1 + (Date.now() % 52)).padStart(2, "0")}`;

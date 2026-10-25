@@ -10,7 +10,7 @@ import { toolLinkFor } from "@/lib/calc/tool-link";
 import { getCalcTools } from "@/lib/server/public/calc-tools";
 import { readPublicSettings } from "@/lib/server/public/reads";
 import { readShortcutInputs } from "@/lib/server/public/shortcuts";
-import { buildShortcuts } from "@/lib/server/public/shortcuts-logic";
+import { openDestinations } from "@/lib/server/public/shortcuts-logic";
 import { adminClient } from "@/lib/server/supabase";
 
 // 캠페인 랜딩 (/go/[campaign], GROW-03) - 승인되고 기간 안인 캠페인만 200. 초안·철회·없는 키는 404, 기간이 끝나면 도착 화면으로 307(도착이 닫혀 있으면 홈).
@@ -34,7 +34,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
         readPublicSettings(),
       ]);
       const inputs = await readShortcutInputs({ ...settings.features, shortcuts: true });
-      const open = buildShortcuts({ ...settings.features, shortcuts: true }, inputs);
+      // 캠페인은 메뉴 바로가기가 아니라 '실제로 열린 도착'만 쓴다 - 닫혀 있으면 기존대로 도착 화면/홈으로 307
+      const open = openDestinations(settings.features, inputs);
       // 계산기 도착은 toolLinkFor 하나로 정한다 - 게이트가 닫힌 도구는 허브로 (W10-b 규칙)
       const calc = await getCalcTools();
       const selfTools: SelfToolHrefs = Object.fromEntries(

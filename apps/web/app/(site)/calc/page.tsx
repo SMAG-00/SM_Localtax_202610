@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { CalcHub } from "@/components/site/calc/CalcHub";
+import { ComingSoon } from "@/components/site/ComingSoon";
+import { OfficialLinkCard, linkSiteLabel } from "@/components/site/OfficialLinkCard";
+import { getCalcClosedView } from "@/lib/server/public/calc";
+import { shortcutLabel } from "@/lib/server/public/shortcuts-logic";
 import { CalcUnavailable } from "@/components/site/calc/Unavailable";
 import { visibleGuides } from "@/lib/calc/guide";
 import { toolLinkFor } from "@/lib/calc/tool-link";
@@ -20,7 +24,22 @@ export default async function CalcPage() {
   await connection();
   const tools = await readPublic("세금 계산기", () => getCalcTools(), () => UNAVAILABLE);
   if (isUnavailable(tools)) return <CalcUnavailable />;
-  if (tools === null) notFound();
+  if (tools === null) {
+    // 바로가기(메뉴)가 켜져 있으면 계산기 키가 꺼져 있어도 404 대신 준비 중 안내 + (있으면) SM 계산기 카드 (PO 2026-10-26)
+    const closed = await readPublic("세금 계산기 준비 중", () => getCalcClosedView(), () => UNAVAILABLE);
+    if (isUnavailable(closed) || closed === null) notFound();
+    return (
+      <ComingSoon title={shortcutLabel("calc")} notice="계산기를 준비하고 있습니다." links={[{ href: "/", label: "홈으로 가기" }]}>
+        {closed.sm.length > 0 && (
+          <ul data-part="tool-cards" className="mt-8 grid gap-4 sm:grid-cols-2">
+            {closed.sm.map((c, i) => (
+              <OfficialLinkCard key={c.id} card={c} site={linkSiteLabel(c.kind)} fallbacks={closed.fallbacks} rank={i + 1} />
+            ))}
+          </ul>
+        )}
+      </ComingSoon>
+    );
+  }
   const ctx = tools.context;
   return (
     <CalcHub

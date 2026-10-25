@@ -91,6 +91,22 @@ export async function getSmCalculatorCard(calcKey: string, features: { sm_calcul
   return card ? { card, fallbacks: cards.filter((c) => c.kind === "fallback") } : null;
 }
 
+/**
+ * 계산기가 닫혀 있을 때(키 calc 꺼짐)의 '준비 중' 화면 데이터 - 바로가기(메뉴)가 켜져 있을 때만 값이 있고, 아니면 null(화면 404).
+ * 이 사이트 계산기는 없으므로 SM 계산기 카드(키 sm_calculator가 켜져 있고 주소가 있는 것)만 담는다 - 없으면 빈 목록
+ */
+export async function getCalcClosedView(): Promise<CalcView | null> {
+  const features = (await readPublicSettings()).features;
+  if (features.calc || !features.shortcuts) return null;
+  if (!features.sm_calculator) return { sm: [], external: [], fallbacks: [] };
+  const rows = await rowsOf<Row>(publicDb().from("official_links").select(OFFICIAL_LINK_COLUMNS).not("url", "is", null).order("sort").order("id"), "바깥 연결");
+  const cards = rows.flatMap((r) => {
+    const c = toLinkCard(r);
+    return c ? [c] : [];
+  });
+  return { sm: cards.filter((c) => c.kind === "sm_calculator").slice(0, SM_CARD_LIMIT), external: [], fallbacks: cards.filter((c) => c.kind === "fallback") };
+}
+
 export async function getCalcView(): Promise<CalcView | null> {
   const settings = await readPublicSettings();
   if (!settings.features.calc) return null;

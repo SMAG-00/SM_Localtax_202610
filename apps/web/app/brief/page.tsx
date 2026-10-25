@@ -22,14 +22,17 @@ const input = "mt-1 block min-h-11 w-full rounded-xl border border-navy-200 bg-w
 
 export default async function BriefPage({ searchParams }: Props) {
   const db = adminClient();
+  // 호 읽기(아카이브)는 메일 설정이 필요 없다 - 메일·처리방침 게시본은 구독 양식·API만 쓴다. 닫힌 사이트에서는 기존대로 404
   const secret = guardSecret();
-  if (!db || !secret || !(await briefOpen(db).catch(() => false))) notFound();
+  const subscribeOpen = !!(db && secret && (await briefOpen(db).catch(() => false)));
+  const regular = db ? await featureOn(db, "brief_regular").catch(() => false) : false;
+  const menu = db ? await featureOn(db, "shortcuts").catch(() => false) : false; // 바로가기(메뉴)가 켜져 있으면 항상 열린다 (PO 2026-10-26)
+  if (!subscribeOpen && !regular && !menu) notFound();
   const q = await searchParams;
   const done = q.done === "sent" || q.done === "already" ? q.done : null;
   const error = typeof q.e === "string" && isBriefCode(q.e) && q.e !== "sent" && q.e !== "already" ? q.e : null;
-  const regular = await featureOn(db, "brief_regular").catch(() => false);
   const archive = regular ? await rowsOf<{ issue_no: number; title: string; publish_at: string }>(publicDb().from("public_brief_issues").select("issue_no, title, publish_at").order("publish_at", { ascending: false }).limit(100), "브리핑 아카이브") : [];
-  const fill = openFillToken(secret);
+  const fill = subscribeOpen && secret ? openFillToken(secret) : "";
   return (
     <main className="mx-auto w-full max-w-md px-4 py-16">
       <p className="text-[17px] font-extrabold tracking-tight text-navy-900">
@@ -37,14 +40,16 @@ export default async function BriefPage({ searchParams }: Props) {
       </p>
       <div className="mt-8 rounded-2xl border border-navy-100 bg-white p-6">
         <Eyebrow>BRIEFING</Eyebrow>
-        <h1 className="mt-3 text-[28px] leading-tight font-black text-navy-900">브리핑 알림 받기</h1>
+        <h1 className="mt-3 text-[28px] leading-tight font-black text-navy-900">{subscribeOpen ? "브리핑 알림 받기" : "브리핑"}</h1>
         {regular ? (
           <div className="mt-3 text-[15px] text-navy-600">
-            <p>
-              <Link href="/brief/subscribe" className="font-bold underline" data-testid="brief-subscribe-link">구독하기</Link>
-            </p>
+            {subscribeOpen && (
+              <p>
+                <Link href="/brief/subscribe" className="font-bold underline" data-testid="brief-subscribe-link">구독하기</Link>
+              </p>
+            )}
             {archive.length === 0 ? (
-              <p className="mt-2" data-testid="brief-archive-empty">아직 발행된 호가 없습니다.</p>
+              <p className="mt-2" data-testid="brief-archive-empty">첫 호를 준비하고 있습니다.</p>
             ) : (
               <ul className="mt-3 space-y-2 rounded-2xl border border-sky-200 bg-sky-50 p-3" data-testid="brief-archive" aria-label="지난 호">
                 {archive.map((a) => (
@@ -60,10 +65,16 @@ export default async function BriefPage({ searchParams }: Props) {
               </ul>
             )}
           </div>
-        ) : (
+        ) : subscribeOpen ? (
           <p className="mt-3 text-[15px] text-navy-600">브리핑 발행은 아직 시작 전입니다. 이메일을 남기시면 첫 발행을 알려 드립니다.</p>
+        ) : (
+          <p className="mt-3 text-[15px] text-navy-600" data-testid="brief-archive-empty">첫 호를 준비하고 있습니다.</p>
         )}
-        {done ? (
+        {!subscribeOpen ? (
+          <p className="mt-6 text-[15px]">
+            <Link href="/" className="font-bold underline">홈으로 가기</Link>
+          </p>
+        ) : done ? (
           <p role="status" data-testid="brief-done" data-code={done} className="mt-6 rounded-xl border border-navy-100 bg-navy-50 px-4 py-3 text-[15px] font-bold text-navy-900">
             {BRIEF_MESSAGES[done]}
           </p>

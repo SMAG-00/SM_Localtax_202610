@@ -3,7 +3,10 @@ import { briefOpen } from "@/lib/server/auth-guard";
 import { adminClient } from "@/lib/server/supabase";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { ComingSoon } from "@/components/site/ComingSoon";
 import { ExpertRequestPageView } from "@/components/site/ExpertViews";
+import { readPublicSettings } from "@/lib/server/public/reads";
+import { shortcutLabel } from "@/lib/server/public/shortcuts-logic";
 import type { SearchParams } from "@/components/site/routes";
 import { UnavailablePage } from "@/components/site/Unavailable";
 import { REQUEST_SOURCES } from "@/lib/experts/logic";
@@ -20,7 +23,18 @@ export default async function ExpertRequestPage({ searchParams }: { searchParams
   const sp = await searchParams;
   const view = await readPublic("전문가 연락 요청 양식", () => getExpertRequestForm(), () => UNAVAILABLE);
   if (isUnavailable(view)) return <UnavailablePage />;
-  if (!view.open) notFound();
+  if (!view.open) {
+    // 바로가기(메뉴)가 켜져 있으면 양식이 아직 닫혀 있어도 404 대신 준비 중 안내 (PO 2026-10-26)
+    const features = (await readPublicSettings()).features;
+    if (!features.shortcuts) notFound();
+    return (
+      <ComingSoon
+        title={shortcutLabel("expert_request")}
+        notice="상담 요청 접수를 준비하고 있습니다."
+        links={features.experts ? [{ href: "/experts", label: "전문가 소개 보기" }, { href: "/", label: "홈으로 가기" }] : [{ href: "/", label: "홈으로 가기" }]}
+      />
+    );
+  }
   const source = queryValue(sp.source) ?? "";
   const admin = adminClient();
   const subscribeOpen = admin ? await briefOpen(admin).catch(() => false) : false;

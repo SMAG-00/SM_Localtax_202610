@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { siteUrl } from "@/lib/server/env";
+import { ComingSoon } from "@/components/site/ComingSoon";
 import { RealestateWeeklyView } from "@/components/site/RealestateWeeklyView";
 import { isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
 import { getRealestateWeekly } from "@/lib/server/public/realestate-weekly";
@@ -16,8 +17,16 @@ export const metadata: Metadata = {
 
 export default async function RealestateWeeklyPage() {
   await connection();
-  const data = await readPublic("이번 주 재테크 포인트", async () => ({ issue: await getRealestateWeekly(), calcOpen: (await readPublicSettings()).features.calc }), () => UNAVAILABLE);
-  if (isUnavailable(data) || !data.issue) notFound();
+  const data = await readPublic("이번 주 재테크 포인트", async () => {
+    const features = (await readPublicSettings()).features;
+    return { issue: await getRealestateWeekly(), calcOpen: features.calc, menu: features.shortcuts };
+  }, () => UNAVAILABLE);
+  if (isUnavailable(data)) notFound();
+  // 바로가기(메뉴)가 켜져 있으면 발행된 호가 없어도 404 대신 준비 중 안내 (PO 2026-10-26)
+  if (!data.issue) {
+    if (!data.menu) notFound();
+    return <ComingSoon title="이번 주 재테크 포인트" notice="이번 주 재테크 포인트를 준비하고 있습니다." links={[{ href: "/realestate", label: "부동산재테크 보기" }]} />;
+  }
   return (
     <RealestateWeeklyView issue={data.issue} calcOpen={data.calcOpen} site={siteUrl()} />
   );

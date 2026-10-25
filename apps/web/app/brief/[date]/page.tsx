@@ -5,6 +5,7 @@ import { Eyebrow, brand } from "@ltr/ui";
 import { issueSlug } from "@ltr/workflows/ops";
 import { IssueView, type ViewCorner } from "@/components/brief/IssueView";
 import { briefOpen } from "@/lib/server/auth-guard";
+import { guardSecret } from "@/lib/server/env";
 import { featureOn, readBriefPolicy } from "@/lib/server/brief/policy";
 import { publicDb, rowsOf } from "@/lib/server/public/db";
 import { adminClient } from "@/lib/server/supabase";
@@ -25,7 +26,9 @@ interface Row {
 export default async function BriefIssuePage({ params }: { params: Promise<{ date: string }> }) {
   const { date } = await params;
   const admin = adminClient();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !admin || !(await briefOpen(admin).catch(() => false)) || !(await featureOn(admin, "brief_regular").catch(() => false))) notFound();
+  // 호 읽기는 메일 설정이 필요 없다 (키 brief_regular + 공개 호만) - 구독 링크만 메일·처리방침 게시본이 열려 있을 때 붙인다
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !admin || !(await featureOn(admin, "brief_regular").catch(() => false))) notFound();
+  const subscribeOpen = !!guardSecret() && (await briefOpen(admin).catch(() => false));
   const rows = await rowsOf<Row>(publicDb().from("public_brief_issues").select("issue_no, title, publish_at, corners, has_ad").order("publish_at", { ascending: false }).limit(200), "브리핑 호");
   const issue = rows.find((r) => issueSlug(new Date(r.publish_at)) === date);
   if (!issue) notFound();
@@ -61,10 +64,14 @@ export default async function BriefIssuePage({ params }: { params: Promise<{ dat
           </p>
         )}
         <p>
-          <Link href="/brief/subscribe" className="underline">
-            구독하기
-          </Link>{" "}
-          ·{" "}
+          {subscribeOpen && (
+            <>
+              <Link href="/brief/subscribe" className="underline">
+                구독하기
+              </Link>{" "}
+              ·{" "}
+            </>
+          )}
           <Link href="/brief" className="underline">
             지난 호 보기
           </Link>

@@ -325,5 +325,5 @@ await setFlags(true);
 await db.end();
 console.log(`\n준비됐습니다. 최대 30초 뒤(공개 데이터 캐시) ${base}/calc 를 열어 보세요. 값은 모두 시험용이며 실제 세금과 다릅니다.`);
 console.log("  /calc  /calc/acquisition  /calc/holding  /calc/refund  /calc/compare  /calc/accuracy  /realestate/weekly  /experts/request  /brief/날짜  (홈 바로가기)");
-console.log("참고: /brief/날짜 화면은 사이트에 메일 설정(MAIL_*)과 brief 키가 있어야 열립니다. 홈 바로가기 링크는 보이지만 메일 설정이 없으면 그 화면은 404입니다.");
+console.log("참고: 바로가기는 메뉴라 shortcuts 키만 켜져 있으면 4개가 늘 보이고, 내용이 없는 도착 화면은 '준비 중'으로 열립니다(브리핑 읽기는 메일 설정 없이도 열림).");
 console.log("끄기: pnpm dev:calc-demo -- --off   지우기: pnpm dev:calc-demo -- --purge");

@@ -13,12 +13,12 @@ describe("화면 틀 바로가기", () => {
     expect(c.shortcuts).toEqual([]);
     expect(c.utilities.map((u) => u.key)).toEqual(["calc", "experts"]);
   });
-  test("키가 켜지면 열린 도착만, 상담 요청은 마지막", () => {
-    const c = buildChrome([], new Map(), on("shortcuts", "calc", "expert_requests"), new Map(), null, { briefHref: null, weeklyOpen: false });
-    expect(c.shortcuts.map((s) => s.key)).toEqual(["calc", "expert_request"]);
+  test("키 shortcuts만 켜지면 도착 키·공개 호가 없어도 4개, 상담 요청은 마지막", () => {
+    const c = buildChrome([], new Map(), on("shortcuts"), new Map(), null, { briefHref: null, weeklyOpen: false });
+    expect(c.shortcuts.map((s) => [s.key, s.href])).toEqual([["calc", "/calc"], ["realestate_weekly", "/realestate/weekly"], ["brief_weekly", "/brief"], ["expert_request", "/experts/request"]]);
   });
   test("최신 호 주소와 설정 순서를 반영한다", () => {
     const c = buildChrome([], new Map(), on("shortcuts", "calc", "brief_regular"), new Map(), null, { briefHref: "/brief/2026-10-26", weeklyOpen: false }, ["brief_weekly", "calc", "realestate_weekly"]);
-    expect(c.shortcuts.map((s) => [s.key, s.href])).toEqual([["brief_weekly", "/brief/2026-10-26"], ["calc", "/calc"]]);
+    expect(c.shortcuts.map((s) => [s.key, s.href])).toEqual([["brief_weekly", "/brief/2026-10-26"], ["calc", "/calc"], ["realestate_weekly", "/realestate/weekly"], ["expert_request", "/experts/request"]]);
   });
 });
