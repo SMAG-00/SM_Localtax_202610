@@ -3,7 +3,7 @@
 import { CONTENT_TYPES, FORMATS, detectPii } from "@ltr/editorial";
 import { NEXT_ACTION_KEYS, SECTION_KEYS, type SectionKey } from "@/lib/server/public/constants";
 
-/** 이벤트 이름 69종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 34종 + W10-i 4종 — DB check 제약 analytics_events.name과 같다) */
+/** 이벤트 이름 82종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 34종 + W10-i 4종 + W11 13종 — DB check 제약 analytics_events.name과 같다) */
 export const EVENT_NAMES = [
   "home_entry_clicked",
   "hub_viewed",
@@ -79,6 +79,20 @@ export const EVENT_NAMES = [
   "realestate_weekly_viewed",
   "campaign_landing_viewed",
   "campaign_cta_clicked",
+  // W11 0차 (PRD-03 12장 · 3단계 설계 2.1) - 가이드·판정·총비용·상속증여 다음 확인·정비 단계/구역·쟁점 지도·조례·기관 문의·리포트·좌석 측정. 입력값·금액·기관명·이메일 칸 없음
+  "guide_viewed",
+  "determination_completed",
+  "total_cost_started",
+  "total_cost_completed",
+  "family_next_check_opened",
+  "step_viewed",
+  "zone_viewed",
+  "issue_map_viewed",
+  "issue_map_source_opened",
+  "ordinance_viewed",
+  "institution_inquiry_sent",
+  "premium_report_viewed",
+  "org_seat_invited",
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -148,6 +162,19 @@ export const PROP_VALUES = {
   "billing.period": ["monthly", "yearly"],
   "order.product_kind": ["digital", "print", "course", "seminar"],
   "training.org_type": ["public", "corporate", "association", "other"],
+  // W11 0차 - PRD-03 12장 이벤트 속성의 값 목록 (W2-c 설계 2.3). 판정 종류는 판정표 kind(마이그레이션 112), 쟁점 관계는 issue_graphs relation, 조례 종류는 ordinance_links.kind
+  "guide.hub": ["realestate_tax", "trust", "redevelopment", "finance_tax"],
+  "guide.tax_scope": ["local", "national", "both"],
+  "determination.kind": ["house_count", "trust_taxpayer", "redevelopment_right", "house_count_inheritance", "house_count_gift", "redevelopment_tax", "trust_acquisition"],
+  "total_cost.entry_path": ["realestate_tax", "calc_index", "article", "situation", "direct"],
+  "family_next.from": ["guide_page", "situation_page", "acquisition_result"],
+  "family_next.target": ["house_count", "holding_tax", "transfer_guide"],
+  "zone.entry": ["dev_method_compare", "local_hub_block"],
+  "issue_map.entry": ["hub", "guide", "case_list", "direct"],
+  "issue_map.relation": ["delegation", "mutatis", "requirement", "precedent"],
+  "ordinance.kind": ["urban_redevelopment", "tax_reduction", "tax_rate"],
+  "ordinance.entry": ["local_hub", "tax_hub", "realestate_hub"],
+  "institution.org_type": ["local_government", "tax_firm", "financial_institution"],
 } as const satisfies Record<string, readonly string[]>;
 
 type Field =
@@ -265,6 +292,19 @@ export const EVENT_SPECS: Readonly<Record<EventName, EventSpec>> = {
   order_paid: { section: "none", props: { product_kind: oneOf(PROP_VALUES["order.product_kind"]), via: oneOf(PROP_VALUES["paywall.via"]) } },
   certificate_issued: { section: "none", props: { course_id: id } },
   training_quote_requested: { section: "none", props: { org_type: oneOf(PROP_VALUES["training.org_type"]) } },
+  guide_viewed: { section: "optional", props: { hub: oneOf(PROP_VALUES["guide.hub"]), topic: key, tax_scope: oneOf(PROP_VALUES["guide.tax_scope"]) } },
+  determination_completed: { section: "optional", props: { kind: oneOf(PROP_VALUES["determination.kind"]) } },
+  total_cost_started: { section: "optional", props: { entry_path: oneOf(PROP_VALUES["total_cost.entry_path"]) } },
+  total_cost_completed: { section: "optional", props: { entry_path: oneOf(PROP_VALUES["total_cost.entry_path"]), compare_used: bool } },
+  family_next_check_opened: { section: "optional", props: { from_screen: oneOf(PROP_VALUES["family_next.from"]), target: oneOf(PROP_VALUES["family_next.target"]) } },
+  step_viewed: { section: "optional", props: { stage: key } },
+  zone_viewed: { section: "optional", props: { region_code: region, project_type: key, entry: oneOf(PROP_VALUES["zone.entry"]) } },
+  issue_map_viewed: { section: "optional", props: { issue: { field: { kind: "slug" } }, entry: oneOf(PROP_VALUES["issue_map.entry"]) } },
+  issue_map_source_opened: { section: "optional", props: { issue: { field: { kind: "slug" } }, law_id: id, relation: oneOf(PROP_VALUES["issue_map.relation"]) } },
+  ordinance_viewed: { section: "optional", props: { region_code: region, kind: oneOf(PROP_VALUES["ordinance.kind"]), entry: oneOf(PROP_VALUES["ordinance.entry"]) } },
+  institution_inquiry_sent: { section: "none", props: { product_id: id, org_type: oneOf(PROP_VALUES["institution.org_type"]) } },
+  premium_report_viewed: { section: "none", props: { report_id: id, seated: bool } },
+  org_seat_invited: { section: "none", props: { org_type: oneOf(PROP_VALUES["institution.org_type"]) } },
 };
 
 export const isEventName = (v: unknown): v is EventName => typeof v === "string" && (EVENT_NAMES as readonly string[]).includes(v);

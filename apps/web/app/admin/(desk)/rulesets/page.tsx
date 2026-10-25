@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { OpButton, OpForm, type LnField } from "@/components/admin/LocalNewsControls";
 import { DataTable, EmptyNote, MONO, PageTitle, Panel, TD, ToneChip } from "@/components/admin/ui";
-import { RULE_KINDS, RULE_KIND_LABEL, STATUS_LABEL, type RuleKind } from "@/lib/accuracy/input";
+import { DETERMINATION_KIND_LABEL, DETERMINATION_TABLE_KINDS, RULE_KINDS, RULE_KIND_LABEL, STATUS_LABEL, type RuleKind } from "@/lib/accuracy/input";
 import { can } from "@/lib/access";
 import { pageViewer, requirePage } from "@/lib/server/admin/pages";
 import { loadRulesBoard } from "@/lib/server/accuracy/board";
@@ -22,8 +22,21 @@ const CREATE_FIELDS: LnField[] = [
   { name: "source_ref", label: "출처 (파일·커밋·시트 위치, 200자 이하)", required: true },
   { name: "basis_event_id", label: "근거 개정 단계 기록 번호 (개정에 따른 변경이면 - 공포·시행 단계여야 승인됩니다)" },
   { name: "basis_note", label: "근거 사유 (근거 개정 번호가 없을 때 - 개정과 무관한 감수 정정 등)", type: "area" },
-  { name: "body", label: "본문 JSON (룰셋은 status draft)", type: "area", required: true },
+  { name: "topic", label: "요건 사전 주제 키 (요건 사전일 때만)" },
+  { name: "body", label: "본문 JSON (룰셋은 status draft, 요건 사전은 as_of·fields)", type: "area", required: true },
 ];
+
+// 판정표는 종류(탭)마다 따로 보인다 - 상속과 증여는 다른 종류다 (FAM-05)
+interface PanelDef {
+  kind: RuleKind;
+  tk: string | null;
+  title: string;
+}
+const PANELS: PanelDef[] = RULE_KINDS.flatMap((kind): PanelDef[] =>
+  kind === "determination_table"
+    ? DETERMINATION_TABLE_KINDS.map((tk) => ({ kind, tk, title: `판정표 · ${DETERMINATION_KIND_LABEL[tk]}` }))
+    : [{ kind, tk: null, title: RULE_KIND_LABEL[kind] }],
+);
 
 function when(iso: string | null): string {
   return iso ? iso.slice(0, 16).replace("T", " ") : "-";
@@ -35,7 +48,7 @@ export default async function RulesetsPage() {
   const canSign = can(viewer, "ruleset.sign");
   const canApprove = can(viewer, "ruleset.approve");
   const board = await loadRulesBoard(serviceDb());
-  const byKind = (k: RuleKind) => board.versions.filter((v) => v.kind === k);
+  const rowsOf = (k: RuleKind, tk: string | null) => board.versions.filter((v) => v.kind === k && (tk === null || v.table_kind === tk));
   return (
     <>
       <PageTitle
@@ -43,13 +56,13 @@ export default async function RulesetsPage() {
         description="세액 계산 룰셋, 환급·감면 판정표, 지방세 달력의 버전입니다. 초안은 세무 감수위원이 서명하고 관리자가 승인해야 활성화되며, 서명 전 값은 공개 계산에 쓰이지 않습니다. 이미 있는 버전은 고치지 않고 차수를 올려 새 초안을 만듭니다."
       />
       <div className="space-y-8">
-        {RULE_KINDS.map((kind) => (
-          <Panel key={kind} id={`rs-${kind}`} title={RULE_KIND_LABEL[kind]}>
-            {byKind(kind).length === 0 ? (
-              <EmptyNote>등록된 {RULE_KIND_LABEL[kind]} 버전이 없습니다.</EmptyNote>
+        {PANELS.map(({ kind, tk, title }) => (
+          <Panel key={`${kind}-${tk ?? ""}`} id={`rs-${kind}${tk ? `-${tk}` : ""}`} title={title}>
+            {rowsOf(kind, tk).length === 0 ? (
+              <EmptyNote>등록된 {title} 버전이 없습니다.</EmptyNote>
             ) : (
-              <DataTable caption={`${RULE_KIND_LABEL[kind]} 버전`} head={["버전", "상태", "출처·근거", "서명", "승인", "처리"]}>
-                {byKind(kind).map((v) => (
+              <DataTable caption={`${title} 버전`} head={["버전", "상태", "출처·근거", "서명", "승인", "처리"]}>
+                {rowsOf(kind, tk).map((v) => (
                   <tr key={`${kind}-${v.id}`} data-kind={kind} data-id={v.id} data-version={v.version} data-status={v.status}>
                     <td className={`${TD} ${MONO}`}>
                       {v.version}

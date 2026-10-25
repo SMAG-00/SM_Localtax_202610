@@ -1,7 +1,7 @@
 // 공통 검수 큐 규칙 (W10-c — PRD-02 REV-01~03). 화면과 API가 같은 규칙을 쓰고, 판정의 기준은 DB 함수(review_item_transition)다 — 여기는 입력 모양과 표시 라벨.
 // 체크 키는 처리 과정의 라벨이다(법·세무 내용 아님). 필수 키 목록은 DB가 정하고 항목에 담겨 오므로 화면은 항목의 required_checks를 쓴다.
 
-export const REVIEW_KINDS = ["law_change", "legal_doc", "link_error", "link_candidates", "amendment_stage", "field_data", "ai_draft", "pipeline_failure"] as const;
+export const REVIEW_KINDS = ["law_change", "legal_doc", "link_error", "link_candidates", "amendment_stage", "field_data", "ai_draft", "pipeline_failure", "guide_stale", "issue_graph_stale", "ordinance_change"] as const;
 export type ReviewKind = (typeof REVIEW_KINDS)[number];
 
 export const KIND_LABELS: Record<ReviewKind, string> = {
@@ -13,6 +13,9 @@ export const KIND_LABELS: Record<ReviewKind, string> = {
   field_data: "분야 데이터 후보",
   ai_draft: "운영 AI 초안",
   pipeline_failure: "수집 실패",
+  guide_stale: "가이드 개정 반영 검토",
+  issue_graph_stale: "쟁점 지도 개정 반영 검토",
+  ordinance_change: "조례 변경",
 };
 
 export const REVIEW_STATUSES = ["drafted", "in_review", "approved", "published", "rejected", "failed"] as const;

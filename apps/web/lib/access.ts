@@ -111,6 +111,18 @@ export const ACTIONS = {
   "weekly_point.publish": "이번 주 재테크 포인트 승인 발행 - publish_realestate_weekly() RPC 호출 (편집 책임자·관리자)",
   "billing.manage": "디지털 구독 상품 구성·요금표·주문 조회 (W10-f - 스토어·구독 담당·관리자)",
   "billing.readiness": "실결제 개시 기록 commerce_readiness - PG 계약·통신판매업 신고 (W10-f - 관리자만)",
+  // W11 0차 - 3단계 공통 권한 (3단계 설계 3장). 서명은 세무 감수위원만, 공개·승인은 관리자 (역할은 늘리지 않음)
+  "guide.edit": "가이드 초안 만들기·새 버전 초안 (W11-a - 편집 책임자·관리자, 서명·공개는 별도 권한)",
+  "guide.sign": "가이드 버전 감수 서명 (W11-a - 세무 감수위원만, 관리자도 못 함)",
+  "guide.publish": "서명된 가이드 버전 공개 - guide_publish() 호출 (W11-a - 관리자만, 서명 뒤)",
+  "issue_graph.edit": "쟁점 태그 제안·쟁점 지도 초안 편집 (W11-d - 편집 책임자·관리자)",
+  "issue_graph.sign": "쟁점 지도 버전 감수 서명 (W11-d - 세무 감수위원만)",
+  "issue_tag.approve": "쟁점 태그 사전·결정례 태그 승인 (W11-d - 편집 책임자·관리자)",
+  "ordinance.manage": "자치법규 연결·확인일 갱신 (W11-e - 편집 책임자·관리자)",
+  "ordinance_summary.sign": "조례 편집 요약 감수 서명 (W11-e - 세무 감수위원만)",
+  "org.manage": "기관·계약·좌석 운영 (W11-f - 스토어·구독 담당·관리자)",
+  "org_security.approve": "기관 보안·개인정보 확인표 승인 - 승인 전 좌석 개통 0 (W11-f - 관리자만)",
+  "report.publish": "프리미엄 리포트 발행 (W11-f - 편집 책임자·관리자, 세무 감수 + 편집 승인 뒤)",
   "special_law.confirm": "특례법 확인 기록 — 공포 확인·철회와 특례법 근거 행의 확인·철회 (관리자(PO)만, W4 20단계 PR-13)",
 } as const;
 export type Action = keyof typeof ACTIONS;
@@ -173,6 +185,13 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   // W10-i - 캠페인 승인·검토 기록은 허용 밖 시도를 감사에 남긴다 (GROW-04)
   "campaign.approve",
   "campaign.review_record",
+  // W11 0차 - 가이드·쟁점 지도·조례 요약 서명은 감수위원만, 가이드 공개·보안 확인표 승인·리포트 발행은 허용 밖 시도를 감사에 남긴다
+  "guide.sign",
+  "guide.publish",
+  "issue_graph.sign",
+  "ordinance_summary.sign",
+  "org_security.approve",
+  "report.publish",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -433,6 +452,29 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
       return has(viewer, "store_ops") || viewer.isAdmin ? ALLOW : deny("결제 상품 구성·주문 조회는 스토어·구독 담당과 관리자만 합니다 (PAY)");
     case "billing.readiness":
       return viewer.isAdmin ? ALLOW : deny("실결제 개시 기록(PG 계약·통신판매업 신고)은 관리자만 남깁니다 (PAY-07)");
+    // W11 0차 - 3단계 공통 권한 (3단계 설계 3장)
+    case "guide.edit":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("가이드 초안 작성은 편집 책임자와 관리자만 합니다");
+    case "guide.sign":
+      return has(viewer, "reviewer") ? ALLOW : deny("가이드의 감수 서명은 세무 감수위원(reviewer)만 할 수 있습니다");
+    case "guide.publish":
+      return viewer.isAdmin ? ALLOW : deny("가이드 공개는 관리자만 합니다 (서명 뒤)");
+    case "issue_graph.edit":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("쟁점 태그·지도 편집은 편집 책임자와 관리자만 합니다 (LINK)");
+    case "issue_graph.sign":
+      return has(viewer, "reviewer") ? ALLOW : deny("쟁점 지도의 감수 서명은 세무 감수위원(reviewer)만 할 수 있습니다");
+    case "issue_tag.approve":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("쟁점 태그 승인은 편집 책임자와 관리자만 합니다");
+    case "ordinance.manage":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("자치법규 연결·확인일 갱신은 편집 책임자와 관리자만 합니다 (TX-13)");
+    case "ordinance_summary.sign":
+      return has(viewer, "reviewer") ? ALLOW : deny("조례 요약의 감수 서명은 세무 감수위원(reviewer)만 할 수 있습니다");
+    case "org.manage":
+      return has(viewer, "store_ops") || viewer.isAdmin ? ALLOW : deny("기관·계약·좌석 운영은 스토어·구독 담당과 관리자만 합니다 (BIZ-07)");
+    case "org_security.approve":
+      return viewer.isAdmin ? ALLOW : deny("기관 보안·개인정보 확인표 승인은 관리자만 합니다");
+    case "report.publish":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("프리미엄 리포트 발행은 편집 책임자와 관리자만 합니다");
     case "product.approve":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("자사 상품 카드 연결의 승인·철회는 편집 책임자와 관리자만 합니다 — 상품 담당은 제안까지입니다 (BIZ-03)");
     case "brand.manage":

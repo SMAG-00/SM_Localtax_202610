@@ -17,7 +17,7 @@ describe("설계 문서와 같은 목록", () => {
     expect([...values]).toEqual(designList("2.1", name));
   });
 
-  test("2.2 이벤트마다 분야 칸 규칙과 속성 칸(필수·선택)이 표와 같다 — 65종 전부", () => {
+  test("2.2 이벤트마다 분야 칸 규칙과 속성 칸(필수·선택)이 표와 같다 — 78종 전부", () => {
     const rows = designEvents();
     expect(rows.map((r) => r.name)).toEqual([...EVENT_NAMES]);
     for (const r of rows) {
