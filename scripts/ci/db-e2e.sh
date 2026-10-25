@@ -20,6 +20,7 @@ step "편집국 API E2E (역할별 403·감사 로그·발행 판정)"; node --t
 step "운영 API E2E (분야·사전·설정·제휴사·회원 정지 — 403·422·감사 로그)"; node --test --test-concurrency=1 e2e/admin-settings-api.test.mjs
 step "홈 배치 API E2E (편집 책임자 201·편집국 외 403·7장째 409·끝난 카드 공개 0)"; node --test --test-concurrency=1 e2e/admin-home-api.test.mjs
 step "브라우저 설치 (Playwright Chromium)";  pnpm exec playwright install --with-deps chromium
+step "W11-f 수용 E2E (기관 계약 시험 - 견적 요청(동의 필수·이메일 형식) -> 기관·계약 등록 -> 확인표 미승인 개통·초대 0 -> 승인 뒤 개통 -> 좌석 n·n+1 -> 수락 -> 좌석 회원만 리포트 전문(비좌석·비회원 HTML·RSS·검색·JSON-LD 0, 좌석->비좌석 순서) -> 회수 즉시 거부 -> 종료일 당일 허용·다음 날 00:00 KST 거부 -> 세금계산서 요청·수기 발행 -> 견적 파기)"; node --test --test-concurrency=1 e2e/w11f-acceptance.test.mjs
 step "계정 기반 E2E (W2-e 1단계 — 로그인 5번 실패 후 6번째 429+retry-after·다른 IP/계정 영향 0·성공하면 짝/계정 횟수 초기화·없는 계정 같은 429·이메일/IP 한도와 설정 변경 즉시 적용·열쇠 없으면 503·표에 원문 0 / 비밀번호 바꾸기 401·403·틀린 현재 비밀번호 422→6번째 429·규칙 위반 422·바꾸면 다른 기기 세션 끊김·감사 로그 1건에 비밀번호 0 / 실제 브라우저 머리말 링크→칸 오류→완료→재로그인·로그인 전 next 유지·noindex)"; node --test --test-concurrency=1 e2e/account-security.test.mjs
 step "가입·인증 E2E (W2-e 2-A — 메일 설정 없음/members 꺼짐이면 404·실제 브라우저 가입→로컬 수신함 메일→확인 버튼→/my·같은 주소 재가입 같은 문장+계정 추가 0·역할 값 무시·봇/Origin 거부·메일 서버 장애 시 로그인은 되고 가입은 503+임시 계정 0·서버 기록에 비밀번호/주소 0)"; node --test --test-concurrency=1 e2e/account-signup.test.mjs
 step "계정 복구 E2E (W2-e 2-B — 비밀번호 찾기→수신함→확인 버튼→새 비밀번호·옛 비밀번호 거부·다른 세션 끊김·재사용 410·없는/미확인/확인 주소 같은 응답+메일은 확인 계정만·reset_email 4번째 429·미확인 재가입→확인 메일 다시 감·다시 받기 3번째까지·탈퇴 행 0·편집국 역할 탈퇴 거부·미확인 정리 함수 경계·서버 기록/감사 로그에 비밀번호/주소 0)"; node --test --test-concurrency=1 e2e/account-recovery.test.mjs

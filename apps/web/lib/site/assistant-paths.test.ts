@@ -6,6 +6,8 @@ describe("AI 도우미 런처 숨김 경로", () => {
     expect(assistantHiddenOn("/store/subscription")).toBe(true);
     expect(assistantHiddenOn("/store/subscription/complete")).toBe(true);
     expect(assistantHiddenOn("/my/billing")).toBe(true);
+    expect(assistantHiddenOn("/org/accept")).toBe(true);
+    expect(assistantHiddenOn("/organization-guide")).toBe(false);
   });
 
   it("접두어만 같은 다른 경로나 일반 화면에서는 숨기지 않는다", () => {

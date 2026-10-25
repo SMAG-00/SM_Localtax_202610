@@ -132,10 +132,14 @@ export async function requestTaxInvoice(db: Db, actor: string, orgId: string, ki
 /** 견적 요청 접수 - 동의·이메일 검사는 logic.validateInquiry가 먼저 하고, DB 함수가 한 번 더 막는다 */
 export async function submitInquiry(db: Db, input: InquiryInput, now = new Date()): Promise<Result<{ receiptNo: string }>> {
   const receiptNo = newReceiptNo();
+  // 동의한 문서 버전 - 처리방침 게시본 번호(brief 사전 알림 신청과 같은 방식). 게시본이 없으면 빈 목록
+  const versions = await db.from("policy_versions").select("id").eq("doc_key", "privacy").eq("status", "published");
+  if (versions.error) throw dbError(versions.error, "policy_versions 읽기");
+  const versionRef = ((versions.data ?? []) as Array<{ id: number }>).map((v) => v.id);
   const { error } = await db.rpc("institution_inquiry_submit", {
     p_receipt: receiptNo, p_org_type: input.orgType, p_org_name: input.orgName, p_contact_name: input.contactName, p_contact_email: input.contactEmail,
     p_contact_phone: input.contactPhone, p_seats: input.seatsWanted, p_message: input.message, p_consent_contact: input.consentContact,
-    p_consent_marketing: input.consentMarketing, p_version_ref: [], p_at: now.toISOString(),
+    p_consent_marketing: input.consentMarketing, p_version_ref: versionRef, p_at: now.toISOString(),
   });
   if (error) return fail(error, "institution_inquiry_submit");
   return { ok: true, value: { receiptNo } };
