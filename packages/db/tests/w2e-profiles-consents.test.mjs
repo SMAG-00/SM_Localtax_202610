@@ -327,7 +327,7 @@ test("consents 기본값 — version_ref 빈 목록 · 동의 시각 자동 · �
     assert.deepEqual(withRefs.rows[0].version_ref, ["3", "7"], "bigint[] — 약관 번호와 처리방침 번호");
   }));
 
-test("구독자(subscribers) 표는 만들지 않았다 — 사전 알림 신청은 consents에만 있다 (HOME-06 · 설계 3.3)", async () => {
-  const { rows } = await client.query("select table_name from information_schema.tables where table_schema = 'public' and table_name in ('subscribers', 'orders')");
+test("구독자(subscribers) 표는 만들지 않았다 — 사전 알림 신청은 consents에만 있다 (HOME-06 · 설계 3.3). orders는 2단계 W10-f가 결제 기반으로 만든다(2단계 설계 3장)", async () => {
+  const { rows } = await client.query("select table_name from information_schema.tables where table_schema = 'public' and table_name = 'subscribers'");
   assert.deepEqual(rows, []);
 });

@@ -14,6 +14,11 @@ export function supabaseServiceRoleKey(): string | undefined {
   return process.env.SUPABASE_SERVICE_ROLE_KEY || undefined;
 }
 
+/** 법제처 국가법령정보 기관코드 (W10-c PIPE-01) — 서버 전용 비밀. 없으면 수집 작업은 요청 0으로 건너뛴다 */
+export function lawApiOc(): string | undefined {
+  return process.env.LAW_API_OC || undefined;
+}
+
 export function cronSecret(): string | undefined {
   return process.env.CRON_SECRET || undefined;
 }
@@ -71,4 +76,15 @@ export function vercelEnv(): string | undefined {
 export function deployedVersion(): string | null {
   const sha = process.env.VERCEL_GIT_COMMIT_SHA;
   return sha ? sha.slice(0, 7) : null;
+}
+
+/** 결제 설정 (W10-f) — 이름을 하나씩 읽어 환경변수 검사(check-env)가 읽는 곳을 찾게 한다. 해석·검증은 billing/config.ts readBillingConfig */
+export function billingEnv(): Record<string, string | undefined> {
+  return {
+    PG_MODE: process.env.PG_MODE,
+    PG_SECRET_KEY: process.env.PG_SECRET_KEY,
+    PG_WEBHOOK_SECRET: process.env.PG_WEBHOOK_SECRET,
+    PG_FAKE_URL: process.env.PG_FAKE_URL,
+    NEXT_PUBLIC_PG_CLIENT_KEY: process.env.NEXT_PUBLIC_PG_CLIENT_KEY,
+  };
 }
