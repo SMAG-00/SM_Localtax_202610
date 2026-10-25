@@ -131,6 +131,19 @@ export const FEATURE_KEYS = [
   "shortcuts",
   "realestate_weekly",
   "campaign_landings",
+  // W11 0차 - 3단계 기능 키 10개(마이그레이션 110, 모두 꺼짐). 지자체 허브 자리 `redevelopment_status`·`ordinance_texts`는 W4가 이미 둔 키를 쓴다. 각 단위(W11-a~f)가 화면과 함께 쓰고 공개 승인 뒤에만 켠다 (3단계 설계 0.2)
+  "tax_lifecycle",
+  "house_count",
+  "total_cost",
+  "trust_tax_guide",
+  "redevelopment_tax",
+  "finance_tax_guide",
+  "tax_determination",
+  "issue_graph",
+  "premium_reports",
+  // W11-f - 기관 구독·좌석 (/org/*·/store/institution 좌석 화면)·프리미엄 리포트 (/finance/reports/*)·기관 견적 요청 양식. 모두 꺼짐으로 출하 (W11-0 몫을 병렬 작업을 위해 131이 가짐)
+  "institution_subscription",
+  "institution_inquiry",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;

@@ -35,6 +35,8 @@
     { "path": "/api/jobs/readiness-monthly", "schedule": "30 15 * * *" },
     { "path": "/api/jobs/billing-reconcile", "schedule": "10 16 * * *" },
     { "path": "/api/jobs/renewal-notice", "schedule": "50 15 * * *" },
+    { "path": "/api/jobs/institution-inquiry-purge", "schedule": "30 16 * * *" },
+    { "path": "/api/jobs/org-contract-close", "schedule": "40 16 * * *" },
     { "path": "/api/jobs/pipeline-law", "schedule": "0 16 * * *" },
     { "path": "/api/jobs/pipeline-docs", "schedule": "10 16 * * *" },
     { "path": "/api/jobs/pipeline-field-data", "schedule": "30 16 * * *" },

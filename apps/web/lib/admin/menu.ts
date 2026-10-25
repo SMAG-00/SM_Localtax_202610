@@ -45,6 +45,11 @@ const RULES: readonly MenuRule[] = [
   // 주간 브리핑 호 (BRIEF-01~04 — W10-e) — 편집 책임자·관리자
   { id: "brief", label: "브리핑", href: "/admin/brief", when: (a) => a.has("review_item.decide"), paths: ["/admin/brief"] },
   { id: "pipelines", label: "수집 파이프라인", href: "/admin/pipelines", when: (a) => a.has("pipeline.manage"), paths: ["/admin/pipelines"] },
+  // 감수 가이드 (W11-a) — 가이드 작성·서명·공개
+  { id: "guides", label: "감수 가이드", href: "/admin/guides", when: (a) => a.has("guide.edit") || a.has("guide.sign") || a.has("guide.publish"), paths: ["/admin/guides"] },
+  // 기관 구독·계약·좌석·확인표·견적 요청 (BIZ-07·PAY-04 — W11-f) — 스토어·구독 담당·관리자 / 프리미엄 리포트 편집·발행 — 편집 책임자·관리자
+  { id: "orgs", label: "기관 구독", href: "/admin/orgs", when: (a) => a.has("org.manage"), paths: ["/admin/orgs"] },
+  { id: "reports", label: "프리미엄 리포트", href: "/admin/reports", when: (a) => a.has("report.publish"), paths: ["/admin/reports"] },
   // 룰셋·판정표·달력 (RULE-01~04 — W10-a) 세무 감수위원 서명·관리자 승인 / 정확도 대조 (CALC-14·FAM-07) — 세무 감수위원·관리자
   { id: "rulesets", label: "룰셋·판정표", href: "/admin/rulesets", when: (a) => a.has("ruleset.read"), paths: ["/admin/rulesets"] },
   { id: "accuracy", label: "정확도 대조", href: "/admin/accuracy", when: (a) => a.has("accuracy.manage"), paths: ["/admin/accuracy"] },

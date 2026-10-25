@@ -33,7 +33,7 @@ describe("결제·유료 본문 경계", () => {
   it("유료 본문 표·읽기 함수·미리보기 뷰 이름은 결제 모듈 폴더와 관리 API에만 있다", () => {
     const hits = filesWith(/paid_bodies|read_paid_body|public_paid_previews/);
     for (const f of hits) {
-      expect(f.startsWith("apps/web/lib/server/billing/") || f === "apps/web/app/api/admin/billing/route.ts", `${f} 에서 유료 본문 이름을 읽는다`).toBe(true);
+      expect(f.startsWith("apps/web/lib/server/billing/") || f === "apps/web/app/api/admin/billing/route.ts" || f === "apps/web/app/api/admin/reports/route.ts" || f === "apps/web/app/admin/(desk)/reports/page.tsx" /* 편집 화면 - 목록용 ref_key·preview·sale_allowed만 읽고 본문(body)은 읽지 않는다 */, `${f} 에서 유료 본문 이름을 읽는다`).toBe(true);
     }
     expect(hits.length).toBeGreaterThan(0);
   });

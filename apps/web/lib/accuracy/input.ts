@@ -1,19 +1,33 @@
 // 룰셋·판정표·달력 / 정확도 대조 관리 입력 규칙 (W10-a a6 - RULE-02·04 · CALC-14 · FAM-07). 순수 모듈 - DB 트리거·함수(마이그레이션 81~83)가 같은 규칙을 다시 강제한다.
 // 오류 문장은 "칸: 문장" 모양이라 폼이 칸 옆에 보인다. 이 모듈에는 세율·한도·법령 문장이 없다 - 룰셋·판정표 본문은 사람이 붙여 넣은 JSON을 검사만 한다.
 import { detectPii } from "@ltr/editorial";
-import { parseDeterminationTable, parseRuleset } from "@ltr/tax-engine";
+import { parseRuleset, parseTableByKind, W11_DETERMINATION_KINDS } from "@ltr/tax-engine";
 import { CAUSES, TAX_KINDS, type Cause, type TaxKind } from "./gate";
 
-export const RULE_KINDS = ["ruleset", "determination_table", "tax_calendar"] as const;
+export const RULE_KINDS = ["ruleset", "determination_table", "tax_calendar", "requirement_dictionary"] as const;
 export type RuleKind = (typeof RULE_KINDS)[number];
 export const RULES_OPS = ["create", "sign", "approve"] as const;
 export const ACCURACY_OPS = ["case_add", "case_confirm", "case_retire", "case_note", "run"] as const;
-export const RULE_KIND_LABEL: Record<RuleKind, string> = { ruleset: "룰셋", determination_table: "판정표", tax_calendar: "지방세 달력" };
-export const RULE_KIND_TABLE: Record<RuleKind, string> = { ruleset: "rulesets", determination_table: "determination_tables", tax_calendar: "tax_calendar" };
+export const RULE_KIND_LABEL: Record<RuleKind, string> = { ruleset: "룰셋", determination_table: "판정표", tax_calendar: "지방세 달력", requirement_dictionary: "요건 사전" };
+export const RULE_KIND_TABLE: Record<RuleKind, string> = { ruleset: "rulesets", determination_table: "determination_tables", tax_calendar: "tax_calendar", requirement_dictionary: "requirement_dictionary" };
 export const RULE_KIND_RPC: Record<RuleKind, { sign: string; approve: string }> = {
   ruleset: { sign: "sign_ruleset", approve: "approve_ruleset" },
   determination_table: { sign: "sign_determination_table", approve: "approve_determination_table" },
   tax_calendar: { sign: "sign_tax_calendar", approve: "approve_tax_calendar" },
+  requirement_dictionary: { sign: "sign_requirement_dictionary", approve: "approve_requirement_dictionary" },
+};
+/** 판정표 종류 화면 이름 (W11-a - 기존 환급·감면 + PRD-03 7장 7종) */
+export const DETERMINATION_TABLE_KINDS = ["refund", "reduction", ...W11_DETERMINATION_KINDS] as const;
+export const DETERMINATION_KIND_LABEL: Record<(typeof DETERMINATION_TABLE_KINDS)[number], string> = {
+  refund: "환급 자가진단",
+  reduction: "감면 점검",
+  house_count: "주택 수",
+  trust_taxpayer: "신탁 보유세 납세의무자",
+  redevelopment_right: "입주권 판정",
+  house_count_inheritance: "상속 후 주택 수",
+  house_count_gift: "증여 후 주택 수",
+  redevelopment_tax: "정비 세금 판정",
+  trust_acquisition: "신탁 이전 취득세 판정",
 };
 export const STATUS_LABEL: Record<string, string> = { draft: "초안", reviewed: "서명됨(승인 대기)", active: "활성", retired: "내려감" };
 
@@ -92,9 +106,14 @@ export function parseCreate(body: Record<string, unknown>): Parsed<DraftRow> {
         if (r.version !== version) errors.push("body: 본문 안 version이 위 version과 다릅니다");
         if (r.status !== "draft") errors.push("body: 본문 status는 draft여야 합니다");
       } else if (k.value === "determination_table") {
-        const t = parseDeterminationTable(parsedBody);
+        const t = parseTableByKind(String((parsedBody as { kind?: unknown }).kind ?? ""), parsedBody);
         if (t.version !== version) errors.push("body: 본문 안 version이 위 version과 다릅니다");
         tableKind = t.kind;
+      } else if (k.value === "requirement_dictionary") {
+        const d = parsedBody as { as_of?: unknown; fields?: unknown };
+        if (typeof d.as_of !== "string" || d.as_of.trim() === "") errors.push("body: 기준일(as_of)이 필요합니다");
+        if (!Array.isArray(d.fields)) errors.push("body: 필드 목록(fields)이 필요합니다");
+        if (!/^[a-z][a-z0-9_]{1,39}$/.test(str(body.topic))) errors.push("topic: 영문 소문자로 시작하는 소문자·숫자·'_' 2~40자입니다");
       } else if (Object.keys(parsedBody).length === 0) errors.push("body: 빈 객체입니다");
     } catch (err) {
       errors.push(`body: 검증에 실패했습니다 - ${err instanceof Error ? err.message.slice(0, 300) : "형식 오류"}`);
@@ -103,6 +122,7 @@ export function parseCreate(body: Record<string, unknown>): Parsed<DraftRow> {
   if (errors.length) return fail(errors);
   const row: Record<string, unknown> = { version, body: parsedBody, source_ref: sourceRef, basis_event_id: eventId, basis_note: basisNote === "" ? null : basisNote };
   if (k.value === "determination_table") row.kind = tableKind;
+  if (k.value === "requirement_dictionary") row.topic = str(body.topic);
   return { ok: true, value: { table: RULE_KIND_TABLE[k.value], row } };
 }
 

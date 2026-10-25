@@ -6,5 +6,6 @@ export * from "./components/shell";
 export * from "./components/discovery";
 export * from "./components/local";
 export * from "./components/services";
+export * from "./components/determination";
 export { componentRegistry } from "./registry";
 export type { RegistryEntry } from "./components/registry-type";
