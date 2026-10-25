@@ -33,6 +33,8 @@ async function api(method, path, user, body) {
 const review = (user, body) => api("POST", "/review-items", user, body);
 const field = (user, body) => api("POST", "/field-data", user, body);
 const job = (name, secret = CRON) => fetch(`${base}/api/jobs/${name}`, { headers: secret ? { authorization: `Bearer ${secret}` } : {} }).then(async (res) => ({ status: res.status, text: await res.text() }));
+// 작업 URL 응답은 실행 번호·상태만 돌려준다(원천별 이유는 실행 기록 detail 에 남는다) - 번호로 그 기록을 읽는다
+const detailOf = async (res) => (await db.query("select detail::text d from public.agent_runs where id = $1", [JSON.parse(res.text).runId])).rows[0].d;
 const anonRows = async (view, query) => {
   const res = await fetch(`${sb.url}/rest/v1/${view}?${query}`, { headers: { apikey: sb.anonKey, authorization: `Bearer ${sb.anonKey}` } });
   assert.equal(res.status, 200, `${view} ${res.status}`);
@@ -91,6 +93,7 @@ before(async () => {
     NEXT_PUBLIC_SITE_URL: SITE,
     CRON_SECRET: CRON,
     DATA_API_KEY: FAKE_KEY,
+    DATA_API_DART_KEY: FAKE_KEY,
   });
   base = server.base;
   staff = new StaffFixture(sb);
@@ -129,14 +132,16 @@ test("b) 작업 URL - 비밀값 없으면 401, 키 꺼짐 flag_off, 켜도 주�
   await setFlags({ field_data: false });
   const off = await job("pipeline-field-data");
   assert.equal(off.status, 200, off.text.slice(0, 300));
-  assert.equal((off.text.match(/flag_off/g) ?? []).length, 7);
+  const offDetail = await detailOf(off);
+  assert.equal((offDetail.match(/flag_off/g) ?? []).length, 7, offDetail.slice(0, 400));
   await setFlags({ field_data: true });
   await db.query("update public.data_sources set terms_status = 'allowed', terms_checked_by = 'e2e:w10h', terms_checked_at = now(), contract_verified_by = 'e2e:w10h', contract_verified_at = now() where key = 'applyhome_supply'");
   const on = await job("pipeline-field-data");
   assert.equal(on.status, 200);
-  assert.equal((on.text.match(/no_endpoint/g) ?? []).length, 7, "주소 칸이 비어 있으므로 허용된 원천도 요청 0");
+  const onDetail = await detailOf(on);
+  assert.equal((onDetail.match(/no_endpoint/g) ?? []).length, 7, `주소 칸이 비어 있으므로 허용된 원천도 요청 0 - ${onDetail.slice(0, 400)}`);
   assert.deepEqual(await counts(), { s: 0, c: 0 });
-  assert.equal(off.text.includes(FAKE_KEY) || on.text.includes(FAKE_KEY), false);
+  assert.equal([off.text, on.text, offDetail, onDetail].some((t) => t.includes(FAKE_KEY)), false);
   const runs = await db.query("select detail::text d from public.agent_runs where job = 'pipeline-field-data' and started_at >= $1", [since]);
   assert.ok(runs.rowCount >= 2 && runs.rows.every((r) => !r.d.includes(FAKE_KEY)));
   await setFlags({ field_data: false });
@@ -145,7 +150,7 @@ test("b) 작업 URL - 비밀값 없으면 401, 키 꺼짐 flag_off, 켜도 주�
 test("c) 승인 전 공개 0 -> 승인 -> 공개 반영 -> 공개 읽기에 1행, 다시 반영해도 1행, 유형 없는 후보는 승인 422", async () => {
   await setFlags({ supply_notices: true });
   await db.query("update public.data_sources set terms_status = 'allowed', terms_checked_by = 'e2e:w10h', terms_checked_at = now(), contract_verified_by = 'e2e:w10h', contract_verified_at = now() where key = 'applyhome_supply'");
-  const name = `시험용 분양 ${Date.now()}`;
+  const name = `시험용 분양 ${Date.now().toString(36)}`; // 숫자 13자가 이어지면 주민등록번호 모양 검사에 걸리므로 36진수로 적는다
   const fields = { name, region_code: await regionCode(), supply_scale: "100세대", apply_start: "2026-11-01", apply_end: "2026-11-03", notice_date: "2026-10-20", notice_issuer: "시험용 기관", official_notice_url: "https://example.test/notice/e2e" };
   const q = `name=eq.${encodeURIComponent(name)}&select=name,license_type,notice_issuer`;
 
@@ -155,7 +160,8 @@ test("c) 승인 전 공개 0 -> 승인 -> 공개 반영 -> 공개 읽기에 1행
   assert.equal(early.status, 422, show(early));
   assert.deepEqual(await anonRows("public_supply_notices", q), []);
 
-  assert.equal((await approve(item.id)).status, 200);
+  const approved = await approve(item.id);
+  assert.equal(approved.status, 200, show(approved));
   assert.deepEqual(await anonRows("public_supply_notices", q), [], "승인만으로는 공개 반영 전");
   const pub = await field(u.editor, { op: "publish", id: item.id });
   assert.equal(pub.status, 200, show(pub));
