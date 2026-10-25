@@ -165,7 +165,7 @@ export function CalculatorShell<F extends object>({ eyebrow, title, tool, rulese
   const mismatch = sharedVersion !== null && rulesetVersion !== null && sharedVersion !== rulesetVersion;
 
   return (
-    <main id="main" className="mx-auto w-full max-w-[760px] px-4 py-8" data-ui="calculator" data-mode={mode}>
+    <div className="mx-auto w-full max-w-[760px] px-4 py-8" data-ui="calculator" data-mode={mode}>
       <Eyebrow>{eyebrow}</Eyebrow>
       <h1 className="mt-2 text-[28px] font-black text-navy-900">{title}</h1>
       {notice && (
@@ -259,6 +259,6 @@ export function CalculatorShell<F extends object>({ eyebrow, title, tool, rulese
       <p data-part="never-saved" className="mt-8 text-[13px] text-navy-500 print:hidden">
         {CALC_COPY.neverSaved}
       </p>
-    </main>
+    </div>
   );
 }

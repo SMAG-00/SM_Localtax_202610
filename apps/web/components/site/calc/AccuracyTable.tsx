@@ -4,7 +4,7 @@ import type { AccuracyRow } from "@/lib/calc/accuracy-view";
 // 계산 정확도 검증 (CALC-14 · FAM-07) - 숫자는 마지막 대조 실행 결과(공개 게이트 뷰)에서만 온다. 이 파일에 건수·날짜 리터럴 0.
 export function AccuracyTable({ rows }: { rows: AccuracyRow[] }) {
   return (
-    <main id="main" className="mx-auto w-full max-w-[900px] px-4 py-8" data-ui="accuracy">
+    <div className="mx-auto w-full max-w-[900px] px-4 py-8" data-ui="accuracy">
       <Eyebrow>ACCURACY · 계산 정확도 검증</Eyebrow>
       <h1 className="mt-2 text-[28px] font-black text-navy-900">계산 정확도 검증</h1>
       <p className="mt-3 text-[16px] text-navy-800" data-part="method">
@@ -33,6 +33,6 @@ export function AccuracyTable({ rows }: { rows: AccuracyRow[] }) {
         </tbody>
       </table>
       <p className="mt-4 text-[13px] text-navy-500">아직 공개하지 않은 세목은 SM 부동산 세금 플랫폼 계산기 연결로 안내해요. 입력값은 어느 사이트로도 넘어가지 않아요.</p>
-    </main>
+    </div>
   );
 }

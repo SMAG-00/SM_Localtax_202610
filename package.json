@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "pnpm --filter @ltr/web dev",
     "dev:local": "node scripts/dev-local.mjs",
+    "dev:calc-demo": "node scripts/dev-calc-demo.mjs",
     "build": "pnpm --filter @ltr/web build",
     "start": "pnpm --filter @ltr/web start",
     "typecheck": "pnpm -r --if-present typecheck",

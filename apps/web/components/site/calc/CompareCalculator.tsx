@@ -79,7 +79,7 @@ export function CompareCalculator({ ruleset, openTaxes, isMember }: { ruleset: R
   const diff = differingLabels(rows).filter((l) => l !== "적용 룰셋");
 
   return (
-    <main id="main" className="mx-auto w-full max-w-[1100px] px-4 py-8" data-ui="compare">
+    <div className="mx-auto w-full max-w-[1100px] px-4 py-8" data-ui="compare">
       <Eyebrow>COMPARE · 조건 바꿔 비교</Eyebrow>
       <h1 className="mt-2 text-[28px] font-black text-navy-900">조건 바꿔 비교</h1>
       {compareTaxes.length > 1 && (
@@ -191,6 +191,6 @@ export function CompareCalculator({ ruleset, openTaxes, isMember }: { ruleset: R
         </section>
       )}
       <p className="mt-8 text-[13px] text-navy-500">{CALC_COPY.neverSaved}</p>
-    </main>
+    </div>
   );
 }

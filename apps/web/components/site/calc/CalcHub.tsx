@@ -40,7 +40,7 @@ export function CalcHub({ view, acquisition, holding, refund, compare, accuracy,
   // SM 카드 - 자체 계산기로 바뀐 세목의 카드는 빠진다(세목마다 정확히 1장)
   const sm = view.sm.filter((c) => !(c.key === "acquisition" && acquisition.kind === "self") && !(c.key === "property_tax" && holding.kind === "self"));
   return (
-    <main id="main" className="mx-auto w-full max-w-[1100px] px-4 py-10" data-ui="calc-hub">
+    <div className="mx-auto w-full max-w-[1100px] px-4 py-10" data-ui="calc-hub">
       <MeasureCalculatorCards screen="calc" section={null} />
       <h1 className="text-[28px] font-black text-navy-900">세금 계산기</h1>
       {rulesetVersion && (
@@ -98,6 +98,6 @@ export function CalcHub({ view, acquisition, holding, refund, compare, accuracy,
           </ul>
         </section>
       )}
-    </main>
+    </div>
   );
 }
