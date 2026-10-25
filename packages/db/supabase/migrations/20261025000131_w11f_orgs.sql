@@ -184,3 +184,17 @@ revoke all on table public.orgs, public.org_contracts, public.org_seats, public.
 grant select, insert, update on table public.orgs, public.org_contracts, public.org_admins to service_role;
 grant select, insert on table public.org_security_reviews to service_role;
 grant select on table public.org_seats to service_role;
+
+-- 측정 이벤트 이름 3종 더하기 (W11-0이 110에서 13종을 더하므로, 지금 있는 제약의 이름 목록을 읽어 W11-f 몫만 덧붙인다 - 목록을 통째로 다시 쓰지 않는다)
+-- 기관 견적 요청 접수 · 기관 좌석 초대 수락 · 프리미엄 리포트 미리보기 보기 (속성 없음)
+do $$
+declare v_def text; v_names text[];
+begin
+  select pg_get_constraintdef(c.oid) into v_def from pg_constraint c
+   where c.conname = 'analytics_events_name_check' and c.conrelid = 'public.analytics_events'::regclass;
+  select array_agg(t.m[1] order by t.ord) into v_names from regexp_matches(v_def, '''([a-z_]+)''', 'g') with ordinality as t(m, ord);
+  v_names := v_names || array['institution_inquiry_submitted', 'org_seat_accepted', 'report_previewed'];
+  alter table public.analytics_events drop constraint analytics_events_name_check;
+  execute format('alter table public.analytics_events add constraint analytics_events_name_check check (name = any (%L::text[]))', v_names);
+end;
+$$;

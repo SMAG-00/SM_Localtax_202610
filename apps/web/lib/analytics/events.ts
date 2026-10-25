@@ -74,6 +74,10 @@ export const EVENT_NAMES = [
   "order_paid",
   "certificate_issued",
   "training_quote_requested",
+  // W11-f - 기관 견적 요청 접수 · 기관 좌석 초대 수락 · 프리미엄 리포트 미리보기(잠금 화면) 보기. 속성 칸 없음(기관·회원·리포트 식별 값 0)
+  "institution_inquiry_submitted",
+  "org_seat_accepted",
+  "report_previewed",
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -252,6 +256,9 @@ export const EVENT_SPECS: Readonly<Record<EventName, EventSpec>> = {
   order_paid: { section: "none", props: { product_kind: oneOf(PROP_VALUES["order.product_kind"]), via: oneOf(PROP_VALUES["paywall.via"]) } },
   certificate_issued: { section: "none", props: { course_id: id } },
   training_quote_requested: { section: "none", props: { org_type: oneOf(PROP_VALUES["training.org_type"]) } },
+  institution_inquiry_submitted: { section: "none", props: {} },
+  org_seat_accepted: { section: "none", props: {} },
+  report_previewed: { section: "none", props: {} },
 };
 
 export const isEventName = (v: unknown): v is EventName => typeof v === "string" && (EVENT_NAMES as readonly string[]).includes(v);
