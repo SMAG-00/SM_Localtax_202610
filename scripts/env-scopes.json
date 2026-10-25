@@ -18,6 +18,7 @@
     "SEARCH_CONSOLE_SITE": "server",
     "SEARCH_CONSOLE_CREDENTIALS": "server-secret",
     "INDEXNOW_KEY": "server-secret",
+    "IMPORT_AUTH_HEADER": "server-secret",
     "ANTHROPIC_MODEL_ANSWER": "server",
     "ANTHROPIC_MODEL_ROUTER": "server",
     "ASSISTANT_ENABLED": "server",

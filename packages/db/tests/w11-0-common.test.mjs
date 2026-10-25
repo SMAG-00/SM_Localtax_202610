@@ -16,7 +16,7 @@ const NEW_EVENTS = [
   "guide_viewed", "determination_completed", "total_cost_started", "total_cost_completed", "family_next_check_opened", "step_viewed", "zone_viewed",
   "issue_map_viewed", "issue_map_source_opened", "ordinance_viewed", "institution_inquiry_sent", "premium_report_viewed", "org_seat_invited",
 ];
-const NEW_FLAGS = ["tax_lifecycle", "house_count", "total_cost", "trust_tax_guide", "redevelopment_tax", "finance_tax_guide", "tax_determination", "issue_graph", "institution_plans", "premium_reports"];
+const NEW_FLAGS = ["tax_lifecycle", "house_count", "total_cost", "trust_tax_guide", "redevelopment_tax", "finance_tax_guide", "tax_determination", "issue_graph", "institution_subscription", "premium_reports"];
 const NEW_SETTINGS = ["total_cost_policy", "premium_report_policy", "institution_inquiry_policy", "stale_check_policy"];
 const NEW_KINDS = { guide_stale: "guide_reflected", issue_graph_stale: "graph_reflected", ordinance_change: "summary_matches_source" };
 

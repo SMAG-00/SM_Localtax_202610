@@ -32,10 +32,10 @@ alter table public.analytics_events add constraint analytics_events_name_check c
   'org_seat_invited'));
 
 update public.settings s
-   set value = s.value || (select jsonb_object_agg(k, false) from unnest(array['tax_lifecycle', 'house_count', 'total_cost', 'trust_tax_guide', 'redevelopment_tax', 'finance_tax_guide', 'tax_determination', 'issue_graph', 'institution_plans', 'premium_reports']) as k where not (s.value ? k)),
+   set value = s.value || (select jsonb_object_agg(k, false) from unnest(array['tax_lifecycle', 'house_count', 'total_cost', 'trust_tax_guide', 'redevelopment_tax', 'finance_tax_guide', 'tax_determination', 'issue_graph', 'institution_subscription', 'premium_reports']) as k where not (s.value ? k)),
        updated_by = 'migration:20261025000110'
  where s.key = 'feature_flags' and jsonb_typeof(s.value) = 'object'
-   and exists (select 1 from unnest(array['tax_lifecycle', 'house_count', 'total_cost', 'trust_tax_guide', 'redevelopment_tax', 'finance_tax_guide', 'tax_determination', 'issue_graph', 'institution_plans', 'premium_reports']) as k where not (s.value ? k));
+   and exists (select 1 from unnest(array['tax_lifecycle', 'house_count', 'total_cost', 'trust_tax_guide', 'redevelopment_tax', 'finance_tax_guide', 'tax_determination', 'issue_graph', 'institution_subscription', 'premium_reports']) as k where not (s.value ? k));
 
 insert into public.settings (key, value, description, updated_by) values
   ('total_cost_policy', '{}'::jsonb, '총비용 시뮬레이터 보유 연수 상한·금리 입력 상한·부대비용 항목 수·"모르겠어요" 기본 비교 값 (RE-05 - 씨앗은 비어 있고, 비어 있으면 기능은 열리지 않는다 - W11-b가 모양 검사를 더한다)', 'migration:20261025000110'),
