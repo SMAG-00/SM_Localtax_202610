@@ -18,8 +18,19 @@ const get = async (path) => {
   const res = await fetch(`${base}${path}`, { redirect: "manual" });
   return { status: res.status, html: await res.text() };
 };
-const flags = (on) =>
-  db.query("update public.settings set value = value || $1::jsonb where key = 'feature_flags'", [JSON.stringify({ law_viewer: !!on.law, law_three: !!on.three, case_db: !!on.cases })]);
+// 공개 데이터는 서버가 30초 동안 디스크 캐시에 둔다(설계 7.1) - 키를 바꾼 직후에는 서버를 다시 띄워 새 배포와 같은 출발점에서 읽는다 (w10b·w10i와 같다)
+async function startAll() {
+  server = await startServer({ NEXT_PUBLIC_SUPABASE_URL: sb.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: sb.anonKey, SUPABASE_SERVICE_ROLE_KEY: sb.serviceRoleKey, ADMIN_EMAILS: "w10d-acceptance-e2e@example.test", NEXT_PUBLIC_SITE_URL: SITE });
+  base = server.base;
+}
+async function restart() {
+  await server?.stop?.();
+  await startAll();
+}
+const flags = async (on) => {
+  await db.query("update public.settings set value = value || $1::jsonb where key = 'feature_flags'", [JSON.stringify({ law_viewer: !!on.law, law_three: !!on.three, case_db: !!on.cases })]);
+  await restart();
+};
 const snapshot = async (payload) =>
   (await db.query("insert into public.raw_snapshots (source, url, content_hash, payload) values ('e2e-w10d', $1, $2, $3) returning id", [`https://example.test/시험용/${run}/${Math.random()}`, `h-${run}-${Math.random()}`, payload])).rows[0].id;
 async function version(law, over = {}) {
@@ -64,8 +75,7 @@ async function purge() {
 before(async () => {
   sb = localSupabase();
   buildWeb();
-  server = await startServer({ NEXT_PUBLIC_SUPABASE_URL: sb.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: sb.anonKey, SUPABASE_SERVICE_ROLE_KEY: sb.serviceRoleKey, ADMIN_EMAILS: "w10d-acceptance-e2e@example.test", NEXT_PUBLIC_SITE_URL: SITE });
-  base = server.base;
+  await startAll();
   staff = new StaffFixture(sb);
   await staff.connect();
   db = staff.db;
@@ -91,9 +101,13 @@ before(async () => {
 });
 
 after(async () => {
-  await purge().catch((e) => console.error("purge 실패", e));
-  await server?.stop?.();
-  await staff?.close?.();
+  // 실패해도 서버를 끄고 DB 연결을 닫는다 - 연결이 열려 있으면 시험 프로세스가 끝나지 않는다
+  try {
+    await purge().catch((e) => console.error("purge 실패", e));
+  } finally {
+    await server?.stop?.();
+    await staff?.cleanup?.();
+  }
 });
 
 test("a) 기능 키가 꺼져 있으면 법령·3단·해석 화면은 모두 404", async () => {
@@ -111,8 +125,11 @@ test("b) 기준일 - 시행일 전날은 옛 개정판, 당일은 새 개정판,
   const at = (date) => get(`/law/${encodeURIComponent(name)}/1?date=${date}`);
   const before = await at("2026-12-31");
   const on = await at("2027-01-01");
-  assert.ok(before.html.includes("시험용 옛 글") && !before.html.includes("시험용 새 글"), "전날은 옛 개정판");
-  assert.ok(on.html.includes("시험용 새 글") && !on.html.includes("시험용 옛 글"), "당일은 새 개정판");
+  // 본문(article-body)만 본다 - 신구조문 대비(compare)에는 직전 개정판의 글이 같이 나오는 것이 설계다
+  const bodyOf = (html) => /<article data-part="article-body"[\s\S]*?<\/article>/.exec(html)?.[0] ?? "";
+  assert.ok(bodyOf(before.html).includes("시험용 옛 글") && !bodyOf(before.html).includes("시험용 새 글"), "전날은 옛 개정판");
+  assert.ok(bodyOf(on.html).includes("시험용 새 글") && !bodyOf(on.html).includes("시험용 옛 글"), "당일은 새 개정판");
+  assert.ok(on.html.includes('data-part="compare"') && on.html.includes("시험용 옛 글"), "신구조문 대비에는 옛 글이 같이 나온다");
   const early = await at("2025-12-31");
   assert.ok(early.html.includes("이 날짜의 원문이 없어요"));
   assert.ok(early.html.includes("date=2026-01-01"), "가장 이른 개정판 링크");
@@ -132,6 +149,7 @@ test("c) 3단 보기 - 위임 표본 47/50이면 404, 48/50이면 열림, 위임
   await sample("delegation_mapping", 50, 47);
   assert.equal((await get(path)).status, 404, "47건 - 보류");
   await sample("delegation_mapping", 50, 48);
+  await restart();
   const open = await get(path);
   assert.equal(open.status, 200, "48건 - 공개");
   assert.ok(open.html.includes("시험용 시행령 글"), "위임된 시행령 조문이 같은 행에");
@@ -157,7 +175,7 @@ test("d) 해석 DB - 로그인 없이 검색·상세, 스냅샷 없는 문서·�
   assert.equal((await get(`/cases/tribunal/${docNoSnap}`)).status, 404, "스냅샷 없음");
   assert.equal((await get(`/cases/case/${docA}`)).status, 404, "유형이 다르면 404");
   const detail = await get(`/cases/tribunal/${docA}`);
-  assert.match(detail.html, /수집일 \d{4}-\d{2}-\d{2} · 확인일 \d{4}-\d{2}-\d{2}/);
+  assert.match(detail.html.replace(/<!-- -->/g, ""), /수집일 \d{4}-\d{2}-\d{2} · 확인일 \d{4}-\d{2}-\d{2}/); // React가 값 사이에 넣는 빈 주석은 화면 글자가 아니다
   assert.equal((await get(`/cases?q=${encodeURIComponent("!!!")}`)).html.includes("data-doc-id"), false);
 });
 
@@ -168,6 +186,7 @@ test("e) 조문 인용 자동 링크 - 표본 94/100이면 링크 0, 95/100이�
   assert.ok(!closed.html.includes('data-citation="article"'), "94건 - 링크 0");
   assert.ok(closed.html.includes(`${name} 제1조`), "글자는 그대로");
   await sample("case_citation", 100, 95);
+  await restart();
   const open = await get(`/cases/tribunal/${docCited}`);
   const links = [...open.html.matchAll(/data-citation="article"/g)];
   assert.equal(links.length, 1, "DB에 있는 조문(제1조)만, 없는 제99조는 글자");
