@@ -193,3 +193,20 @@ revoke all on function public.org_contract_activate(uuid, text, timestamptz), pu
 grant execute on function public.org_contract_activate(uuid, text, timestamptz), public.org_seat_invite(uuid, uuid, text, timestamptz, timestamptz),
   public.org_seat_accept(uuid, text, timestamptz), public.org_seat_revoke(uuid, uuid, text, timestamptz),
   public.org_contract_set_end(uuid, date, text, timestamptz), public.org_contracts_close_expired(timestamptz) to service_role;
+
+-- 기관 상품(kind institution)은 소비자 스토어 공개 뷰(public_store_products)와 거기에 얹힌 상품 링크 뷰에 나오지 않는다 - 기관 화면(/store/institution)만 쓴다.
+-- W8 75번 정의에 'and p.kind <> institution' 한 줄만 더한 교체다 (칸 목록·권한 동일).
+create or replace view public.public_store_products as
+select p.id, p.slug, p.title, p.kind, p.summary, p.audience, p.edition, p.toc, p.order_mode, p.order_url, p.verified_on
+  from public.products p
+ where p.status = 'on_sale'
+   and p.kind <> 'institution'
+   and p.verified_on is not null
+   and char_length(btrim(coalesce(p.verified_ref, ''))) > 0
+   and exists (select 1 from public.settings f where f.key = 'feature_flags' and jsonb_typeof(f.value) = 'object' and (f.value -> 'store') = 'true'::jsonb)
+   and (p.kind <> 'subscription'
+        or exists (select 1 from public.settings r where r.key = 'store_subscription_review' and (r.value -> 'approved') = 'true'::jsonb))
+   and (p.order_mode = 'request_form'
+        or exists (select 1 from public.settings d, jsonb_array_elements_text(d.value) h
+                    where d.key = 'store_order_domains' and jsonb_typeof(d.value) = 'array'
+                      and h = lower(substring(p.order_url from '^https://([^/?#:@]+)'))));

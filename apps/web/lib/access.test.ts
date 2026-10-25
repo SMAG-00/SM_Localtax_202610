@@ -107,6 +107,9 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "brief.manage": [X, O, X, X, X, X, X, O, X],
   "billing.manage": [X, X, X, X, O, X, X, O, X],
   "billing.readiness": [X, X, X, X, X, X, X, O, X],
+  "org.manage": [X, X, X, X, O, X, X, O, X],
+  "org_security.approve": [X, X, X, X, X, X, X, O, X],
+  "report.publish": [X, O, X, X, X, X, X, O, X],
   "brand.manage":           [X, X, X, X, X, O, X, O, X],
   "brand.approve":          [X, X, X, X, X, X, X, O, X], // W3 7단계 — 증빙 승인·동의서·경력 표시 승인은 관리자(PO)만 (설계 6장)
   "expert.manage":          [X, X, X, X, X, X, O, O, X],

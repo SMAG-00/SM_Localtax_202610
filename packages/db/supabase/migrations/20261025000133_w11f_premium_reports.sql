@@ -152,7 +152,7 @@ grant execute on function public.read_premium_report(uuid, text, timestamptz) to
 
 -- 공개 미리보기 - 기능 키 premium_reports 켜짐 + 정책 길이 설정 + 발행됨 + 판매 권리 확인. 본문 칸 없음, 길이는 정책 이하만
 create view public.public_premium_report_previews as
-select r.slug, r.title, r.period_label, r.as_of, r.sources, r.published_at, b.preview
+select r.slug, r.title, r.period_label, r.as_of, r.sources, r.tax_reviewer, r.tax_reviewed_on, r.published_at, b.preview
   from public.premium_reports r
   join public.paid_bodies b on b.kind = 'premium_report' and b.ref_key = r.slug
  where r.status = 'published' and b.sale_allowed

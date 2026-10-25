@@ -106,6 +106,9 @@ export const ACTIONS = {
   "brief.manage": "브리핑 호 편집·발행·구독자 관리 화면 (W10-e BRIEF - 편집 책임자·관리자)",
   "billing.manage": "디지털 구독 상품 구성·요금표·주문 조회 (W10-f - 스토어·구독 담당·관리자)",
   "billing.readiness": "실결제 개시 기록 commerce_readiness - PG 계약·통신판매업 신고 (W10-f - 관리자만)",
+  "org.manage": "기관·계약·좌석·세금계산서 발행 기록·견적 요청 관리 (W11-f BIZ-07 - 스토어·구독 담당·관리자)",
+  "org_security.approve": "기관 보안·개인정보 확인표 승인 기록 (W11-f BIZ-07 - 관리자(PO)만)",
+  "report.publish": "프리미엄 리포트 편집·감수 기록·발행 (W11-f BIZ-07 - 편집 책임자·관리자)",
   "special_law.confirm": "특례법 확인 기록 — 공포 확인·철회와 특례법 근거 행의 확인·철회 (관리자(PO)만, W4 20단계 PR-13)",
 } as const;
 export type Action = keyof typeof ACTIONS;
@@ -165,6 +168,7 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "ruleset.sign",
   "ruleset.approve",
   "billing.readiness",
+  "org_security.approve",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -415,6 +419,12 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
       return has(viewer, "store_ops") || viewer.isAdmin ? ALLOW : deny("결제 상품 구성·주문 조회는 스토어·구독 담당과 관리자만 합니다 (PAY)");
     case "billing.readiness":
       return viewer.isAdmin ? ALLOW : deny("실결제 개시 기록(PG 계약·통신판매업 신고)은 관리자만 남깁니다 (PAY-07)");
+    case "org.manage":
+      return has(viewer, "store_ops") || viewer.isAdmin ? ALLOW : deny("기관·계약·좌석 관리는 스토어·구독 담당과 관리자만 합니다 (BIZ-07)");
+    case "org_security.approve":
+      return viewer.isAdmin ? ALLOW : deny("기관 보안·개인정보 확인표 승인은 관리자(PO)만 합니다 (BIZ-07)");
+    case "report.publish":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("프리미엄 리포트 발행은 편집 책임자와 관리자만 합니다 (BIZ-07)");
     case "product.approve":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("자사 상품 카드 연결의 승인·철회는 편집 책임자와 관리자만 합니다 — 상품 담당은 제안까지입니다 (BIZ-03)");
     case "brand.manage":

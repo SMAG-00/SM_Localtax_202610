@@ -155,7 +155,7 @@ test("공개 미리보기 뷰 - 기능 키가 꺼지면 0행, 켜지면 발행·
   const on = await attempt("select * from public.public_premium_report_previews", [], "anon");
   assert.ok(on.ok);
   assert.deepEqual(on.rows.map((r) => r.slug), [slug]);
-  assert.deepEqual(Object.keys(on.rows[0]).sort(), ["as_of", "period_label", "preview", "published_at", "slug", "sources", "title"]);
+  assert.deepEqual(Object.keys(on.rows[0]).sort(), ["as_of", "period_label", "preview", "published_at", "slug", "sources", "tax_reviewed_on", "tax_reviewer", "title"]);
   assert.equal(on.rows[0].preview, PREVIEW);
   assert.ok(!JSON.stringify(on.rows).includes("지어낸 문장"), "본문 글자 0");
   await setPolicy("premium_report_policy", {});

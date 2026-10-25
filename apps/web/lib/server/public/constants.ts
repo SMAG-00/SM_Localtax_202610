@@ -124,6 +124,10 @@ export const FEATURE_KEYS = [
   "education_billing",
   "seminars",
   "field_data",
+  // W11-f - 기관 구독·좌석 (/org/*·/store/institution 좌석 화면)·프리미엄 리포트 (/finance/reports/*)·기관 견적 요청 양식. 모두 꺼짐으로 출하 (W11-0 몫을 병렬 작업을 위해 131이 가짐)
+  "institution_subscription",
+  "premium_reports",
+  "institution_inquiry",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;

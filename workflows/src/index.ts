@@ -31,6 +31,10 @@ export interface JobServices {
   reconcileBilling(now: Date): Promise<Record<string, unknown>>;
   /** W10-f 가격 변경 사전 고지 기록 — 요금제 금액이 마지막 고지와 다른 자동갱신 구독에 고지 기록을 남긴다. 결과는 수뿐 */
   recordRenewalNotices(now: Date): Promise<Record<string, unknown>>;
+  /** W11-f 기관 견적 요청 파기 - 보존일이 지난 요청의 개인 칸을 비운다. 결과는 수뿐 */
+  purgeInstitutionInquiries(now: Date): Promise<Record<string, unknown>>;
+  /** W11-f 기관 계약 종료 정리 - 종료 시각이 지난 계약을 끝내고 남은 좌석을 회수 처리한다. 권한은 valid_until로 이미 끝나 있다. 결과는 수뿐 */
+  closeExpiredOrgContracts(now: Date): Promise<Record<string, unknown>>;
   /** W10-c 법령 감시 — 기능 키 pipelines·LAW_API_OC·원천 이용 조건 중 하나라도 틀리면 요청 0으로 건너뛴다 (PIPE-01). 결과는 수와 이유뿐 */
   runLawPipeline(now: Date): Promise<Record<string, unknown>>;
   /** W10-c 행정규칙·해석·결정례 수집 — 원천마다 같은 관문 (PIPE-02~04) */
@@ -65,6 +69,10 @@ export const jobs: Record<string, Job> = {
   "billing-reconcile": async ({ now, services }) => ({ detail: await services.reconcileBilling(now), revalidatePublic: false }),
   // 가격 변경 사전 고지 기록 (하루 한 번, 같은 금액은 한 번만 기록)
   "renewal-notice": async ({ now, services }) => ({ detail: await services.recordRenewalNotices(now), revalidatePublic: false }),
+  // 기관 견적 요청 파기 (하루 한 번) — 보존일(한국 날짜)이 지난 요청의 개인 칸 비우기
+  "institution-inquiry-purge": async ({ now, services }) => ({ detail: await services.purgeInstitutionInquiries(now), revalidatePublic: false }),
+  // 기관 계약 종료 정리 (하루 한 번)
+  "org-contract-close": async ({ now, services }) => ({ detail: await services.closeExpiredOrgContracts(now), revalidatePublic: false }),
   // 법령 변경 감시 (하루 한 번) — 후보는 검수 큐에만 쌓이고 공개 화면은 바뀌지 않는다
   "pipeline-law": async ({ now, services }) => ({ detail: await services.runLawPipeline(now), revalidatePublic: false }),
   // 행정규칙·해석·결정례 수집 (하루 한 번) — 후보 문서는 권리 확인 전까지 공개되지 않는다
