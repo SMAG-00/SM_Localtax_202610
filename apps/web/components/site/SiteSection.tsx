@@ -11,6 +11,7 @@ export function SiteSection({
   heading,
   data,
   first = false,
+  flush = false,
   children,
 }: {
   id: string;
@@ -19,12 +20,17 @@ export function SiteSection({
   data: Record<`data-${string}`, string>;
   /** 화면 첫 섹션 — 위 경계선 없음 */
   first?: boolean;
+  /** 가로 가득·세로 여백 0 — 안쪽 틀을 자식이 직접 정한다 (배경 영상 띠가 있는 허브 머리) */
+  flush?: boolean;
   children: ReactNode;
 }) {
   const titleId = `${id}-title`;
   return (
     <section {...data} aria-labelledby={heading ? titleId : undefined} className={cx(!first && "border-t border-navy-100", tone === "ivory" ? "bg-ivory" : "bg-ivory-dark")}>
-      <div className="mx-auto max-w-5xl px-4 py-20">
+      {flush ? (
+        children
+      ) : (
+        <div className="mx-auto max-w-5xl px-4 py-20">
         {heading && (
           <>
             <Eyebrow>{heading.eyebrow}</Eyebrow>
@@ -34,7 +40,8 @@ export function SiteSection({
           </>
         )}
         {children}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

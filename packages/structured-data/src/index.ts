@@ -13,6 +13,7 @@ export { EVENT_STATUS_MAP, EVENT_STATUS_URL, SCHEMA_EVENT_STATUSES } from "./eve
 export { displayTitle, sponsorLabelText } from "./labels";
 export {
   newsArticle,
+  paywalledArticle,
   videoObject,
   breadcrumbList,
   newsMediaOrganization,

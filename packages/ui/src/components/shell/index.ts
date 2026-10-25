@@ -2,6 +2,27 @@
 export { Header, HEADER_SECTIONS, HEADER_UTILITIES, type HeaderProps, type HeaderSectionKey, type HeaderUtilityKey } from "./Header";
 export type { HeaderNavLink } from "./HeaderNav";
 export { Hero, type HeroProps } from "./Hero";
+export { HeroMedia } from "./HeroMedia";
+export {
+  HERO_AI_LABEL,
+  HERO_IMAGE_FIELDS,
+  HERO_MEDIA_DIR,
+  HERO_MEDIA_KEYS,
+  HERO_MOBILE_MAX_WIDTH,
+  HERO_PLAYBACK_LABELS,
+  HERO_VIDEO_FIELDS,
+  canPlayHeroVideo,
+  heroMediaErrors,
+  isHeroMediaPath,
+  parseHeroMedia,
+  pickHeroVideo,
+  resolveHeroMedia,
+  type HeroMediaEntry,
+  type HeroMediaField,
+  type HeroMediaKey,
+  type HeroMediaSettings,
+  type ResolvedHeroMedia,
+} from "./hero-media-logic";
 export { Footer, type FooterProps, type FooterLink, type FooterInfo } from "./Footer";
 export { StepTimeline, type StepTimelineItem } from "./StepTimeline";
 export { TaxAccordion, type TaxAccordionItem } from "./TaxAccordion";

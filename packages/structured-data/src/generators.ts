@@ -77,6 +77,20 @@ export function newsArticle(a: ArticleView): JsonLdNode {
   });
 }
 
+/**
+ * 유료 기사(디지털 구독 페이월, W10-f BIZ-04) → NewsArticle. 제목·발행일·"무료 아님" 표시만 낸다 - 본문·미리보기 글자는 속성에 넣지 않는다.
+ * isAccessibleForFree=false와 유료 구간(hasPart)을 함께 낸다. 주소는 있을 때만.
+ */
+export function paywalledArticle(a: { url?: string; title: string; datePublished?: string; paywallSelector: string }): JsonLdNode {
+  return top(PAGE_TYPE_MAP.article.primaryType, {
+    mainEntityOfPage: a.url,
+    headline: a.title,
+    datePublished: a.datePublished,
+    isAccessibleForFree: false,
+    hasPart: nested("WebPageElement", { isAccessibleForFree: false, cssSelector: a.paywallSelector }),
+  });
+}
+
 /** 동영상 기사의 영상 → VideoObject */
 export function videoObject(v: VideoView): JsonLdNode {
   return top(VIDEO_TYPE, {

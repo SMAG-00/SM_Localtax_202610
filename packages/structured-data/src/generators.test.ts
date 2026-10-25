@@ -432,3 +432,23 @@ describe("결정론 · 입력 불변", () => {
     expect(pageJsonLd(frozen)).toEqual(pageJsonLd(passSamples.article));
   });
 });
+
+describe("paywalledArticle (유료 기사 구조화 데이터, W10-f)", () => {
+  it("무료 아님과 유료 구간만 내고, 입력에 없는 본문·미리보기 글자는 낼 수 없다", async () => {
+    const { paywalledArticle } = await import("./generators");
+    const node = paywalledArticle({ url: "https://example.test/news/zz", title: "시험 유료 기사", datePublished: "2026-10-20T00:00:00Z", paywallSelector: "[data-part='paywall-body']" });
+    expect(node["@context"]).toBe("https://schema.org");
+    expect(node.isAccessibleForFree).toBe(false);
+    expect(node.headline).toBe("시험 유료 기사");
+    expect(node.mainEntityOfPage).toBe("https://example.test/news/zz");
+    expect(node.hasPart).toMatchObject({ "@type": "WebPageElement", isAccessibleForFree: false, cssSelector: "[data-part='paywall-body']" });
+  });
+
+  it("주소·발행일이 없으면 그 속성을 만들지 않지만 무료 아님 표시는 남는다", async () => {
+    const { paywalledArticle } = await import("./generators");
+    const node = paywalledArticle({ title: "시험", paywallSelector: ".x" });
+    expect("mainEntityOfPage" in node).toBe(false);
+    expect("datePublished" in node).toBe(false);
+    expect(node.isAccessibleForFree).toBe(false);
+  });
+});

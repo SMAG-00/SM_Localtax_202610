@@ -10,7 +10,13 @@ import { isoToKstDate } from "@/lib/admin/form-utils";
 import { ColumnDisclosureBlock } from "@/components/site/ColumnDisclosureBlock";
 import { CaseBlock } from "@/components/site/FinanceViews";
 import { getFinanceCase } from "@/lib/server/public/finance";
+import { PaywallArticle } from "@/components/site/BillingViews";
 import { LegalDocBlock } from "@/components/site/InterpretationView";
+import { JsonLd } from "@/components/site/JsonLd";
+import { PAYWALL_SELECTOR } from "@/lib/server/billing/paywall-logic";
+import { paywalledArticle, toJsonLdScriptContent } from "@ltr/structured-data";
+import { resolvePaywall } from "@/lib/server/billing/paywall";
+import { siteUrl } from "@/lib/server/env";
 import { ThenNowBlock } from "@/components/site/ThenNowBlock";
 import { getArticleDetail, getArticleLegalDocs, getArticleReviewMark, getArticleSignature, getColumnDisclosure, isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
 import { articleViewWithReviewer } from "@/lib/server/public/brand-logic";
@@ -30,12 +36,20 @@ const load = cache(async (slug: string) => {
   return readPublic("기사 상세", () => getArticleDetail(slug), () => UNAVAILABLE);
 });
 
+// 유료 기사(W10-f BIZ-04) - 공개 기사 뷰에는 유료 기사가 없으므로 위에서 못 찾은 주소만 여기로 온다. 요청마다 그린다(공유 캐시 0).
+// 미리보기는 공개 뷰, 본문은 권한 판정을 지난 서버 함수로만. 유료 화면은 색인하지 않는다.
+const loadWall = cache(async (slug: string) => resolvePaywall(slug));
+
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const a = await load((await params).slug);
   if (isUnavailable(a)) return { title: pageTitle(UNAVAILABLE_TITLE), robots: { index: false, follow: false } };
-  if (!a) notFound();
+  if (!a) {
+    const wall = await loadWall((await params).slug);
+    if (!wall) notFound();
+    return { title: pageTitle(wall.preview.title), robots: { index: false, follow: false }, openGraph: { type: "article", title: wall.preview.title } };
+  }
   const canonical = /^https?:\/\//.test(a.share.url) ? a.share.url : undefined;
   return {
     title: pageTitle(a.title),
@@ -56,7 +70,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ArticlePage({ params }: Props) {
   const a = await load((await params).slug);
   if (isUnavailable(a)) return <UnavailablePage />;
-  if (!a) notFound();
+  if (!a) {
+    const slug = (await params).slug;
+    const wall = await loadWall(slug);
+    if (!wall) notFound();
+    const base = siteUrl();
+    return (
+      <>
+        <JsonLd
+          part="paywall-jsonld"
+          content={toJsonLdScriptContent(
+            paywalledArticle({
+              ...(base ? { url: `${base}/news/${encodeURIComponent(slug)}` } : {}),
+              title: wall.preview.title,
+              ...(wall.preview.firstPublishedAt ? { datePublished: wall.preview.firstPublishedAt } : {}),
+              paywallSelector: PAYWALL_SELECTOR,
+            }),
+          )}
+        />
+        <PaywallArticle preview={wall.preview} body={wall.body} loggedIn={wall.loggedIn} />
+      </>
+    );
+  }
   // 해석 해설이면 원문 블록을 해설 본문과 따로 앞에 둔다 (W3 5단계 — 공개 가능한 원문만, 기능 키 꺼짐이면 없음)
   const docs = await readPublic("기사 원문 연결", () => getArticleLegalDocs(a.id), () => ({ subject: [], related: [] }));
   // 칼럼이면 머리 위에 이해관계 줄 + 의견 고지 (W3 6단계 — 기능 키 tax_columns 켜짐·고지 문구 있음일 때만)

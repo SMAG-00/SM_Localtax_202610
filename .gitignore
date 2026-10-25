@@ -42,3 +42,6 @@ e2e/reports/
 
 # 비밀번호 보관 폴더 — 절대 저장소에 올리지 않음 (저장소가 공개 상태, 2026-10-25)
 /docs/password/
+
+# AI 생성 원본 영상·그림(PO 보관용, 21MB 영상 포함) — 저장소에는 웹용 변환본(apps/web/public/media/hero/)만. 변환: node scripts/media/build-hero.mjs (2026-10-25)
+/image/

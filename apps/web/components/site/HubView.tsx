@@ -1,4 +1,4 @@
-import { Chip, FieldHubHead, LocalHubBlocks, SituationCard, UiLink, type HubBlockContent } from "@ltr/ui";
+import { Chip, FieldHubHead, HeroMedia, LocalHubBlocks, SituationCard, UiLink, type HubBlockContent } from "@ltr/ui";
 import type { ArticleListItem, HubData } from "@/lib/server/public";
 import { HUB_HEADINGS, SIDO_CHIP_LABELS, hubParts } from "@/lib/site/hub-view";
 import { ArticleGrid, ArticleItem } from "./ArticleItem";
@@ -9,6 +9,8 @@ import { OFFICIAL_GROUPS, RegionSourceLineView } from "./RegionView";
 import { SUPPLY_COPY, SupplyCardView } from "./SupplyView";
 import { TermChipList } from "./GlossaryView";
 import { HotBlock } from "./HotBlock";
+import type { ReactNode } from "react";
+import type { ResolvedHeroMedia } from "@/lib/site/hero-media";
 import { MeasureSituationCards, MeasureView } from "./Measure";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
 import { UnavailableNotice } from "./Unavailable";
@@ -67,7 +69,20 @@ function officialContent(official: NonNullable<HubData["blocks"]>["official"]): 
   };
 }
 
-export function HubView({ hub }: { hub: HubData }) {
+/** 허브 머리 배경 띠 — 절반 높이(데스크톱 45vh, 모바일 28vh: 첫 화면에 본문이 보이도록 작게). 글자는 띠 안 아래쪽, 구석 단추 자리를 아래에 비워 둔다 */
+function hubBand(media: ResolvedHeroMedia) {
+  return function HubBand(title: ReactNode) {
+    return (
+      <div data-part="hub-band" className="relative isolate flex min-h-[28svh] items-end overflow-hidden bg-navy-900 sm:min-h-[45svh]">
+        <HeroMedia media={media} overlay="bg-navy-900/60" />
+        <div className="relative mx-auto w-full max-w-5xl px-4 pt-10 pb-16 sm:pt-16">{title}</div>
+      </div>
+    );
+  };
+}
+
+export function HubView({ hub, heroMedia = null }: { hub: HubData; heroMedia?: ResolvedHeroMedia | null }) {
+  const band = heroMedia ? hubBand(heroMedia) : undefined;
   const parts = hubParts(hub);
   return (
     <div data-ui="hub" data-hub={hub.section}>
@@ -79,13 +94,14 @@ export function HubView({ hub }: { hub: HubData }) {
         switch (key) {
           case "head":
             return (
-              <SiteSection key={key} id="hub-head" tone={tone} first data={{ "data-hub-part": "head" }}>
+              <SiteSection key={key} id="hub-head" tone={tone} first flush={Boolean(band)} data={{ "data-hub-part": "head" }}>
                 {hub.section === "tax" ? (
-                  <FieldHubHead field="tax" eyebrow={hub.eyebrow} title={hub.name} intro={hub.intro} tabs={{ items: hub.tabs, current: hub.currentTab, label: "하위 분야" }} />
+                  <FieldHubHead field="tax" band={band} eyebrow={hub.eyebrow} title={hub.name} intro={hub.intro} tabs={{ items: hub.tabs, current: hub.currentTab, label: "하위 분야" }} />
                 ) : (
                   // 이 분야의 지방세 포인트 (CORE-02) — 세무 감수 서명이 있는 분야만 데이터에 있다. 없으면 블록째 없다
                   <FieldHubHead
                     field={hub.section}
+                    band={band}
                     eyebrow={hub.eyebrow}
                     title={hub.name}
                     intro={hub.intro}
@@ -93,7 +109,7 @@ export function HubView({ hub }: { hub: HubData }) {
                     tabs={{ items: hub.tabs, current: hub.currentTab, label: hub.section === "local" ? "분야" : "하위 분야" }}
                   />
                 )}
-                {hub.unavailable && <UnavailableNotice />}
+                {hub.unavailable && (band ? <div className="mx-auto max-w-5xl px-4 pb-10"><UnavailableNotice /></div> : <UnavailableNotice />)}
               </SiteSection>
             );
           case "regions":

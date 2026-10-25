@@ -32,6 +32,7 @@ describe("parsePublicSettings", () => {
       features: CLOSED_FEATURES,
       nextActionPriority: [...NEXT_ACTION_KEYS],
       popular: { sidebarSize: 5, listSize: 20, windowHours: 168 },
+      heroMedia: { entries: {}, aiLabel: true },
     });
   });
 

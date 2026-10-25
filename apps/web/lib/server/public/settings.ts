@@ -1,6 +1,7 @@
 // 공개 설정 읽기 — anon이 읽는 settings 행(설계 2.3 settings.public_keys) → 화면이 쓰는 값. 순수 함수.
 // 모양이 틀린 값은 닫힌 쪽으로 읽는다: 기능은 꺼짐, 추천 검색어는 숨김(3~6개가 아니면), 숫자는 기본값 (설계 2.4).
 import { PROGRESS_STAGE_ORDER, type ProgressStageKey } from "@ltr/ui";
+import { parseHeroMedia, type HeroMediaSettings } from "@/lib/site/hero-media";
 import { checkPopularRules, type PopularRules } from "@/lib/analytics/settings";
 import { FEATURE_KEYS, NEXT_ACTION_KEYS, SECTION_KEYS, type Features, type NextActionKey, type SectionKey } from "./constants";
 
@@ -22,6 +23,8 @@ export interface PublicSettings {
   nextActionPriority: NextActionKey[];
   /** 많이 본 기사 건수·창 (popular_rules — ART-11, W2-c 설계 2.5). 없거나 모양이 틀리면 0 — 목록을 숨긴다(닫힌 쪽) */
   popular: { sidebarSize: number; listSize: number; windowHours: number };
+  /** 히어로 배경 영상·그림 (hero_media — 홈 전체 화면·분야 허브 머리). 없거나 틀린 칸은 비운다 → 그라데이션 */
+  heroMedia: HeroMediaSettings;
 }
 
 export const SEARCH_CHIPS_MIN = 3;
@@ -89,5 +92,6 @@ export function parsePublicSettings(rows: readonly { key: string; value: unknown
     features: parseFeatures(v.get("feature_flags")),
     nextActionPriority: parsePriority(v.get("next_action_priority")),
     popular: parsePopularSizes(v.get("popular_rules")),
+    heroMedia: parseHeroMedia(v.get("hero_media")),
   };
 }

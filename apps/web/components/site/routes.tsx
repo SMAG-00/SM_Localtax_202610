@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
-import { COLUMN_SLUG, closedHubData, getCategoryList, getColumnList, getHubData, isUnavailable, readPublic, UNAVAILABLE, type HubData } from "@/lib/server/public";
+import { COLUMN_SLUG, closedHubData, getCategoryList, getColumnList, getHeroMedia, getHubData, isUnavailable, readPublic, UNAVAILABLE, type HubData } from "@/lib/server/public";
 import type { SectionKey } from "@/lib/server/public/constants";
 import { SECTION_INFO } from "@/lib/server/public/constants";
 import { listRobots, pageTitle, parsePage, queryValue } from "@/lib/site/hub-view";
@@ -34,7 +34,7 @@ export function hubMetadata(section: SectionKey) {
 
 export async function HubRoute({ section, searchParams }: { section: SectionKey; searchParams: SearchParams }) {
   const hub = await loadHub(section, queryValue((await searchParams).topic) ?? null);
-  return <HubView hub={hub} />;
+  return <HubView hub={hub} heroMedia={await getHeroMedia(section)} />;
 }
 
 type CategoryParams = Promise<{ category: string }>;

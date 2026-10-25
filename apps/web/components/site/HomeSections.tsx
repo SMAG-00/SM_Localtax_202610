@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
-import { Chip, Eyebrow, FieldCards, Hero, HomeSearch, ProgressStageBadge, UiLink, brand, cx } from "@ltr/ui";
+import type { ComponentProps, ReactNode } from "react";
+import { Chip, Eyebrow, FieldCards, Hero, HeroMedia, HomeSearch, ProgressStageBadge, UiLink, brand, cx } from "@ltr/ui";
 import type { AmendmentsSection, ColumnSection, HomeData, HomeSection, StoryCard, TrackerCard } from "@/lib/server/public";
 import { SEARCH_LABEL, SEARCH_PLACEHOLDER, SECTION_HEADINGS, heroHighlights, sectionTones, type SectionTone } from "@/lib/site/home-view";
+import type { ResolvedHeroMedia } from "@/lib/site/hero-media";
 import { ArticleItem } from "./ArticleItem";
 import { ClaimBasisLink } from "./ClaimBasisLink";
 import { MeasureHomeEntry } from "./Measure";
@@ -116,13 +117,13 @@ function ColumnBody({ section }: { section: ColumnSection }) {
 }
 
 /** 섹션 안 내용 — 아직 화면이 없는 섹션은 null (섹션째 그리지 않는다 — 빈 섹션 0) */
-function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: string): ReactNode | null {
+function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: string, cardImages: ComponentProps<typeof FieldCards>["images"]): ReactNode | null {
   switch (section.key) {
     case "fields":
       // 분야마다 '이 분야의 지방세 포인트' 한 줄 (CORE-02 — 세무 감수 서명이 있는 분야의 첫 줄만, W3 9단계)
       return (
         <div className="mt-8">
-          <FieldCards points={section.points} />
+          <FieldCards points={section.points} images={cardImages} />
           {/* 측정 (W2-c — 카드를 누르면 home_entry_clicked). 그리는 것 0 */}
           <MeasureHomeEntry />
         </div>
@@ -154,11 +155,11 @@ function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: stri
   }
 }
 
-export function HomeSections({ home }: { home: HomeData }) {
+export function HomeSections({ home, heroMedia = null, cardImages }: { home: HomeData; /** 홈 전체 화면 배경 (설정 hero_media.home) — 없으면 지금의 어두운 그라데이션 */ heroMedia?: ResolvedHeroMedia | null; /** 4대 분야 카드 바탕 그림 */ cardImages?: ComponentProps<typeof FieldCards>["images"] }) {
   const hero = home.sections.find((s): s is Extract<HomeSection, { key: "hero" }> => s.key === "hero");
   const blocks = home.sections.flatMap((s) => {
     if (s.key === "hero") return [];
-    const body = sectionBody(s, home.today);
+    const body = sectionBody(s, home.today, cardImages);
     return body === null ? [] : [{ key: s.key, body }];
   });
   const tones = new Map(sectionTones(blocks.map((b) => b.key)).map((t) => [t.key, t.tone]));
@@ -170,7 +171,7 @@ export function HomeSections({ home }: { home: HomeData }) {
       {home.unavailable && <UnavailableNotice className="mx-auto max-w-5xl px-4 pt-10" />}
       {hero && (
         <div data-home-section="hero">
-          <Hero title={hero.coreMessage ?? undefined} highlight={[...heroHighlights(hero.coreHighlights)]}>
+          <Hero title={hero.coreMessage ?? undefined} highlight={[...heroHighlights(hero.coreHighlights)]} media={heroMedia ? <HeroMedia media={heroMedia} /> : undefined}>
             {hero.search && <HomeSearch label={SEARCH_LABEL} placeholder={SEARCH_PLACEHOLDER} suggestions={hero.search.chips} />}
           </Hero>
         </div>

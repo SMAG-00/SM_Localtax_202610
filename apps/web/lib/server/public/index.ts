@@ -11,6 +11,7 @@ export { getRegionArticles } from "./region-articles";
 export { getArticleDetail, type ArticleDetail, type ArticleMedia } from "./article";
 export { getHotBlock, getPopularList, type HotBlock, type HotEntry, type PopularList } from "./rankings";
 export { getColumnList, COLUMN_SLUG, type ColumnListData } from "./columns";
+export { getHeroMedia, getHomeHeroMedia } from "./hero-media";
 export { readPublic, isUnavailable, UNAVAILABLE, type Unavailable } from "./fallback";
 export { getPersonPage, type PersonPage } from "./people";
 export { getPartnerPage, getPhotoList, getVideoList, type ListPage, type PartnerPage } from "./media-lists";

@@ -77,24 +77,33 @@ export type HeroProps = {
   description?: ReactNode;
   /** 아래 자리 — 홈 큰 입력창 등 */
   children?: ReactNode;
+  /** 배경 영상·그림 층 (apps/web HeroMedia — 부모를 가득 채우는 absolute 층). 있으면 화면 전체 높이 · 글자 쪽 어두운 막 · 빛번짐 없음. 없으면 지금 모양 그대로 */
+  media?: ReactNode;
 };
 
 /**
  * 히어로 — SM 홈 히어로 그대로 (PRD-00 8.6). navy-700 → 800 → 900 대각 그라데이션 + 오렌지 빛번짐(bg-hermes-500/20 blur-3xl 원, R3 면적 계산에서 뺀다).
  * 그라데이션은 헤더·히어로·바닥글 파일에만 허용된다 (R5).
  */
-export function Hero({ eyebrow, title, highlight, description, children, titleLevel = 1 }: HeroProps) {
+export function Hero({ eyebrow, title, highlight, description, children, titleLevel = 1, media }: HeroProps) {
   const Title = `h${titleLevel}` as "h1" | "h2" | "h3";
   return (
-    <section data-ui="hero" className="relative overflow-hidden bg-gradient-to-br from-navy-700 via-navy-800 to-navy-900">
-      {/* 오른쪽 위 오렌지 광원 — 넓게 칠하지 않고 은은하게만 */}
-      <div aria-hidden="true" className="pointer-events-none absolute -top-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-hermes-500/20 blur-3xl" />
-      {/* 왼쪽 아래 옅은 광원 */}
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-hermes-400/10 blur-3xl" />
+    <section data-ui="hero" data-media={media ? "true" : undefined} className={`relative overflow-hidden bg-gradient-to-br from-navy-700 via-navy-800 to-navy-900${media ? " flex min-h-[calc(100svh-4.5rem)] items-center" : ""}`}>
+      {media}
+      {/* 배경 영상 위 글자 대비 — 글자가 있는 왼쪽을 더 어둡게 */}
+      {media && <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-r from-navy-900/80 via-navy-900/40 to-transparent" />}
+      {!media && (
+        <>
+          {/* 오른쪽 위 오렌지 광원 — 넓게 칠하지 않고 은은하게만 */}
+          <div aria-hidden="true" className="pointer-events-none absolute -top-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-hermes-500/20 blur-3xl" />
+          {/* 왼쪽 아래 옅은 광원 */}
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-hermes-400/10 blur-3xl" />
+        </>
+      )}
       {/* 아래로 갈수록 어두워져 다음 섹션(아이보리)과의 경계를 부드럽게 */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-navy-900/60" />
 
-      <div className="relative mx-auto max-w-5xl px-4 py-20 sm:py-28">
+      <div className={`relative mx-auto max-w-5xl px-4 py-20 sm:py-28${media ? " w-full" : ""}`}>
         {eyebrow && <Eyebrow tone="dark">{eyebrow}</Eyebrow>}
         {title?.trim() && (
           <Title className="mt-6 [word-break:keep-all] break-words text-[2rem] leading-[1.2] font-black tracking-tight text-white sm:text-[2.75rem] sm:leading-[1.15] lg:text-[3.75rem]">{renderTitle(title.trim(), highlight)}</Title>

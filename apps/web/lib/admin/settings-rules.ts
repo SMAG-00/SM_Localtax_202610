@@ -13,6 +13,7 @@ import { checkWindowsSetting } from "@/lib/readiness/windows";
 import { hasClaimToken } from "@/lib/brand/claim";
 // 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
+import { heroMediaErrors } from "@/lib/site/hero-media";
 import { CORE_HIGHLIGHTS_MAX, SEARCH_CHIPS_MAX, SEARCH_CHIPS_MIN } from "@/lib/server/public/settings";
 import { localBlockFieldsErrors } from "@/lib/server/public/region-hub-logic";
 import { searchTopicsErrors } from "@/lib/server/public/search-classify";
@@ -299,6 +300,11 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "홈 핵심 메시지 강조 낱말 (HOME-01 · CORE-02)",
     guide: `["지방세", "부동산 세금", "재테크"] — 핵심 메시지 안의 낱말 1~${CORE_HIGHLIGHTS_MAX}개(글자 그대로), 나온 곳마다 오렌지로 칠합니다. 핵심 메시지를 먼저 바꾼 뒤 이 값을 맞추세요`,
     check: (value) => coreHighlightsErrors(value),
+  },
+  hero_media: {
+    label: "히어로 배경 영상·그림 (홈 전체 화면 · 분야 허브 머리)",
+    guide: '{ "home": { "video": "/media/hero/home.mp4", "videoMobile": "/media/hero/home-m.mp4", "poster": "/media/hero/home.avif", "posterMobile": "/media/hero/home-m.avif", "card": "/media/hero/home-card.avif" }, "tax": { … }, "realestate": { … }, "finance": { … }, "local": { … }, "aiLabel": true } — 파일은 /media/hero/ 안의 것만(바깥 주소 불가). 영상이 없으면 포스터 정지 그림, 둘 다 없으면 어두운 그라데이션. aiLabel은 화면 구석 "AI 생성 영상" 표시(기본 켜짐). 변환: node scripts/media/build-hero.mjs',
+    check: (value) => heroMediaErrors(value),
   },
   column_opinion_notice: {
     label: "칼럼 의견 고지 문구 (TX-16)",

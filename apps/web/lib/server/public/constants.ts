@@ -39,7 +39,7 @@ export const PUBLIC_SETTING_KEYS = [
 ] as const;
 
 /** anon이 읽는 설정 키 가운데 settings_public_read 목록 밖에서 따로 열린 것 (W2-b 설계 2.3 표는 그대로 — 따로 연 정책 settings_public_core_highlights) */
-export const EXTRA_PUBLIC_SETTING_KEYS = ["home_core_highlights"] as const;
+export const EXTRA_PUBLIC_SETTING_KEYS = ["home_core_highlights", "hero_media"] as const;
 
 /** 기능 공개 목록 (settings.feature_flags) — 없거나 false면 닫힘 */
 export const FEATURE_KEYS = [

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Eyebrow, TabNav, type TabNavItem } from "../base";
 import { FieldTaxPoint, type FieldTaxPointProps } from "./FieldTaxPoint";
 
@@ -12,6 +13,8 @@ type Common = {
   intro?: string | null;
   /** 하위 분야 탭 (링크 탭) */
   tabs?: { items: TabNavItem[]; current: string; label?: string };
+  /** 머리 배경 띠 (PO 결정 2026-10-25 — 허브 머리 절반 높이 영상·그림). 아이브로·제목·소개를 받아 배경 위에 얹어 돌려준다. 있으면 그 글자는 흰색, 포인트·탭은 띠 아래에 둔다. 없으면 지금 모양 그대로 */
+  band?: (title: ReactNode) => ReactNode;
 };
 
 /**
@@ -29,6 +32,29 @@ export function FieldHubHead(props: FieldHubHeadProps) {
   const { eyebrow, title, intro, tabs } = props;
   const taxPoint = props.field !== "tax" && props.field !== "news" ? props.taxPoint : undefined;
   const introText = intro?.trim();
+  if (props.band) {
+    return (
+      <header data-ui="field-hub-head" data-field={props.field} data-band="true">
+        {props.band(
+          <>
+            <Eyebrow tone="dark">{eyebrow}</Eyebrow>
+            <h1 className="mt-3 text-[32px] leading-tight font-black tracking-tight text-white [overflow-wrap:anywhere] sm:text-[40px]">{title}</h1>
+            {introText && <p className="mt-2 text-[17px] text-navy-100">{introText}</p>}
+          </>,
+        )}
+        {(taxPoint || (tabs && tabs.items.length > 0)) && (
+          <div className="mx-auto max-w-5xl px-4 py-10">
+            {taxPoint && <FieldTaxPoint {...taxPoint} />}
+            {tabs && tabs.items.length > 0 && (
+              <div className={taxPoint ? "mt-8" : undefined}>
+                <TabNav label={tabs.label ?? "하위 분야"} items={tabs.items} current={tabs.current} />
+              </div>
+            )}
+          </div>
+        )}
+      </header>
+    );
+  }
   return (
     <header data-ui="field-hub-head" data-field={props.field}>
       <Eyebrow>{eyebrow}</Eyebrow>
