@@ -152,7 +152,8 @@ test("d) 게시 후 - 가입은 약관+처리방침 둘 다 있어야 열리고,
 
   const home = await get("/");
   const hrefs = footerHrefs(home.html);
-  assert.deepEqual(hrefs, ["/about", "/about/editorial-policy", "/about/ethics", "/about/corrections", "/about/ad-policy", "/about/terms", "/about/privacy", "/about/measurement", "/my"]);
+  // 옛 사이트 바닥글 순서(회사 소개·개인정보처리방침·이용약관 …) 뒤에 편집 원칙류 (PRD-01A HELP-05, 2026-10-25 PO)
+  assert.deepEqual(hrefs, ["/about", "/about/privacy", "/about/terms", "/about/editorial-policy", "/about/ethics", "/about/corrections", "/about/ad-policy", "/about/measurement", "/my"]);
   const bad = [];
   for (const h of hrefs) {
     const r = await get(h);
