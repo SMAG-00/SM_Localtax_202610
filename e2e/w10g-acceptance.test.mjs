@@ -10,6 +10,9 @@
 // 만든 계정·강좌·세미나·견적·바깥 연결은 끝나면 지우고, 운영 설정은 시험 전 값으로 되돌린다 (남는 행 0).
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { buildWeb, localSupabase, startServer } from "./lib/local.mjs";
 import { StaffFixture } from "./lib/staff.mjs";
@@ -30,9 +33,26 @@ async function api(method, path, user, body) {
   return { status: res.status, body: await res.json().catch(() => ({})) };
 }
 const admin = (method, user, body) => api(method, "/api/admin/education", user, body);
+async function startAll() {
+  server = await startServer({
+    NEXT_PUBLIC_SUPABASE_URL: sb.url,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: sb.anonKey,
+    SUPABASE_SERVICE_ROLE_KEY: sb.serviceRoleKey,
+    ADMIN_EMAILS: ADMIN_EMAIL,
+    NEXT_PUBLIC_SITE_URL: SITE,
+    CRON_SECRET: CRON,
+  });
+  base = server.base;
+}
+/** 공개 데이터는 서버가 30초 디스크 캐시에 둔다(설계 7.1) - 키·공개 행을 바꾼 직후에는 서버를 다시 띄워 새 배포와 같은 출발점에서 읽는다 (w10b·w10d·w10i와 같다) */
+async function restart() {
+  await server?.stop?.();
+  await startAll();
+}
 async function setFlags(patch) {
   const cur = (await db.query("select value from public.settings where key = 'feature_flags'")).rows[0].value;
   await db.query("update public.settings set value = $1::jsonb where key = 'feature_flags'", [JSON.stringify({ ...cur, ...patch })]);
+  if (server) await restart();
 }
 const get = async (p) => {
   const res = await fetch(`${base}${p}`, { redirect: "manual" });
@@ -73,15 +93,7 @@ async function purge() {
 before(async () => {
   sb = localSupabase();
   buildWeb();
-  server = await startServer({
-    NEXT_PUBLIC_SUPABASE_URL: sb.url,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: sb.anonKey,
-    SUPABASE_SERVICE_ROLE_KEY: sb.serviceRoleKey,
-    ADMIN_EMAILS: ADMIN_EMAIL,
-    NEXT_PUBLIC_SITE_URL: SITE,
-    CRON_SECRET: CRON,
-  });
-  base = server.base;
+  await startAll();
   staff = new StaffFixture(sb);
   await staff.connect();
   db = staff.db;
@@ -147,7 +159,12 @@ test("b) 키 꺼짐(기본) - 강좌·세미나·견적 양식·견적 제출이
 
 test("c) 결제·수료증 후보 경로는 키를 다 켜도 404 (연결 방식)", async () => {
   await setFlags({ edu: true, education_billing: true, seminars: true });
-  for (const p of ["/edu/checkout", "/edu/pay", "/edu/certificates", "/edu/certificates/verify", "/my/certificates", "/edu/enroll"]) assert.equal((await get(p)).status, 404, p);
+  for (const p of ["/edu/checkout", "/edu/pay", "/edu/certificates", "/edu/certificates/verify", "/edu/enroll"]) assert.equal((await get(p)).status, 404, p);
+  // /my/* 는 로그인하지 않은 방문자를 로그인 화면으로 보낸다(307) - 라우트가 있는지는 소스에 폴더가 없다는 것으로 따로 본다
+  assert.equal((await get("/my/certificates")).status, 307, "로그아웃 상태의 /my/*는 로그인으로 307");
+  const appDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "apps", "web", "app");
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? [path.join(d, e.name), ...walk(path.join(d, e.name))] : []));
+  assert.deepEqual(walk(appDir).filter((d) => /[\/](certificates?|checkout|enroll)$/.test(d)), [], "수료증·결제·수강 신청 라우트 폴더 0 (연결 방식)");
   for (const p of ["/api/edu/checkout", "/api/edu/enroll", "/api/edu/certificates", "/api/edu/pay"]) {
     const res = await fetch(`${base}${p}`, { method: "POST", headers: { origin: base, "content-type": "application/json" }, body: "{}" });
     assert.equal(res.status, 404, p);
@@ -173,13 +190,16 @@ test("d) 공개 화면 - Course·Event 구조화 데이터 = 화면, 신청 링�
   assert.ok(!/(결제하기|수료증)/.test(detail.html), "결제·수료증 요소 0");
 
   await db.query("update public.official_links set status = 'broken' where id = $1", [fx.linkId]);
+  await restart(); // 공개 데이터 30초 캐시
   const broken = await get(`/edu/${fx.course.slug}`);
   assert.ok(!broken.html.includes("교육원에서 신청하기") && broken.html.includes("2099-12-01"), "링크만 숨고 일정은 그대로");
   await db.query("update public.official_links set status = 'ok' where id = $1", [fx.linkId]);
+  await restart();
 
   const sem = await get(`/edu/seminars/${fx.seminarSlug}`);
   assert.equal(sem.status, 200);
-  assert.ok(sem.html.includes("협찬 시험용 협찬사") && sem.html.includes("연사 이해관계 공개: 시험용 연사 이해관계 없음"));
+  const semText = sem.html.replace(/<!-- -->/g, ""); // React가 값 사이에 넣는 빈 주석은 화면 글자가 아니다
+  assert.ok(semText.includes("협찬 시험용 협찬사") && semText.includes("연사 이해관계 공개: 시험용 연사 이해관계 없음"));
   const ev = jsonLdOf(sem.html).find((n) => n["@type"] === "Event");
   assert.ok(ev, "Event 노드");
   assert.ok(String(ev.name).includes("광고") && String(ev.name).includes("시험용 개발금융 세미나"));
