@@ -5,10 +5,12 @@
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./pipelines": "./src/pipelines/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"tests/*.test.mjs\""
   },
   "devDependencies": {
     "typescript": "5.9.3"
