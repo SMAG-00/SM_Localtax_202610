@@ -2,7 +2,7 @@ import { isoToKstDate } from "@/lib/admin/form-utils";
 
 // 바깥 연결(official_links) 규칙 — 순수 함수. 점검 배치·관리 API·화면이 같은 판정을 쓴다 (docs/dev/W3_설계.md 3·4장).
 
-export const LINK_KINDS = ["sm_calculator", "external_calculator", "fallback"] as const;
+export const LINK_KINDS = ["sm_calculator", "external_calculator", "fallback", "nts_guide", "law_center", "edu_site"] as const;
 export type LinkKind = (typeof LINK_KINDS)[number];
 export type LinkStatus = "ok" | "broken" | "unchecked";
 

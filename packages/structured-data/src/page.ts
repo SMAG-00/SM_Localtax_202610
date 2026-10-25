@@ -8,6 +8,7 @@ import type { PageKind } from "./types-map";
 import {
   book,
   breadcrumbList,
+  collectionPage,
   course,
   dataset,
   event,
@@ -19,7 +20,7 @@ import {
 
 type SameSet<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 /** 입력 종류와 유형 대응표의 키가 같아야 컴파일된다 */
-const kindsMatchTypeMap: SameSet<PageInput["kind"], PageKind> = true;
+const kindsMatchTypeMap: SameSet<Exclude<PageInput["kind"], "collection">, PageKind> = true;
 void kindsMatchTypeMap;
 
 export function pageJsonLd(input: PageInput): JsonLdNode[] {
@@ -46,6 +47,9 @@ export function pageJsonLd(input: PageInput): JsonLdNode[] {
       break;
     case "dataset":
       nodes.push(dataset(input.dataset));
+      break;
+    case "collection":
+      nodes.push(collectionPage(input.collection));
       break;
     default: {
       const unknownInput: never = input;

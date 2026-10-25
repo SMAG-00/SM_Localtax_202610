@@ -56,7 +56,7 @@ describe("유형 대응표 ↔ PRD-01A OPT-02", () => {
     expect(faq?.reason).toMatch(/OPT-02/);
   });
 
-  it("최상위로 낼 수 있는 유형 = 7유형의 주 유형 + Person + VideoObject + BreadcrumbList", () => {
+  it("최상위로 낼 수 있는 유형 = 7유형의 주 유형 + Person + VideoObject + BreadcrumbList + 확장 CollectionPage", () => {
     expect([...ALLOWED_TOP_LEVEL_TYPES].sort()).toEqual(
       [
         "NewsArticle",
@@ -69,6 +69,7 @@ describe("유형 대응표 ↔ PRD-01A OPT-02", () => {
         "Dataset",
         "VideoObject",
         "BreadcrumbList",
+        "CollectionPage", // PRD-02 PR-15 확장 유형 (EXTENSION_TYPES)
       ].sort(),
     );
   });

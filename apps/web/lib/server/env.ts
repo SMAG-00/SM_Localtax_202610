@@ -19,6 +19,16 @@ export function lawApiOc(): string | undefined {
   return process.env.LAW_API_OC || undefined;
 }
 
+/** 공공데이터 인증키 (W10-h 분야 데이터 연동) — 서버 전용 비밀. 없으면 해당 수집은 요청 0으로 건너뛴다 */
+export function dataApiKey(): string | undefined {
+  return process.env.DATA_API_KEY || undefined;
+}
+
+/** DART 인증키 (W10-h DF-06) — 서버 전용 비밀 */
+export function dataApiDartKey(): string | undefined {
+  return process.env.DATA_API_DART_KEY || undefined;
+}
+
 export function cronSecret(): string | undefined {
   return process.env.CRON_SECRET || undefined;
 }
@@ -37,6 +47,16 @@ export function mailEnv(): Record<string, string | undefined> {
     MAIL_SMTP_USER: process.env.MAIL_SMTP_USER,
     MAIL_SMTP_PASSWORD: process.env.MAIL_SMTP_PASSWORD,
     MAIL_SMTP_SECURE: process.env.MAIL_SMTP_SECURE,
+  };
+}
+
+/** 운영 배치 AI 설정 (W10-e AIOPS-04) — 사용자 경로 키(ANTHROPIC_API_KEY)와 분리된 키. 하나라도 없으면 운영 AI 호출 0 */
+export function opsAiEnv(): { apiKey: string | undefined; model: string | undefined; effort: string | undefined; baseUrl: string | undefined } {
+  return {
+    apiKey: process.env.ANTHROPIC_API_KEY_OPS || undefined,
+    model: process.env.AGENT_MODEL_OPS || undefined,
+    effort: process.env.AGENT_EFFORT_OPS || undefined,
+    baseUrl: process.env.ANTHROPIC_BASE_URL || undefined,
   };
 }
 

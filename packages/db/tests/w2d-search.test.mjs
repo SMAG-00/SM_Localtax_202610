@@ -459,7 +459,8 @@ test("PGroonga — extensions 스키마에 있고, 표 9개(W3 10단계 해석 �
   const { rows } = await client.query(
     "select c.relname as idx, t.relname as tbl, pg_get_indexdef(c.oid) as def from pg_index i join pg_class c on c.oid = i.indexrelid join pg_class t on t.oid = i.indrelid join pg_am am on am.oid = c.relam where am.amname = 'pgroonga' order by 2",
   );
-  assert.deepEqual(rows.map((r) => r.tbl), ["amendments", "articles", "categories", "glossary_terms", "legal_docs", "people", "projects", "regions", "situations"]);
+  // 정렬 순서는 DB 정렬 규칙(밑줄 무시 여부)에 따라 달라서 글자 순서로 맞춰 비교한다. legal_doc_texts는 W10-d(마이그레이션 90)
+  assert.deepEqual(rows.map((r) => r.tbl).sort(), ["amendments", "articles", "categories", "glossary_terms", "legal_doc_texts", "legal_docs", "people", "projects", "regions", "situations"]);
   for (const r of rows) {
     assert.match(r.def, /\(search_text\)/, r.idx);
     assert.match(r.def, /tokenizer='TokenBigramSplitSymbolAlphaDigit'/, r.idx);

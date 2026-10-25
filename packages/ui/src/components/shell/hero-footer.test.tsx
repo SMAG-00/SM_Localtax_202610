@@ -214,9 +214,63 @@ describe("바닥글", () => {
     expect(container.querySelector("dl")).toBeNull();
   });
 
-  it("제품명은 brand 설정에서 온다 (DS-03)", () => {
+  it("Copyright 줄의 제호는 brand 설정에서 온다 (DS-03) - 값을 넘기지 않아도 늘 있다", () => {
     render(<Footer disclaimer="면책" links={links} />);
-    expect(screen.getByText(brand.productName)).toBeTruthy();
+    expect(screen.getByText(`Copyright © ${brand.mastheadName}. All rights reserved.`)).toBeTruthy();
+    expect(screen.getByText(`운영 ${brand.operatorName}`)).toBeTruthy();
+  });
+
+  it("안내 문단은 넘긴 순서대로 보이고, 빈 문단·공백 문단은 숨긴다", () => {
+    const { container } = render(<Footer disclaimer="면책" links={links} notices={["저작권 보호 문구", "  ", "", "열린보도원칙 문구"]} />);
+    const paragraphs = [...container.querySelectorAll("footer p")].map((p) => p.textContent);
+    expect(paragraphs.slice(1, 3)).toEqual(["저작권 보호 문구", "열린보도원칙 문구"]);
+    expect(paragraphs).toHaveLength(5);
+  });
+
+  it("안내 문단이 없으면 문단 묶음 요소가 없다", () => {
+    const { container } = render(<Footer disclaimer="면책" links={links} notices={[" "]} />);
+    expect(container.querySelectorAll("footer p")).toHaveLength(3);
+  });
+
+  it("매체 정보와 연락처는 각각 목록으로, 넘긴 순서 그대로 값이 있는 줄만 보인다", () => {
+    const { container } = render(
+      <Footer
+        disclaimer="면책"
+        links={links}
+        info={[
+          { label: "제호", value: "시험 제호" },
+          { label: "등록일", value: "2009-04-06" },
+          { label: "법인명", value: "" },
+        ]}
+        contact={[
+          { label: "주소", value: "서울 시험구 1" },
+          { label: "전화", value: "02-0000-0000" },
+          { label: "FAX", value: null },
+        ]}
+      />,
+    );
+    const media = container.querySelector('dl[aria-label="매체 정보"]')!;
+    const contact = container.querySelector('dl[aria-label="연락처"]')!;
+    expect([...media.querySelectorAll("dt")].map((d) => d.textContent)).toEqual(["제호", "등록일"]);
+    expect([...media.querySelectorAll("dd")].map((d) => d.textContent)).toEqual(["시험 제호", "2009-04-06"]);
+    expect([...contact.querySelectorAll("dt")].map((d) => d.textContent)).toEqual(["주소", "전화"]);
+    expect([...contact.querySelectorAll("dd")].map((d) => d.textContent)).toEqual(["서울 시험구 1", "02-0000-0000"]);
+  });
+
+  it("연락처만 비어도 매체 정보 목록은 남고, 연락처 목록 요소는 없다", () => {
+    const { container } = render(<Footer disclaimer="면책" links={links} info={[{ label: "제호", value: "시험" }]} contact={[{ label: "주소", value: " " }]} />);
+    expect(container.querySelectorAll("dl")).toHaveLength(1);
+    expect(container.querySelector("dl")!.getAttribute("aria-label")).toBe("매체 정보");
+  });
+
+  it("화면 순서 - 면책 → 링크 → 안내 문단 → 매체 정보 → 연락처 → Copyright → 운영", () => {
+    const { container } = render(
+      <Footer disclaimer="면책 문구" links={links} notices={["안내 문단"]} info={[{ label: "제호", value: "A" }]} contact={[{ label: "주소", value: "B" }]} />,
+    );
+    const text = container.textContent!;
+    const order = ["면책 문구", "회사 소개", "안내 문단", "제호", "주소", "Copyright ©", "운영"].map((t) => text.indexOf(t));
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((x, y) => x - y)).toEqual(order);
   });
 });
 

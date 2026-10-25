@@ -1,6 +1,7 @@
 import { JsonLd } from "./JsonLd";
 import { pageJsonLd, toJsonLdScriptContent } from "@ltr/structured-data";
 import { Chip, DarkButton, UiLink } from "@ltr/ui";
+import { NEXT_STEPS } from "@/lib/site/next-step";
 import { REQUEST_CODES, type RequestCode } from "@/lib/experts/logic";
 import type { ExpertCardView, ExpertListView, ExpertProfileView, ExpertRequestFormView } from "@/lib/server/public/experts";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
@@ -192,7 +193,7 @@ export interface RequestQuery {
   withdrawn?: string;
 }
 
-export function ExpertRequestPageView({ view, query, source }: { view: ExpertRequestFormView; query: RequestQuery; source: string }) {
+export function ExpertRequestPageView({ view, query, source, subscribeOpen = false }: { view: ExpertRequestFormView; query: RequestQuery; source: string; /** 브리핑 구독 화면이 열려 있는가 - 접수 완료 뒤 다음 한 걸음 링크 (W10-i) */ subscribeOpen?: boolean }) {
   const p = view.policy;
   if (!p) return null;
   const err = query.e && query.e in REQUEST_CODES ? REQUEST_CODES[query.e as RequestCode] : null;
@@ -209,6 +210,13 @@ export function ExpertRequestPageView({ view, query, source }: { view: ExpertReq
           {query.sent && (
             <p data-part="request-sent" role="status" className="rounded-2xl border border-navy-100 bg-white p-4 text-[16px] font-bold text-navy-900">
               접수했습니다. 접수 번호 <span className={MONO}>{query.sent}</span> - 첫 연락 목표는 {p.targetBusinessDays}영업일입니다. 철회하려면 아래에서 접수 번호와 연락처로 요청하세요.
+            </p>
+          )}
+          {query.sent && subscribeOpen && (
+            <p data-part="next-step">
+              <UiLink href={NEXT_STEPS.consult_to_brief.href} className={TEXT_LINK}>
+                {NEXT_STEPS.consult_to_brief.label}
+              </UiLink>
             </p>
           )}
           {query.withdrawn && (

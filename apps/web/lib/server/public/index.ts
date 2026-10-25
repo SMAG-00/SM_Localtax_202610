@@ -34,3 +34,6 @@ export { getCalcView, type CalcView, type OfficialLinkCard } from "./calc";
 export { getArticleReviewMark, type ReviewMark } from "./brand";
 export { getArticleSignature, type ArticleSignature } from "./signature";
 export type { SignatureHomeItem, ThenNowView } from "./signature-logic";
+// W10-d - 법령 뷰어(LAW-01~05)·해석 DB(CASE-01·02) 공개 데이터
+export { findLaw, getArticlePage, getLawIndex, getLawPage, getRelatedForProvision, getThreePage, resolveLawChip, type ArticlePageView, type LawIndexView, type LawPageView, type ThreePageView } from "./law";
+export { DECISION_KINDS, DECISION_LABELS, DOC_TYPES, PAGE_SIZE, getCaseDetail, parseCaseFilter, searchCases, type CaseDetailView, type CaseFilter, type CaseSearchView } from "./cases";

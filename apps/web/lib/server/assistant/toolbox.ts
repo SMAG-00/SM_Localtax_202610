@@ -1,3 +1,5 @@
+import { selfCalculatorDocs } from "@/lib/calc/tool-cards";
+import { getCalcTools } from "@/lib/server/public/calc-tools";
 import "server-only";
 import { getAmendmentList } from "@/lib/server/public/amendments";
 import { getArticleDetail } from "@/lib/server/public/article";
@@ -82,11 +84,14 @@ export function createToolbox(): Toolbox {
         publicDb().from("official_links").select("key, label, url, terms_note").in("key", [...keys]).eq("active", true),
         "도우미 바깥 연결",
       );
-      const order = new Map(keys.map((k, i) => [k, i]));
-      return rows
-        .filter((r) => r.url)
-        .sort((a, b) => (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0))
-        .map((r) => ({ title: r.label, url: r.url as string, text: `${r.label}${r.terms_note ? ` — ${r.terms_note}` : ""}` }));
+      // 자체 계산기가 열린 세목은 SM 카드 대신 사이트 안 주소 하나(세목마다 카드 1장, TX-04) - 금액은 도우미가 만들지 않는다
+      const tools = await getCalcTools().catch(() => null);
+      const self = tools ? selfCalculatorDocs(tools.context) : {};
+      const byKey = new Map(rows.filter((r) => r.url).map((r) => [r.key, { title: r.label, url: r.url as string, text: `${r.label}${r.terms_note ? ` — ${r.terms_note}` : ""}` }]));
+      return keys.flatMap((k) => {
+        const doc = self[k] ?? byKey.get(k);
+        return doc ? [doc] : [];
+      });
     },
 
     async openPaths(paths) {

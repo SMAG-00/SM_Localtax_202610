@@ -144,7 +144,7 @@ describe("validateEvent — 400이 되는 것", () => {
     ["분야가 필요한 이벤트에 분야 없음", { name: "hub_viewed" }, "section: 이 이벤트는 분야가 필요합니다"],
     ["분야 없는 이벤트에 분야", { name: "signup_completed", section: "tax", props: { interest_count: 1, region_count: 1 } }, "section: 이 이벤트는 분야를 받지 않습니다"],
     ["없는 분야", { name: "hub_viewed", section: "travel" }, "section: tax·realestate·finance·local 중 하나여야 합니다"],
-    ["바깥 진입 경로를 브라우저가 정함", { name: "hub_viewed", section: "tax", entry: "ai_answer_engine" }, "entry: 사이트 안 출발점(assistant·experts·tax_lens)만 보낼 수 있습니다"],
+    ["바깥 진입 경로를 브라우저가 정함", { name: "hub_viewed", section: "tax", entry: "ai_answer_engine" }, "entry: 사이트 안 출발점(assistant·experts·tax_lens·campaign)만 보낼 수 있습니다"],
     ["없는 모드", { name: "hub_viewed", section: "tax", mode: "pro" }, "mode: general·expert 중 하나여야 합니다"],
     ["리퍼러에 경로", { name: "hub_viewed", section: "tax", referrer: "www.google.com/search?q=취득세" }, "referrer: 호스트 이름만 보냅니다 (소문자·경로 없음)"],
     ["리퍼러 대문자", { name: "hub_viewed", section: "tax", referrer: "WWW.GOOGLE.COM" }, "referrer: 호스트 이름만 보냅니다 (소문자·경로 없음)"],
@@ -192,5 +192,26 @@ describe("validateEvent — 400이 되는 것", () => {
     const long = `x${"y".repeat(100)}`;
     const errors = errorsOf({ name: "hub_viewed", section: "tax", [long]: 1, props: { [long]: 1 } });
     expect(errors).toEqual([`${long.slice(0, 40)}: 모르는 칸입니다`, `props.${long.slice(0, 40)}: 이 이벤트가 받지 않는 칸입니다`]);
+  });
+});
+
+describe("W10-i 캠페인 이벤트 (GROW-05)", () => {
+  const ok = (body: Record<string, unknown>) => validateEvent(body);
+  test("캠페인 랜딩 열람은 entry campaign과 등록 값 태그를 받는다", () => {
+    const r = ok({ name: "campaign_landing_viewed", entry: "campaign", props: { campaign: "acquisition", source: "naver", medium: "other" } });
+    expect(r.ok && r.event.entry).toBe("campaign");
+  });
+  test("클릭 ID·자유 글자 칸은 받지 않는다(모르는 속성 거부)", () => {
+    const r = ok({ name: "campaign_landing_viewed", props: { campaign: "acquisition", source: "naver", medium: "cpc", gclid: "abc" } });
+    expect(r.ok).toBe(false);
+  });
+  test("버튼 이벤트는 primary·secondary와 도착 4개만, 다른 도착 거부", () => {
+    expect(ok({ name: "campaign_cta_clicked", props: { campaign: "acquisition", cta: "primary", destination: "calc" } }).ok).toBe(true);
+    expect(ok({ name: "campaign_cta_clicked", props: { campaign: "acquisition", cta: "third", destination: "calc" } }).ok).toBe(false);
+    expect(ok({ name: "campaign_cta_clicked", props: { campaign: "acquisition", cta: "primary", destination: "https://x.test" } }).ok).toBe(false);
+  });
+  test("바로가기 클릭은 분야 칸을 받지 않는다", () => {
+    expect(ok({ name: "shortcut_clicked", section: "tax", props: { placement: "header", shortcut: "calc" } }).ok).toBe(false);
+    expect(ok({ name: "shortcut_clicked", props: { placement: "header", shortcut: "calc" } }).ok).toBe(true);
   });
 });

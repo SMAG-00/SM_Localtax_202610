@@ -25,6 +25,10 @@ export interface PublicSettings {
   popular: { sidebarSize: number; listSize: number; windowHours: number };
   /** 히어로 배경 영상·그림 (hero_media — 홈 전체 화면·분야 허브 머리). 없거나 틀린 칸은 비운다 → 그라데이션 */
   heroMedia: HeroMediaSettings;
+  /** 바로가기 순서 (shortcut_order - W10-i) - 모양 검사는 parseShortcutOrder가 한다 */
+  shortcutOrder?: unknown;
+  /** 홈 바로가기 카드 한 줄 설명 (home_shortcut_copy) */
+  shortcutCopy?: unknown;
 }
 
 export const SEARCH_CHIPS_MIN = 3;
@@ -93,5 +97,7 @@ export function parsePublicSettings(rows: readonly { key: string; value: unknown
     nextActionPriority: parsePriority(v.get("next_action_priority")),
     popular: parsePopularSizes(v.get("popular_rules")),
     heroMedia: parseHeroMedia(v.get("hero_media")),
+    shortcutOrder: v.get("shortcut_order"),
+    shortcutCopy: v.get("home_shortcut_copy"),
   };
 }

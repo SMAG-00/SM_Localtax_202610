@@ -59,6 +59,9 @@ const TABLE_COLUMNS = [
   "updated_by",
   "created_at",
   "updated_at",
+  "source_key", // W10-h 원천 연동 칸(마이그레이션 100)
+  "source_item_id",
+  "source_value_hash",
 ];
 const VIEW_COLUMNS = ["id", "name", "region_code", "supply_scale", "apply_start", "apply_end", "notice_date", "notice_issuer", "official_notice_url", "verified_at", "license_type", "project_id", "project_slug", "project_name"];
 const ACTOR = "user:w4sn-test";

@@ -1,6 +1,7 @@
 import { Eyebrow, SituationCard } from "@ltr/ui";
 import { REGION_TAX_LINKS_TITLE, type RegionTaxLinksView } from "@/lib/server/public/region-official-logic";
 import { UNDER_REVIEW_LABEL } from "@/lib/site/source-cards";
+import { ToolCardsRow } from "./calc/ToolCardsRow";
 import { ArticleItem } from "./ArticleItem";
 import { OfficialLinkCard, linkSiteLabel } from "./OfficialLinkCard";
 
@@ -40,6 +41,12 @@ export function RegionTaxLinksBlock({ view }: { view: RegionTaxLinksView }) {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+      {view.tools && view.tools.length > 0 && (
+        <div data-tax-links-row="tools" className="mt-6">
+          <h3 className={ROW_TITLE}>계산기</h3>
+          <ToolCardsRow cards={view.tools} smLinks={[]} fallbacks={[]} regionCode={view.toolRegion ?? null} measure="region_hub" />
         </div>
       )}
       {view.sm && (

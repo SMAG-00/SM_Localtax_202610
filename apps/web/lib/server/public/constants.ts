@@ -39,7 +39,7 @@ export const PUBLIC_SETTING_KEYS = [
 ] as const;
 
 /** anon이 읽는 설정 키 가운데 settings_public_read 목록 밖에서 따로 열린 것 (W2-b 설계 2.3 표는 그대로 — 따로 연 정책 settings_public_core_highlights) */
-export const EXTRA_PUBLIC_SETTING_KEYS = ["home_core_highlights", "hero_media"] as const;
+export const EXTRA_PUBLIC_SETTING_KEYS = ["home_core_highlights", "hero_media", "home_shortcut_copy", "shortcut_order"] as const;
 
 /** 기능 공개 목록 (settings.feature_flags) — 없거나 false면 닫힘 */
 export const FEATURE_KEYS = [
@@ -124,6 +124,13 @@ export const FEATURE_KEYS = [
   "education_billing",
   "seminars",
   "field_data",
+  // 바닥글 이전 (PO 요청 2026-10-25) - 옛 사이트 정책 링크 둘. 정책 문서 게시본이 있어야 켜진다 (마이그레이션 103, 꺼짐으로 시작)
+  "page_youth_protection",
+  "page_copyright_policy",
+  // W10-i - 헤더·홈 바로가기(HOME-12·13) · 이번 주 재테크 포인트 /realestate/weekly(PR-15 - 자본시장법 감수 기록 뒤) · 캠페인 랜딩 /go/*(GROW-03 - 광고 표시 검토 뒤). 마이그레이션 105, 모두 꺼짐으로 시작
+  "shortcuts",
+  "realestate_weekly",
+  "campaign_landings",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;
@@ -145,7 +152,7 @@ export const NEXT_ACTION_LABELS: Readonly<Record<NextActionKey, string>> = {
 };
 
 /** 홈 섹션 — 순서 고정 (HOME-01 · PRD_최종 §4.1) */
-export const HOME_SECTION_KEYS = ["hero", "fields", "latest_reports", "weekly_hot", "amendments", "column", "product", "experts"] as const;
+export const HOME_SECTION_KEYS = ["hero", "shortcuts", "fields", "latest_reports", "weekly_hot", "amendments", "column", "product", "experts"] as const;
 export type HomeSectionKey = (typeof HOME_SECTION_KEYS)[number];
 
 /** 기사 하단 정책 링크 7종 (ART-02 · PRD_최종 §4.1) — 정책 페이지가 공개 승인되면(기능 키) 나온다 (HELP-05) */
@@ -194,14 +201,12 @@ export const LIMITS = {
 export const HOT_CATEGORY = { section: "tax", slug: "interpretations" } as const satisfies { section: SectionKey; slug: string };
 
 /**
- * 공개 링크로 내보내지 않는 경로 — 단계 전 경로(HOME-02: 자체 계산기 `/calc/…`, `/law`, `/cases`, `/workspace`, `/qna`, `/library`)와
+ * 공개 링크로 내보내지 않는 경로 — 단계 전 경로(HOME-02: 자체 계산기 `/calc/…`, `/workspace`, `/qna`, `/library`)와
  * v1.2 경로(PRD-01A 3장 · PRD-00 8장 'v1.2 경로 대체' — `/region`, `/resources`, `/academy`, `/authors`, `/pricing`, `/ask`, `/realestate/trust`,
  * `/news/cards`, 옛 정책 경로 — MIG-02). 사이트 안 주소(`/`로 시작)만 본다
  */
 const BLOCKED_PREFIXES = [
   "/calc/",
-  "/law",
-  "/cases",
   "/workspace",
   "/qna",
   "/library",
@@ -250,6 +255,9 @@ const POLICY_ROOTS = ["/about", "/help"] as const;
 const FEATURE_PREFIXES: ReadonlyArray<{ prefix: string; feature: FeatureKey; self: boolean }> = [
   // SM 전문가 연락 요청 (W7c) - 유틸 메뉴 /experts보다 먼저 판정한다 (find가 첫 항목을 고른다)
   { prefix: "/experts/request", feature: "expert_requests", self: true },
+  // 위탁교육 견적 요청·세미나 (W10-g) - 유틸 메뉴 /edu보다 먼저 판정한다
+  { prefix: "/edu/quote", feature: "education_billing", self: true },
+  { prefix: "/edu/seminars", feature: "seminars", self: true },
   ...UTILITY_LINKS.map((u) => ({ prefix: u.href, feature: u.key, self: true })),
   // `/tax/amendments` 자체는 하위 분야 목록이다 (설계 9장 #28) — 트래커 상세 `/tax/amendments/[slug]`만
   { prefix: "/tax/amendments", feature: "amendments", self: false },
@@ -259,6 +267,9 @@ const FEATURE_PREFIXES: ReadonlyArray<{ prefix: string; feature: FeatureKey; sel
   { prefix: "/realestate/projects", feature: "realestate_projects", self: false },
   // 동영상 목록 (W2-c 4단계 — 동영상 채널 결정 전에는 닫힘)
   { prefix: VIDEO_LIST_HREF, feature: "video_list", self: true },
+  // 법령 뷰어 /law…(W10-d - 3단 보기 /law/[id]/three는 화면이 law_three 키를 따로 본다)·해석 DB /cases…(W10-d) - 공개 승인 전에는 닫힘
+  { prefix: "/law", feature: "law_viewer", self: true },
+  { prefix: "/cases", feature: "case_db", self: true },
   // 용어사전 색인·용어 쪽 (W2-d 3단계 — 공개 승인 전에는 닫힘)
   { prefix: GLOSSARY_HREF, feature: "glossary", self: true },
   // 회원 화면 (W2-e — `members`, 가입·메일·약관·처리방침 게시본이 갖춰져야 열린다 — lib/policy/feature-open.ts)
@@ -268,6 +279,8 @@ const FEATURE_PREFIXES: ReadonlyArray<{ prefix: string; feature: FeatureKey; sel
   { prefix: "/brief", feature: "brief" as const, self: true },
   { prefix: "/about/terms", feature: "page_terms", self: true },
   { prefix: "/about/no-email-collection", feature: "page_no_email", self: true },
+  { prefix: "/about/youth-protection", feature: "page_youth_protection", self: true },
+  { prefix: "/about/copyright-policy", feature: "page_copyright_policy", self: true },
   { prefix: "/about/advertise", feature: "page_advertise", self: true },
 ];
 

@@ -11,6 +11,7 @@
 //  · /local 전국 화면의 시·도 카드 — 오늘 유효한 시·도, 코드 순. region_hubs가 켜졌을 때만 지역 허브 링크(꺼지면 글자만 — 404 링크 0).
 //    11단계 — 칩 '시범 지역'(pilot_regions)·'색인 대상'(public_region_index)
 import { BLOCKED_OFFICIAL_SOURCE_TYPES } from "@ltr/editorial";
+import type { ToolCard } from "@/lib/calc/tool-cards";
 import { isValidOn, regionHref, type RegionRouteRow } from "@/lib/site/region-route";
 import { officialCard, type OfficialSourceCard, type SourceCardInput } from "@/lib/site/source-cards";
 import type { ArticleListItem } from "./cards";
@@ -170,6 +171,10 @@ export interface RegionOriginalLink {
 }
 
 export interface RegionTaxLinksView {
+  /** 자체 계산기 도구 카드 (REG1-10, 게이트를 통과한 도구만 - 없으면 생략) */
+  tools?: ToolCard[];
+  /** 도구 카드 주소에 해시로 붙는 지역 코드 */
+  toolRegion?: string | null;
   situations: SituationCard[];
   explainers: ArticleListItem[];
   sm: { card: OfficialLinkCard; fallbacks: OfficialLinkCard[] } | null;
@@ -190,6 +195,9 @@ export function regionTaxLinks(input: {
   situationLimit: number;
   official: RegionalOfficial;
   sm: { card: OfficialLinkCard; fallbacks: OfficialLinkCard[] } | null;
+  /** 게이트를 통과한 자체 계산기 도구 카드 (REG1-10) - 있으면 SM 취득세 카드 대신 */
+  tools?: ToolCard[];
+  regionCode?: string;
 }): RegionTaxLinksView | null {
   const view: RegionTaxLinksView = {
     situations: taxLinkSituations(input.situations, input.situationLimit),
@@ -197,7 +205,14 @@ export function regionTaxLinks(input: {
     sm: input.sm,
     originals: input.official.originals.slice(0, REGION_OFFICIAL_LIMITS.originals).map((c) => ({ id: c.id, label: c.title, issuer: c.issuer, typeLabel: c.typeLabel, href: c.href, underReview: c.underReview })),
   };
-  return view.situations.length || view.explainers.length || view.sm || view.originals.length ? view : null;
+  // 자체 계산기 카드가 있으면 같은 세목의 SM 카드는 빠진다(세목마다 카드 정확히 1장). 지역 코드는 해시로만 넘긴다
+  const tools = input.tools ?? [];
+  if (tools.length > 0) {
+    view.tools = tools;
+    view.toolRegion = input.regionCode ?? null;
+    if (tools.some((t) => t.tool === "acquisition")) view.sm = null;
+  }
+  return view.situations.length || view.explainers.length || view.sm || view.originals.length || tools.length ? view : null;
 }
 
 // ── 3단계 자리 ─────────────────────────────

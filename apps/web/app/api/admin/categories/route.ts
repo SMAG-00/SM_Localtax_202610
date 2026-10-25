@@ -1,4 +1,4 @@
-import { parseCategoryInput } from "@/lib/admin/category-rules";
+import { parseCategoryInput, reservedSlugBlocked } from "@/lib/admin/category-rules";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { listCategoryRows, type CategoryRow } from "@/lib/server/admin/backoffice";
 import { categoryCopyChecks } from "@/lib/server/admin/copy-checks";
@@ -29,6 +29,8 @@ export const POST = handle(async (request: Request) => {
   const parsed = parseCategoryInput(await readJson(request), "create");
   if (!parsed.ok) return errorJson(422, "입력값을 확인하세요", { errors: parsed.errors });
   const columns = parsed.value;
+  const reserved = reservedSlugBlocked(String(columns.section), String(columns.slug));
+  if (reserved) return errorJson(422, "입력값을 확인하세요", { errors: [`category.slug: ${reserved}`] });
 
   const db = serviceDb();
   const copy = await categoryCopyChecks(db, columns);

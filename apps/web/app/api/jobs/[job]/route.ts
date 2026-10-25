@@ -32,7 +32,10 @@ async function run(request: Request, params: Promise<{ job: string }>) {
     const result = await job({ now: new Date(), services: jobServices(db) });
     await db
       .from("agent_runs")
-      .update({ status: "succeeded", finished_at: new Date().toISOString(), detail: result.detail ?? null })
+      .update({
+        status: "succeeded", finished_at: new Date().toISOString(), detail: result.detail ?? null,
+        ...(result.usage ? { model: result.usage.model, input_tokens: result.usage.inputTokens, output_tokens: result.usage.outputTokens, ...(result.usage.cost !== undefined && result.usage.costUnit ? { cost: result.usage.cost, cost_unit: result.usage.costUnit } : {}) } : {}),
+      })
       .eq("id", started.id);
     if (result.revalidatePublic) revalidatePublicData();
     return json({ runId: started.id, status: "succeeded" }, 200);

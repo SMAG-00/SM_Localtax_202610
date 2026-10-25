@@ -43,6 +43,7 @@ describe("필수 속성 표", () => {
       [
         "Book",
         "BreadcrumbList",
+        "CollectionPage",
         "Course",
         "Dataset",
         "Event",

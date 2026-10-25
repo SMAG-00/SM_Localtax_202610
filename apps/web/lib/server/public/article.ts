@@ -1,3 +1,5 @@
+import { applyToolHref } from "@/lib/calc/tool-target";
+import { resolveArticleTool } from "./article-tool";
 import "server-only";
 import { brand } from "@ltr/ui";
 import type { ArticleView, RenderedFacts } from "@ltr/structured-data";
@@ -232,12 +234,14 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
   // 다음 행동 버튼 갈 곳 (ART-06) — SM 계산기는 official_links(01B W3) 설정 주소로만, 그 전에는 없음
   const firstRegion = a.region_codes?.length ? regionMap.get(a.region_codes[0]!) : undefined;
   const sido = firstRegion?.parent_code ? regionMap.get(firstRegion.parent_code) : firstRegion;
+  // 편집자가 지정한 도구(GROW-02) - 게이트가 열려 있으면 미리 채운 값이 해시로 달린 자체 주소, 아니면 허브
+  const toolHref = await resolveArticleTool(id);
   const targets: ActionTargets = {
     situation: situation[0] ? { href: situationHref(situation[0].slug) } : null,
     same_section: { href: category ? categoryHref(section, category.slug) : SECTION_INFO[section].href },
     local_news: firstRegion && sido ? { href: firstRegion === sido ? `/local/${sido.slug}` : `/local/${sido.slug}/${firstRegion.slug}` } : null,
     expert_finder: { href: `/experts?field=${section}` },
-    self_calculator: { href: "/calc" },
+    self_calculator: { href: toolHref },
   };
 
   // 여러 개정안에 연결되면 배너가 뜨는 것 중 가장 최근에 바뀐 하나(없으면 첫째)를 보인다
@@ -314,7 +318,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
             banner: stageBanner(stage, { firstPublishedAt: a.first_published_at, substantiveUpdatedAt: a.substantive_updated_at }),
           }
         : null,
-    taxLens: taxLensSlot(lens, a.version, a.legal_basis_date, settings.features, reviewers),
+    taxLens: applyToolHref(taxLensSlot(lens, a.version, a.legal_basis_date, settings.features, reviewers), toolHref),
     lensNational: await getLensNationalCard(taxLensSlot(lens, a.version, a.legal_basis_date, settings.features, reviewers)?.topics ?? [], settings.features.inheritance_gift),
     disclaimer: category?.needs_disclaimer === true,
     similarCases,

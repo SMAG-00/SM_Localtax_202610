@@ -3,6 +3,7 @@ import { isoToKstDate } from "@/lib/admin/form-utils";
 import { matchRegion, regionRoute } from "@/lib/site/region-route";
 import { siteUrl } from "../env";
 import { getSmCalculatorCard } from "./calc";
+import { getToolCards } from "./tool-cards";
 import { isLocalTopic } from "./constants";
 import { publicDb, rowsOf } from "./db";
 import { getHubTaxPoint } from "./hub-points";
@@ -71,6 +72,8 @@ export async function getRegionPage(sidoSlug: string, sigunguSlug: string | null
     emptyBlocks.length && fields && match.sigungu
       ? await readBlockArticles({ local_tax: emptyBlocks.includes("local_tax") ? fields.local_tax : [], realestate: emptyBlocks.includes("realestate") ? fields.realestate : [] }, topic, regionArticleCodes(match.sido, regions))
       : {};
-  const taxLinks = regionTaxLinks({ situations, situationLimit: settings.hubSituationLimit, official, sm });
+  // 자체 계산기 도구 카드 (REG1-10) - 게이트를 통과한 도구만. 읽지 못해도 허브는 그대로(SM 카드만)
+  const toolCards = await getToolCards().catch(() => null);
+  const taxLinks = regionTaxLinks({ situations, situationLimit: settings.hubSituationLimit, official, sm, tools: toolCards ? toolCards.cards.filter((c) => c.link.kind === "self") : [], regionCode: region.code });
   return regionPage({ sido: match.sido, sigungu: match.sigungu, regions, total, today, siteUrl: siteUrl(), topic, fields, own, parent, taxPoint, official, taxLinks, indexable, descriptionTitles, projects, supply, localNews });
 }

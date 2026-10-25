@@ -37,6 +37,13 @@
     { "path": "/api/jobs/renewal-notice", "schedule": "50 15 * * *" },
     { "path": "/api/jobs/pipeline-law", "schedule": "0 16 * * *" },
     { "path": "/api/jobs/pipeline-docs", "schedule": "10 16 * * *" },
-    { "path": "/api/jobs/accuracy-run", "schedule": "20 16 * * *" }
+    { "path": "/api/jobs/pipeline-field-data", "schedule": "30 16 * * *" },
+    { "path": "/api/jobs/accuracy-run", "schedule": "20 16 * * *" },
+    { "path": "/api/jobs/amendment-detect", "schedule": "30 16 * * *" },
+    { "path": "/api/jobs/brief-draft", "schedule": "0 14 * * 0" },
+    { "path": "/api/jobs/brief-publish", "schedule": "0 1 * * 1" },
+    { "path": "/api/jobs/brief-reconfirm", "schedule": "10 0 * * *" },
+    { "path": "/api/jobs/ops-ai-budget", "schedule": "50 16 * * *" },
+    { "path": "/api/jobs/amendment-alert", "schedule": "20 0 * * *" }
   ]
 }

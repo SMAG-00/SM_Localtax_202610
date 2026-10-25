@@ -16,3 +16,10 @@
 [data-glossary-tip][data-open] [data-tip-pop] {
   display: block;
 }
+
+/* calculator-print: 계산 결과 인쇄 (CALC-06) - 계산기 화면에서는 사이트 머리·바닥·내비게이션을 뺀다 */
+@media print {
+  body:has([data-ui="calculator"]) :is(header, footer, nav) {
+    display: none;
+  }
+}

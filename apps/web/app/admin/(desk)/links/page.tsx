@@ -11,7 +11,7 @@ import { dbError } from "@/lib/server/http";
 export const metadata: Metadata = { title: "바깥 연결" };
 export const dynamic = "force-dynamic";
 
-const KIND_LABEL: Record<string, string> = { sm_calculator: "SM 계산기", external_calculator: "외부 계산기", fallback: "대체 안내" };
+const KIND_LABEL: Record<string, string> = { sm_calculator: "SM 계산기", external_calculator: "외부 계산기", fallback: "대체 안내", nts_guide: "국세청 안내", law_center: "법령정보센터", edu_site: "교육원" };
 const STATUS_LABEL: Record<string, string> = { ok: "정상", broken: "끊김", unchecked: "점검 전" };
 
 interface Row {

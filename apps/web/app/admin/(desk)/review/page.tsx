@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { FieldDataControls } from "@/components/admin/FieldDataControls";
+import { AmendmentApplyForm } from "@/components/admin/BriefControls";
 import { ReviewItemControls } from "@/components/admin/ReviewControls";
+import { fieldCandidateView } from "@/lib/field-data/review-ui";
 import { EmptyNote, MONO, PageTitle, Panel, ToneChip } from "@/components/admin/ui";
 import { isoToKstDate, isoToKstDateTime } from "@/lib/admin/form-utils";
 import { CHECK_LABELS, KIND_LABELS, STALE_HOURS, STATUS_LABELS, hoursOpen, isStale, type ReviewKind, type ReviewStatus } from "@/lib/review/rules";
@@ -31,6 +34,29 @@ function PayloadList({ payload }: { payload: Record<string, unknown> }) {
   );
 }
 
+/** 분야 데이터 후보(W10-h) - 대상·원천 항목 번호·공공누리 유형과 후보 칸 전체(바뀐 칸 표시). 유형이 없으면 승인할 수 없다는 안내 */
+function FieldCandidateList({ payload }: { payload: Record<string, unknown> }) {
+  const v = fieldCandidateView(payload);
+  if (!v) return <PayloadList payload={payload} />;
+  return (
+    <div data-testid="field-candidate">
+      <p className="text-[14px] text-navy-900">
+        <ToneChip tone="plain">{v.targetLabel}</ToneChip> <span className={MONO}>원천 항목 {v.sourceItemId}</span> · {v.koglLabel ?? "공공누리 유형 없음"}
+      </p>
+      {v.typeMissing && <p role="status" className="mt-1 text-[14px] font-bold text-rose-800">공공누리 유형이 없어 승인할 수 없습니다 (유형이 기록되어야 공개됩니다).</p>}
+      {v.koglType === "kogl_4" && <p className="mt-1 text-[14px] text-navy-700">제4유형 - 원문 전재 금지. 본문이 있으면 [제4유형 검사]를 통과해야 공개 반영됩니다.</p>}
+      <dl className="mt-2 grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-[14px]">
+        {v.rows.map((row) => (
+          <div key={row.name} className="contents" data-changed={row.changed ? "true" : "false"}>
+            <dt className="text-navy-600">{row.name}{row.changed ? " (바뀜)" : ""}</dt>
+            <dd className={`${MONO} break-all text-navy-900`}>{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const viewer = await pageViewer();
   requirePage(viewer, "review_item.decide");
@@ -40,6 +66,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   const { open, done } = await listReviewItems(db, { kind: kind && kind in KIND_LABELS ? kind : undefined });
   const now = new Date();
   const stale = open.filter((r) => isStale(r.status as ReviewStatus, r.status_changed_at, now));
+  const amendmentRows = open.some((r) => r.kind === "amendment_stage" && r.status === "approved") ? ((await db.from("amendments").select("id, title").order("id", { ascending: false }).limit(200)).data ?? []) as { id: number; title: string }[] : [];
   const detailOf = new Map<number, Awaited<ReturnType<typeof getReviewDetail>>>();
   for (const r of open.slice(0, 20)) detailOf.set(r.id, await getReviewDetail(db, r.id));
 
@@ -72,7 +99,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           </section>
           <section aria-label="후보" data-testid="review-draft">
             <h3 className="text-[14px] font-bold text-navy-900">후보 (초안 요약)</h3>
-            <PayloadList payload={r.payload} />
+            {r.kind === "field_data" ? <FieldCandidateList payload={r.payload} /> : <PayloadList payload={r.payload} />}
             {r.parts.length > 0 && <p className="mt-1 text-[14px] text-navy-700">부분 승인 단위: {r.parts.join(", ")}</p>}
           </section>
         </div>
@@ -80,6 +107,11 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           <p className="mt-2 text-[14px] text-navy-700">확인한 체크: {r.checked_keys.map((k) => CHECK_LABELS[k] ?? k).join(" · ")}</p>
         ) : null}
         <ReviewItemControls item={{ id: r.id, status, attempts: r.attempts, required_checks: r.required_checks, parts: r.parts, assignee: r.assignee }} />
+        {r.kind === "field_data" && (() => {
+          const fv = fieldCandidateView(r.payload);
+          return fv ? <FieldDataControls id={r.id} status={r.status} koglType={fv.koglType} hasBody={fv.hasBody} /> : null;
+        })()}
+        {r.kind === "amendment_stage" && r.status === "approved" && amendmentRows.length > 0 && <AmendmentApplyForm itemId={r.id} amendments={amendmentRows} />}
       </li>
     );
   };

@@ -509,6 +509,8 @@ test("4) TX-01·06 /calc — 카드 묶음 정확히(SM 5 + 외부 1), 이동 �
 
 // ── 5) 링크 점검 ─────────────────────────────────────────
 test("5) TX-03 링크 점검 — 2xx ok·404 broken·같은 실행 키 한 벌·요청에 이용자 정보 0·끊긴 카드 대체 안내 · 7일 전 경고 0 / 8일 전 1 (배치·관리 화면)", async () => {
+  // 연속 2회 실패에 broken (FAM-04 · WETAX-01) - 지난 주 점검에서도 실패했다고 보고 실패 횟수를 1로 둔다
+  await one("with u as (update public.official_links set fail_count = 1 where url is not null returning 1) select count(*)::int n from u");
   const before = outgoing.length;
   const first = await runJob();
   assert.deepEqual([first.targets, first.ok, first.broken, first.skipped], [8, 7, 1, 0], JSON.stringify(first));

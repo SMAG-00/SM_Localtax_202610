@@ -4,6 +4,7 @@ import {
   book,
   breadcrumbList,
   course,
+  collectionPage,
   dataset,
   event,
   newsArticle,
@@ -450,5 +451,45 @@ describe("paywalledArticle (유료 기사 구조화 데이터, W10-f)", () => {
     expect("mainEntityOfPage" in node).toBe(false);
     expect("datePublished" in node).toBe(false);
     expect(node.isAccessibleForFree).toBe(false);
+  });
+});
+
+describe("collectionPage — 이번 주 재테크 포인트 목록 (PR-15)", () => {
+  const view = {
+    url: "https://news.example/realestate/weekly/2026-43",
+    name: "이번 주 재테크 포인트 2026년 43주차",
+    datePublished: "2026-10-23",
+    items: [
+      { name: "기사 하나", url: "https://news.example/news/a-1" },
+      { name: "기사 둘", url: "https://news.example/news/a-2" },
+      { name: "기사 셋", url: "https://news.example/news/a-3" },
+    ],
+  };
+  it("CollectionPage에 ItemList를 담고 항목 순서가 차례 번호이며 항목 수가 numberOfItems다", () => {
+    const node = collectionPage(view);
+    expect(node["@type"]).toBe("CollectionPage");
+    expect(node).toMatchObject({
+      name: view.name,
+      url: view.url,
+      datePublished: "2026-10-23",
+      mainEntity: {
+        "@type": "ItemList",
+        numberOfItems: 3,
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "기사 하나", url: "https://news.example/news/a-1" },
+          { "@type": "ListItem", position: 2, name: "기사 둘", url: "https://news.example/news/a-2" },
+          { "@type": "ListItem", position: 3, name: "기사 셋", url: "https://news.example/news/a-3" },
+        ],
+      },
+    });
+  });
+  it("없는 값(설명)은 칸을 지어내지 않고, 평점·가격 칸이 없다", () => {
+    const node = collectionPage(view) as Record<string, unknown>;
+    expect("description" in node).toBe(false);
+    expect(JSON.stringify(node)).not.toMatch(/aggregateRating|review|price|offers/);
+  });
+  it("pageJsonLd가 collection 종류를 받아 CollectionPage 한 노드를 낸다", () => {
+    const nodes = pageJsonLd({ kind: "collection", collection: view });
+    expect(nodes.map((n) => n["@type"])).toEqual(["CollectionPage"]);
   });
 });

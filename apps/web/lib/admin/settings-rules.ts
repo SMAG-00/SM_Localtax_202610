@@ -11,6 +11,7 @@ import { ANALYTICS_SETTING_CHECKS } from "@/lib/analytics/settings";
 import { checkAuthLimitsSetting, checkMemberSetting, checkPrivacyRetentionSetting } from "@/lib/auth/settings";
 import { checkWindowsSetting } from "@/lib/readiness/windows";
 import { hasClaimToken } from "@/lib/brand/claim";
+import { companyInfoErrors } from "@/lib/policy/docs";
 // 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
 import { FEATURE_KEYS, NEXT_ACTION_KEYS } from "@/lib/server/public/constants";
 import { heroMediaErrors } from "@/lib/site/hero-media";
@@ -23,6 +24,8 @@ import { phraseError } from "./dictionary-rules";
 import { blockedDomainsErrors, legalReviewSettingErrors, rebuttalWaitErrors } from "./finance-rules";
 import { digestSidosErrors, digestSourcesErrors, digestSummaryMaxErrors, eventBlockedDomainsErrors, eventRecheckErrors } from "./local-news-rules";
 import { PROJECT_LIMITS, projectStageListsErrors, projectTypesErrors } from "./project-rules";
+import { shortcutCopyErrors, utmRegistryErrors } from "@/lib/campaigns/settings-check";
+import { shortcutOrderErrors } from "@/lib/site/shortcut-order";
 import { nextIntakeErrors, readinessWarnErrors } from "@/lib/readiness/monthly";
 import { crawlerPolicyErrors, indexnowErrors, newsSitemapHoursErrors, seoLintParamsErrors } from "@/lib/seo/settings";
 import { EXPIRY_DAYS_DEFAULT, EXPIRY_DAYS_MAX, EXPIRY_DAYS_MIN, expiryDaysErrors } from "@/lib/source-review/rules";
@@ -301,10 +304,31 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     guide: `["지방세", "부동산 세금", "재테크"] — 핵심 메시지 안의 낱말 1~${CORE_HIGHLIGHTS_MAX}개(글자 그대로), 나온 곳마다 오렌지로 칠합니다. 핵심 메시지를 먼저 바꾼 뒤 이 값을 맞추세요`,
     check: (value) => coreHighlightsErrors(value),
   },
+  shortcut_order: {
+    label: "바로가기 순서 (HOME-12 · 13)",
+    guide: '["calc", "realestate_weekly", "brief_weekly"] — 세 키를 한 번씩, 순서만 바꿉니다. 상담 요청 바로가기은 순서에 넣지 않고 항상 마지막 강조 버튼입니다. 바꾸면 다음 요청부터',
+    check: (value) => shortcutOrderErrors(value),
+  },
+  home_shortcut_copy: {
+    label: "홈 바로가기 카드 한 줄 설명 (HOME-13)",
+    guide: '{ "calc": "…", "expert_request": "…", "brief_weekly": "…", "realestate_weekly": "…" } — 칸마다 30자 이하 한 줄, 비워 두면 이름만 보입니다. 문구는 직접 쓰세요',
+    check: (value) => shortcutCopyErrors(value),
+  },
+  campaign_utm_values: {
+    label: "캠페인 태그 등록 값 (GROW-05)",
+    guide: '{ "source": ["naver"], "medium": ["cpc"], "content": [] } — 소문자·숫자·-·_ 20자 이하, 칸마다 20개까지, other는 쓰지 않습니다. 목록 밖 태그 값은 other로 저장됩니다',
+    check: (value) => utmRegistryErrors(value),
+  },
   hero_media: {
     label: "히어로 배경 영상·그림 (홈 전체 화면 · 분야 허브 머리)",
     guide: '{ "home": { "video": "/media/hero/home.mp4", "videoMobile": "/media/hero/home-m.mp4", "poster": "/media/hero/home.avif", "posterMobile": "/media/hero/home-m.avif", "card": "/media/hero/home-card.avif" }, "tax": { … }, "realestate": { … }, "finance": { … }, "local": { … }, "aiLabel": true } — 파일은 /media/hero/ 안의 것만(바깥 주소 불가). 영상이 없으면 포스터 정지 그림, 둘 다 없으면 어두운 그라데이션. aiLabel은 화면 구석 "AI 생성 영상" 표시(기본 켜짐). 변환: node scripts/media/build-hero.mjs',
     check: (value) => heroMediaErrors(value),
+  },
+  company_info: {
+    label: "바닥글 매체 정보·연락처·안내 문구 (HELP-05)",
+    guide:
+      '{ "registered_on": "2009-04-06", "registration_no": "…", "publisher_editor": "…", "youth_officer": "…", "corporation": "…", "address": "…", "phone": "…", "fax": "…", "copyright_notice": "{제호} 모든 콘텐츠…", "open_reporting_notice": "…" } - 바닥글에 이 순서로 나옵니다(제호는 코드의 명칭 설정에서 자동). 칸을 "" 로 비우면 그 줄이 숨습니다. 문구 안의 {제호}는 제호로 바뀝니다. 그 밖의 칸: name 상호 · representative 대표 · publisher 발행인 · editor 편집인 · directions 오시는 길. 칸마다 한 줄, 상한 이내. 바꾸면 다음 요청부터',
+    check: (value) => companyInfoErrors(value),
   },
   column_opinion_notice: {
     label: "칼럼 의견 고지 문구 (TX-16)",

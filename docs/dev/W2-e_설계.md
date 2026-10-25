@@ -49,7 +49,7 @@ PRD-01A 9장 W2-e(회원(관심 분야·지역)·`/my` 맞춤·고객센터·바
 | inquiry.status (상태 — W2-a 그대로) | `received` · `in_progress` · `done` |
 | inquiry.request_type (정정·반론 요청 구분 — `correction` 종류에서만) | `correction` · `rebuttal` |
 | inquiry.mail_status (접수 확인 메일) | `none`(연락 이메일 없음) · `queued` · `sent` · `failed` · `skipped`(메일 설정 없음) |
-| policy.doc_key (정책 문서 9종) | `about` · `editorial-policy` · `ethics` · `corrections` · `ad-policy` · `privacy` · `terms` · `no-email-collection` · `advertise` |
+| policy.doc_key (정책 문서 11종 — 청소년보호정책·저작권보호정책은 바닥글 이전 때 더함, 마이그레이션 103) | `about` · `editorial-policy` · `ethics` · `corrections` · `ad-policy` · `privacy` · `terms` · `no-email-collection` · `youth-protection` · `copyright-policy` · `advertise` |
 | policy.status (버전 상태) | `draft` · `published` · `superseded` |
 | policy.block_types (본문 조각 — HTML 직접 입력 0) | `paragraph` · `list` · `callout` (+ 절 제목 `heading`) |
 | throttle.scope (시도 횟수 범위) | `login_pair` · `login_account` · `login_ip` · `password_change` · `signup_ip` · `signup_email` · `reset_ip` · `reset_email` · `form_ip` · `brief_ip` · `brief_email` · `confirm_resend` |
@@ -84,13 +84,15 @@ PRD-01A 9장 W2-e(회원(관심 분야·지역)·`/my` 맞춤·고객센터·바
 {"version":"2026-10-20.1","unconfirmed_signup_days":7,"unconfirmed_consent_days":7,"revoked_consent_days":30,"inquiry_contact_days":365,"inquiry_attachment_days":365,"throttle_hours":24}
 ```
 
-#### `company_info` (바닥글·회사 소개 — 전부 빈 값으로 시작, 빈 칸은 그 줄을 숨긴다 — HELP-05. 익명 읽기 허용 키에 더한다)
+#### `company_info` (바닥글·회사 소개 — 빈 칸은 그 줄을 숨긴다 — HELP-05. 익명 읽기 허용 키에 더한다)
+
+칸 이름은 코드(`apps/web/lib/policy/docs.ts` `COMPANY_INFO_FIELDS`)가 정본이고 마이그레이션 103이 운영 설정 화면 검사·저장 검사(트리거)를 더했다. 처음 설계의 칸 이름(`company_name`·`media_registration_no` 등)은 쓰지 않는다.
 
 ```json
-{"version":"2026-10-20.1","company_name":"","representative":"","publisher":"","editor":"","media_registration_no":"","business_address":"","phone":"","directions":"","privacy_officer_name":""}
+{"registered_on":"","registration_no":"","publisher_editor":"","youth_officer":"","corporation":"","name":"","representative":"","publisher":"","editor":"","address":"","phone":"","fax":"","directions":"","copyright_notice":"","open_reporting_notice":""}
 ```
 
-실사(W0)로 확인되지 않은 칸은 비워 둔다 — 임의 등록번호 0(HELP-02). 개인정보 보호책임자의 연락 수단은 이메일 주소가 아니라 문의 폼 링크로 안내한다(9.2).
+마이그레이션 103의 씨앗은 옛 사이트 바닥글 값(PO 제공 2026-10-25 — 등록일·등록번호·발행·편집인·청소년보호책임자·법인명·주소·전화·FAX와 저작권 문구·열린보도원칙 문구)이다. 문구 안의 `{제호}`는 화면이 코드 `brand.mastheadName`으로 바꾼다. 확인되지 않은 칸은 비워 둔다 — 임의 등록번호 0(HELP-02). 개인정보 보호책임자의 연락 수단은 이메일 주소가 아니라 문의 폼 링크로 안내한다(9.2).
 
 #### `privacy_processors` (처리 위탁·국외 처리 대상 — 처리방침 게시 점검의 입력, 공개 아님)
 
@@ -142,9 +144,11 @@ PRD-01A 9장 W2-e(회원(관심 분야·지역)·`/my` 맞춤·고객센터·바
 | `privacy` | `/about/privacy` | `page_privacy` | 개인정보처리방침(굵게) | 예 | 관리자 | 관리자 |
 | `terms` | `/about/terms` | `page_terms` | 이용약관 | 아니오 | 관리자 | 관리자 |
 | `no-email-collection` | `/about/no-email-collection` | `page_no_email` | 이메일무단수집거부 | 아니오 | 관리자 | 관리자 |
+| `youth-protection` | `/about/youth-protection` | `page_youth_protection` | 청소년보호정책 | 아니오 | 관리자 | 관리자 |
+| `copyright-policy` | `/about/copyright-policy` | `page_copyright_policy` | 저작권보호정책 | 아니오 | 관리자 | 관리자 |
 | `advertise` | `/about/advertise` | `page_advertise` | 아니오(기사 하단 [광고·제휴 문의]) | 아니오 | 광고·협찬 담당·관리자 | 관리자 |
 
-기사 하단 7종은 PRD ART-02 그대로 — 회사 소개 · 편집 원칙 · 윤리강령 · 정정·반론 창구 · 광고 정책 · 개인정보처리방침 · 고객센터(`/help/report`). 바닥글은 여기에 이용약관 · 이메일무단수집거부 · 측정 거부(+ 전문가 소개는 01C 공개 승인 후)가 더해진다. 광고 정책을 고치는 사람에서 광고·협찬 담당을 뺀 것은 광고 분리 원칙(NAV-06) 때문이다.
+기사 하단 7종은 PRD ART-02 그대로 — 회사 소개 · 편집 원칙 · 윤리강령 · 정정·반론 창구 · 광고 정책 · 개인정보처리방침 · 고객센터(`/help/report`). 바닥글은 여기에 이용약관 · 청소년보호정책 · 저작권보호정책 · 이메일무단수집거부 · 측정 거부(+ 전문가 소개는 01C 공개 승인 후)가 더해진다. 청소년보호정책·저작권보호정책의 본문은 비어 있는 채로 출하하고 PO가 관리 화면에서 붙여 넣어 게시 승인한다. 광고 정책을 고치는 사람에서 광고·협찬 담당을 뺀 것은 광고 분리 원칙(NAV-06) 때문이다.
 
 ### 2.6 비밀번호 규칙 견본 (TypeScript 시험이 이 표를 읽는다 — 글자 수는 사람이 보는 글자 기준, 길이 한도는 UTF-8 바이트)
 
@@ -376,7 +380,7 @@ W2-d 설계 2.8 견본 표를 **그대로 읽는다**(가림 글자 `[이메일]
 
 ### 6.2 백오피스 `/admin/pages`
 
-- 목록: 문서 9종 · 게시 버전 · 게시일 · 시행일 · 초안 있음 · 기능 키 상태(켜짐/꺼짐) · "공개 가능"(게시본 있음).
+- 목록: 문서 11종 · 게시 버전 · 게시일 · 시행일 · 초안 있음 · 기능 키 상태(켜짐/꺼짐) · "공개 가능"(게시본 있음).
 - 편집: 본문 입력은 간단한 줄 표기 — `## 절 제목` · `- 항목` · `> 강조 문단` · 빈 줄 = 문단 나눔. 서버가 조각 jsonb로 바꿔 저장(순수 함수 `parsePolicyBody`, 시험 포함) — HTML 직접 입력 0. 저장은 `draft`로, 편집 책임자·관리자(문서 표 2.5)가 한다.
 - 게시: 관리자만. 승인 기록 3칸(검토자·검토일·메모) + 개정 사유(버전 2부터) 필수 → 새 `published`, 이전 게시본 `superseded`. 감사 로그 `policy.publish`(문서·버전만, 본문 0). 승인 기록이 없으면 거부하고 사유를 보인다.
 - 게시 점검(경고, 차단 아님 — 12장 #10): ① 본문이 비어 있지 않은가 ② 금지 표현 사전(`forbidden_phrases`)에 걸리는 말 ③ `privacy`면 `privacy_processors`의 활성 업체 이름이 본문에 있는가 ④ 이메일 모양 문자열이 있는가(있으면 가림 표기로 나간다는 안내). 점검은 문장을 고쳐 주지 않는다.
@@ -388,7 +392,7 @@ W2-d 설계 2.8 견본 표를 **그대로 읽는다**(가림 글자 `[이메일]
 
 ### 6.4 바닥글·기사 하단 구성
 
-- 바닥글(PRD-01A 3장 그림): 면책 줄 · 회사 정보 줄(`company_info` 중 값이 있는 칸 — 상호 · 대표 · 발행인 · 편집인 · 등록번호 · 주소 · 대표전화 · 오시는 길, 빈 칸 줄 숨김) · 정책 줄(회사 소개 · 편집 원칙 · 윤리강령 · 정정·반론 창구 · 광고 정책 · 고객센터 · (전문가 소개 — 01C)) · 약관 줄(이용약관 · **개인정보처리방침(굵게)** · 이메일무단수집거부 · 측정 거부) · 계정 줄([내 정보] · [브리핑 알림 받기] — 각 기능 키).
+- 바닥글(PRD-01A 3장 그림 + 옛 사이트 바닥글 이전, 마이그레이션 103): 면책 줄 · 정책 링크 줄(순서: 회사 소개 · **개인정보처리방침(굵게)** · 이용약관 · 청소년보호정책 · 저작권보호정책 · 이메일무단수집거부 · 편집 원칙 · 윤리강령 · 정정·반론 창구 · 광고 정책 · 고객센터 · (전문가 소개 — 01C) · 측정 거부(항상) · [내 정보](`members`) — 각 기능 키, 꺼진 것은 링크 0) · 안내 문단 둘(저작권 보호 문구 · 열린보도원칙, `company_info.copyright_notice`·`open_reporting_notice`, 문구 안 `{제호}`는 제호로 바뀜) · 매체 정보 줄(제호 — 코드 `brand.mastheadName` · `company_info` 중 값이 있는 칸: 등록일 · 등록번호 · 발행·편집인 · 청소년보호책임자 · 법인명 · 상호 · 대표 · 발행인 · 편집인) · 연락처 줄(주소 · 전화 · FAX · 오시는 길) · `Copyright © {제호}. All rights reserved.` · 운영 SM(선명). 빈 칸은 그 줄을 숨긴다. 옛 사이트의 'POWERED BY ND'와 분야 줄은 옮기지 않는다.
 - 기사 하단: 정책 링크 7종(2.5) + [광고·제휴 문의](`page_advertise`) + [브리핑 알림 받기](`brief`). 모두 `featureOpen`이 닫으면 요소 0.
 - [측정 거부]는 항상 보인다(거부 권리 — W2-c). 문구·위치는 법률 검토 안건(W2-c #7, 12장 #34).
 

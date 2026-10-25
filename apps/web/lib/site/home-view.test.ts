@@ -12,15 +12,16 @@ describe("히어로 강조 낱말", () => {
 });
 
 describe("섹션 바탕 — 보이는 순서대로 ivory ↔ ivory-dark", () => {
-  test("모든 섹션이 보이면 4대 분야부터 ivory, 다음 ivory-dark … (히어로는 세지 않는다)", () => {
+  test("모든 섹션이 보이면 바로가기부터 ivory, 다음 ivory-dark … (히어로는 세지 않는다)", () => {
     expect(sectionTones(HOME_SECTION_KEYS).map((t) => `${t.key}:${t.tone}`)).toEqual([
-      "fields:ivory",
-      "latest_reports:ivory-dark",
-      "weekly_hot:ivory",
-      "amendments:ivory-dark",
-      "column:ivory",
-      "product:ivory-dark",
-      "experts:ivory",
+      "shortcuts:ivory",
+      "fields:ivory-dark",
+      "latest_reports:ivory",
+      "weekly_hot:ivory-dark",
+      "amendments:ivory",
+      "column:ivory-dark",
+      "product:ivory",
+      "experts:ivory-dark",
     ]);
   });
 

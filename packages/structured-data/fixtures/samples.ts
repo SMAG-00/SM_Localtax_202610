@@ -177,7 +177,7 @@ export const sampleDataset: DatasetView = {
 };
 
 /** 유형 대응표의 7유형 견본 페이지 — 키는 유형 대응표의 kind */
-export const passSamples: Record<PageInput["kind"], PageInput> = {
+export const passSamples: Record<Exclude<PageInput["kind"], "collection">, PageInput> = {
   article: { kind: "article", article: sampleArticle, breadcrumb: sampleArticleBreadcrumb },
   mediaOrganization: { kind: "mediaOrganization", organization: sampleOrganization },
   person: { kind: "person", person: samplePerson },
@@ -189,6 +189,22 @@ export const passSamples: Record<PageInput["kind"], PageInput> = {
 
 /** 7유형 밖의 통과 견본 — 동영상 기사·광고 기사·공동 기획 기사·상업 행사 */
 export const extraPassSamples: { id: string; input: PageInput }[] = [
+  {
+    id: "weekly-collection",
+    input: {
+      kind: "collection",
+      collection: {
+        url: "https://news.example/realestate/weekly/2026-43",
+        name: "이번 주 재테크 포인트 2026년 43주차",
+        datePublished: "2026-10-23",
+        items: [
+          { name: "기사 하나", url: "https://news.example/news/a-1" },
+          { name: "기사 둘", url: "https://news.example/news/a-2" },
+          { name: "기사 셋", url: "https://news.example/news/a-3" },
+        ],
+      },
+    },
+  },
   { id: "video-article", input: { kind: "article", article: sampleVideoArticle } },
   { id: "ad-article", input: { kind: "article", article: sampleAdArticle } },
   { id: "partner-article", input: { kind: "article", article: samplePartnerArticle } },

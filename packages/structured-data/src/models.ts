@@ -215,6 +215,15 @@ export interface DatasetView {
   distribution?: { contentUrl: Url; encodingFormat: string }[];
 }
 
+/** 목록 모음 페이지 — 이번 주 재테크 포인트 (PR-15). 화면에 보이는 제목·주소·발행일·항목과 같은 값만 옮긴다 */
+export interface CollectionView {
+  url: Url;
+  name: string;
+  description?: string;
+  datePublished?: IsoDateString;
+  items: { name: string; url: Url }[];
+}
+
 /** 페이지 하나가 생성기에 넘기는 입력 — `kind`는 유형 대응표(types-map.ts)의 키 */
 export type PageInput =
   | { kind: "article"; article: ArticleView; breadcrumb?: BreadcrumbView }
@@ -223,4 +232,5 @@ export type PageInput =
   | { kind: "event"; event: EventView; breadcrumb?: BreadcrumbView }
   | { kind: "book"; book: BookView; breadcrumb?: BreadcrumbView }
   | { kind: "course"; course: CourseView; breadcrumb?: BreadcrumbView }
-  | { kind: "dataset"; dataset: DatasetView; breadcrumb?: BreadcrumbView };
+  | { kind: "dataset"; dataset: DatasetView; breadcrumb?: BreadcrumbView }
+  | { kind: "collection"; collection: CollectionView; breadcrumb?: BreadcrumbView };

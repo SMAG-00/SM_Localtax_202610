@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Eyebrow, brand } from "@ltr/ui";
 import { signFillToken } from "@/lib/auth/signup-input";
 import { BRIEF_MESSAGES, isBriefCode } from "@/lib/brief/input";
 import { briefOpen } from "@/lib/server/auth-guard";
+import { featureOn } from "@/lib/server/brief/policy";
 import { guardSecret } from "@/lib/server/env";
+import { publicDb, rowsOf } from "@/lib/server/public/db";
+import { issueSlug } from "@ltr/workflows/ops";
 import { adminClient } from "@/lib/server/supabase";
 
 // 브리핑 사전 알림 (/brief, W2-e 설계 7.5 · HOME-06) — 일반 HTML 폼(JS 없이 동작). 닫혀 있으면 404.
@@ -23,6 +27,8 @@ export default async function BriefPage({ searchParams }: Props) {
   const q = await searchParams;
   const done = q.done === "sent" || q.done === "already" ? q.done : null;
   const error = typeof q.e === "string" && isBriefCode(q.e) && q.e !== "sent" && q.e !== "already" ? q.e : null;
+  const regular = await featureOn(db, "brief_regular").catch(() => false);
+  const archive = regular ? await rowsOf<{ issue_no: number; title: string; publish_at: string }>(publicDb().from("public_brief_issues").select("issue_no, title, publish_at").order("publish_at", { ascending: false }).limit(100), "브리핑 아카이브") : [];
   const fill = openFillToken(secret);
   return (
     <main className="mx-auto w-full max-w-md px-4 py-16">
@@ -32,7 +38,31 @@ export default async function BriefPage({ searchParams }: Props) {
       <div className="mt-8 rounded-2xl border border-navy-100 bg-white p-6">
         <Eyebrow>BRIEFING</Eyebrow>
         <h1 className="mt-3 text-[28px] leading-tight font-black text-navy-900">브리핑 알림 받기</h1>
-        <p className="mt-3 text-[15px] text-navy-600">브리핑 발행은 아직 시작 전입니다. 이메일을 남기시면 첫 발행을 알려 드립니다.</p>
+        {regular ? (
+          <div className="mt-3 text-[15px] text-navy-600">
+            <p>
+              <Link href="/brief/subscribe" className="font-bold underline" data-testid="brief-subscribe-link">구독하기</Link>
+            </p>
+            {archive.length === 0 ? (
+              <p className="mt-2" data-testid="brief-archive-empty">아직 발행된 호가 없습니다.</p>
+            ) : (
+              <ul className="mt-3 space-y-2 rounded-2xl border border-sky-200 bg-sky-50 p-3" data-testid="brief-archive" aria-label="지난 호">
+                {archive.map((a) => (
+                  <li key={a.issue_no}>
+                    <a href={`/brief/${issueSlug(new Date(a.publish_at))}`} className="block min-h-11 rounded-xl border border-navy-100 bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400">
+                      <span className="block text-[13px] text-navy-600">
+                        {a.issue_no}호 · <time dateTime={issueSlug(new Date(a.publish_at))}>{issueSlug(new Date(a.publish_at))}</time>
+                      </span>
+                      <span className="block text-[16px] font-bold text-navy-900 underline">{a.title}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <p className="mt-3 text-[15px] text-navy-600">브리핑 발행은 아직 시작 전입니다. 이메일을 남기시면 첫 발행을 알려 드립니다.</p>
+        )}
         {done ? (
           <p role="status" data-testid="brief-done" data-code={done} className="mt-6 rounded-xl border border-navy-100 bg-navy-50 px-4 py-3 text-[15px] font-bold text-navy-900">
             {BRIEF_MESSAGES[done]}

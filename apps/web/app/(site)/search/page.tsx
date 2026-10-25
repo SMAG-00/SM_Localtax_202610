@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { SearchUnavailable, SearchView } from "@/components/site/SearchView";
+import { ToolCardsRow } from "@/components/site/calc/ToolCardsRow";
+import type { CardTool } from "@/lib/calc/tool-cards";
+import { getToolCards } from "@/lib/server/public/tool-cards";
 import type { SearchParams } from "@/components/site/routes";
 import { countPageSearch } from "@/lib/server/analytics/query-terms";
 import { getSearchPage, isUnavailable, parseSearchParams, readPublic, UNAVAILABLE } from "@/lib/server/public";
@@ -30,5 +33,18 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   if (data.result !== null) await countPageSearch(queryValue(raw.q) ?? "", requested.page);
   // 검색어 칸을 비운 채 보냈다(q= 또는 공백뿐) — 입력창 아래 안내 (주소에 q가 아예 없으면 첫 화면)
   const blankSubmitted = queryValue(raw.q) !== undefined && data.options.q === "";
-  return <SearchView data={data} blankSubmitted={blankSubmitted} />;
+  // 세목 검색어('취득세' 등)면 해당 계산기 도구 카드 1장 (GROW-02 · TX-04) - 게이트 전이면 같은 자리에 SM 카드. 검색어 원문은 쓰지 않고 분류된 주제만 본다
+  const keys = new Set((data.result?.classification?.topics ?? []).map((t) => t.key));
+  const wanted: CardTool[] = [keys.has("acquisition_tax") ? "acquisition" : null, keys.has("property_tax") ? "holding" : null].filter((t): t is CardTool => t !== null);
+  const tools = wanted.length > 0 ? await getToolCards(wanted).catch(() => null) : null;
+  return (
+    <>
+      {tools && tools.cards.length > 0 && (
+        <section aria-label="계산기" data-ui="search-tool-cards" className="mx-auto w-full max-w-[1100px] px-4 pt-6">
+          <ToolCardsRow cards={tools.cards} smLinks={tools.smLinks} fallbacks={tools.fallbacks} measure="search" />
+        </section>
+      )}
+      <SearchView data={data} blankSubmitted={blankSubmitted} />
+    </>
+  );
 }

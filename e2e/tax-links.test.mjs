@@ -159,6 +159,8 @@ test("b) /calc — SM 카드 정확히 5장·이동 주소 = 저장 주소·새 
 });
 
 test("c) 점검 배치 — 2xx ok · 404·500·시간 초과 broken · 같은 실행 키 두 번 = 기록 한 벌·요청도 한 번 · 요청에 쿠키·Referer·인증 0", async () => {
+  // 연속 2회 실패에 broken (FAM-04) - 지난 주 점검에서도 실패했다고 보고 실패 횟수를 1로 둔다
+  await db.query("update public.official_links set fail_count = 1 where url is not null");
   const first = await runJob();
   assert.equal(first.targets, 7, "주소가 있는 활성 연결 7건");
   assert.equal(first.ok, 4, "acquisition·property_tax·외부·위택스");

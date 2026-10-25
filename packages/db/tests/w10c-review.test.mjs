@@ -32,10 +32,10 @@ const go = (id, to, over = {}) => {
 };
 const statusOf = async (id) => await h.one("select status, attempts, failed_from from public.review_items where id = $1", [id]);
 
-test("원천 씨앗 6행은 모두 unchecked이고 수집할 수 없다", () =>
+test("원천 씨앗 13행(해석·법령 6 + 분야 데이터 7)은 모두 unchecked이고 수집할 수 없다", () =>
   h.tx(async () => {
     const rows = (await client.query("select key, terms_status, public.data_source_runnable(key) as runnable from public.data_sources order by key")).rows;
-    assert.deepEqual(rows.map((r) => r.key), ["admrul", "court_case", "law_api", "mois_interpretation", "nts_interpretation", "tribunal_decision"]);
+    assert.deepEqual(rows.map((r) => r.key), ["admrul", "applyhome_supply", "buildinghub_permit", "court_case", "dart_disclosure", "festival_data", "fin_authority_release", "law_api", "mois_interpretation", "nts_interpretation", "pf_integrated_info", "seoul_cleanup", "tribunal_decision"]);
     assert.ok(rows.every((r) => r.terms_status === "unchecked" && r.runnable === false));
   }));
 
@@ -71,7 +71,18 @@ test("검수 항목 — 종류 8종 밖 거부, 필수 체크 키는 종류로 �
     const ev = (await client.query("select action, from_status, to_status, actor from public.review_item_events where item_id = $1", [r.id])).rows;
     assert.deepEqual(ev, [{ action: "create", from_status: null, to_status: "drafted", actor: "system" }]);
     const kinds = ["law_change", "legal_doc", "link_error", "link_candidates", "amendment_stage", "field_data", "ai_draft", "pipeline_failure"];
-    for (const k of kinds) assert.ok((await item({ kind: k })).required_checks.length >= 1, k);
+    // field_data 후보는 수집 가능한 원천 + 원본 스냅샷이 있어야 만들어진다 (W10-h 마이그레이션 100) — 없으면 거부
+    const noSource = await h.attempt("insert into public.review_items (kind, source_key, title) values ('field_data', $1, 't')", [h.uniq("fd")]);
+    assert.equal(noSource.ok, false);
+    assert.match(noSource.message, /허용되고 견본 계약이 확인된 원천/);
+    await client.query("update public.data_sources set terms_status = 'allowed', terms_checked_by = 'user:po', terms_checked_at = now(), contract_verified_by = 'user:po', contract_verified_at = now() where key = 'applyhome_supply'");
+    const noSnap = await h.attempt("insert into public.review_items (kind, source_key, title, data_source_key) values ('field_data', $1, 't', 'applyhome_supply')", [h.uniq("fd")]);
+    assert.equal(noSnap.ok, false);
+    assert.match(noSnap.message, /원본 스냅샷/);
+    for (const k of kinds) {
+      const over = k === "field_data" ? { data_source_key: "applyhome_supply", snapshot_id: await h.snapshot() } : {};
+      assert.ok((await item({ kind: k, ...over })).required_checks.length >= 1, k);
+    }
   }));
 
 test("같은 (종류, 키)는 1건 — 재감지는 충돌로 무시되고 기존 항목은 그대로", () =>

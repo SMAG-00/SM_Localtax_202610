@@ -6,7 +6,9 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./pipelines": "./src/pipelines/index.ts"
+    "./pipelines": "./src/pipelines/index.ts",
+    "./field-data": "./src/field-data/index.ts",
+    "./ops": "./src/ops/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

@@ -2,10 +2,11 @@
 //  · 상단 메뉴는 4대 분야 정확히 4개, 이 순서. 하위 메뉴는 분야 데이터(CAT-01)에서 — 공개 분야 중 목록 기사가 1건 이상인 것 + 공통 `뉴스 전체`
 //    지자체뉴스는 하위 경로(/local/[sido] · /local/events)가 01B 몫이라 하위 분야 대신 기사 있는 편집 분야(/local?topic=…)를 둔다 (설계 9장)
 //  · 유틸 메뉴·정책 링크는 기능 키가 켜진 것만 (꺼지면 링크 요소 0 — 빈 링크 0)
-import type { LocalTopic } from "@ltr/ui";
-import { companyInfoRows } from "@/lib/policy/docs";
+import { brand, type LocalTopic } from "@ltr/ui";
+import { companyFooter, type CompanyFooter } from "@/lib/policy/docs";
 import { LOCAL_TOPICS, POLICY_LINKS, SECTION_INFO, SECTION_KEYS, UTILITY_LINKS, categoryHref, isBlockedPath, localTopicHref, type Features, type SectionKey } from "./constants";
 import type { PublicCategoryRow } from "./rows";
+import { buildShortcuts, NO_SHORTCUT_INPUTS, type ShortcutInputs } from "./shortcuts-logic";
 import { CLOSED_FEATURES } from "./settings";
 
 export interface NavLink {
@@ -22,21 +23,29 @@ export interface SectionMenu extends NavLink {
 export interface SiteChrome {
   sections: SectionMenu[];
   utilities: NavLink[];
+  /** 바로가기 줄 (HOME-12) - 열린 것만, 화면 순서. 키 shortcuts가 꺼지면 빈 목록 */
+  shortcuts: NavLink[];
   policyLinks: NavLink[];
   /** 바닥글 링크 — 정책 · 약관 · 측정 거부 · 계정 (W2-e 6.4). 기능 키(실제로 열린 것)가 닫으면 0, 측정 거부만 항상 있다 */
   footerLinks: NavLink[];
-  /** 바닥글 회사 정보 줄 — 값이 있는 칸만 */
-  company: Array<{ label: string; value: string }>;
+  /** 바닥글 안내 문단·매체 정보·연락처 — 값이 있는 칸만 (제호는 brand에서) */
+  company: CompanyFooter;
 }
 
-/** 바닥글 링크 (6.4) — 순서: 회사 소개 · 편집 원칙 · 윤리강령 · 정정·반론 창구 · 광고 정책 · 고객센터 · 이용약관 · 개인정보처리방침 · 이메일무단수집거부 · 측정 거부 · 내 정보 */
+/**
+ * 바닥글 링크 (6.4) — 순서: 옛 사이트 여섯(회사소개 · 개인정보처리방침 · 이용약관 · 청소년보호정책 · 저작권보호정책 · 이메일무단수집거부)
+ * · 편집 원칙 · 윤리강령 · 정정·반론 창구 · 광고 정책 · 고객센터 · 측정 거부 · 내 정보. 공개 승인(기능 키)된 것만, 측정 거부는 항상
+ */
 export function buildFooterLinks(features: Features): NavLink[] {
   const policy = (key: string) => POLICY_LINKS.filter((p) => p.key === key && features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href }));
   const links: NavLink[] = [
-    ...["about", "editorial_policy", "ethics", "corrections", "ad_policy", "help"].flatMap(policy),
-    ...(features.page_terms ? [{ key: "terms", label: "이용약관", href: "/about/terms" }] : []),
+    ...policy("about"),
     ...policy("privacy"),
+    ...(features.page_terms ? [{ key: "terms", label: "이용약관", href: "/about/terms" }] : []),
+    ...(features.page_youth_protection ? [{ key: "youth_protection", label: "청소년보호정책", href: "/about/youth-protection" }] : []),
+    ...(features.page_copyright_policy ? [{ key: "copyright_policy", label: "저작권보호정책", href: "/about/copyright-policy" }] : []),
     ...(features.page_no_email ? [{ key: "no_email", label: "이메일무단수집거부", href: "/about/no-email-collection" }] : []),
+    ...["editorial_policy", "ethics", "corrections", "ad_policy", "help"].flatMap(policy),
     { key: "measurement", label: "방문 통계 설정", href: "/about/measurement" },
     ...(features.members ? [{ key: "my", label: "내 정보", href: "/my" }] : []),
   ];
@@ -73,6 +82,9 @@ export function buildChrome(
   features: Features,
   topicCounts: ReadonlyMap<LocalTopic, number> = new Map(),
   companyInfo: unknown = null,
+  shortcutInputs: ShortcutInputs = NO_SHORTCUT_INPUTS,
+  shortcutOrder?: unknown,
+  interests: readonly string[] = [],
 ): SiteChrome {
   const sections = SECTION_KEYS.map((key): SectionMenu => {
     const children: NavLink[] = subsectionLinks(key, categories, counts, topicCounts);
@@ -82,9 +94,10 @@ export function buildChrome(
   return {
     sections,
     utilities: UTILITY_LINKS.filter((u) => features[u.key]).map((u) => ({ key: u.key, label: u.label, href: u.href })),
+    shortcuts: buildShortcuts(features, shortcutInputs, shortcutOrder, interests),
     policyLinks: POLICY_LINKS.filter((p) => features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
     footerLinks: buildFooterLinks(features),
-    company: companyInfoRows(companyInfo),
+    company: companyFooter(companyInfo, brand.mastheadName),
   };
 }
 

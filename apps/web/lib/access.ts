@@ -104,6 +104,11 @@ export const ACTIONS = {
   "review_item.decide": "공통 검수 큐 처리 - 승인·반려·보류 (W10-c REV-01 - 편집 책임자·관리자)",
   "pipeline.manage": "수집 원천 등록부·이용 조건 상태·수집 실패 처리 (W10-c PIPE - 관리자만)",
   "brief.manage": "브리핑 호 편집·발행·구독자 관리 화면 (W10-e BRIEF - 편집 책임자·관리자)",
+  "campaign.edit": "캠페인 랜딩 작성·수정·제출 (W10-i GROW-04 - 편집 책임자·광고 담당·관리자)",
+  "campaign.approve": "캠페인 랜딩 승인·철회 - approve_campaign_landing() RPC 호출 (관리자만, 검토 기록 뒤 - GROW-04)",
+  "campaign.review_record": "캠페인 광고 표시 규칙 검토 기록 붙이기 (관리자만 - GROW-04)",
+  "weekly_point.edit": "이번 주 재테크 포인트 호 만들기·기사 고르기·포인트 줄 쓰기 (W10-i PR-15 - 기자·편집 책임자·관리자)",
+  "weekly_point.publish": "이번 주 재테크 포인트 승인 발행 - publish_realestate_weekly() RPC 호출 (편집 책임자·관리자)",
   "billing.manage": "디지털 구독 상품 구성·요금표·주문 조회 (W10-f - 스토어·구독 담당·관리자)",
   "billing.readiness": "실결제 개시 기록 commerce_readiness - PG 계약·통신판매업 신고 (W10-f - 관리자만)",
   "special_law.confirm": "특례법 확인 기록 — 공포 확인·철회와 특례법 근거 행의 확인·철회 (관리자(PO)만, W4 20단계 PR-13)",
@@ -165,6 +170,9 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "ruleset.sign",
   "ruleset.approve",
   "billing.readiness",
+  // W10-i - 캠페인 승인·검토 기록은 허용 밖 시도를 감사에 남긴다 (GROW-04)
+  "campaign.approve",
+  "campaign.review_record",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -407,6 +415,16 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
       return has(viewer, "reviewer") || viewer.isAdmin ? ALLOW : deny("대조 사례 입력·정확도 실행은 세무 감수위원과 관리자만 합니다 (CALC-14)");
     case "review_item.decide":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("공통 검수 큐의 처리는 편집 책임자와 관리자만 합니다 (REV-01)");
+    case "campaign.edit":
+      return has(viewer, "editor", "ad_ops") || viewer.isAdmin ? ALLOW : deny("캠페인 랜딩 작성은 편집 책임자·광고 담당(ad_ops)·관리자만 합니다 (GROW-04)");
+    case "campaign.approve":
+      return viewer.isAdmin ? ALLOW : deny("캠페인 랜딩 승인·철회는 관리자만 합니다 (GROW-04)");
+    case "campaign.review_record":
+      return viewer.isAdmin ? ALLOW : deny("광고 표시 규칙 검토 기록은 관리자만 붙입니다 (GROW-04)");
+    case "weekly_point.edit":
+      return has(viewer, "reporter", "editor") || viewer.isAdmin ? ALLOW : deny("이번 주 재테크 포인트 작성은 기자·편집 책임자·관리자만 합니다 (PR-15)");
+    case "weekly_point.publish":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("이번 주 재테크 포인트 발행은 편집 책임자·관리자만 합니다 (PR-15)");
     case "pipeline.manage":
       return viewer.isAdmin ? ALLOW : deny("수집 원천 등록부와 이용 조건 상태는 관리자만 고칩니다 (PIPE)");
     case "brief.manage":

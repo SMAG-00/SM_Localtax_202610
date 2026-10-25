@@ -1,7 +1,7 @@
-// 정책 문서 9종 표 (W2-e 설계 2.5 — 시험이 설계 문서의 표와 대조한다) + 본문 줄 표기 해석 (6.2). 순수 모듈.
+// 정책 문서 11종 표 (W2-e 설계 2.5 — 시험이 설계 문서의 표와 대조한다) + 본문 줄 표기 해석 (6.2). 순수 모듈.
 import type { FeatureKey } from "@/lib/server/public/constants";
 
-export const POLICY_DOC_KEYS = ["about", "editorial-policy", "ethics", "corrections", "ad-policy", "privacy", "terms", "no-email-collection", "advertise"] as const;
+export const POLICY_DOC_KEYS = ["about", "editorial-policy", "ethics", "corrections", "ad-policy", "privacy", "terms", "no-email-collection", "youth-protection", "copyright-policy", "advertise"] as const;
 export type PolicyDocKey = (typeof POLICY_DOC_KEYS)[number];
 export const isPolicyDocKey = (v: unknown): v is PolicyDocKey => typeof v === "string" && (POLICY_DOC_KEYS as readonly string[]).includes(v);
 
@@ -26,6 +26,8 @@ export const POLICY_DOCS: readonly PolicyDoc[] = [
   { key: "privacy", href: "/about/privacy", feature: "page_privacy", label: "개인정보처리방침", editors: "admin" },
   { key: "terms", href: "/about/terms", feature: "page_terms", label: "이용약관", editors: "admin" },
   { key: "no-email-collection", href: "/about/no-email-collection", feature: "page_no_email", label: "이메일무단수집거부", editors: "admin" },
+  { key: "youth-protection", href: "/about/youth-protection", feature: "page_youth_protection", label: "청소년보호정책", editors: "admin" },
+  { key: "copyright-policy", href: "/about/copyright-policy", feature: "page_copyright_policy", label: "저작권보호정책", editors: "admin" },
   { key: "advertise", href: "/about/advertise", feature: "page_advertise", label: "광고·제휴 안내", editors: "ad" },
 ];
 
@@ -130,20 +132,73 @@ export function publishWarnings(body: readonly PolicySection[], forbidden: reado
   return warnings;
 }
 
-// ── 회사 정보 줄 (6.4 — 값이 있는 칸만) ──
-export const COMPANY_INFO_FIELDS: ReadonlyArray<{ key: string; label: string }> = [
-  { key: "name", label: "상호" },
-  { key: "representative", label: "대표" },
-  { key: "publisher", label: "발행인" },
-  { key: "editor", label: "편집인" },
-  { key: "registration_no", label: "등록번호" },
-  { key: "address", label: "주소" },
-  { key: "phone", label: "대표전화" },
-  { key: "directions", label: "오시는 길" },
+// ── 바닥글 회사·매체 정보 (6.4 · 옛 사이트 바닥글 이전 — 값이 있는 칸만) ──
+// settings.company_info 한 키에 모두 둔다. 칸 순서 = 화면 순서. 제호는 설정이 아니라 brand.mastheadName에서 온다
+export type CompanyInfoGroup = "media" | "contact" | "notice";
+export interface CompanyInfoField {
+  key: string;
+  label: string;
+  group: CompanyInfoGroup;
+  /** 글자 수 상한 (운영 설정 검사·DB 트리거와 같다) */
+  max: number;
+}
+
+export const COMPANY_INFO_FIELDS: readonly CompanyInfoField[] = [
+  { key: "registered_on", label: "등록일", group: "media", max: 40 },
+  { key: "registration_no", label: "등록번호", group: "media", max: 80 },
+  { key: "publisher_editor", label: "발행·편집인", group: "media", max: 80 },
+  { key: "youth_officer", label: "청소년보호책임자", group: "media", max: 80 },
+  { key: "corporation", label: "법인명", group: "media", max: 120 },
+  { key: "name", label: "상호", group: "media", max: 120 },
+  { key: "representative", label: "대표", group: "media", max: 80 },
+  { key: "publisher", label: "발행인", group: "media", max: 80 },
+  { key: "editor", label: "편집인", group: "media", max: 80 },
+  { key: "address", label: "주소", group: "contact", max: 200 },
+  { key: "phone", label: "전화", group: "contact", max: 60 },
+  { key: "fax", label: "FAX", group: "contact", max: 60 },
+  { key: "directions", label: "오시는 길", group: "contact", max: 300 },
+  { key: "copyright_notice", label: "저작권 문구", group: "notice", max: 400 },
+  { key: "open_reporting_notice", label: "열린보도원칙 문구", group: "notice", max: 400 },
 ];
 
-export function companyInfoRows(value: unknown): Array<{ label: string; value: string }> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return [];
-  const o = value as Record<string, unknown>;
-  return COMPANY_INFO_FIELDS.flatMap((f) => (typeof o[f.key] === "string" && (o[f.key] as string).trim() !== "" ? [{ label: f.label, value: (o[f.key] as string).trim() }] : []));
+/** 문구 안 `{제호}` 자리표시자 — 제호가 확정되면 brand.ts 한 줄만 바꾸면 문구도 따라간다 */
+export const MASTHEAD_PLACEHOLDER = "{제호}";
+export const fillMasthead = (text: string, masthead: string): string => text.replaceAll(MASTHEAD_PLACEHOLDER, masthead);
+
+export interface CompanyFooter {
+  /** 안내 문단 — 저작권 보호 문구 · 열린보도원칙 (이 순서) */
+  notices: string[];
+  /** 매체 정보 줄 — 제호가 맨 앞 */
+  media: Array<{ label: string; value: string }>;
+  contact: Array<{ label: string; value: string }>;
+}
+
+/** company_info 값 → 바닥글 칸 (글자 칸만, 빈 칸·공백·글자 아닌 값은 뺀다). 제호는 항상 매체 정보 맨 앞 */
+export function companyFooter(value: unknown, masthead: string): CompanyFooter {
+  const o = typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+  const rows = (group: CompanyInfoGroup) =>
+    COMPANY_INFO_FIELDS.filter((f) => f.group === group).flatMap((f) => {
+      const v = o[f.key];
+      return typeof v === "string" && v.trim() !== "" ? [{ label: f.label, value: fillMasthead(v.trim(), masthead) }] : [];
+    });
+  return {
+    notices: rows("notice").map((r) => r.value),
+    media: [{ label: "제호", value: masthead }, ...rows("media")],
+    contact: rows("contact"),
+  };
+}
+
+/** 운영 설정 company_info 저장 검사 — 객체 · 아는 칸만 · 글자만(한 줄, 상한 이내). 빈 글자는 그 줄을 숨기는 뜻이라 허용. DB 트리거(…103)와 같은 규칙 */
+export function companyInfoErrors(value: unknown): string[] {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return ["값은 JSON 객체여야 합니다"];
+  const errors: string[] = [];
+  const known = new Map(COMPANY_INFO_FIELDS.map((f) => [f.key, f]));
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    const f = known.get(k);
+    if (!f) errors.push(`${k}: 모르는 칸입니다 (${COMPANY_INFO_FIELDS.map((x) => x.key).join(" · ")})`);
+    else if (typeof v !== "string") errors.push(`${k}: 따옴표로 감싼 글자여야 합니다 (비우려면 "")`);
+    else if (/[\r\n]/.test(v)) errors.push(`${k}: 한 줄이어야 합니다`);
+    else if ([...v.trim()].length > f.max) errors.push(`${k}: ${f.max}자 이하여야 합니다 (지금 ${[...v.trim()].length}자)`);
+  }
+  return errors;
 }

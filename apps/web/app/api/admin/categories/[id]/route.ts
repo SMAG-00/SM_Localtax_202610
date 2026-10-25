@@ -1,4 +1,4 @@
-import { parseCategoryInput, slugChangeBlocked } from "@/lib/admin/category-rules";
+import { parseCategoryInput, reservedSlugBlocked, slugChangeBlocked } from "@/lib/admin/category-rules";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { loadCategory, updateCategory } from "@/lib/server/admin/backoffice";
 import { categoryCopyChecks } from "@/lib/server/admin/copy-checks";
@@ -28,6 +28,8 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   if (typeof columns.slug === "string") {
     const blocked = slugChangeBlocked(before, columns.slug);
     if (blocked) return errorJson(409, blocked);
+    const reserved = columns.slug !== before.slug ? reservedSlugBlocked(before.section, columns.slug) : null;
+    if (reserved) return errorJson(409, reserved);
   }
   const copy = await categoryCopyChecks(db, columns);
   if (copy.blocked.length > 0) return findingsError("하위 분야 이름·소개에 쓸 수 없는 표현이 있습니다 (UX-01·UX-03)", copy.blocked);

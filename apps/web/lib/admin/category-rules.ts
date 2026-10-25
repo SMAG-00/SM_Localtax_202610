@@ -10,6 +10,18 @@ type Obj = Record<string, unknown>;
 
 /** DB check 제약과 같은 주소 모양 */
 export const CATEGORY_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+/**
+ * 분야별로 하위 분야 주소로 쓸 수 없는 이름 — 같은 자리의 화면 경로와 겹친다 (realestate/weekly = /realestate/weekly 이번 주 재테크 포인트, W10-i).
+ * 지자체뉴스(local)의 weekly(금주 핫뉴스)는 기존 하위 분야라 막지 않는다. DB 제약 categories_slug_not_reserved와 같다
+ */
+export const RESERVED_CATEGORY_SLUGS: readonly { section: string; slug: string }[] = [{ section: "realestate", slug: "weekly" }];
+
+export function reservedSlugBlocked(section: string, slug: string): string | null {
+  return RESERVED_CATEGORY_SLUGS.some((r) => r.section === section && r.slug === slug)
+    ? `'${slug}'은 ${SECTION_PATHS[section] ?? section}/${slug} 화면 주소라 이 분야의 하위 분야 주소로 쓸 수 없습니다`
+    : null;
+}
+const SECTION_PATHS: Record<string, string> = { tax: "/tax", realestate: "/realestate", finance: "/finance", local: "/local" };
 export const CATEGORY_LIMITS = { name: 40, slug: 60, intro: 500, sort: 100_000 } as const;
 
 /** 발행 판정이 주소로 찾는 하위 분야 — 주소를 바꾸면 판정이 조용히 빠진다 */

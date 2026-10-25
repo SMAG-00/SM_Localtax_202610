@@ -40,8 +40,13 @@ export async function purgePrivacy(db: SupabaseClient, now: Date): Promise<Recor
   const purgedRequests = await db.rpc("expert_requests_purge", { p_now: now.toISOString() });
   if (purgedRequests.error) throw new Error(`전문가 연락 요청 파기 실패 (${purgedRequests.error.code})`);
 
+  // 위탁교육 견적 요청 (W10-g BIZ-06) - 마지막 보관일이 지난 요청의 기관명·담당자·연락처·내용 파기 (DB 함수 - 멱등, 건수만 남긴다)
+  const purgedQuotes = await db.rpc("training_quotes_purge", { p_now: now.toISOString() });
+  if (purgedQuotes.error) throw new Error(`위탁교육 견적 요청 파기 실패 (${purgedQuotes.error.code})`);
+
   return {
     expertRequestsPurged: Number(purgedRequests.data),
+    trainingQuotesPurged: Number(purgedQuotes.data),
     unconfirmedSignups,
     unconfirmedPrereg: counts.unconfirmed_prereg,
     revokedConsents: counts.revoked_consents,

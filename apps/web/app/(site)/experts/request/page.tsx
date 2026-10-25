@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { briefOpen } from "@/lib/server/auth-guard";
+import { adminClient } from "@/lib/server/supabase";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { ExpertRequestPageView } from "@/components/site/ExpertViews";
@@ -10,7 +12,7 @@ import { getExpertRequestForm } from "@/lib/server/public/experts";
 import { pageTitle, queryValue } from "@/lib/site/hub-view";
 
 // SM 전문가 연락 요청 양식 (/experts/request - W7c EXPL-13). 기능 키 expert_requests 꺼짐은 404(빈 링크 0). 개인 정보가 들어가는 화면이라 색인하지 않는다.
-// 진입 출처는 ?source=(assistant·experts·article) - 모르는 값은 experts
+// 진입 출처는 ?source=(assistant·experts·article·calc_result·campaign·shortcut) - 모르는 값은 experts
 export const metadata: Metadata = { title: pageTitle("SM 전문가 연락 요청"), robots: { index: false, follow: false } };
 
 export default async function ExpertRequestPage({ searchParams }: { searchParams: SearchParams }) {
@@ -20,9 +22,12 @@ export default async function ExpertRequestPage({ searchParams }: { searchParams
   if (isUnavailable(view)) return <UnavailablePage />;
   if (!view.open) notFound();
   const source = queryValue(sp.source) ?? "";
+  const admin = adminClient();
+  const subscribeOpen = admin ? await briefOpen(admin).catch(() => false) : false;
   return (
     <ExpertRequestPageView
       view={view}
+      subscribeOpen={subscribeOpen}
       source={(REQUEST_SOURCES as readonly string[]).includes(source) ? source : "experts"}
       query={{ sent: queryValue(sp.sent), e: queryValue(sp.e), field: queryValue(sp.field), withdrawn: queryValue(sp.withdrawn) }}
     />

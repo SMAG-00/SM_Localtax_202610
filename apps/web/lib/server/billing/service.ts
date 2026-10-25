@@ -270,14 +270,19 @@ export async function loadMyBilling(db: Db, userId: string): Promise<MyBilling> 
 }
 
 // ── 권한 · 유료 본문 (권한 판정 함수는 DB의 has_entitlement 하나) ──
-export async function hasDigitalEntitlement(db: Db, userId: string | null): Promise<boolean> {
-  if (!userId) return false;
-  const { data, error } = await db.rpc("has_entitlement", { p_user: userId, p_key: "digital" });
+/** 권한 키로 판정 - 브리핑 프리미엄 발송 등 다른 모듈은 has_entitlement를 직접 부르지 않고 이 함수를 쓴다 (경계 시험). 모르면 false */
+export async function hasEntitlementKey(db: Db, userId: string | null, key: string): Promise<boolean> {
+  if (!userId || key.trim() === "") return false;
+  const { data, error } = await db.rpc("has_entitlement", { p_user: userId, p_key: key });
   if (error) {
     console.error("[billing] has_entitlement 실패:", error.code);
     return false; // 모르면 열지 않는다
   }
   return data === true;
+}
+
+export async function hasDigitalEntitlement(db: Db, userId: string | null): Promise<boolean> {
+  return hasEntitlementKey(db, userId, "digital");
 }
 
 /** 유료 본문 - 회원 번호는 서버가 세션에서 정한 값만 넘긴다. 권한 없음·판매 권리 미확인이면 null */

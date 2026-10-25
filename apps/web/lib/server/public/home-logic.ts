@@ -170,9 +170,23 @@ export interface ExpertsSection {
   items: { name: string; href: string; field: string }[];
 }
 
-export type HomeSection = HeroSection | FieldsSection | LatestReportsSection | WeeklyHotSection | AmendmentsSection | ColumnSection | ProductSection | ExpertsSection;
+export type HomeSection = HeroSection | ShortcutsSection | FieldsSection | LatestReportsSection | WeeklyHotSection | AmendmentsSection | ColumnSection | ProductSection | ExpertsSection;
+
+/** 바로가기 카드 (HOME-13) - 열린 바로가기만, 설명은 설정 home_shortcut_copy의 30자 이하 한 줄(없으면 null) */
+export interface ShortcutCard {
+  key: "calc" | "expert_request" | "brief_weekly" | "realestate_weekly";
+  label: string;
+  href: string;
+  note: string | null;
+}
+export interface ShortcutsSection {
+  key: "shortcuts";
+  cards: ShortcutCard[];
+}
 
 export interface HomeInput {
+  /** 열린 바로가기 카드 - 없거나 0장이면 블록째 뺀다 (키 shortcuts가 꺼지면 주는 쪽이 넘기지 않는다) */
+  shortcuts?: readonly ShortcutCard[];
   coreMessage: string | null;
   /** 핵심 메시지 강조 낱말 — 안 주면 빈 목록 */
   coreHighlights?: readonly string[];
@@ -206,6 +220,7 @@ export function homeSections(input: HomeInput): HomeSection[] {
       input.coreMessage || input.searchEnabled
         ? { key: "hero", coreMessage: input.coreMessage, coreHighlights: [...(input.coreHighlights ?? [])], search: input.searchEnabled ? { action: "/search", chips: input.searchChips } : null }
         : null,
+    shortcuts: input.shortcuts && input.shortcuts.length ? { key: "shortcuts", cards: input.shortcuts.map((c) => ({ ...c, note: c.note && c.note.length <= 30 ? c.note : null })) } : null,
     fields: { key: "fields", cards: SECTION_KEYS.map((s) => ({ section: s, name: SECTION_INFO[s].name, href: SECTION_INFO[s].href })), points: { ...(input.fieldPoints ?? {}) } },
     latest_reports: input.latestReports.length ? { key: "latest_reports", items: input.latestReports.slice(0, LIMITS.homeLatestReports) } : null,
     weekly_hot: input.weeklyHot && input.weeklyHot.items.length ? input.weeklyHot : null,

@@ -1,0 +1,24 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { connection } from "next/server";
+import { siteUrl } from "@/lib/server/env";
+import { RealestateWeeklyView } from "@/components/site/RealestateWeeklyView";
+import { isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
+import { getRealestateWeekly } from "@/lib/server/public/realestate-weekly";
+import { readPublicSettings } from "@/lib/server/public/reads";
+import { pageTitle } from "@/lib/site/hub-view";
+
+// 이번 주 재테크 포인트 최신 호 (PR-15). 기능 키 realestate_weekly가 꺼지거나 발행된 호가 없으면 404 (공개 뷰가 0행). 요청 때 그린다.
+export const metadata: Metadata = {
+  title: pageTitle("이번 주 재테크 포인트"),
+  description: "이번 주 부동산재테크 기사와 세금 관점의 한 줄입니다. 투자 권유가 아닙니다.",
+};
+
+export default async function RealestateWeeklyPage() {
+  await connection();
+  const data = await readPublic("이번 주 재테크 포인트", async () => ({ issue: await getRealestateWeekly(), calcOpen: (await readPublicSettings()).features.calc }), () => UNAVAILABLE);
+  if (isUnavailable(data) || !data.issue) notFound();
+  return (
+    <RealestateWeeklyView issue={data.issue} calcOpen={data.calcOpen} site={siteUrl()} />
+  );
+}

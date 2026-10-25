@@ -259,6 +259,7 @@ test("consents 칸 — PRD 6.1 칸(user_id·email·kind·channel·agreed_at·con
   const { rows } = await client.query("select column_name from information_schema.columns where table_schema = 'public' and table_name = 'consents' order by ordinal_position");
   assert.deepEqual(rows.map((r) => r.column_name), [
     "id", "user_id", "email", "kind", "channel", "version_ref", "agreed_at", "confirmed_at", "revoked_at", "confirm_token_hash", "revoke_token_hash", "created_at",
+    "reconfirm_due", "reconfirm_notified_at", "last_reconfirmed_at", // W10-e 재동의 칸(마이그레이션 92)
   ]);
 });
 

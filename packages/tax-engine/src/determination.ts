@@ -64,6 +64,12 @@ const refundItemSchema = z.object({
   default: z.enum(LIKELIHOODS),
 });
 
+/** 문진 항목 - 환급 자가진단은 판정표가 스스로 문진표를 가진다(서명 범위에 포함). 질문 문장은 60자 이하, 값은 입력 칸(field) 하나에 들어간다 */
+const questionSchema = z
+  .object({ field: key, text: z.string().min(1).max(60), kind: z.enum(['yesno', 'count', 'date']), help: text.optional() })
+  .strict();
+const questions = z.array(questionSchema).min(1).max(30).optional();
+
 const base = {
   version: z.string().regex(/^\d{4}\.\d{2}$/, 'version은 YYYY.NN 형식이어야 한다'),
   /** 표 이름 - 시험용 자료에는 '시험용'이 들어간다 */
@@ -74,11 +80,12 @@ const uniqueIds = (ids: readonly string[]) => new Set(ids).size === ids.length;
 
 export const DeterminationTableSchema = z
   .discriminatedUnion('kind', [
-    z.object({ kind: z.literal('reduction'), ...base, items: z.array(reductionItemSchema).min(1).max(50) }).strict(),
-    z.object({ kind: z.literal('refund'), ...base, items: z.array(refundItemSchema).min(1).max(50) }).strict(),
+    z.object({ kind: z.literal('reduction'), ...base, questions, items: z.array(reductionItemSchema).min(1).max(50) }).strict(),
+    z.object({ kind: z.literal('refund'), ...base, questions, items: z.array(refundItemSchema).min(1).max(50) }).strict(),
   ])
   .superRefine((t, ctx) => {
     if (!uniqueIds(t.items.map((i) => i.id))) ctx.addIssue({ code: 'custom', message: '항목 id가 겹친다' });
+    if (t.questions && !uniqueIds(t.questions.map((q) => q.field))) ctx.addIssue({ code: 'custom', message: '문진 항목의 입력 칸이 겹친다' });
     for (const item of t.items) {
       const inner = t.kind === 'reduction' ? (item as z.infer<typeof reductionItemSchema>).requirements : (item as z.infer<typeof refundItemSchema>).rules;
       if (!uniqueIds(inner.map((r) => r.id))) ctx.addIssue({ code: 'custom', message: `항목 ${item.id}의 요건·규칙 id가 겹친다` });

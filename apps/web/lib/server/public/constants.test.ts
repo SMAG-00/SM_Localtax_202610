@@ -67,9 +67,6 @@ describe("숨긴 경로·v1.2 경로 (HOME-02 · MIG-02)", () => {
   test.each([
     "/calc/acquisition",
     "/calc/acquisition?x=1",
-    "/law",
-    "/law/123",
-    "/cases",
     "/workspace",
     "/qna",
     "/library",
@@ -91,7 +88,7 @@ describe("숨긴 경로·v1.2 경로 (HOME-02 · MIG-02)", () => {
     "/no-email-collection",
   ])("%s — 막는다", (href) => expect(isBlockedPath(href)).toBe(true));
 
-  test.each(["/calc", "/news/law-update", "/local/seoul", "/about/privacy", "/about/corrections", "/tax/columns", "/lawyer", "/regions", "https://example.go.kr/law", "/"])(
+  test.each(["/law", "/law/123", "/cases", "/cases/tribunal/7", "/calc", "/news/law-update", "/local/seoul", "/about/privacy", "/about/corrections", "/tax/columns", "/lawyer", "/regions", "https://example.go.kr/law", "/"])(
     "%s — 막지 않는다",
     (href) => expect(isBlockedPath(href)).toBe(false),
   );
@@ -129,6 +126,17 @@ describe("열린 화면 판정 isOpenPath (HOME-02 빈 링크 0 · HELP-05 · �
     (href) => expect(isOpenPath(href, off)).toBe(false),
   );
 
+  test.each([
+    ["/law", "law_viewer"],
+    ["/law/12/11?date=2026-10-13", "law_viewer"],
+    ["/law/12/three", "law_viewer"],
+    ["/cases", "case_db"],
+    ["/cases/tribunal/7", "case_db"],
+  ] as const)("%s — 기능 키 %s가 켜져야만 열림 (W10-d)", (href, key) => {
+    expect(isOpenPath(href, features([key]))).toBe(true);
+    expect(isOpenPath(href, features(FEATURE_KEYS.filter((k) => k !== key)))).toBe(false);
+  });
+
   test("설계 7장 '만들지 않는 경로'는 기능이 모두 꺼지면 모두 닫힘 (그 화면이 생길 때까지 링크 0)", () => {
     const line = DESIGN.split("\n").find((l) => l.startsWith("만들지 않는 경로(다른 작업)"));
     if (!line) throw new Error("설계 문서에 '만들지 않는 경로' 줄이 없다");
@@ -142,6 +150,8 @@ describe("열린 화면 판정 isOpenPath (HOME-02 빈 링크 0 · HELP-05 · �
     ["/signup", "members"],
     ["/about/terms", "page_terms"],
     ["/about/no-email-collection", "page_no_email"],
+    ["/about/youth-protection", "page_youth_protection"],
+    ["/about/copyright-policy", "page_copyright_policy"],
     ["/about/advertise", "page_advertise"],
   ] as const)("%s — 기능 키 %s가 켜져야만 열림 (W2-e 4단계)", (href, key) => {
     expect(isOpenPath(href, features([key]))).toBe(true);

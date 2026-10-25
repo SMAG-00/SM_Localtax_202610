@@ -50,6 +50,7 @@
     "PG_FAKE_URL": "server",
     "NEXT_PUBLIC_PG_CLIENT_KEY": "public",
     "DATA_API_KEY": "server-secret",
+    "DATA_API_DART_KEY": "server-secret",
     "SCHEDULE_FILE": "server"
   },
   "tooling": [
@@ -69,6 +70,7 @@
     "PATH",
     "SystemRoot",
     "APPDATA",
+    "TZ",
     "VERCEL_GIT_COMMIT_SHA"
   ]
 }

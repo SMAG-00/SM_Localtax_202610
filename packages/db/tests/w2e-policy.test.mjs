@@ -57,8 +57,9 @@ const publish = (doc, version, over = {}) =>
   ]);
 const rows = async (doc) => (await client.query("select version, status from public.policy_versions where doc_key = $1 order by version", [doc])).rows;
 
-test("doc_key 값 목록 = 설계 2.1 (9종), 목록 밖 값 거부", async () => {
-  assert.equal(DOC_KEYS.length, 9);
+test("doc_key 값 목록 = 설계 2.1 (11종), 목록 밖 값 거부", async () => {
+  assert.equal(DOC_KEYS.length, 11);
+  assert.ok(DOC_KEYS.includes("youth-protection") && DOC_KEYS.includes("copyright-policy"));
   await tx(async () => {
     for (const k of DOC_KEYS) assert.equal((await draft(k)).ok, true, k);
     const bad = await draft("cookies");

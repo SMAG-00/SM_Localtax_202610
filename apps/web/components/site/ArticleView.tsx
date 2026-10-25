@@ -31,6 +31,7 @@ import { ArticleGrid } from "./ArticleItem";
 import { CardNewsSlider } from "./CardNewsSlider";
 import { popularClickItems } from "@/lib/site/popular-view";
 import { MeasureArticle, MeasureClicks, MeasureNextActions, MeasurePartnerContent } from "./Measure";
+import { MeasureArticleToTool } from "./calc/Measure";
 import { ShareButton } from "./ShareButton";
 import { OwnProductBlock } from "./StoreViews";
 import { UNDER_REVIEW_LABEL, sourceCards } from "@/lib/site/source-cards";
@@ -354,6 +355,7 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
       {a.contentType && <MeasureArticle articleId={a.id} section={a.section} format={a.format ?? "general"} contentType={a.contentType} />}
       {/* 다음 행동 띠 누름 → next_action_clicked (W2-c 3단계 — 첫 방문 깔때기). 그리는 것 0 */}
       <MeasureNextActions section={a.section} screen="article" />
+      <MeasureArticleToTool />
       {/* 제휴 기사 열람 → partner_content_viewed(제휴사·기사) 1건 (ART-10). 그리는 것 0 */}
       {a.partner && <MeasurePartnerContent partnerId={a.partner.id} articleId={a.id} section={a.section} />}
       {/* 본문 용어 풀이 보조 스크립트 — 누르기·Esc·자리 맞추기·glossary_opened. 그리는 것 0 */}

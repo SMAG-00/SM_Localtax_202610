@@ -14,7 +14,7 @@ type Db = SupabaseClient;
 const fail = (what: string, e: { code?: string; message: string }) => new Error(`${what}: ${e.code ?? ""} ${e.message}`.trim());
 
 /** 같은 (원천, 번호, 해시)의 스냅샷은 한 행 — 있으면 그 번호를 돌려준다 */
-async function saveSnapshot(db: Db, s: NewSnapshot): Promise<number> {
+export async function saveSnapshot(db: Db, s: NewSnapshot): Promise<number> {
   const find = async () => {
     const r = await db.from("raw_snapshots").select("id").eq("source_key", s.sourceKey).eq("external_id", s.externalId).eq("content_hash", s.contentHash).limit(1);
     if (r.error) throw fail("raw_snapshots 조회", r.error);
@@ -34,7 +34,7 @@ async function saveSnapshot(db: Db, s: NewSnapshot): Promise<number> {
 }
 
 /** 검수 항목 1건 — (종류, 키)가 이미 있으면 만들지 않고 false */
-async function openReviewItem(db: Db, row: { kind: string; sourceKey: string; title: string; dataSourceKey: string | null; snapshotId: number | null; payload: Record<string, unknown>; createdBy: string; parts?: string[] }): Promise<boolean> {
+export async function openReviewItem(db: Db, row: { kind: string; sourceKey: string; title: string; dataSourceKey: string | null; snapshotId: number | null; payload: Record<string, unknown>; createdBy: string; parts?: string[] }): Promise<boolean> {
   const ins = await db.from("review_items").insert({
     kind: row.kind, source_key: row.sourceKey, title: row.title.slice(0, 200), data_source_key: row.dataSourceKey,
     snapshot_id: row.snapshotId, payload: row.payload, parts: row.parts ?? [], created_by: row.createdBy,

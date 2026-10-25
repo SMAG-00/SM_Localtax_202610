@@ -22,6 +22,7 @@ export {
   event,
   book,
   course,
+  collectionPage,
   dataset,
 } from "./generators";
 export { pageJsonLd } from "./page";

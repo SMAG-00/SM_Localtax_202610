@@ -6,6 +6,7 @@ import type { ResolvedHeroMedia } from "@/lib/site/hero-media";
 import { ArticleItem } from "./ArticleItem";
 import { ClaimBasisLink } from "./ClaimBasisLink";
 import { MeasureHomeEntry } from "./Measure";
+import { TrackedLink } from "./MeasureShortcut";
 import { OwnProductBlock } from "./StoreViews";
 import { UnavailableNotice } from "./Unavailable";
 
@@ -117,13 +118,27 @@ function ColumnBody({ section }: { section: ColumnSection }) {
 }
 
 /** 섹션 안 내용 — 아직 화면이 없는 섹션은 null (섹션째 그리지 않는다 — 빈 섹션 0) */
-function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: string, cardImages: ComponentProps<typeof FieldCards>["images"]): ReactNode | null {
+function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: string, cardImages: ComponentProps<typeof FieldCards>["images"], toolsRow: ReactNode = null): ReactNode | null {
   switch (section.key) {
+    case "shortcuts":
+      return (
+        <ul data-part="shortcut-cards" className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {section.cards.map((c) => (
+            <li key={c.key}>
+              <TrackedLink href={c.href} name="shortcut_clicked" props={{ placement: "home", shortcut: c.key }} className={cx("flex min-h-11 h-full flex-col justify-center rounded-lg border p-4 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400", c.key === "expert_request" ? "border-hermes-500 bg-hermes-500 hover:bg-hermes-600" : "border-navy-100 bg-white hover:border-hermes-500")}>
+                <span className="text-[15px] font-bold text-navy-800">{c.label}</span>
+                {c.note && <span className="mt-1 text-[13px] text-navy-500">{c.note}</span>}
+              </TrackedLink>
+            </li>
+          ))}
+        </ul>
+      );
     case "fields":
       // 분야마다 '이 분야의 지방세 포인트' 한 줄 (CORE-02 — 세무 감수 서명이 있는 분야의 첫 줄만, W3 9단계)
       return (
         <div className="mt-8">
           <FieldCards points={section.points} images={cardImages} />
+          {toolsRow}
           {/* 측정 (W2-c — 카드를 누르면 home_entry_clicked). 그리는 것 0 */}
           <MeasureHomeEntry />
         </div>
@@ -155,11 +170,13 @@ function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: stri
   }
 }
 
-export function HomeSections({ home, heroMedia = null, cardImages }: { home: HomeData; /** 홈 전체 화면 배경 (설정 hero_media.home) — 없으면 지금의 어두운 그라데이션 */ heroMedia?: ResolvedHeroMedia | null; /** 4대 분야 카드 바탕 그림 */ cardImages?: ComponentProps<typeof FieldCards>["images"] }) {
+export function HomeSections({ home, heroMedia = null, cardImages, toolsRow = null }: {
+  /** 홈 계산기 픽토그램 카드 한 줄 (HOME-08) - 4대 분야 카드 안, 카드가 없으면 null */
+  toolsRow?: ReactNode; home: HomeData; /** 홈 전체 화면 배경 (설정 hero_media.home) — 없으면 지금의 어두운 그라데이션 */ heroMedia?: ResolvedHeroMedia | null; /** 4대 분야 카드 바탕 그림 */ cardImages?: ComponentProps<typeof FieldCards>["images"] }) {
   const hero = home.sections.find((s): s is Extract<HomeSection, { key: "hero" }> => s.key === "hero");
   const blocks = home.sections.flatMap((s) => {
     if (s.key === "hero") return [];
-    const body = sectionBody(s, home.today, cardImages);
+    const body = sectionBody(s, home.today, cardImages, toolsRow);
     return body === null ? [] : [{ key: s.key, body }];
   });
   const tones = new Map(sectionTones(blocks.map((b) => b.key)).map((t) => [t.key, t.tone]));

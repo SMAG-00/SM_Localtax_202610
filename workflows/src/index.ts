@@ -5,7 +5,16 @@
 // 서버 기능(services)을 넘기고, 이 목록은 '어떤 이름이 무엇을 하는가'만 정한다.
 
 /** 작업 결과 — detail은 실행 기록(agent_runs.detail)에 남고, revalidatePublic이면 공개 화면 캐시를 바로 비운다 */
-export type JobResult = { detail?: Record<string, unknown>; revalidatePublic?: boolean };
+export type JobResult = { detail?: Record<string, unknown>; revalidatePublic?: boolean; usage?: JobUsage };
+
+/** W10-e 운영 AI 실행 비용 - 작업 경로가 agent_runs 비용 칸(model·토큰·cost)에 적는다 (AIOPS-04) */
+export type JobUsage = { model: string; inputTokens: number; outputTokens: number; cost?: number; costUnit?: string };
+
+/** 서비스 결과에서 비용 기록(_usage)을 떼어 실행 기록 칸으로 옮긴다 */
+function withUsage(detail: Record<string, unknown>, revalidatePublic = false): JobResult {
+  const { _usage, ...rest } = detail;
+  return { detail: rest, revalidatePublic, ...(_usage ? { usage: _usage as JobUsage } : {}) };
+}
 
 /** 웹 앱이 넘기는 서버 기능 (apps/web lib/server/jobs.ts) */
 export interface JobServices {
@@ -35,8 +44,22 @@ export interface JobServices {
   runLawPipeline(now: Date): Promise<Record<string, unknown>>;
   /** W10-c 행정규칙·해석·결정례 수집 — 원천마다 같은 관문 (PIPE-02~04) */
   runDocPipelines(now: Date): Promise<Record<string, unknown>>;
+  /** W10-h 분야 데이터 연동 - 원천마다 관문(기능 키 field_data·인증키·주소 칸·이용 조건)을 거쳐 후보만 쌓고, 승인된 후보를 공개 반영한다. 결과는 수와 이유뿐 (PR-06·LG-15·DF-06) */
+  runFieldPipelines(now: Date): Promise<Record<string, unknown>>;
   /** W10-a 정확도 대조 실행 - 활성 룰셋으로 확인된 대조 사례 전부를 엔진에 돌려 기록한다. AI 없음. 활성 룰셋·확인된 사례가 없으면 건너뜀, 엔진이 거부한 사례가 있으면 실패 (CALC-14) */
   runAccuracy(now: Date): Promise<Record<string, unknown>>;
+  /** W10-e 개정 감지 - 후보는 검수 큐에만 (AIOPS-01). 기능 키 amendment_auto가 꺼져 있으면 건너뜀. 운영 AI가 켜져 있으면 룰셋 영향 제안 초안도 검수 큐에만 */
+  detectAmendments(now: Date): Promise<Record<string, unknown>>;
+  /** W10-e O4 브리핑 편집 - 다음 호 초안 틀과(AI가 켜져 있으면) 쉬운 요약 초안. 공개 표 쓰기 0 */
+  draftBrief(now: Date): Promise<Record<string, unknown>>;
+  /** W10-e 정시 발행·발송 - 승인된 호만, 발행 시각 판정은 DB (BRIEF-01) */
+  publishBrief(now: Date): Promise<Record<string, unknown>>;
+  /** W10-e 재확인 안내 - 기한이 오늘인 구독자에게 1회 (BRIEF-02) */
+  remindReconfirm(now: Date): Promise<Record<string, unknown>>;
+  /** W10-e 개정 알림 발송 - 공개된 단계 변경만, 수신자당 1통 (TX-12) */
+  sendAmendmentAlerts(now: Date): Promise<Record<string, unknown>>;
+  /** W10-e 운영 AI 월 예산 점검 (AIOPS-04) */
+  checkOpsBudget(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -69,8 +92,22 @@ export const jobs: Record<string, Job> = {
   "pipeline-law": async ({ now, services }) => ({ detail: await services.runLawPipeline(now), revalidatePublic: false }),
   // 행정규칙·해석·결정례 수집 (하루 한 번) — 후보 문서는 권리 확인 전까지 공개되지 않는다
   "pipeline-docs": async ({ now, services }) => ({ detail: await services.runDocPipelines(now), revalidatePublic: false }),
+  // 분야 데이터 연동 (하루 한 번) - 후보는 검수 큐에만 쌓이고, 사람이 승인한 후보만 공개 반영되므로 반영 뒤 공개 화면 캐시를 비운다
+  "pipeline-field-data": async ({ now, services }) => ({ detail: await services.runFieldPipelines(now), revalidatePublic: true }),
   // 정확도 대조 (하루 한 번) - 공개 게이트 뷰가 읽는 실행 기록을 최신으로 맞춘다. 공개 화면 값은 바뀌지 않는다(게이트 상태는 다음 요청부터 반영)
   "accuracy-run": async ({ now, services }) => ({ detail: await services.runAccuracy(now), revalidatePublic: false }),
+  // W10-e 개정 감지 (하루 한 번, 법령 수집 뒤) - 후보는 검수 큐에만 쌓이고 공개 화면은 바뀌지 않는다
+  "amendment-detect": async ({ now, services }) => withUsage(await services.detectAmendments(now)),
+  // W10-e 브리핑 초안 (매주 일 23:00 KST) - 초안은 승인 전 공개 0
+  "brief-draft": async ({ now, services }) => withUsage(await services.draftBrief(now)),
+  // W10-e 브리핑 정시 발행 (매주 월 10:00 KST) - 발행하면 아카이브가 바뀐다
+  "brief-publish": async ({ now, services }) => withUsage(await services.publishBrief(now), true),
+  // W10-e 재확인 안내 (하루 한 번)
+  "brief-reconfirm": async ({ now, services }) => withUsage(await services.remindReconfirm(now)),
+  // W10-e 개정 알림 발송 (1시간마다)
+  "amendment-alert": async ({ now, services }) => withUsage(await services.sendAmendmentAlerts(now)),
+  // W10-e 운영 AI 월 예산 점검 (하루 한 번)
+  "ops-ai-budget": async ({ now, services }) => withUsage(await services.checkOpsBudget(now)),
 };
 
 export function findJob(name: string): Job | undefined {

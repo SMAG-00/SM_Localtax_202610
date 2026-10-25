@@ -28,6 +28,11 @@ test("사이트 이름은 「김의효 지방세연구」, 워드마크는 앞�
   assert.notEqual(brand.operatorName, brand.productName);
 });
 
+test("제호는 제품명에 「(가칭)」을 붙인 값이고, 제품명이 바뀌면 함께 바뀐다 (바닥글 매체 정보·저작권 문구·Copyright 줄이 이 값을 쓴다)", () => {
+  assert.equal(brand.mastheadName, `${brand.productName}(가칭)`);
+  assert.equal(brand.mastheadName, "김의효 지방세연구(가칭)");
+});
+
 test("제품명 문자열이 brand.ts 한 곳에만 있다", () => {
   const hits = files.filter((f) => read(f).includes(brand.productName));
   assert.deepEqual(hits, ["packages/ui/src/brand.ts"]);

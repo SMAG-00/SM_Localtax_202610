@@ -5,7 +5,7 @@
  * - @type은 유형 대응표(types-map.ts)에서 읽는다.
  */
 import { compact, SCHEMA_CONTEXT, type JsonLdNode, type JsonObject } from "./jsonld";
-import { BREADCRUMB_TYPE, PAGE_TYPE_MAP } from "./types-map";
+import { BREADCRUMB_TYPE, EXTENSION_TYPES, PAGE_TYPE_MAP } from "./types-map";
 import { EVENT_STATUS_MAP } from "./event-status";
 import { displayTitle } from "./labels";
 import type {
@@ -13,6 +13,7 @@ import type {
   AuthorRef,
   BookView,
   BreadcrumbView,
+  CollectionView,
   CourseSessionView,
   CourseView,
   DatasetView,
@@ -229,6 +230,20 @@ export function course(c: CourseView): JsonLdNode {
 }
 
 /** 통계 트래커·정량형 원자료 → Dataset */
+/** 목록 모음 페이지 → CollectionPage + ItemList. 항목 순서가 차례 번호다 */
+export function collectionPage(c: CollectionView): JsonLdNode {
+  return top(EXTENSION_TYPES.collection.primaryType, {
+    name: c.name,
+    description: c.description,
+    url: c.url,
+    datePublished: c.datePublished,
+    mainEntity: nested("ItemList", {
+      numberOfItems: c.items.length,
+      itemListElement: c.items.map((it, i) => nested("ListItem", { position: i + 1, name: it.name, url: it.url })),
+    }),
+  });
+}
+
 export function dataset(d: DatasetView): JsonLdNode {
   return top(PAGE_TYPE_MAP.dataset.primaryType, {
     name: d.name,

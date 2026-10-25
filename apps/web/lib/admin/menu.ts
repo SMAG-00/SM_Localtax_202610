@@ -32,12 +32,18 @@ const RULES: readonly MenuRule[] = [
   { id: "home", label: "홈 배치", href: "/admin/home", when: (a) => a.has("article.home"), paths: ["/admin/home"] },
   { id: "amendments", label: "개정 트래커", href: "/admin/amendments", when: (a) => a.has("amendment.record_event"), paths: ["/admin/amendments"] },
   { id: "links", label: "바깥 연결", href: "/admin/links", when: (a) => a.has("link.manage"), paths: ["/admin/links"] },
+  { id: "calc-links", label: "계산기 연결", href: "/admin/calc-links", when: (a) => a.has("link.manage"), paths: ["/admin/calc-links"] },
+  // 바로가기·캠페인 랜딩 (GROW-03·04 · PR-15 — W10-i) — 캠페인은 편집 책임자·광고 담당·관리자, 재테크 포인트는 기자·편집 책임자·관리자
+  { id: "campaigns", label: "캠페인 랜딩", href: "/admin/campaigns", when: (a) => a.has("campaign.edit") || a.has("campaign.approve"), paths: ["/admin/campaigns"] },
+  { id: "realestate-weekly", label: "이번 주 재테크 포인트", href: "/admin/realestate-weekly", when: (a) => a.has("weekly_point.edit") || a.has("weekly_point.publish"), paths: ["/admin/realestate-weekly"] },
   // 허브 지방세 포인트 (CORE-02 — W3 9단계) — 초안은 편집 책임자, 감수 서명은 세무 감수위원
   { id: "hub-points", label: "허브 지방세 포인트", href: "/admin/hub-points", when: (a) => a.has("hub_point.edit") || a.has("review.tax_review"), paths: ["/admin/hub-points"] },
   // 원문 검수 큐 (REG1-13 — W4 6단계) — 편집 책임자·관리자
   { id: "source-review", label: "원문 검수", href: "/admin/source-review", when: (a) => a.has("source_review.resolve"), paths: ["/admin/source-review"] },
   // 공통 검수 큐 (REV-01~03 — W10-c) — 편집 책임자·관리자. 수집 파이프라인 원천·실행 (PIPE — W10-c) — 관리자만
   { id: "review", label: "공통 검수", href: "/admin/review", when: (a) => a.has("review_item.decide"), paths: ["/admin/review"] },
+  // 주간 브리핑 호 (BRIEF-01~04 — W10-e) — 편집 책임자·관리자
+  { id: "brief", label: "브리핑", href: "/admin/brief", when: (a) => a.has("review_item.decide"), paths: ["/admin/brief"] },
   { id: "pipelines", label: "수집 파이프라인", href: "/admin/pipelines", when: (a) => a.has("pipeline.manage"), paths: ["/admin/pipelines"] },
   // 룰셋·판정표·달력 (RULE-01~04 — W10-a) 세무 감수위원 서명·관리자 승인 / 정확도 대조 (CALC-14·FAM-07) — 세무 감수위원·관리자
   { id: "rulesets", label: "룰셋·판정표", href: "/admin/rulesets", when: (a) => a.has("ruleset.read"), paths: ["/admin/rulesets"] },

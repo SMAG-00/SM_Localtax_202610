@@ -187,6 +187,7 @@ describe("홈 섹션 순서 (HOME-01)", () => {
     const trackerCard = pickTrackers([], new Map(), tracker(1), CLOSED_FEATURES);
     const full = homeSections({
       ...empty,
+      shortcuts: [{ key: "calc", label: "부동산 세금 계산기", href: "/calc", note: null }],
       latestReports: [listItem({ contentType: "reported_news", reportedApproved: true })],
       weeklyHot: { key: "weekly_hot", weekHref: "/local/seoul/weekly/2026-42", items: [{ title: "t", summary: "s", sourceUrl: "https://x.go.kr", issuer: "서울시", publishedOn: "2026-10-14" }] },
       trackers: trackerCard,

@@ -255,3 +255,27 @@ describe("W2-c 기사 생산 대시보드 — 내부 집계 기간 (설계 2.8)"
     expect(validateSettingValue("news_readiness_windows", { version: "2026-11-01.1", months: [1, 3, 12], basis: "including_current" }, seed).ok).toBe(true);
   });
 });
+
+describe("company_info - 바닥글 매체 정보·연락처·안내 문구 (HELP-05)", () => {
+  test("운영 설정 화면에서 고칠 수 있는 키이고, 옛 사이트 값 모양은 통과한다", () => {
+    expect(isEditableSetting("company_info")).toBe(true);
+    const value = {
+      registered_on: "2009-04-06",
+      registration_no: "성동 라 00032",
+      publisher_editor: "김의효",
+      phone: "02-2246-2233",
+      fax: "02-2246-5885",
+      copyright_notice: "{제호} 모든 콘텐츠(영상, 기사, 사진)는 저작권법의 보호를 받은바, 무단 전재와 복사, 배포 등을 금합니다.",
+    };
+    expect(validateSettingValue("company_info", value, {})).toEqual({ ok: true, value });
+  });
+
+  test("모르는 칸·글자 아닌 값은 칸 경로가 붙은 오류로 거부된다", () => {
+    const result = validateSettingValue("company_info", { phone: 12, nickname: "x" }, {});
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors[0]).toBe('phone: 따옴표로 감싼 글자여야 합니다 (비우려면 "")');
+      expect(result.errors[1]).toContain("nickname: 모르는 칸");
+    }
+  });
+});

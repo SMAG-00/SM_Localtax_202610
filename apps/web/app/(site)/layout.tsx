@@ -10,7 +10,7 @@ import { PathBreadcrumbJsonLd } from "@/components/site/PathBreadcrumbJsonLd";
 import { siteIndexing, siteUrl } from "@/lib/server/env";
 import { defaultRobots } from "@/lib/seo/robots-meta";
 import { closedChrome, getSiteChrome, readPublic, type SiteChrome } from "@/lib/server/public";
-import { FOOTER_DISCLAIMER, footerLinks, headerSubmenus, headerUtilityKeys } from "@/lib/site/chrome-view";
+import { FOOTER_DISCLAIMER, footerLinks, headerShortcuts, headerSubmenus, headerUtilityKeys } from "@/lib/site/chrome-view";
 
 // 공개 화면 틀 (HOME-02 · HELP-05 · FND-09 · UX-06) — 건너뛰기 링크 · 헤더(상단 4대 분야와 하위 메뉴 + 공개 승인된 유틸 메뉴) · 본문 · 바닥글(공개 승인된 정책 링크).
 //  · 사이트 안 링크는 Next.js 링크(새로고침 없는 화면 전환). 백오피스(/admin)·견본(/_design)은 이 틀 밖이라 공개 헤더·바닥글이 없다.
@@ -21,6 +21,8 @@ import { FOOTER_DISCLAIMER, footerLinks, headerSubmenus, headerUtilityKeys } fro
 export function generateMetadata(): Metadata {
   return { robots: defaultRobots(siteIndexing()) };
 }
+
+const maskRows = (rows: SiteChrome["company"]["media"]) => rows.map((r) => ({ label: r.label, value: maskEmailForDisplay(r.value) }));
 
 async function chrome(): Promise<SiteChrome> {
   return readPublic("화면 틀", () => getSiteChrome(), () => closedChrome());
@@ -38,11 +40,17 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         본문으로 건너뛰기
       </a>
       <PathBreadcrumbJsonLd site={siteUrl()} />
-      <SiteHeader utilities={headerUtilityKeys(c.utilities)} submenus={headerSubmenus(c.sections)} />
+      <SiteHeader utilities={headerUtilityKeys(c.utilities)} submenus={headerSubmenus(c.sections)} shortcuts={headerShortcuts(c.shortcuts)} />
       <main id="main" tabIndex={-1} className="focus:outline-none">
         {children}
       </main>
-      <Footer disclaimer={FOOTER_DISCLAIMER} links={footerLinks(c.footerLinks)} info={c.company.map((r) => ({ label: r.label, value: maskEmailForDisplay(r.value) }))} />
+      <Footer
+        disclaimer={FOOTER_DISCLAIMER}
+        links={footerLinks(c.footerLinks)}
+        notices={c.company.notices.map(maskEmailForDisplay)}
+        info={maskRows(c.company.media)}
+        contact={maskRows(c.company.contact)}
+      />
       <AssistantMount />
     </SiteLinkProvider>
   );

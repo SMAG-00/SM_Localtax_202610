@@ -3,7 +3,7 @@
 import { CONTENT_TYPES, FORMATS, detectPii } from "@ltr/editorial";
 import { NEXT_ACTION_KEYS, SECTION_KEYS, type SectionKey } from "@/lib/server/public/constants";
 
-/** 이벤트 이름 65종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 34종 — DB check 제약 analytics_events.name과 같다) */
+/** 이벤트 이름 69종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 34종 + W10-i 4종 — DB check 제약 analytics_events.name과 같다) */
 export const EVENT_NAMES = [
   "home_entry_clicked",
   "hub_viewed",
@@ -74,6 +74,11 @@ export const EVENT_NAMES = [
   "order_paid",
   "certificate_issued",
   "training_quote_requested",
+  // W10-i (docs/dev/W10-i_설계.md 3장) - 바로가기 클릭 · 이번 주 재테크 포인트 열람 · 캠페인 랜딩 열람 · 캠페인 버튼 클릭. 캠페인 태그는 등록 값만, 클릭 ID·자유 글자 칸 없음
+  "shortcut_clicked",
+  "realestate_weekly_viewed",
+  "campaign_landing_viewed",
+  "campaign_cta_clicked",
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -83,10 +88,10 @@ export type Mode = (typeof MODES)[number];
 export const TIERS = ["guest", "basic", "premium", "institution"] as const;
 export type Tier = (typeof TIERS)[number];
 /** 진입 경로 (PRD-00 13장 + 그 밖의 사이트 — 설계 9장 #6) */
-export const ENTRIES = ["search", "ai_answer_engine", "naver", "brief", "assistant", "experts", "tax_lens", "direct", "referral"] as const;
+export const ENTRIES = ["search", "ai_answer_engine", "naver", "brief", "assistant", "experts", "tax_lens", "campaign", "direct", "referral"] as const;
 export type Entry = (typeof ENTRIES)[number];
 /** 브라우저가 정해 보내도 되는 진입 경로 — 사이트 안 출발점만. 바깥 진입 경로(검색·네이버·AI)는 서버가 리퍼러로 정한다 */
-export const CLIENT_ENTRIES = ["assistant", "experts", "tax_lens"] as const satisfies readonly Entry[];
+export const CLIENT_ENTRIES = ["assistant", "experts", "tax_lens", "campaign"] as const satisfies readonly Entry[];
 
 /** 속성 값 목록 (설계 2.3) */
 export const PROP_VALUES = {
@@ -98,7 +103,7 @@ export const PROP_VALUES = {
   "inquiry_submitted.kind": ["tip", "subscription", "advertising", "reader_submission", "correction", "product", "assistant_report"],
   "hub_viewed.topic": ["local_tax", "realestate", "local_finance", "urban_policy"],
   // W3 10단계 — 카드 키는 official_links.key 시드(마이그레이션 …32 — DB 시험 w3-search-measure가 대조), 단계는 W2-a amendment_event.stage, 원문 유형은 legal_doc.doc_type
-  "calculator_card_clicked.card": ["acquisition", "property_tax", "transfer", "registration", "comprehensive", "inheritance_gift", "wetax", "nts"],
+  "calculator_card_clicked.card": ["acquisition", "property_tax", "transfer", "registration", "comprehensive", "inheritance_gift", "wetax", "nts", "nts_guide", "law_info_center", "edu"],
   "calculator_card_clicked.screen": ["calc", "situation", "inheritance_gift", "project", "region_hub", "dev_method"],
   "amendment_viewed.stage": ["announced", "pre_notice", "submitted", "passed", "promulgated", "effective"],
   "interpretation_viewed.doc_type": ["ruling", "circular", "interpretation", "tribunal", "case"],
@@ -114,9 +119,13 @@ export const PROP_VALUES = {
   "order_link_clicked.mode": ["existing_channel", "request_form"],
   "dev_method_viewed.method": ["redevelopment", "reconstruction", "small-scale", "public", "trust", "renewal", "rapid-planning"],
   // W10 0차 - PRD-02 11장 이벤트 속성의 값 목록 (W2-c 설계 2.3)
+  // W10-i - 바로가기 위치·도착 키(HEADER_SHORTCUTS)와 캠페인 버튼 종류
+  "shortcut.placement": ["header", "home"],
+  "shortcut.key": ["calc", "expert_request", "brief_weekly", "realestate_weekly"],
+  "campaign.cta": ["primary", "secondary"],
   "calc.tool": ["acquisition", "holding", "refund", "compare"],
   "calc.input_mode": ["wizard", "form"],
-  "calc.entry_path": ["home_card", "hub", "article", "tax_lens", "search", "region_hub", "assistant", "direct"],
+  "calc.entry_path": ["home_card", "hub", "article", "tax_lens", "search", "region_hub", "assistant", "direct", "shortcut", "campaign"],
   "calc.screen": ["calc_index", "acquisition_result", "holding_result", "refund_result", "situation", "region_hub"],
   "calc.tax_kind": ["acquisition", "property", "comprehensive", "vehicle", "refund"],
   "link.state": ["ok", "fallback"],
@@ -239,6 +248,10 @@ export const EVENT_SPECS: Readonly<Record<EventName, EventSpec>> = {
   brief_subscribe_viewed: { section: "none", props: { route: oneOf(PROP_VALUES["brief.route"]) } },
   brief_subscribed: { section: "none", props: { route: oneOf(PROP_VALUES["brief.route"]) } },
   brief_confirmed: { section: "none", props: { route: oneOf(PROP_VALUES["brief.route"]) } },
+  shortcut_clicked: { section: "none", props: { placement: oneOf(PROP_VALUES["shortcut.placement"]), shortcut: oneOf(PROP_VALUES["shortcut.key"]) } },
+  realestate_weekly_viewed: { section: "none", props: { issue_id: id } },
+  campaign_landing_viewed: { section: "none", props: { campaign: { field: { kind: "slug" } }, source: { field: { kind: "slug" } }, medium: { field: { kind: "slug" } } } },
+  campaign_cta_clicked: { section: "none", props: { campaign: { field: { kind: "slug" } }, cta: oneOf(PROP_VALUES["campaign.cta"]), destination: oneOf(PROP_VALUES["shortcut.key"]) } },
   brief_opened: { section: "none", props: {  } },
   brief_unsubscribed: { section: "none", props: { route: oneOf(PROP_VALUES["brief.unsubscribe_route"]), tenure_band: oneOf(PROP_VALUES["tenure.band"]) } },
   brief_link_visited: { section: "none", props: { issue_id: id, corner: key } },

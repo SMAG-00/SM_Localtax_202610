@@ -4,7 +4,8 @@
 //  · 정렬(EXPL-04) - 분류 순서 -> 이름 가나다. 결제·광고·조회수·지역은 입력에 없다
 //  · 요청 입력 검사(EXPL-14 · 15) - 칸별 오류 코드
 
-export const REQUEST_SOURCES = ["assistant", "experts", "article"] as const;
+// W10-i - calc_result(계산 결과 6번 칸 보조 링크) · campaign(캠페인 랜딩) · shortcut(바로가기) 출발점 추가. DB 제약은 마이그레이션 105
+export const REQUEST_SOURCES = ["assistant", "experts", "article", "calc_result", "campaign", "shortcut"] as const;
 export type RequestSource = (typeof REQUEST_SOURCES)[number];
 
 /** 구분 문자(공백·점·하이픈·밑줄·슬래시 등)를 지운 뒤 숫자 9개 이상 이어지면 true - 주민등록번호·계좌번호·전화번호 모양, 전각 숫자 포함 */

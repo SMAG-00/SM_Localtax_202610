@@ -64,6 +64,19 @@ const APPEND_ONLY = new Set([
   "public.renewal_notices", // 갱신·가격 변경 사전 고지 기록(W10-f PAY-05) - 읽기만, 추가만(함수)
   "public.payment_events", // PG 웹훅 수신 기록(W10-f PAY-02) - 읽기만, 함수로만 추가
   "public.entitlements", // 권한(W10-f PAY-03) - 읽기만, 부여·회수는 billing_* 함수로만
+  "public.wetax_link_checks", // 위택스 주소 점검 기록(W10-b) - 읽기·추가만
+  "public.training_quotes", // 교육 견적 요청(W10-g) - 읽기·추가·고치기, 지우기 0, 개인 칸은 파기 함수로만
+  "public.links", // 해석·법령 연결(W10-d) - 읽기·추가·고치기, 지우기 0, 반려는 상태로
+  "public.law_delegations", // 법령 위임 관계(W10-d) - 읽기·추가·고치기, 지우기 0
+  "public.legal_doc_texts", // 해석 문서 원문(W10-d) - 읽기만, 함수로만 쓴다
+  "public.legal_doc_holds", // 해석 문서 공개 보류(W10-d) - 읽기만, 함수로만 쓴다
+  "public.quality_samples", // 해석 품질 표본(W10-d) - 읽기·추가만
+  "public.brief_issues", // 주간 브리핑 호(W10-e) - 읽기·추가·고치기, 지우기 0
+  "public.alert_deliveries", // 개정 알림 발송 기록(W10-e) - 읽기만, 함수로만 쓴다
+  "public.project_source_links", // 프로젝트-원천 연결(W10-h) - 읽기·추가·지우기만
+  "public.field_candidate_checks", // 분야 후보 확인 기록(W10-h) - 읽기·추가만
+  "public.field_publications", // 분야 공개 반영 기록(W10-h) - 읽기·추가만
+  "public.finance_case_entries", // 개발금융 사례 항목(W10-h) - 읽기·추가·고치기, 지우기 0
 ]);
 let client;
 

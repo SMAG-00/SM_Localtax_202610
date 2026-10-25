@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // 백오피스 화면의 403 — 서버 컴포넌트가 forbidden()을 부르면 forbidden.tsx와 상태 코드 403 (Next 실험 기능, 접근 판정은 lib/access.ts)
   experimental: { authInterrupts: true },
+  // 캠페인 랜딩 /go/*는 색인 제외 - 머리글 X-Robots-Tag + 화면 noindex 메타. robots.txt Disallow에는 넣지 않는다(크롤러가 읽어야 noindex를 본다, W10-i 결정 6)
+  async headers() {
+    return [{ source: "/go/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }];
+  },
 };
 
 export default nextConfig;

@@ -1,4 +1,7 @@
 import "server-only";
+import { buildShortcuts, parseShortcutCopy } from "./shortcuts-logic";
+import { readMemberInterests } from "./member-interests";
+import { readShortcutInputs } from "./shortcuts";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { latestChangedTracker, trackerState, type ArticleListItem, type TrackerSource } from "./cards";
@@ -84,7 +87,10 @@ export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
     readHubTaxPoints(),
     getHomeProduct(settings.features),
   ]);
+  const shortcutLinks = buildShortcuts(settings.features, await readShortcutInputs(settings.features), settings.shortcutOrder, settings.features.shortcuts ? await readMemberInterests() : []);
+  const shortcutCopy = parseShortcutCopy(settings.shortcutCopy);
   const sections = homeSections({
+    shortcuts: shortcutLinks.map((s) => ({ key: s.key, label: s.label, href: s.href, note: shortcutCopy[s.key] ?? null })),
     coreMessage: settings.coreMessage,
     coreHighlights: settings.coreHighlights,
     fieldPoints: fieldCardPoints(hubPoints),

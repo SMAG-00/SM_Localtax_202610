@@ -32,7 +32,7 @@ export const POST = handle(async (request: Request) => {
   const expired = () => (isForm ? new Response(null, { status: 303, headers: { location: "/brief/unsubscribe?error=expired" } }) : errorJson(410, "링크가 만료되었습니다"));
   if (typeof token !== "string" || !TOKEN_SHAPE.test(token)) return expired();
 
-  const found = await db.from("consents").select("id, revoked_at").eq("kind", "brief_prereg").eq("revoke_token_hash", hashToken(token)).maybeSingle();
+  const found = await db.from("consents").select("id, revoked_at").in("kind", ["brief_prereg", "brief", "amendment_alert"]).eq("revoke_token_hash", hashToken(token)).maybeSingle();
   if (found.error) throw new HttpError(503, "잠시 뒤 다시 시도해 주세요");
   if (!found.data) return expired();
   if (!found.data.revoked_at) {

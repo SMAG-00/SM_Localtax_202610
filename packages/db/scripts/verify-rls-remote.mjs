@@ -29,6 +29,9 @@ export const ANON_EXECUTE_ALLOWED = new Set([
   "assistant_register_prompt",
   "assistant_record_turn",
   "assistant_feedback",
+  // W10-d - 해석 DB 검색 함수 2개(security invoker - 공개 뷰 public_legal_docs·public_links만 읽는다, docs/dev/W10-d_설계.md)
+  "search_legal_docs",
+  "legal_doc_type_counts",
 ]);
 
 /** 응답 판정 — 빈 배열·401·403·404는 차단, 행이 있는 200은 노출, 그 밖은 오류 */

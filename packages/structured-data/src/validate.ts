@@ -86,6 +86,11 @@ export const REQUIRED_PROPERTIES: Readonly<Record<string, readonly RequiredRule[
     { path: "provider", basis: "platform" },
     { path: "provider.name", basis: "platform" },
   ],
+  // 목록 모음 페이지 — 이름과 주소는 화면과 같아야 한다
+  CollectionPage: [
+    { path: "name", basis: "platform" },
+    { path: "url", basis: "platform" },
+  ],
   // Google Dataset 문서
   Dataset: [
     { path: "name", basis: "google" },

@@ -273,7 +273,17 @@ export function EventDetailPage({ view }: { view: EventDetailView }) {
           <dd className={MONO} data-part="event-confirmed">
             {card.confirmedOn}
           </dd>
+          {view.source.licenseLabel && (
+            <>
+              <dt className="font-bold">공공누리 유형</dt>
+              <dd data-part="event-license">{view.source.licenseLabel}</dd>
+            </>
+          )}
         </dl>
+        {view.source.imageUrl && (
+          // 권리가 확인된 이미지만 내려온다 (LG-15) - 미확인 이미지는 주소 자체가 없어 이 줄이 그려지지 않는다
+          <img src={view.source.imageUrl} alt="" data-part="event-image" loading="lazy" decoding="async" className="mt-6 block h-auto max-w-full rounded-xl border border-navy-100" />
+        )}
         {card.status === "changing" && (
           <p data-part="changing-notice" className="mt-6 text-[16px] font-bold text-navy-900">
             일정 변경 여부를 확인하고 있습니다. 위 일정은 확정이 아닙니다 - 공식 안내를 확인하세요.

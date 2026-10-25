@@ -36,6 +36,10 @@ export interface EventRow {
   status_confirmed_at: string | null;
   status: EventStatusKey;
   recheck_due: boolean;
+  /** W10-h 연동 항목의 공공누리 유형 (수동 입력 행사는 없음) */
+  license_type?: string | null;
+  /** W10-h 권리 확인분만 내려오는 이미지 주소 */
+  image_url?: string | null;
 }
 
 const KST_MS = 9 * 3600_000;

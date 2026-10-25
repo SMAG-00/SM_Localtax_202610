@@ -12,6 +12,9 @@ import { closeReadinessMonths } from "./readiness/monthly";
 import { collectSearchConsole, submitIndexNow } from "./seo/jobs";
 import { runAccuracy } from "./accuracy/run";
 import { runDocPipelines, runLawPipeline } from "./pipelines/service";
+import { publishDue, remindReconfirm, sendAmendmentAlerts } from "./brief/issues";
+import { checkOpsBudget, detectAmendments, draftBrief } from "./ops-ai/service";
+import { runFieldPipelines } from "./field-data/service";
 
 // 배치 작업(@ltr/workflows 목록)에 넘기는 서버 기능 — 작업 경로(/api/jobs/[job])가 service_role 클라이언트로 만든다.
 // 작업 목록은 '어떤 이름이 무엇을 하는가'만 정하고, DB 읽기·쓰기는 여기 서버 모듈이 한다.
@@ -33,6 +36,13 @@ export function jobServices(db: SupabaseClient): JobServices {
     recordRenewalNotices: async (now) => ({ ...(await recordRenewalNotices(db, now)) }),
     runLawPipeline: (now) => runLawPipeline(db, now),
     runDocPipelines: (now) => runDocPipelines(db, now),
+    runFieldPipelines: (now) => runFieldPipelines(db, now),
     runAccuracy: (now) => runAccuracy(db, now),
+    detectAmendments: (now) => detectAmendments(db, now),
+    draftBrief: (now) => draftBrief(db, now),
+    publishBrief: (now) => publishDue(db, now),
+    remindReconfirm: (now) => remindReconfirm(db, now),
+    sendAmendmentAlerts: (now) => sendAmendmentAlerts(db, now),
+    checkOpsBudget: (now) => checkOpsBudget(db, now),
   };
 }

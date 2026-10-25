@@ -1,5 +1,6 @@
 import "server-only";
 import { isoToKstDate } from "@/lib/admin/form-utils";
+import { eventSourceInfo, type EventSourceInfo } from "@/lib/field-data/event-source";
 import { isoWeekRange } from "@/lib/site/iso-week";
 import { matchRegion, regionRoute, type RegionRouteRow } from "@/lib/site/region-route";
 import { publicDb, rowsOf } from "./db";
@@ -27,7 +28,7 @@ import { readPublicSettings, readRegions } from "./reads";
 
 const todayKst = (now: Date) => isoToKstDate(now.toISOString());
 const EVENT_COLUMNS =
-  "id, slug, series_key, title, category, organizer, organizer_type, venue, region_code, starts_at, ends_at, official_url, source_name, confirmed_on, sponsored, status_source_url, status_confirmed_at, status, recheck_due, hide_stale";
+  "id, slug, series_key, title, category, organizer, organizer_type, venue, region_code, starts_at, ends_at, official_url, source_name, confirmed_on, sponsored, status_source_url, status_confirmed_at, status, recheck_due, hide_stale, license_type, image_url";
 type PublicEventRow = EventRow & { hide_stale: boolean };
 
 export async function localEventsOpen(): Promise<boolean> {
@@ -104,6 +105,8 @@ export interface EventDetailView {
   regionName: string | null;
   statusSourceUrl: string | null;
   statusConfirmedOn: string | null;
+  /** W10-h 연동 출처 줄 - 공공누리 유형 글자와 (권리 확인분만) 이미지 */
+  source: EventSourceInfo;
   links: { id: number; kind: "project" | "article"; label: string; href: string; reason: string }[];
 }
 
@@ -126,6 +129,7 @@ export async function getEventDetail(slug: string): Promise<EventDetailView | nu
     regionName: regions.find((r) => r.code === row.region_code)?.name ?? null,
     statusSourceUrl: row.status === "cancelled" || row.status === "changing" ? row.status_source_url : null,
     statusConfirmedOn: row.status_confirmed_at ? isoToKstDate(row.status_confirmed_at) : null,
+    source: eventSourceInfo(row),
     links: links.map((l) => ({ id: l.id, kind: l.target_kind, label: l.target_label, reason: l.reason, href: l.target_kind === "project" ? `/realestate/projects/${l.target_slug}` : `/news/${l.target_slug}` })),
   };
 }

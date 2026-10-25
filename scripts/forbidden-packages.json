@@ -13,5 +13,5 @@
     "botid"
   ],
   "aiSdk": ["ai", "@ai-sdk/*", "@anthropic-ai/*", "openai"],
-  "aiSdkAllowed": ["packages/assistant"]
+  "aiSdkAllowed": ["packages/assistant", "workflows"]
 }

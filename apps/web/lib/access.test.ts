@@ -105,6 +105,11 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "review_item.decide": [X, O, X, X, X, X, X, O, X],
   "pipeline.manage": [X, X, X, X, X, X, X, O, X],
   "brief.manage": [X, O, X, X, X, X, X, O, X],
+  "campaign.edit": [X, O, X, O, X, X, X, O, X], // W10-i - 편집 책임자·광고 담당·관리자
+  "campaign.approve": [X, X, X, X, X, X, X, O, X], // W10-i - 관리자만 (광고 담당 승인은 거부 + 감사)
+  "campaign.review_record": [X, X, X, X, X, X, X, O, X], // W10-i - 관리자만
+  "weekly_point.edit": [O, O, X, X, X, X, X, O, X], // W10-i - 기자·편집 책임자·관리자
+  "weekly_point.publish": [X, O, X, X, X, X, X, O, X], // W10-i - 편집 책임자·관리자
   "billing.manage": [X, X, X, X, O, X, X, O, X],
   "billing.readiness": [X, X, X, X, X, X, X, O, X],
   "brand.manage":           [X, X, X, X, X, O, X, O, X],

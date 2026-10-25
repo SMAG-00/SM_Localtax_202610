@@ -1,7 +1,8 @@
 // 공개 화면 틀 — 상단 메뉴·하위 메뉴·유틸 메뉴·정책 링크 (HOME-02 · HELP-05)
 import { describe, expect, test } from "vitest";
-import { buildChrome, closedChrome } from "./chrome-logic";
-import { isBlockedPath } from "./constants";
+import { brand } from "@ltr/ui";
+import { buildChrome, buildFooterLinks, closedChrome } from "./chrome-logic";
+import { FEATURE_KEYS, isBlockedPath, type Features } from "./constants";
 import type { PublicCategoryRow } from "./rows";
 import { CLOSED_FEATURES } from "./settings";
 
@@ -79,6 +80,50 @@ describe("헤더 메뉴 (HOME-02)", () => {
     const c = buildChrome(CATEGORIES, new Map(CATEGORIES.map((x) => [x.id, 1])), Object.fromEntries(Object.keys(CLOSED_FEATURES).map((k) => [k, true])) as typeof CLOSED_FEATURES);
     const hrefs = [...c.sections.flatMap((s) => [s.href, ...s.children.map((x) => x.href)]), ...c.utilities.map((u) => u.href), ...c.policyLinks.map((p) => p.href)];
     expect(hrefs.filter(isBlockedPath)).toEqual([]);
+  });
+});
+
+describe("바닥글 링크 순서 (HELP-05 · 옛 사이트 바닥글 이전)", () => {
+  const all = Object.fromEntries(FEATURE_KEYS.map((k) => [k, true])) as unknown as Features;
+  const labels = (f: Features) => buildFooterLinks(f).map((l) => l.label);
+
+  test("모두 공개 승인되면 옛 사이트 여섯이 이 순서로 앞에 오고, 기존 링크가 그 뒤에 이어진다", () => {
+    expect(labels(all)).toEqual([
+      "회사 소개",
+      "개인정보처리방침",
+      "이용약관",
+      "청소년보호정책",
+      "저작권보호정책",
+      "이메일무단수집거부",
+      "편집 원칙",
+      "윤리강령",
+      "정정·반론 창구",
+      "광고 정책",
+      "고객센터",
+      "방문 통계 설정",
+      "내 정보",
+    ]);
+  });
+
+  test("새 정책 링크는 기능 키가 꺼져 있으면 0, 켜면 그 자리에 정확한 주소로 나온다", () => {
+    expect(labels(CLOSED_FEATURES)).toEqual(["방문 통계 설정"]);
+    const only = (...keys: Array<keyof Features>) => ({ ...CLOSED_FEATURES, ...Object.fromEntries(keys.map((k) => [k, true])) }) as Features;
+    expect(buildFooterLinks(only("page_youth_protection"))).toContainEqual({ key: "youth_protection", label: "청소년보호정책", href: "/about/youth-protection" });
+    expect(buildFooterLinks(only("page_copyright_policy"))).toContainEqual({ key: "copyright_policy", label: "저작권보호정책", href: "/about/copyright-policy" });
+    expect(labels(only("page_youth_protection", "page_terms", "page_no_email"))).toEqual(["이용약관", "청소년보호정책", "이메일무단수집거부", "방문 통계 설정"]);
+  });
+});
+
+describe("바닥글 회사 정보 (buildChrome.company)", () => {
+  test("설정이 없으면 제호(brand)만 있고 안내 문단·연락처 0", () => {
+    expect(buildChrome([], new Map(), CLOSED_FEATURES).company).toEqual({ notices: [], media: [{ label: "제호", value: brand.mastheadName }], contact: [] });
+  });
+
+  test("설정 값을 칸별로 나누고 문구의 {제호}를 brand 제호로 바꾼다", () => {
+    const c = buildChrome([], new Map(), CLOSED_FEATURES, new Map(), { phone: "02-1", copyright_notice: "{제호} 보호", registration_no: "가 1" }).company;
+    expect(c.notices).toEqual([`${brand.mastheadName} 보호`]);
+    expect(c.media.map((r) => r.label)).toEqual(["제호", "등록번호"]);
+    expect(c.contact).toEqual([{ label: "전화", value: "02-1" }]);
   });
 });
 

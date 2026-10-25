@@ -29,6 +29,10 @@ export function featureNeeds(key: FeatureKey): FeatureNeeds | null {
     // SM 전문가 연락 요청 (W7c) - 전문가 소개가 같이 열려 있어야 한다. 메일 설정은 필요 없다(없으면 알림 없이 저장만)
     case "expert_requests":
       return { docs: [], features: ["experts"], mail: false };
+    // 위탁교육 견적 요청·세미나 (W10-g) - 교육(edu)이 같이 열려 있어야 한다
+    case "education_billing":
+    case "seminars":
+      return { docs: [], features: ["edu"], mail: false };
     default:
       return null;
   }

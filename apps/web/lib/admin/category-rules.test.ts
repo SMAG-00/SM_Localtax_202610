@@ -1,12 +1,24 @@
 // 분야 편집 입력 검사 시험 (CAT-01) — 허브는 4대 분야로 고정, 하위 분야 이름·주소·소개·순서·공개·면책·「지방세로 읽기」 필수 여부
 import { describe, expect, test } from "vitest";
-import { categoryFormToBody, moveInOrder, orderPlan, parseCategoryInput, parseCategoryOrder, slugChangeBlocked } from "./category-rules";
+import { categoryFormToBody, moveInOrder, orderPlan, parseCategoryInput, parseCategoryOrder, reservedSlugBlocked, slugChangeBlocked } from "./category-rules";
 
 const ok = <T>(r: { ok: true; value: T } | { ok: false; errors: string[] }): T => {
   if (!r.ok) throw new Error(r.errors.join(" / "));
   return r.value;
 };
 const errorsOf = (r: { ok: boolean; errors?: string[] }) => (r.ok ? [] : (r as { errors: string[] }).errors);
+
+describe("예약된 하위 분야 주소 (W10-i)", () => {
+  test("부동산재테크의 weekly는 /realestate/weekly 화면 주소라 거부", () => {
+    expect(reservedSlugBlocked("realestate", "weekly")).toContain("/realestate/weekly");
+  });
+  test("지자체뉴스의 기존 weekly(금주 핫뉴스)와 weekly와 닮은 주소는 막지 않는다", () => {
+    expect(reservedSlugBlocked("local", "weekly")).toBeNull();
+    expect(reservedSlugBlocked("realestate", "weekly-news")).toBeNull();
+    expect(reservedSlugBlocked("realestate", "weekly2")).toBeNull();
+    expect(reservedSlugBlocked("tax", "weekly")).toBeNull();
+  });
+});
 
 describe("새 하위 분야 (create)", () => {
   test("API 칸 이름 → DB 칸 이름, 이름은 앞뒤 공백을 뺀다", () => {
