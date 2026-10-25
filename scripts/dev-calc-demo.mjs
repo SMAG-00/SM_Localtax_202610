@@ -9,6 +9,7 @@
 //  - 시험용 룰셋 2090.01 (rules/2026.01.json의 미감수 초안 값) - 기존 W10-a RPC(sign_ruleset -> approve_ruleset)로 서명·승인
 //  - 시험용 환급 판정표 2090.01 (지어낸 문진표) - sign_determination_table -> approve_determination_table
 //  - 시험용 대조 사례(키 demo-calc-*) 취득세 유상·상속 공식 30건씩 + 표본 50건, 재산세 공식 30건 + 표본 50건 -> 대조 실행 -> 게이트 열림
+//  - 홈 바로가기 3개 더: 시험용 기사 3건(부동산재테크) + 이번 주 재테크 포인트 1호 발행 / 시험용 브리핑 1호 승인·발행 / 시험용 전문가 1명 + 고지문·연락 요청 정책(시험용 승인값)
 //  - 기능 키 켜기 (settings.feature_flags 일부 키만 건드림)
 // 운영 DB에는 닿지 않습니다: 로컬(127.0.0.1/localhost) 주소가 아니면 바로 멈춥니다. .env 파일은 읽지 않습니다.
 import { execFileSync } from "node:child_process";
@@ -17,6 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { publishPolicies } from "../e2e/lib/policy-fixture.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DB_DIR = path.join(ROOT, "packages", "db");
@@ -25,7 +27,18 @@ const VERSION = "2090.01";
 const KEY_PREFIX = "demo-calc-";
 const REVIEWER_EMAIL = "calc-demo-reviewer@local.test";
 const ENTERED_BY = "시험용:dev-calc-demo";
-const FLAGS = ["calc", "sm_calculator", "self_calculator", "calc_acquisition", "calc_holding", "calc_refund", "calc_compare", "calc_accuracy", "wetax_links", "shortcuts"];
+const FLAGS = ["calc", "sm_calculator", "self_calculator", "calc_acquisition", "calc_holding", "calc_refund", "calc_compare", "calc_accuracy", "wetax_links", "shortcuts", "realestate_weekly", "brief", "brief_regular", "experts", "expert_requests"];
+const ACTOR = "demo:dev-calc-demo";
+const DEMO_SLUG = "demo-calc-";
+const DEMO_BRIEF_NO = 9090;
+const DEMO_MARK = "demo-dev-calc-demo";
+// 전문가 고지문·연락 요청 정책의 시험용 승인값 (실제 문구 아님) - 이미 승인된 값이 있으면 건드리지 않는다
+const NOTICE_DEMO = { version: DEMO_MARK, text: "시험용 고지문입니다. 실제 문구가 아닙니다.", approved: true, reviewed_by: "시험용 검토자", reviewed_on: "2026-10-25" };
+const NOTICE_SEED = { version: "", text: "", approved: false, reviewed_by: null, reviewed_on: null };
+const POLICY_DEMO = { retention_days: 365, target_business_days: 1, summary_max_chars: 1000, consent_version: DEMO_MARK, intro: ["시험용 안내 문단입니다."], consent_items: ["시험용 동의 항목입니다."], approved: true, reviewed_by: "시험용 검토자", reviewed_on: "2026-10-25", due_diligence_ref: "시험용", legal_review_ref: "시험용" };
+const POLICY_SEED = { retention_days: 365, target_business_days: 1, summary_max_chars: 1000, consent_version: "", intro: [], consent_items: [], approved: false, reviewed_by: null, reviewed_on: null, due_diligence_ref: "", legal_review_ref: "" };
+const DEMO_BRIEF_CORNERS = [{ key: "demo", title: "시험용 코너", items: [{ id: "demo-1", text: "시험용 항목입니다. 실제 법령·해석이 아닙니다.", origin: "human", reviewed: true }], emptyNote: "" }];
+const CLEAN_REPORT = { blocking: 0, warnings: 0, findings: [] };
 const ACQ = { ownerType: "INDIVIDUAL", propertyKind: "LAND", price: 100000000 };
 const HOLD = { ownerType: "INDIVIDUAL", propertyKind: "HOUSE", publishedPrices: [500000000] };
 // [묶음 이름, 세목, 원인, 종류, 개수, 입력]
@@ -95,6 +108,8 @@ async function auth(pathname, { method = "POST", body, service = false } = {}) {
 }
 
 async function setFlags(on) {
+  // 브리핑 화면은 개인정보처리방침 게시본이 있어야 열린다 — 없으면 시험용 가짜 게시본 (E2E와 같은 도구)
+  if (on) await publishPolicies(db, "demo-calc", ["privacy"]);
   const patch = Object.fromEntries(FLAGS.map((f) => [f, on]));
   const r = await db.query("update public.settings set value = value || $1::jsonb, updated_by = $2 where key = 'feature_flags'", [JSON.stringify(patch), "demo:dev-calc-demo"]);
   if (r.rowCount !== 1) fail("settings.feature_flags 행을 찾지 못했습니다. 마이그레이션이 모두 적용됐는지 확인해 주세요.");
@@ -115,6 +130,16 @@ async function purge() {
     await db.query("delete from public.accuracy_run_results where case_id in (select id from public.accuracy_cases where case_key like $1) or run_id in (select id from public.accuracy_runs where ruleset_id = any($2::bigint[]))", [`${KEY_PREFIX}%`, rs]);
     await db.query("delete from public.accuracy_runs where ruleset_id = any($1::bigint[])", [rs]);
     await db.query("delete from public.accuracy_cases where case_key like $1", [`${KEY_PREFIX}%`]);
+    const arts = (await db.query("select id from public.articles where slug like $1", [`${DEMO_SLUG}%`])).rows.map((r) => Number(r.id));
+    const issues = (await db.query("select distinct issue_id from public.realestate_weekly_items where article_id = any($1::bigint[])", [arts])).rows.map((r) => Number(r.issue_id));
+    await db.query("delete from public.realestate_weekly_audit where issue_id = any($1::bigint[])", [issues]);
+    await db.query("delete from public.realestate_weekly_items where issue_id = any($1::bigint[])", [issues]);
+    await db.query("delete from public.realestate_weekly_issues where id = any($1::bigint[])", [issues]);
+    await db.query("delete from public.articles where id = any($1::bigint[])", [arts]);
+    await db.query("delete from public.brief_issues where created_by = $1", [ACTOR]);
+    await db.query("delete from public.expert_profiles where slug like $1", [`${DEMO_SLUG}%`]);
+    await db.query("update public.settings set value = $1::jsonb, updated_by = $3 where key = 'expert_notice' and value ->> 'version' = $2", [JSON.stringify(NOTICE_SEED), DEMO_MARK, ACTOR]);
+    await db.query("update public.settings set value = $1::jsonb, updated_by = $3 where key = 'expert_request_policy' and value ->> 'consent_version' = $2", [JSON.stringify(POLICY_SEED), DEMO_MARK, ACTOR]);
     await db.query("delete from public.rules_audit where (kind = 'ruleset' and target_id = any($1::bigint[])) or (kind = 'determination_table' and target_id = any($2::bigint[]))", [rs, dt]);
     await db.query("delete from public.rulesets where id = any($1::bigint[])", [rs]);
     await db.query("delete from public.determination_tables where id = any($1::bigint[])", [dt]);
@@ -253,9 +278,52 @@ if (!open("acquisition", "OTHER") || !open("property", "ALL")) {
   process.exit(1);
 }
 
-// ── 4. 기능 키 켜기
+// ── 4. 홈 바로가기 도착 3곳 (재테크 포인트 · 법령 해석 브리핑 · 전문가 상담 요청) - 모두 시험용, 있으면 다시 만들지 않음
+const demoArticles = async () => (await db.query("select id from public.articles where slug like $1 and status = 'published' order by slug", [`${DEMO_SLUG}weekly-%`])).rows.map((r) => Number(r.id));
+let aids = await demoArticles();
+for (let i = aids.length + 1; i <= 3; i++) {
+  await db.query(
+    "insert into public.articles (slug, title, summary, section, content_type, status, first_published_at) values ($1, $2, $3, 'realestate', 'explainer', 'published', now()) on conflict (slug) do nothing",
+    [`${DEMO_SLUG}weekly-${i}`, `시험용 부동산재테크 기사 ${i}`, "시험용 기사입니다. 실제 내용이 아닙니다."],
+  );
+}
+aids = await demoArticles();
+if (aids.length < 3) fail("시험용 기사 3건을 만들지 못했습니다.");
+if (!(await one("select 1 x from public.realestate_weekly_items where article_id = any($1::bigint[]) limit 1", [aids]))) {
+  const week = (await one("select to_char(now() at time zone 'Asia/Seoul', 'IYYY-IW') w")).w;
+  const issue = await one("insert into public.realestate_weekly_issues (week, edited_by) values ($1, $2) on conflict (week) do nothing returning id", [week, ACTOR]);
+  if (!issue) console.warn(`이번 주(${week}) 재테크 포인트 호가 이미 있어 시험용 호를 만들지 않았습니다.`);
+  else {
+    for (const [i, id] of aids.entries()) await db.query("insert into public.realestate_weekly_items (issue_id, article_id, rank, tax_items, point) values ($1, $2, $3, array['취득세'], '시험용 항목입니다')", [issue.id, id, i + 1]);
+    const r = (await one("select public.publish_realestate_weekly($1, $2) r", [issue.id, ACTOR])).r;
+    if (!r.ok) fail(`재테크 포인트 발행 거부: ${r.code} ${r.message}`);
+  }
+}
+let brief = await one("select id, status from public.brief_issues where issue_no = $1", [DEMO_BRIEF_NO]);
+if (!brief) {
+  brief = await one("insert into public.brief_issues (issue_no, title, publish_at, corners, check_report, created_by) values ($1, '시험용 이번 주 법령·해석', now() - interval '1 hour', $2::jsonb, $3::jsonb, $4) returning id, status", [
+    DEMO_BRIEF_NO, JSON.stringify(DEMO_BRIEF_CORNERS), JSON.stringify(CLEAN_REPORT), ACTOR,
+  ]);
+}
+if (brief.status === "draft") await db.query("select public.brief_issue_approve($1, $2)", [brief.id, ACTOR]);
+if (brief.status !== "published") await db.query("select public.brief_issue_publish($1)", [brief.id]);
+const expertPolicy = async (key, field, demo) => {
+  const cur = (await one("select value from public.settings where key = $1", [key]))?.value;
+  if (cur?.approved === true) return;
+  await db.query("update public.settings set value = $2::jsonb, updated_by = $3 where key = $1", [key, JSON.stringify(demo), ACTOR]);
+};
+await expertPolicy("expert_notice", "version", NOTICE_DEMO);
+await expertPolicy("expert_request_policy", "consent_version", POLICY_DEMO);
+if (!(await one("select 1 x from public.expert_profiles where status = 'published' and withdrawn_at is null limit 1"))) {
+  await db.query("insert into public.expert_profiles (slug, name, category_codes, office_name, house_relation, intro, edited_by) values ($1, '시험용 전문가', array['tax-accountant'], '시험용 사무소', 'employed', '시험용 소개입니다.', $2) on conflict (slug) do nothing", [`${DEMO_SLUG}expert`, ACTOR]);
+  await db.query("update public.expert_profiles set status = 'published', consent_version = 'demo', consent_on = current_date, consent_doc_ref = '시험용', published_by = $2 where slug = $1 and status = 'draft'", [`${DEMO_SLUG}expert`, ACTOR]);
+}
+console.log("시험용 바로가기 자료 준비: 재테크 포인트 1호 · 브리핑 1호 · 전문가 연락 요청");
+
+// ── 5. 기능 키 켜기
 await setFlags(true);
 await db.end();
 console.log(`\n준비됐습니다. 최대 30초 뒤(공개 데이터 캐시) ${base}/calc 를 열어 보세요. 값은 모두 시험용이며 실제 세금과 다릅니다.`);
-console.log("  /calc  /calc/acquisition  /calc/holding  /calc/refund  /calc/compare  /calc/accuracy  (홈 바로가기)");
+console.log("  /calc  /calc/acquisition  /calc/holding  /calc/refund  /calc/compare  /calc/accuracy  /realestate/weekly  /experts/request  /brief/날짜  (홈 바로가기)");
+console.log("참고: /brief/날짜 화면은 사이트에 메일 설정(MAIL_*)과 brief 키가 있어야 열립니다. 홈 바로가기 링크는 보이지만 메일 설정이 없으면 그 화면은 404입니다.");
 console.log("끄기: pnpm dev:calc-demo -- --off   지우기: pnpm dev:calc-demo -- --purge");

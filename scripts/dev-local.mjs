@@ -74,7 +74,16 @@ const env = {
   AUDIT_ADMIN_EMAILS: ADMIN_EMAIL,
   GUARD_SECRET: crypto.randomBytes(24).toString("hex"),
   ASSISTANT_ENABLED: process.env.ASSISTANT_ENABLED ?? "on",
+  // 메일은 로컬 Supabase 수신함(Mailpit)으로만 보낸다 — E2E와 같은 설정 (e2e/lib/mail.mjs)
+  ...localMailEnv(),
 };
+
+function localMailEnv() {
+  const toml = fs.readFileSync(path.join(ROOT, "packages", "db", "supabase", "config.toml"), "utf8");
+  const smtpPort = /^smtp_port\s*=\s*(\d+)/m.exec(toml.slice(toml.indexOf("[local_smtp]")))?.[1];
+  if (!smtpPort) return {};
+  return { MAIL_FROM: "선명 <noreply@local.test>", MAIL_SMTP_HOST: "127.0.0.1", MAIL_SMTP_PORT: smtpPort };
+}
 console.log("사이트를 띄웁니다 → http://localhost:3001 (관리 화면 /admin). 끄려면 Ctrl+C");
 const child = spawn("pnpm", ["--filter", "@ltr/web", "dev"], { cwd: ROOT, env, stdio: "inherit", shell });
 child.on("exit", (code) => process.exit(code ?? 0));
