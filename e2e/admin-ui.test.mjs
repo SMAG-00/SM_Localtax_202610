@@ -635,7 +635,7 @@ test("d) 편집국 외 역할 4종 — 승인·정렬·발행 메뉴 0, 검토·
   for (const path of ["/admin/store", "/admin/brand", "/admin/experts"]) assert.equal((await open(editor, path)).status(), 403, `편집자 ${path}`);
 
   const reporter = await login(u.reporter);
-  assert.deepEqual(await menuLabels(reporter), ["첫 화면", "기사 기획", "기사", "상황 카드", "문의함"]);
+  assert.deepEqual(await menuLabels(reporter), ["첫 화면", "기사 기획", "기사", "이번 주 재테크 포인트", "상황 카드", "문의함"]);
   for (const path of ["/admin/reviews", "/admin/placement", "/admin/home"]) assert.equal((await open(reporter, path)).status(), 403, `기자 ${path}`);
 
   // 편집자가 쓰는 백오피스 화면 전부 — AI 도우미 런처 0 (open이 확인한다)
