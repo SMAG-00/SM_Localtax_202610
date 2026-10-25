@@ -195,7 +195,7 @@ export const extraPassSamples: { id: string; input: PageInput }[] = [
       kind: "collection",
       collection: {
         url: "https://news.example/realestate/weekly/2026-43",
-        name: "이번 주 재테크 포인트 2026년 43주차",
+        name: "금주 부동산 재테크 2026년 43주차",
         datePublished: "2026-10-23",
         items: [
           { name: "기사 하나", url: "https://news.example/news/a-1" },

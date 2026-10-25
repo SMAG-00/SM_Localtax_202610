@@ -76,12 +76,12 @@ export const PAGE_TYPE_MAP = {
 } as const satisfies Record<string, PageTypeEntry>;
 
 /**
- * OPT-02 7유형 밖의 확장 유형 — PRD-02 4.16 PR-15(이번 주 재테크 포인트 목록)가 더한 CollectionPage 하나.
+ * OPT-02 7유형 밖의 확장 유형 — PRD-02 4.16 PR-15(금주 부동산 재테크 목록)가 더한 CollectionPage 하나.
  * 7유형 대응표(PAGE_TYPE_MAP)와 문서 대조는 그대로 두고, 최상위로 낼 수 있는 유형에만 더한다.
  */
 export const EXTENSION_TYPES = {
   collection: {
-    label: "이번 주 재테크 포인트 목록 페이지",
+    label: "금주 부동산 재테크 목록 페이지",
     route: "/realestate/weekly",
     primaryType: "CollectionPage",
     additionalTypes: [],

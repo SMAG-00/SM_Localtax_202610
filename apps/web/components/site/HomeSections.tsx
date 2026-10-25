@@ -28,8 +28,8 @@ function HomeBlock({ sectionKey, tone, children }: { sectionKey: Exclude<HomeSec
   return (
     <section data-home-section={sectionKey} aria-labelledby={titleId} className={cx("border-t border-navy-100", tone === "ivory" ? "bg-ivory" : "bg-ivory-dark")}>
       <div className="mx-auto max-w-5xl px-4 py-20">
-        <Eyebrow>{heading.eyebrow}</Eyebrow>
-        <h2 id={titleId} className="mt-3 text-[28px] leading-tight font-black tracking-tight text-navy-900 sm:text-[32px]">
+        {heading.eyebrow && <Eyebrow>{heading.eyebrow}</Eyebrow>}
+        <h2 id={titleId} className={cx(heading.eyebrow && "mt-3", "text-[28px] leading-tight font-black tracking-tight text-navy-900 sm:text-[32px]")}>
           {heading.title}
         </h2>
         {children}
@@ -125,7 +125,7 @@ function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: stri
         <ul data-part="shortcut-cards" className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {section.cards.map((c) => (
             <li key={c.key}>
-              <TrackedLink href={c.href} name="shortcut_clicked" props={{ placement: "home", shortcut: c.key }} className={cx("flex min-h-11 h-full flex-col justify-center rounded-lg border p-4 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400", c.key === "expert_request" ? "border-hermes-500 bg-hermes-500 hover:bg-hermes-600" : "border-navy-100 bg-white hover:border-hermes-500")}>
+              <TrackedLink href={c.href} name="shortcut_clicked" props={{ placement: "home", shortcut: c.key }} className="flex min-h-11 h-full flex-col justify-center rounded-lg border border-navy-100 bg-white p-4 transition hover:border-hermes-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400">
                 <span className="text-[15px] font-bold text-navy-800">{c.label}</span>
                 {c.note && <span className="mt-1 text-[13px] text-navy-500">{c.note}</span>}
               </TrackedLink>

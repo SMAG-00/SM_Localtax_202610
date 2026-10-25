@@ -454,10 +454,10 @@ describe("paywalledArticle (유료 기사 구조화 데이터, W10-f)", () => {
   });
 });
 
-describe("collectionPage — 이번 주 재테크 포인트 목록 (PR-15)", () => {
+describe("collectionPage — 금주 부동산 재테크 목록 (PR-15)", () => {
   const view = {
     url: "https://news.example/realestate/weekly/2026-43",
-    name: "이번 주 재테크 포인트 2026년 43주차",
+    name: "금주 부동산 재테크 2026년 43주차",
     datePublished: "2026-10-23",
     items: [
       { name: "기사 하나", url: "https://news.example/news/a-1" },

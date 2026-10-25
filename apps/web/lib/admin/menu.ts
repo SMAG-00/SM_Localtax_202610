@@ -35,7 +35,7 @@ const RULES: readonly MenuRule[] = [
   { id: "calc-links", label: "계산기 연결", href: "/admin/calc-links", when: (a) => a.has("link.manage"), paths: ["/admin/calc-links"] },
   // 바로가기·캠페인 랜딩 (GROW-03·04 · PR-15 — W10-i) — 캠페인은 편집 책임자·광고 담당·관리자, 재테크 포인트는 기자·편집 책임자·관리자
   { id: "campaigns", label: "캠페인 랜딩", href: "/admin/campaigns", when: (a) => a.has("campaign.edit") || a.has("campaign.approve"), paths: ["/admin/campaigns"] },
-  { id: "realestate-weekly", label: "이번 주 재테크 포인트", href: "/admin/realestate-weekly", when: (a) => a.has("weekly_point.edit") || a.has("weekly_point.publish"), paths: ["/admin/realestate-weekly"] },
+  { id: "realestate-weekly", label: "금주 부동산 재테크", href: "/admin/realestate-weekly", when: (a) => a.has("weekly_point.edit") || a.has("weekly_point.publish"), paths: ["/admin/realestate-weekly"] },
   // 허브 지방세 포인트 (CORE-02 — W3 9단계) — 초안은 편집 책임자, 감수 서명은 세무 감수위원
   { id: "hub-points", label: "허브 지방세 포인트", href: "/admin/hub-points", when: (a) => a.has("hub_point.edit") || a.has("review.tax_review"), paths: ["/admin/hub-points"] },
   // 원문 검수 큐 (REG1-13 — W4 6단계) — 편집 책임자·관리자

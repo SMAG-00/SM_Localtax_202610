@@ -1,4 +1,4 @@
-// 이번 주 재테크 포인트 (PR-15, W10-i i3) - 순수 함수 (시험 realestate-weekly-logic.test.ts)
+// 금주 부동산 재테크 (PR-15, W10-i i3) - 순수 함수 (시험 realestate-weekly-logic.test.ts)
 //  · 한 호 = 3~7건. 기사마다 세금 관점 한 줄(60자 이하)과 관련 세목 1개 이상. 가격·수익률·추천·투자 권유 표현과 세액(숫자 + 원)은 발행 전에 막는다
 //  · 발행 함수(DB publish_realestate_weekly)가 건수·공개·분야·주를 한 번 더 본다. 여기는 편집 화면과 공개 화면이 같은 규칙을 쓴다
 import { pointLineProblems } from "@ltr/editorial";

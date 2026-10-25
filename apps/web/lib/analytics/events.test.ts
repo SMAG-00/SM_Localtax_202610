@@ -212,6 +212,7 @@ describe("W10-i 캠페인 이벤트 (GROW-05)", () => {
   });
   test("바로가기 클릭은 분야 칸을 받지 않는다", () => {
     expect(ok({ name: "shortcut_clicked", section: "tax", props: { placement: "header", shortcut: "calc" } }).ok).toBe(false);
-    expect(ok({ name: "shortcut_clicked", props: { placement: "header", shortcut: "calc" } }).ok).toBe(true);
+    expect(ok({ name: "shortcut_clicked", props: { placement: "home", shortcut: "calc" } }).ok).toBe(true);
+    expect(ok({ name: "shortcut_clicked", props: { placement: "header", shortcut: "calc" } }).ok).toBe(false);
   });
 });

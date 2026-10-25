@@ -5,7 +5,7 @@ import { authorize, requireViewer } from "@/lib/server/dal";
 import { dbError, errorJson, handle, json, readJson } from "@/lib/server/http";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-// 이번 주 재테크 포인트 관리 (/admin/realestate-weekly, PR-15). create_issue·set_items = weekly_point.edit / publish = weekly_point.publish.
+// 금주 부동산 재테크 관리 (/admin/realestate-weekly, PR-15). create_issue·set_items = weekly_point.edit / publish = weekly_point.publish.
 // 항목 글(세금 관점 한 줄)은 사람이 쓴다 - AI 초안 0. 금지 표현·세액·60자는 저장 때, 3~7건은 발행 때 확인하고 DB 발행 함수가 공개 기사·분야·주를 한 번 더 확인한다.
 export const dynamic = "force-dynamic";
 

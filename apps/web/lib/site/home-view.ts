@@ -15,9 +15,9 @@ export const SEARCH_PLACEHOLDER = "예: 2026년 지방세제 개편안";
 
 type BodySectionKey = Exclude<HomeSectionKey, "hero">;
 
-/** 섹션 머리 — 아이브로(영문)와 제목. 제목은 PRD 화면 표의 섹션 이름 그대로 */
-export const SECTION_HEADINGS: Readonly<Record<BodySectionKey, { eyebrow: string; title: string }>> = {
-  shortcuts: { eyebrow: "SHORTCUTS", title: "바로가기" },
+/** 섹션 머리 — 아이브로(영문, 없을 수 있음)와 제목. 제목은 PRD 화면 표의 섹션 이름 그대로 */
+export const SECTION_HEADINGS: Readonly<Record<BodySectionKey, { eyebrow?: string; title: string }>> = {
+  shortcuts: { title: "바로가기" },
   fields: { eyebrow: "FIELDS", title: "4대 분야" },
   latest_reports: { eyebrow: "NEWS", title: "최신 자체 취재" },
   weekly_hot: { eyebrow: "THIS WEEK", title: "금주 핫뉴스" },

@@ -215,7 +215,7 @@ export interface DatasetView {
   distribution?: { contentUrl: Url; encodingFormat: string }[];
 }
 
-/** 목록 모음 페이지 — 이번 주 재테크 포인트 (PR-15). 화면에 보이는 제목·주소·발행일·항목과 같은 값만 옮긴다 */
+/** 목록 모음 페이지 — 금주 부동산 재테크 (PR-15). 화면에 보이는 제목·주소·발행일·항목과 같은 값만 옮긴다 */
 export interface CollectionView {
   url: Url;
   name: string;

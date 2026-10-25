@@ -1,7 +1,7 @@
 // W10-i 수용 E2E (docs/dev/W10-i_설계.md - HOME-12·13·14 · PR-15 · GROW-03·04·05)
 // standalone 빌드를 로컬 Supabase에 붙인다. 기능 키는 시험 안에서 켜고 끝나면 운영 설정 스냅샷으로 되돌린다.
 // 캠페인 문구·검토 기록은 전부 시험용 가짜다. 브라우저가 필요한 항목(클릭 측정 전송·GPC 전송 0·360px 배치·계산 결과 -> 상담 요청 흐름)은 이 파일 밖 체크리스트(DEPLOY)로 둔다.
-//  a) 헤더·홈 - 키 shortcuts 꺼짐: 바로가기 줄·홈 카드 0 / 켜짐: 줄과 카드, 'AI 계산기' 글자 0, 바로가기 주소에 쿼리·해시 0
+//  a) 홈 - 키 shortcuts 꺼짐: 홈 카드 0 / 켜짐: 헤더에 바로가기 줄 없음 + 홈 블록 카드 4장(새 이름 4개, 강조 없음, 영문 아이브로 없음), 'AI 계산기' 글자 0, 바로가기 주소에 쿼리·해시 0 (PO 2026-10-26)
 //  a2) 바로가기는 메뉴 - 키 shortcuts만 켜면 도착 키·공개 호 없이도 4개, 네 도착 모두 200(준비 중 안내, noindex) / shortcuts 꺼짐이면 도착 404 그대로
 //  b) 재테크 포인트 - shortcuts 꺼짐: 키 꺼짐·공개 호 0 -> 404 / shortcuts 켜짐 + 호 0 -> 200 준비 중, 기자 호 만들기 200·발행 403, 편집 책임자 3건 미만 발행 422
 //  c) 캠페인 작성·승인 - 금지 표현·보조 링크 2개 422 / 광고 담당 작성·제출 200, 승인 403+감사 / 관리자 승인: 검토 기록 없음 409 -> 검토 후 200, 작성자 본인 승인 거부
@@ -97,23 +97,27 @@ after(async () => {
   }
 });
 
-test("a) 헤더·홈 - 키 shortcuts 꺼짐이면 바로가기 줄·카드 0, 켜짐이면 나오고 AI 계산기 글자·쿼리 주소 0", async () => {
+test("a) 홈 - 키 shortcuts 꺼짐이면 카드 0, 켜짐이면 헤더 줄 없이 홈 블록 카드 4장(새 이름)이 나오고 AI 계산기 글자·쿼리 주소 0", async () => {
   await setFlags({ shortcuts: false, calc: true });
   await restart();
   const off = await page("/");
   assert.equal(off.status, 200);
-  assert.ok(!off.text.includes('aria-label="바로가기"'), "꺼짐: 바로가기 줄 0");
+  assert.ok(!off.text.includes('aria-label="바로가기"'), "꺼짐: 헤더 바로가기 줄 0");
   assert.ok(!off.text.includes('data-part="shortcut-cards"'), "꺼짐: 홈 카드 0");
 
   await setFlags({ shortcuts: true, calc: true });
   await restart();
   const on = await page("/");
-  assert.ok(on.text.includes('aria-label="바로가기"'), "켜짐: 바로가기 줄");
+  assert.ok(!on.text.includes('aria-label="바로가기"') && !on.text.includes('data-ui="header-shortcuts"'), "켜짐이어도 헤더 바로가기 줄 0");
   assert.ok(on.text.includes('data-part="shortcut-cards"'), "켜짐: 홈 카드");
-  assert.ok(on.text.includes("부동산 세금 계산기"));
   assert.ok(!/AI\s*(세금\s*)?계산/.test(on.text.replace(/AI 도우미|AI 세금 도우미/g, "")), "AI 계산기 글자 0");
-  const nav = on.text.split('aria-label="바로가기"')[1].split("</nav>")[0];
-  for (const m of nav.matchAll(/href="([^"]+)"/g)) assert.ok(!/[?#]/.test(m[1]), `바로가기 주소에 쿼리·해시 0: ${m[1]}`);
+  const block = on.text.split('data-home-section="shortcuts"')[1].split("</section>")[0];
+  assert.ok(block.includes(">바로가기</h2>") && !block.includes("SHORTCUTS"), "블록 제목 '바로가기', 영문 아이브로 0");
+  const cardsHtml = block.split('data-part="shortcut-cards"')[1].split("</ul>")[0];
+  const names = [...cardsHtml.matchAll(/<span class="text-\[15px\][^>]*>([^<]+)<\/span>/g)].map((m) => m[1].replace(/&amp;/g, "&"));
+  assert.deepEqual(names, ["부동산 세금 계산기", "금주 부동산 재테크", "금주 지방세 최신법령·유권해석", "(가칭)김의효 지방세연구 전문가 상담요청"], "홈 카드 4장 새 이름·순서");
+  assert.ok(!cardsHtml.includes("bg-hermes-500"), "상담 요청 강조(오렌지 면) 0");
+  for (const m of cardsHtml.matchAll(/href="([^"]+)"/g)) assert.ok(!/[?#]/.test(m[1]), `바로가기 주소에 쿼리·해시 0: ${m[1]}`);
   const heroAt = on.text.indexOf('data-part="shortcut-cards"');
   assert.ok(heroAt > 0, "카드는 본문 안");
 });
@@ -124,20 +128,19 @@ test("a2) 바로가기는 메뉴 - 키 shortcuts만 켜면 도착 키·공개 �
   await restart();
   const home = await page("/");
   assert.equal(home.status, 200);
-  const nav = home.text.split('aria-label="바로가기"')[1].split("</nav>")[0];
-  const hrefs = [...nav.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(hrefs.length, 4, `헤더 바로가기 4개: ${hrefs.join(",")}`);
+  assert.ok(!home.text.includes('aria-label="바로가기"'), "헤더 바로가기 줄 0");
+  const cards = home.text.split('data-part="shortcut-cards"')[1].split("</ul>")[0];
+  const hrefs = [...cards.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(hrefs.length, 4, `홈 바로가기 4개: ${hrefs.join(",")}`);
   assert.equal(hrefs.at(-1), "/experts/request", "상담 요청은 마지막");
   assert.ok(hrefs.includes("/calc") && hrefs.includes("/realestate/weekly"));
   assert.ok(hrefs.some((h) => h === "/brief" || /^\/brief\/\d{4}-\d{2}-\d{2}$/.test(h)), "법령·해석은 /brief 또는 최신 호");
-  const cards = home.text.split('data-part="shortcut-cards"')[1] ?? "";
-  for (const h of hrefs) assert.ok(cards.includes(`href="${h}"`), `홈 카드에도 ${h}`);
   for (const h of hrefs) {
     const res = await page(h);
     assert.equal(res.status, 200, `${h} 200 (404 아님)`);
   }
   const weekly = await page("/realestate/weekly");
-  assert.ok(weekly.text.includes("이번 주 재테크 포인트를 준비하고 있습니다"), "재테크 포인트 준비 중 문구");
+  assert.ok(weekly.text.includes("금주 부동산 재테크를 준비하고 있습니다"), "재테크 포인트 준비 중 문구");
   assert.match(weekly.text, /<meta name="robots" content="[^"]*noindex/, "준비 중 화면은 noindex");
   assert.ok(weekly.text.includes('href="/realestate"'), "부동산재테크 허브 링크");
   assert.match((await page("/calc")).text, /준비하고 있습니다/, "계산기 키 꺼짐 -> 준비 중");
@@ -163,7 +166,7 @@ test("b) 재테크 포인트 - 바로가기 꺼짐·키 꺼짐이면 404, 바로
   await restart();
   const empty = await page("/realestate/weekly");
   assert.equal(empty.status, 200, "바로가기 켜짐 + 공개 호 0 -> 준비 중 200");
-  assert.ok(empty.text.includes("이번 주 재테크 포인트를 준비하고 있습니다"));
+  assert.ok(empty.text.includes("금주 부동산 재테크를 준비하고 있습니다"));
   assert.equal((await page("/realestate/weekly/2001-01")).status, 404, "호별은 404 그대로");
   assert.equal((await page("/realestate/weekly/abc")).status, 404, "주 모양이 틀리면 404");
 

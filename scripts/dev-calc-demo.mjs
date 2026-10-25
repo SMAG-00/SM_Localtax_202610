@@ -9,7 +9,7 @@
 //  - 시험용 룰셋 2090.01 (rules/2026.01.json의 미감수 초안 값) - 기존 W10-a RPC(sign_ruleset -> approve_ruleset)로 서명·승인
 //  - 시험용 환급 판정표 2090.01 (지어낸 문진표) - sign_determination_table -> approve_determination_table
 //  - 시험용 대조 사례(키 demo-calc-*) 취득세 유상·상속 공식 30건씩 + 표본 50건, 재산세 공식 30건 + 표본 50건 -> 대조 실행 -> 게이트 열림
-//  - 홈 바로가기 3개 더: 시험용 기사 3건(부동산재테크) + 이번 주 재테크 포인트 1호 발행 / 시험용 브리핑 1호 승인·발행 / 시험용 전문가 1명 + 고지문·연락 요청 정책(시험용 승인값)
+//  - 홈 바로가기 3개 더: 시험용 기사 3건(부동산재테크) + 금주 부동산 재테크 1호 발행 / 시험용 브리핑 1호 승인·발행 / 시험용 전문가 1명 + 고지문·연락 요청 정책(시험용 승인값)
 //  - 기능 키 켜기 (settings.feature_flags 일부 키만 건드림)
 // 운영 DB에는 닿지 않습니다: 로컬(127.0.0.1/localhost) 주소가 아니면 바로 멈춥니다. .env 파일은 읽지 않습니다.
 import { execFileSync } from "node:child_process";
@@ -301,7 +301,7 @@ if (!(await one("select 1 x from public.realestate_weekly_items where article_id
 }
 let brief = await one("select id, status from public.brief_issues where issue_no = $1", [DEMO_BRIEF_NO]);
 if (!brief) {
-  brief = await one("insert into public.brief_issues (issue_no, title, publish_at, corners, check_report, created_by) values ($1, '시험용 이번 주 법령·해석', now() - interval '1 hour', $2::jsonb, $3::jsonb, $4) returning id, status", [
+  brief = await one("insert into public.brief_issues (issue_no, title, publish_at, corners, check_report, created_by) values ($1, '시험용 금주 지방세 최신법령·유권해석', now() - interval '1 hour', $2::jsonb, $3::jsonb, $4) returning id, status", [
     DEMO_BRIEF_NO, JSON.stringify(DEMO_BRIEF_CORNERS), JSON.stringify(CLEAN_REPORT), ACTOR,
   ]);
 }

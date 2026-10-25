@@ -14,7 +14,7 @@ describe("재테크 포인트 구조화 데이터", () => {
     const node = JSON.parse(weeklyJsonLdContent(issue, "https://news.example"));
     const top = Array.isArray(node) ? node[0] : node;
     expect(top["@type"]).toBe("CollectionPage");
-    expect(top.name).toBe("이번 주 재테크 포인트 2026년 43주차");
+    expect(top.name).toBe("금주 부동산 재테크 2026년 43주차");
     expect(top.url).toBe("https://news.example/realestate/weekly/2026-43");
     expect(top.datePublished).toBe("2026-10-23");
     expect(top.mainEntity.itemListElement.map((i: { position: number; url: string }) => [i.position, i.url])).toEqual([

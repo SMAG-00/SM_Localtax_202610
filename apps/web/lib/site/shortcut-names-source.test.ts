@@ -21,7 +21,9 @@ const rel = (p: string) => path.relative(path.resolve(WEB, "../.."), p).replaceA
 describe("바로가기 이름 글자 (HOME-14)", () => {
   const sources = [...walk(path.join(WEB, "app")), ...walk(path.join(WEB, "components")), ...walk(path.join(WEB, "lib")), ...walk(UI)];
   // 재테크 포인트·법령 해석은 화면 제목·관리 메뉴 이름으로도 쓰이므로(같은 이름의 화면) 이 검사는 계산기·상담 요청 이름만 본다
-  test.each(HEADER_SHORTCUTS.filter((s) => s.key === "calc" || s.key === "expert_request").map((s) => s.label))("'%s' 글자는 Header.tsx 한 곳에만 있다", (label) => {
+  // 상담 요청 이름은 brand.productName으로 만들므로(제품 이름 글자는 brand.ts 한 곳) 소스에서는 고정 글자 조각 '전문가 상담요청'을 찾는다
+  const sourceText = (s: (typeof HEADER_SHORTCUTS)[number]) => (s.key === "expert_request" ? "전문가 상담요청" : s.label);
+  test.each(HEADER_SHORTCUTS.filter((s) => s.key === "calc" || s.key === "expert_request").map(sourceText))("'%s' 글자는 Header.tsx 한 곳에만 있다", (label) => {
     const found = sources.filter((f) => fs.readFileSync(f, "utf8").includes(label)).map(rel);
     expect(found).toEqual(["packages/ui/src/components/shell/Header.tsx"]);
   });

@@ -151,7 +151,7 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 | brief.unsubscribe_route (브리핑 해지 경로 - W10 0차, PRD-02 11장) | `mail_link` · `manage` |
 | tenure.band (구독 기간 구간 - W10 0차, PRD-02 11장) | `under_30` · `30_to_90` · `over_90` |
 | review.result (검수 결과 - W10 0차, PRD-02 11장) | `approved` · `rejected` · `held` |
-| shortcut.placement (바로가기 위치 - W10-i, GROW·HOME-12·13) | `header` · `home` |
+| shortcut.placement (바로가기 위치 - W10-i, GROW·HOME-13. 헤더 줄은 PO 2026-10-26에 없앴습니다) | `home` |
 | shortcut.key (바로가기 도착 키 - W10-i, HEADER_SHORTCUTS) | `calc` · `expert_request` · `brief_weekly` · `realestate_weekly` |
 | campaign.cta (캠페인 버튼 종류 - W10-i, GROW-05) | `primary` · `secondary` |
 | review.duration_band (검수 소요 구간 - W10 0차, PRD-02 11장) | `under_15` · `15_to_60` · `over_60` |

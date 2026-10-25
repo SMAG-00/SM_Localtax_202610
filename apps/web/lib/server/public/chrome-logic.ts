@@ -6,7 +6,6 @@ import { brand, type LocalTopic } from "@ltr/ui";
 import { companyFooter, type CompanyFooter } from "@/lib/policy/docs";
 import { LOCAL_TOPICS, POLICY_LINKS, SECTION_INFO, SECTION_KEYS, UTILITY_LINKS, categoryHref, isBlockedPath, localTopicHref, type Features, type SectionKey } from "./constants";
 import type { PublicCategoryRow } from "./rows";
-import { buildShortcuts, NO_SHORTCUT_INPUTS, type ShortcutInputs } from "./shortcuts-logic";
 import { CLOSED_FEATURES } from "./settings";
 
 export interface NavLink {
@@ -23,8 +22,6 @@ export interface SectionMenu extends NavLink {
 export interface SiteChrome {
   sections: SectionMenu[];
   utilities: NavLink[];
-  /** 바로가기 줄 (HOME-12) - 열린 것만, 화면 순서. 키 shortcuts가 꺼지면 빈 목록 */
-  shortcuts: NavLink[];
   policyLinks: NavLink[];
   /** 바닥글 링크 — 정책 · 약관 · 측정 거부 · 계정 (W2-e 6.4). 기능 키(실제로 열린 것)가 닫으면 0, 측정 거부만 항상 있다 */
   footerLinks: NavLink[];
@@ -82,9 +79,6 @@ export function buildChrome(
   features: Features,
   topicCounts: ReadonlyMap<LocalTopic, number> = new Map(),
   companyInfo: unknown = null,
-  shortcutInputs: ShortcutInputs = NO_SHORTCUT_INPUTS,
-  shortcutOrder?: unknown,
-  interests: readonly string[] = [],
 ): SiteChrome {
   const sections = SECTION_KEYS.map((key): SectionMenu => {
     const children: NavLink[] = subsectionLinks(key, categories, counts, topicCounts);
@@ -94,7 +88,6 @@ export function buildChrome(
   return {
     sections,
     utilities: UTILITY_LINKS.filter((u) => features[u.key]).map((u) => ({ key: u.key, label: u.label, href: u.href })),
-    shortcuts: buildShortcuts(features, shortcutInputs, shortcutOrder, interests),
     policyLinks: POLICY_LINKS.filter((p) => features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
     footerLinks: buildFooterLinks(features),
     company: companyFooter(companyInfo, brand.mastheadName),

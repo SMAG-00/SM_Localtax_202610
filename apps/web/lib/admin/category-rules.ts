@@ -11,7 +11,7 @@ type Obj = Record<string, unknown>;
 /** DB check 제약과 같은 주소 모양 */
 export const CATEGORY_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 /**
- * 분야별로 하위 분야 주소로 쓸 수 없는 이름 — 같은 자리의 화면 경로와 겹친다 (realestate/weekly = /realestate/weekly 이번 주 재테크 포인트, W10-i).
+ * 분야별로 하위 분야 주소로 쓸 수 없는 이름 — 같은 자리의 화면 경로와 겹친다 (realestate/weekly = /realestate/weekly 금주 부동산 재테크, W10-i).
  * 지자체뉴스(local)의 weekly(금주 핫뉴스)는 기존 하위 분야라 막지 않는다. DB 제약 categories_slug_not_reserved와 같다
  */
 export const RESERVED_CATEGORY_SLUGS: readonly { section: string; slug: string }[] = [{ section: "realestate", slug: "weekly" }];

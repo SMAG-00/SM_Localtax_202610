@@ -10,7 +10,7 @@ import { PathBreadcrumbJsonLd } from "@/components/site/PathBreadcrumbJsonLd";
 import { siteIndexing, siteUrl } from "@/lib/server/env";
 import { defaultRobots } from "@/lib/seo/robots-meta";
 import { closedChrome, getSiteChrome, readPublic, type SiteChrome } from "@/lib/server/public";
-import { FOOTER_DISCLAIMER, footerLinks, headerShortcuts, headerSubmenus, headerUtilityKeys } from "@/lib/site/chrome-view";
+import { FOOTER_DISCLAIMER, footerLinks, headerSubmenus, headerUtilityKeys } from "@/lib/site/chrome-view";
 
 // 공개 화면 틀 (HOME-02 · HELP-05 · FND-09 · UX-06) — 건너뛰기 링크 · 헤더(상단 4대 분야와 하위 메뉴 + 공개 승인된 유틸 메뉴) · 본문 · 바닥글(공개 승인된 정책 링크).
 //  · 사이트 안 링크는 Next.js 링크(새로고침 없는 화면 전환). 백오피스(/admin)·견본(/_design)은 이 틀 밖이라 공개 헤더·바닥글이 없다.
@@ -40,7 +40,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         본문으로 건너뛰기
       </a>
       <PathBreadcrumbJsonLd site={siteUrl()} />
-      <SiteHeader utilities={headerUtilityKeys(c.utilities)} submenus={headerSubmenus(c.sections)} shortcuts={headerShortcuts(c.shortcuts)} />
+      <SiteHeader utilities={headerUtilityKeys(c.utilities)} submenus={headerSubmenus(c.sections)} />
       {/* 본문은 화면 한 장 높이 이상 — 짧은 화면에서도 바닥글(저작권·열린보도원칙 문단 등 긴 글)이 첫 화면에 들어오지 않는다 (R1 첫 화면 글자 수) */}
       <main id="main" tabIndex={-1} className="min-h-screen focus:outline-none">
         {children}

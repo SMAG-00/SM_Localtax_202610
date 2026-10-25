@@ -7,9 +7,9 @@ import { nowIso, serviceDb } from "@/lib/server/articles/service";
 import { dbError } from "@/lib/server/http";
 import { isoWeekKst, weekLabel } from "@/lib/server/public/realestate-weekly-logic";
 
-// 이번 주 재테크 포인트 (/admin/realestate-weekly, PR-15) - 기자·편집 책임자가 호를 만들고 기사 3~7건과 세금 관점 한 줄을 넣고, 편집 책임자가 승인 발행합니다.
+// 금주 부동산 재테크 (/admin/realestate-weekly, PR-15) - 기자·편집 책임자가 호를 만들고 기사 3~7건과 세금 관점 한 줄을 넣고, 편집 책임자가 승인 발행합니다.
 // 발행 권고 시각은 금요일 10:00(한국 시각)이며 발행은 편집자가 직접 합니다(정시 작업 없음).
-export const metadata: Metadata = { title: "이번 주 재테크 포인트" };
+export const metadata: Metadata = { title: "금주 부동산 재테크" };
 export const dynamic = "force-dynamic";
 
 const STATUS_LABEL: Record<string, string> = { draft: "초안", approved: "승인됨", published: "발행됨", withdrawn: "철회됨" };
@@ -24,14 +24,14 @@ export default async function RealestateWeeklyAdminPage() {
     db.from("realestate_weekly_issues").select("id, week, status, edited_by, published_at").order("week", { ascending: false }).limit(30),
     db.from("realestate_weekly_items").select("issue_id, article_id, rank, tax_items, point").order("rank"),
   ]);
-  for (const r of [issues, items]) if (r.error) throw dbError(r.error, "이번 주 재테크 포인트 화면");
+  for (const r of [issues, items]) if (r.error) throw dbError(r.error, "금주 부동산 재테크 화면");
   const byIssue = new Map<number, Item[]>();
   for (const it of (items.data ?? []) as Item[]) byIssue.set(it.issue_id, [...(byIssue.get(it.issue_id) ?? []), it]);
   const canPublish = can(viewer, "weekly_point.publish");
   const list = (issues.data ?? []) as Issue[];
   return (
     <div className="space-y-8">
-      <PageTitle title="이번 주 재테크 포인트" />
+      <PageTitle title="금주 부동산 재테크" />
       <Panel id="weekly-new" title="새 호">
         <WeeklyIssueForm defaultWeek={isoWeekKst(new Date(nowIso()))} />
       </Panel>

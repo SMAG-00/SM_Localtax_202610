@@ -1,10 +1,10 @@
 // 바로가기 열림 판정 (HOME-12·13·14, W10-i 설계 1장 i1 · 4장 결정 12) - 순수 함수 (시험 shortcuts-logic.test.ts)
 //  · 바로가기는 메뉴입니다 (PO 2026-10-26): 키 shortcuts가 꺼지면 0개 (1단계 헤더·홈과 같다), 켜지면 도착 키·발행된 호와 상관없이 항상 4개.
 //    도착 화면이 아직 닫혀 있으면 그 화면이 404가 아니라 '준비 중' 안내를 보여준다 (각 도착 page)
-//  · 주소: 이번 주 법령·해석은 공개 호가 있으면 최신 호(/brief/yyyy-mm-dd), 없으면 /brief
+//  · 주소: 금주 지방세 최신법령·유권해석은 공개 호가 있으면 최신 호(/brief/yyyy-mm-dd), 없으면 /brief
 //  · 도착 열림(openDestinations)은 바로가기와 별개로, 캠페인 랜딩(/go)이 '실제로 열린 도착'만 쓰려고 따로 계산한다:
 //    calc = 키 calc / expert_request = 키 expert_requests / brief_weekly = 키 brief_regular + 공개 호 1건 이상(주소는 최신 호) / realestate_weekly = 키 realestate_weekly + 발행된 호 1건 이상
-//  · 이름 글자는 @ltr/ui HEADER_SHORTCUTS에만 있다. 순서는 설정 shortcut_order · 회원 관심 분야 · 상담 요청 마지막 (lib/site/shortcut-order.ts)
+//  · 이름 글자는 @ltr/ui HEADER_SHORTCUTS에만 있다. 순서는 설정 shortcut_order · 회원 관심 분야 · 상담 요청 마지막 (강조 없음, lib/site/shortcut-order.ts)
 import { HEADER_SHORTCUTS } from "@ltr/ui";
 import { orderShortcuts, type ShortcutKey } from "@/lib/site/shortcut-order";
 import type { Features } from "./constants";
@@ -12,7 +12,7 @@ import type { Features } from "./constants";
 export interface ShortcutInputs {
   /** 최신 브리핑 호 주소 (/brief/yyyy-mm-dd) - 공개 호가 없으면 null */
   briefHref: string | null;
-  /** 발행된 이번 주 재테크 포인트 호가 있는가 */
+  /** 발행된 금주 부동산 재테크 호가 있는가 */
   weeklyOpen: boolean;
 }
 export const NO_SHORTCUT_INPUTS: ShortcutInputs = { briefHref: null, weeklyOpen: false };

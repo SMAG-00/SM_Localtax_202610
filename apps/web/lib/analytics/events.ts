@@ -74,7 +74,7 @@ export const EVENT_NAMES = [
   "order_paid",
   "certificate_issued",
   "training_quote_requested",
-  // W10-i (docs/dev/W10-i_설계.md 3장) - 바로가기 클릭 · 이번 주 재테크 포인트 열람 · 캠페인 랜딩 열람 · 캠페인 버튼 클릭. 캠페인 태그는 등록 값만, 클릭 ID·자유 글자 칸 없음
+  // W10-i (docs/dev/W10-i_설계.md 3장) - 바로가기 클릭 · 금주 부동산 재테크 열람 · 캠페인 랜딩 열람 · 캠페인 버튼 클릭. 캠페인 태그는 등록 값만, 클릭 ID·자유 글자 칸 없음
   "shortcut_clicked",
   "realestate_weekly_viewed",
   "campaign_landing_viewed",
@@ -120,7 +120,7 @@ export const PROP_VALUES = {
   "dev_method_viewed.method": ["redevelopment", "reconstruction", "small-scale", "public", "trust", "renewal", "rapid-planning"],
   // W10 0차 - PRD-02 11장 이벤트 속성의 값 목록 (W2-c 설계 2.3)
   // W10-i - 바로가기 위치·도착 키(HEADER_SHORTCUTS)와 캠페인 버튼 종류
-  "shortcut.placement": ["header", "home"],
+  "shortcut.placement": ["home"],
   "shortcut.key": ["calc", "expert_request", "brief_weekly", "realestate_weekly"],
   "campaign.cta": ["primary", "secondary"],
   "calc.tool": ["acquisition", "holding", "refund", "compare"],

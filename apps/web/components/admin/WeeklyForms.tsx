@@ -6,7 +6,7 @@ import { DarkButton } from "@ltr/ui";
 import { adminApi, apiErrorDetails, apiErrorMessage } from "@/lib/admin/api-client";
 import { ErrorSummary, StatusNote } from "./fields";
 
-// 이번 주 재테크 포인트 백오피스 입력 (PR-15) - 세금 관점 한 줄은 사람이 직접 쓴다. 값 검사는 서버/DB.
+// 금주 부동산 재테크 백오피스 입력 (PR-15) - 세금 관점 한 줄은 사람이 직접 쓴다. 값 검사는 서버/DB.
 const BOX = "min-h-11 w-full rounded-lg border border-navy-200 px-3 text-[15px]";
 
 function useSend() {

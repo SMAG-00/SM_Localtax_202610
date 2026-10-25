@@ -127,7 +127,7 @@ export const FEATURE_KEYS = [
   // 바닥글 이전 (PO 요청 2026-10-25) - 옛 사이트 정책 링크 둘. 정책 문서 게시본이 있어야 켜진다 (마이그레이션 103, 꺼짐으로 시작)
   "page_youth_protection",
   "page_copyright_policy",
-  // W10-i - 헤더·홈 바로가기(HOME-12·13) · 이번 주 재테크 포인트 /realestate/weekly(PR-15 - 자본시장법 감수 기록 뒤) · 캠페인 랜딩 /go/*(GROW-03 - 광고 표시 검토 뒤). 마이그레이션 105, 모두 꺼짐으로 시작
+  // W10-i - 헤더·홈 바로가기(HOME-12·13) · 금주 부동산 재테크 /realestate/weekly(PR-15 - 자본시장법 감수 기록 뒤) · 캠페인 랜딩 /go/*(GROW-03 - 광고 표시 검토 뒤). 마이그레이션 105, 모두 꺼짐으로 시작
   "shortcuts",
   "realestate_weekly",
   "campaign_landings",

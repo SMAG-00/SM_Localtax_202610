@@ -1,5 +1,4 @@
 import { brand } from "../../brand";
-import { cx } from "../base";
 import { UiLink } from "../link";
 import { HeaderNav, type HeaderNavLink } from "./HeaderNav";
 
@@ -7,7 +6,7 @@ import { HeaderNav, type HeaderNavLink } from "./HeaderNav";
 export type HeaderSectionKey = "tax" | "realestate" | "finance" | "local";
 /** 유틸 메뉴 항목 */
 export type HeaderUtilityKey = "calc" | "experts" | "store" | "edu" | "search";
-/** 바로가기 줄 항목 키 (HOME-12) */
+/** 바로가기 항목 키 (HOME-13, 홈 바로가기 블록) */
 export type HeaderShortcutKey = "calc" | "expert_request" | "brief_weekly" | "realestate_weekly";
 
 /** 상단 메뉴 — 정확히 4개, 이 순서 (PRD_최종 §4.1, HOME-02) */
@@ -28,21 +27,20 @@ export const HEADER_UTILITIES: ReadonlyArray<{ key: HeaderUtilityKey; label: str
 ];
 
 /**
- * 바로가기 줄 — 키·글자·기본 주소 표 하나 (HOME-12·14). 이름 글자는 여기에만 있고 다른 파일에 다시 쓰지 않는다. 계산기는 "AI 계산기"라 부르지 않는다.
+ * 바로가기 — 키·글자·기본 주소 표 하나 (HOME-13·14). 이름 글자는 여기에만 있고 다른 파일에 다시 쓰지 않는다. 계산기는 "AI 계산기"라 부르지 않는다.
+ * 화면은 홈의 바로가기 블록 하나뿐입니다 (헤더 줄 없음 - PO 2026-10-26). 제품 이름은 brand.productName에서 만들어 이 파일에 다시 쓰지 않는다.
  * `brief_weekly`의 실제 주소는 최신 브리핑 호(공개 화면 틀이 채움) - 여기 값은 호가 없을 때의 목록 주소.
  */
 export const HEADER_SHORTCUTS: ReadonlyArray<{ key: HeaderShortcutKey; label: string; href: string }> = [
   { key: "calc", label: "부동산 세금 계산기", href: "/calc" },
-  { key: "realestate_weekly", label: "이번 주 재테크 포인트", href: "/realestate/weekly" },
-  { key: "brief_weekly", label: "이번 주 법령·해석", href: "/brief" },
-  { key: "expert_request", label: "SM 전문가 상담 요청", href: "/experts/request" },
+  { key: "realestate_weekly", label: "금주 부동산 재테크", href: "/realestate/weekly" },
+  { key: "brief_weekly", label: "금주 지방세 최신법령·유권해석", href: "/brief" },
+  { key: "expert_request", label: `(가칭)${brand.productName} 전문가 상담요청`, href: "/experts/request" },
 ];
 
 export type HeaderShortcut = { key: HeaderShortcutKey; label: string; href: string };
 
 export type HeaderProps = {
-  /** 바로가기 줄 — 열린 항목만(공개 화면 틀이 기능 키·공개 호로 계산). 없거나 비면 줄 요소 0. `calc`가 있으면 유틸 메뉴의 계산기 링크는 뺀다(같은 주소 링크 2개 금지) */
-  shortcuts?: readonly HeaderShortcut[];
   /** 유틸 메뉴 자리 — 기능 플래그가 켜진(공개 승인된) 항목. 넘긴 순서와 상관없이 HOME-02 순서로 보이고, 없으면 유틸 메뉴 요소 0 */
   utilities?: readonly HeaderUtilityKey[];
   /** 지금 보고 있는 분야 — aria-current="page" */
@@ -61,16 +59,9 @@ export type HeaderProps = {
  * 버튼 rounded-lg hermes-500 + navy-900 굵은 글자. 유틸 메뉴 자리를 더했다 (DS-02). 회사·정책 링크와 AI 도우미는 헤더에 두지 않는다 (HELP-05·HOME-02).
  * 화면 순서: 워드마크 → 분야 메뉴 → 유틸 메뉴 → 계정 버튼 (모바일은 워드마크 · 계정 버튼 · [메뉴] 한 줄, 그 아래 펼친 메뉴).
  */
-export function Header({ utilities = [], currentSection, account, submenus = {}, shortcuts = [] }: HeaderProps) {
+export function Header({ utilities = [], currentSection, account, submenus = {} }: HeaderProps) {
   const enabled = new Set(utilities);
-  // 넘겨받은 순서(관리자 설정·관심 분야 반영)를 그대로 쓰되 SM 전문가 상담 요청은 항상 마지막
-  const shortcutAll = shortcuts.flatMap((s) => {
-    const d = HEADER_SHORTCUTS.find((x) => x.key === s.key);
-    return d ? [{ key: d.key, label: d.label, href: s.href }] : [];
-  });
-  const shortcutRow = [...shortcutAll.filter((s) => s.key !== "expert_request"), ...shortcutAll.filter((s) => s.key === "expert_request")];
-  const hasShortcutCalc = shortcutRow.some((s) => s.key === "calc");
-  const utilityLinks = HEADER_UTILITIES.filter((u) => enabled.has(u.key) && !(hasShortcutCalc && u.key === "calc"));
+  const utilityLinks = HEADER_UTILITIES.filter((u) => enabled.has(u.key));
   const sections = HEADER_SECTIONS.map((s) => ({ ...s, children: submenus[s.key] ?? [] }));
   return (
     <header data-ui="header" className="bg-navy-800">
@@ -92,25 +83,6 @@ export function Header({ utilities = [], currentSection, account, submenus = {},
           </UiLink>
         )}
       </div>
-      {shortcutRow.length > 0 && (
-        <nav aria-label="바로가기" data-ui="header-shortcuts" className="border-t border-navy-700">
-          <ul className="mx-auto grid max-w-5xl grid-cols-2 gap-x-3 px-4 py-1 lg:flex lg:flex-wrap lg:gap-x-5">
-            {shortcutRow.map((s) => (
-              <li key={s.key}>
-                <UiLink
-                  href={s.href}
-                  className={cx(
-                    "inline-flex min-h-11 items-center text-[14px] font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400",
-                    s.key === "expert_request" ? "rounded-lg bg-hermes-500 px-3 font-bold text-navy-900 hover:bg-hermes-600" : "text-hermes-200 hover:text-white",
-                  )}
-                >
-                  {s.label}
-                </UiLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
     </header>
   );
 }
