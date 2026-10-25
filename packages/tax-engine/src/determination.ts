@@ -183,3 +183,210 @@ export function evaluateDeterminationTable(table: DeterminationTable, facts: Fac
   });
   return { kind: 'refund', tableVersion: table.version, results };
 }
+
+// ─────────────────────────────────────────────────────────────
+// W11-a a2 - 결론형(conclusion) · 목록 집계형(list_count) 모양 (PRD-03 FAM-05 · PR-12 · 6장 요건 사전)
+// 기존 두 모양(reduction · refund)과 평가 함수는 그대로다. 새 모양도 세법 값이 없다 - 비교 연산만 안다.
+//  · 결론형: 필수 사실(required)이 하나라도 없으면('모르겠어요') 결론 없이 '요건 확인 필요'와 빠진 항목을 돌려준다 - 기본 가정으로 채우지 않는다.
+//    필수 사실이 다 있으면 순서 있는 규칙의 처음 맞는 결론. 규칙 판단이 모름(선택 사실 없음·사람 확인)이면 그 규칙에서 멈추고 '요건 확인 필요'.
+//  · 목록 집계형: 보유 목록의 항목마다 필수 칸이 있어야 하고, 조건에 맞는 항목 수를 센 뒤 개수 규칙으로 결론을 낸다 (주택 수 판정).
+//  · 판정표 종류(kind)는 원인·목적마다 따로다 - 상속과 증여는 같은 행을 나눠 쓰지 못한다 (assertSeparateOrigins).
+// ─────────────────────────────────────────────────────────────
+export const CONCLUSION_KINDS = ['trust_taxpayer', 'redevelopment_right', 'house_count_inheritance', 'house_count_gift', 'redevelopment_tax', 'trust_acquisition'] as const;
+export const LIST_COUNT_KINDS = ['house_count'] as const;
+/** W11 판정표 종류 7종 (마이그레이션 112 determination_tables.kind와 같은 순서) */
+export const W11_DETERMINATION_KINDS = ['house_count', 'trust_taxpayer', 'redevelopment_right', 'house_count_inheritance', 'house_count_gift', 'redevelopment_tax', 'trust_acquisition'] as const;
+export type ConclusionKind = (typeof CONCLUSION_KINDS)[number];
+
+const requiredFactSchema = z.object({ id: key, label: text }).strict();
+const conclusionRuleSchema = z
+  .object({ id: key, label: text.optional(), when: conditionSchema, conclusion: text, basis: text.optional() })
+  .strict();
+
+export const ConclusionTableSchema = z
+  .object({
+    kind: z.enum(CONCLUSION_KINDS),
+    ...base,
+    required: z.array(requiredFactSchema).min(1).max(30),
+    rules: z.array(conclusionRuleSchema).min(1).max(50),
+    fallback: text.optional(),
+  })
+  .strict()
+  .superRefine((t, ctx) => {
+    if (!uniqueIds(t.required.map((r) => r.id))) ctx.addIssue({ code: 'custom', message: '필수 사실 id가 겹친다' });
+    if (!uniqueIds(t.rules.map((r) => r.id))) ctx.addIssue({ code: 'custom', message: '규칙 id가 겹친다' });
+  });
+export type ConclusionTable = z.infer<typeof ConclusionTableSchema>;
+
+const countOps = z.enum(['eq', 'lt', 'lte', 'gt', 'gte']);
+export const ListCountTableSchema = z
+  .object({
+    kind: z.literal('house_count'),
+    ...base,
+    /** 목록의 항목마다 있어야 하는 칸 */
+    entry_required: z.array(requiredFactSchema).min(1).max(20),
+    /** 세는 조건 (항목의 칸 + 목록 밖 사실을 읽는다) */
+    count_when: conditionSchema,
+    groups: z.array(z.object({ id: key, label: text, when: conditionSchema }).strict()).max(20).optional(),
+    result_rules: z.array(z.object({ id: key, op: countOps, value: z.number().int().min(0).max(1000), conclusion: text, basis: text.optional() }).strict()).min(1).max(20),
+    fallback: text.optional(),
+  })
+  .strict()
+  .superRefine((t, ctx) => {
+    if (!uniqueIds(t.entry_required.map((r) => r.id))) ctx.addIssue({ code: 'custom', message: '항목 필수 칸 id가 겹친다' });
+    if (!uniqueIds(t.result_rules.map((r) => r.id))) ctx.addIssue({ code: 'custom', message: '개수 규칙 id가 겹친다' });
+    if (t.groups && !uniqueIds(t.groups.map((g) => g.id))) ctx.addIssue({ code: 'custom', message: '묶음 id가 겹친다' });
+  });
+export type ListCountTable = z.infer<typeof ListCountTableSchema>;
+export type W11DeterminationTable = ConclusionTable | ListCountTable;
+
+/** 종류 이름에 맞는 모양으로만 파싱한다 - 종류와 본문 모양이 다르면 throw (예: house_count_gift에 목록 집계형 본문) */
+export function parseTableByKind(kind: string, raw: unknown): DeterminationTable | W11DeterminationTable {
+  if (kind === 'reduction' || kind === 'refund') {
+    const t = parseDeterminationTable(raw);
+    if (t.kind !== kind) throw new Error(`판정표 종류(${kind})와 본문 종류(${t.kind})가 다르다`);
+    return t;
+  }
+  if ((LIST_COUNT_KINDS as readonly string[]).includes(kind)) {
+    const t = ListCountTableSchema.parse(raw);
+    if (t.kind !== kind) throw new Error(`판정표 종류(${kind})와 본문 종류(${t.kind})가 다르다`);
+    return t;
+  }
+  if ((CONCLUSION_KINDS as readonly string[]).includes(kind)) {
+    const t = ConclusionTableSchema.parse(raw);
+    if (t.kind !== kind) throw new Error(`판정표 종류(${kind})와 본문 종류(${t.kind})가 다르다`);
+    return t;
+  }
+  throw new Error(`모르는 판정표 종류: ${kind}`);
+}
+
+export type ConclusionStatus = '결론' | '요건 확인 필요' | '표에 없는 경우';
+export interface MissingItem {
+  readonly id: string;
+  readonly label: string;
+}
+export interface ConclusionText {
+  /** 근거가 된 규칙 id (fallback이면 null) */
+  readonly ruleId: string | null;
+  readonly text: string;
+  readonly basis?: string;
+}
+export interface ConclusionOutcome {
+  readonly kind: 'conclusion';
+  readonly tableKind: ConclusionKind;
+  readonly tableVersion: string;
+  readonly status: ConclusionStatus;
+  readonly conclusion: ConclusionText | null;
+  /** 결론을 못 낸 이유가 입력 부족일 때 빠진 항목 */
+  readonly missing: readonly MissingItem[];
+}
+export interface ListCountOutcome {
+  readonly kind: 'list_count';
+  readonly tableKind: 'house_count';
+  readonly tableVersion: string;
+  readonly status: ConclusionStatus;
+  /** 센 개수 - 입력이 부족하면 null (일부만 센 값을 내지 않는다) */
+  readonly count: number | null;
+  readonly groups: readonly { readonly id: string; readonly label: string; readonly count: number }[] | null;
+  readonly conclusion: ConclusionText | null;
+  readonly missing: readonly MissingItem[];
+}
+
+function conditionFields(c: Condition, out: Set<string> = new Set()): Set<string> {
+  switch (c.op) {
+    case 'manual':
+      break;
+    case 'all':
+    case 'any':
+      c.conds.forEach((x) => conditionFields(x, out));
+      break;
+    case 'not':
+      conditionFields(c.cond, out);
+      break;
+    case 'in':
+      out.add(c.field);
+      break;
+    default:
+      out.add(c.field);
+      if (typeof c.value === 'object') out.add(c.value.field);
+  }
+  return out;
+}
+
+/** 결론형 평가. 필수 사실이 없으면('모르겠어요') 결론 0 + 빠진 항목. 입력 객체는 바꾸지 않는다. */
+export function evaluateConclusionTable(table: ConclusionTable, facts: Facts): ConclusionOutcome {
+  const head = { kind: 'conclusion', tableKind: table.kind, tableVersion: table.version } as const;
+  const missing = table.required.filter((r) => facts[r.id] === undefined).map((r) => ({ id: r.id, label: r.label }));
+  if (missing.length > 0) return { ...head, status: '요건 확인 필요', conclusion: null, missing };
+  for (const rule of table.rules) {
+    const t = evalCondition(rule.when, facts);
+    if (t === 'yes') return { ...head, status: '결론', conclusion: { ruleId: rule.id, text: rule.conclusion, ...(rule.basis ? { basis: rule.basis } : {}) }, missing: [] };
+    if (t === 'unknown') {
+      const absent = [...conditionFields(rule.when)].filter((f) => facts[f] === undefined);
+      const items = absent.length > 0 ? absent.map((f) => ({ id: f, label: f })) : [{ id: rule.id, label: rule.label ?? '직접 확인 필요' }];
+      return { ...head, status: '요건 확인 필요', conclusion: null, missing: items };
+    }
+  }
+  if (table.fallback) return { ...head, status: '결론', conclusion: { ruleId: null, text: table.fallback }, missing: [] };
+  return { ...head, status: '표에 없는 경우', conclusion: null, missing: [] };
+}
+
+function countCompare(op: 'eq' | 'lt' | 'lte' | 'gt' | 'gte', n: number, v: number): boolean {
+  return op === 'eq' ? n === v : op === 'lt' ? n < v : op === 'lte' ? n <= v : op === 'gt' ? n > v : n >= v;
+}
+
+/**
+ * 목록 집계형 평가. entries가 없으면('모르겠어요') 개수 0이 아니라 '요건 확인 필요'다 - 빈 목록([])은 "하나도 없음"이라는 답이다.
+ * 항목마다 필수 칸이 있어야 센다. 일부라도 모르면 개수를 내지 않는다 (일부만 센 값이 결론이 되면 안 된다).
+ */
+export function evaluateListCountTable(table: ListCountTable, entries: readonly Facts[] | undefined, outer: Facts = {}): ListCountOutcome {
+  const head = { kind: 'list_count', tableKind: table.kind, tableVersion: table.version } as const;
+  if (entries === undefined) return { ...head, status: '요건 확인 필요', count: null, groups: null, conclusion: null, missing: [{ id: 'entries', label: '보유 목록' }] };
+  const missing: MissingItem[] = [];
+  let count = 0;
+  const groupCounts = new Map((table.groups ?? []).map((g) => [g.id, 0]));
+  entries.forEach((entry, i) => {
+    const lacking = table.entry_required.filter((r) => entry[r.id] === undefined);
+    for (const r of lacking) missing.push({ id: `entries.${i}.${r.id}`, label: `${i + 1}번째 항목: ${r.label}` });
+    if (lacking.length > 0) return;
+    const merged: Facts = { ...outer, ...entry };
+    const counted = evalCondition(table.count_when, merged);
+    if (counted === 'unknown') missing.push({ id: `entries.${i}.count_when`, label: `${i + 1}번째 항목: 직접 확인 필요` });
+    else if (counted === 'yes') count += 1;
+    for (const g of table.groups ?? []) {
+      const r = evalCondition(g.when, merged);
+      if (r === 'unknown') missing.push({ id: `entries.${i}.${g.id}`, label: `${i + 1}번째 항목: ${g.label} 직접 확인 필요` });
+      else if (r === 'yes') groupCounts.set(g.id, (groupCounts.get(g.id) ?? 0) + 1);
+    }
+  });
+  if (missing.length > 0) return { ...head, status: '요건 확인 필요', count: null, groups: null, conclusion: null, missing };
+  const groups = (table.groups ?? []).map((g) => ({ id: g.id, label: g.label, count: groupCounts.get(g.id) ?? 0 }));
+  const hit = table.result_rules.find((r) => countCompare(r.op, count, r.value));
+  if (hit) return { ...head, status: '결론', count, groups, conclusion: { ruleId: hit.id, text: hit.conclusion, ...(hit.basis ? { basis: hit.basis } : {}) }, missing: [] };
+  if (table.fallback) return { ...head, status: '결론', count, groups, conclusion: { ruleId: null, text: table.fallback }, missing: [] };
+  return { ...head, status: '표에 없는 경우', count, groups, conclusion: null, missing: [] };
+}
+
+function canonical(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
+  if (v !== null && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${canonical(o[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(v);
+}
+
+/** a의 규칙 가운데 b에도 같은 행(조건·결론이 같다. id·라벨은 무시)이 있는 규칙 id 목록 */
+export function sharedRuleRows(a: ConclusionTable, b: ConclusionTable): string[] {
+  const sig = (r: ConclusionTable['rules'][number]) => canonical({ when: r.when, conclusion: r.conclusion });
+  const inB = new Set(b.rules.map(sig));
+  return a.rules.filter((r) => inB.has(sig(r))).map((r) => r.id);
+}
+
+/** 상속 주택 수 판정표와 증여 주택 수 판정표는 다른 종류이고 같은 행을 나눠 쓰지 못한다 (FAM-05). 어기면 throw */
+export function assertSeparateOrigins(inheritance: ConclusionTable, gift: ConclusionTable): void {
+  if (inheritance.kind !== 'house_count_inheritance') throw new Error(`상속 판정표 종류가 아니다: ${inheritance.kind}`);
+  if (gift.kind !== 'house_count_gift') throw new Error(`증여 판정표 종류가 아니다: ${gift.kind}`);
+  const shared = sharedRuleRows(inheritance, gift);
+  if (shared.length > 0) throw new Error(`상속과 증여 판정표가 같은 행을 나눠 쓴다: ${shared.join(', ')}`);
+}
