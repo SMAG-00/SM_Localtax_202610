@@ -19,6 +19,8 @@
     "apps/web/lib/calc/tool-link.ts",
     "apps/web/lib/server/public/calc-tools.ts",
     "apps/web/lib/admin/menu.ts",
+    "e2e/w11-acceptance.test.mjs",
+    "scripts/ci/db-e2e.sh",
     "packages/db/tests/admin-rights.test.mjs",
     "apps/web/next.config.ts",
     "apps/web/package.json",
