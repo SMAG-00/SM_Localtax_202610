@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { parseDeterminationTable, parseRuleset, type DeterminationTable, type Ruleset } from "@ltr/tax-engine";
 import { ENGINE_HASH } from "@/lib/accuracy/engine";
+import { IGT_ENGINE_HASH } from "@/lib/igt/engine-hash";
 import type { GateRow } from "@/lib/accuracy/gate";
 import type { ToolContext } from "@/lib/calc/tool-link";
 import type { WetaxLinkRow } from "@/lib/calc/wetax";
@@ -91,6 +92,8 @@ export const getCalcTools = cache(async (): Promise<CalcTools | null> => {
     calc_acquisition: f.calc_acquisition,
     calc_holding: f.calc_holding,
     calc_refund: f.calc_refund,
+    calc_igt_gift: f.calc_igt_gift,
+    calc_igt_inheritance: f.calc_igt_inheritance,
     calc_compare: f.calc_compare,
     calc_reduction: f.calc_reduction,
     calc_accuracy: f.calc_accuracy,
@@ -98,7 +101,7 @@ export const getCalcTools = cache(async (): Promise<CalcTools | null> => {
   };
   return {
     // 룰셋이 없으면 세액 계산기는 모두 닫힌다(게이트 뷰도 활성 룰셋이 없으면 닫혀 있다) - 환급 판정표는 서명된 표가 있고 문진표가 있어야 열린다
-    context: { features, gateRows: gate, engineHash: ENGINE_HASH, refundTableActive: !!refundTable && (refundTable.questions?.length ?? 0) > 0 },
+    context: { features, gateRows: gate, engineHash: ENGINE_HASH, igtEngineHash: IGT_ENGINE_HASH, refundTableActive: !!refundTable && (refundTable.questions?.length ?? 0) > 0 },
     features,
     gateRows: gate,
     engineHash: ENGINE_HASH,

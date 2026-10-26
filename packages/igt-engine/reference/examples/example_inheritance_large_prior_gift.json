@@ -1,0 +1,29 @@
+{
+  "_설명": "상속재산 30억(부동산 20억·금융 8억·보험금 2억) + 자녀 사전증여 3억(기납부 4천만) — 배우자·자녀 2명, 채무 2억",
+  "type": "inheritance",
+  "death_date": "2026-06-20",
+  "decedent_resident": true,
+  "assets": {
+    "real_estate": 2000000000,
+    "financial": 800000000
+  },
+  "deemed_assets": {
+    "insurance": 200000000
+  },
+  "debts": 200000000,
+  "public_charges": 5000000,
+  "funeral_expenses": 10000000,
+  "heirs": {
+    "spouse_exists": true,
+    "children_count": 2
+  },
+  "spouse_actual_inheritance": 1200000000,
+  "net_financial_assets": 800000000,
+  "prior_gifts": {
+    "to_heirs_10y": [
+      { "value": 300000000, "taxable_base": 250000000, "output_tax": 40000000 }
+    ]
+  },
+  "bequests_to_non_heirs": 0,
+  "filed_on_time": true
+}

@@ -1,4 +1,5 @@
 import { causeOpen, groupOpen, type Cause, type GateRow } from "@/lib/accuracy/gate";
+import { igtGateOpen, type IgtGateRow } from "@/lib/igt/gate";
 
 // 도구 전환 함수 하나 (TX-04 · HOME-08 · GROW-02 · REG1-10) - 홈·/calc·분야 허브·지자체 허브·검색·「지방세로 읽기」·AI 도우미가 모두 이 함수로 어디로 보낼지 정한다.
 //  · 세목마다 결과는 정확히 하나다(자체 / SM 카드 / 외부 카드 / 없음) - 0장·2장이 되는 경로가 없다.
@@ -6,13 +7,13 @@ import { causeOpen, groupOpen, type Cause, type GateRow } from "@/lib/accuracy/g
 //  · 국세(양도·상속·증여)는 금액을 만들지 않으므로 SM 메뉴 / 외부 카드로만 보낸다. 3단계에서 자체 카드로 바꿀 때는 이 함수만 고친다.
 //  · 입력값·결과값을 주소에 싣지 않는다 - 반환에는 경로와 카드 키뿐이다.
 
-export type ToolId = "acquisition" | "property" | "comprehensive" | "holding" | "refund" | "transfer" | "inheritance_gift" | "oligopoly";
+export type ToolId = "acquisition" | "property" | "comprehensive" | "holding" | "refund" | "transfer" | "inheritance_gift" | "oligopoly" | "gift_tax" | "inheritance_tax";
 
 /** official_links(kind sm_calculator) 키 */
 export type SmLinkKey = "acquisition" | "property_tax" | "transfer" | "oligopoly";
 
 export type ToolLink =
-  | { kind: "self"; href: "/calc/acquisition" | "/calc/holding" | "/calc/refund" }
+  | { kind: "self"; href: "/calc/acquisition" | "/calc/holding" | "/calc/refund" | "/calc/gift-tax" | "/calc/inheritance-tax" }
   | { kind: "sm"; linkKey: SmLinkKey }
   | { kind: "external"; linkKey: "inheritance_gift" }
   | { kind: "none" };
@@ -25,10 +26,15 @@ export interface ToolContext {
     calc_acquisition: boolean;
     calc_holding: boolean;
     calc_refund: boolean;
+    /** 상속·증여세 자체 계산 기능 키 (W11-g, 없으면 꺼짐) */
+    calc_igt_gift?: boolean;
+    calc_igt_inheritance?: boolean;
   };
   gateRows: readonly GateRow[];
   /** 지금 배포된 엔진 해시 */
   engineHash: string;
+  /** 상속·증여세 엔진 해시 (W11-g) - 게이트 실행의 해시와 같아야 자체 카드. 없으면 외부 카드 */
+  igtEngineHash?: string;
   /** 활성(서명·승인된) 환급 판정표가 있나 */
   refundTableActive: boolean;
 }
@@ -45,6 +51,14 @@ const SM_KEY: Record<"acquisition" | "property" | "comprehensive" | "holding" | 
 export function toolLinkFor(tool: ToolId, cause: Cause | null | undefined, ctx: ToolContext): ToolLink {
   const f = ctx.features;
   if (tool === "inheritance_gift") return { kind: "external", linkKey: "inheritance_gift" };
+  // 상속·증여세(W11-g, FAM-14): 세목마다 따로 - 기능 키 + 공개 게이트(뷰 + 엔진 해시)가 모두 맞을 때만 자체 카드, 아니면 외부 계산기 카드 그대로
+  if (tool === "gift_tax" || tool === "inheritance_tax") {
+    const kind = tool === "gift_tax" ? "gift" : "inheritance";
+    const keyOn = kind === "gift" ? f.calc_igt_gift === true : f.calc_igt_inheritance === true;
+    const open = igtGateOpen(ctx.gateRows as unknown as readonly IgtGateRow[], kind, ctx.igtEngineHash ?? "");
+    if (f.calc && f.self_calculator && keyOn && open) return { kind: "self", href: kind === "gift" ? "/calc/gift-tax" : "/calc/inheritance-tax" };
+    return { kind: "external", linkKey: "inheritance_gift" };
+  }
   const sm = (key: SmLinkKey): ToolLink => (f.sm_calculator ? { kind: "sm", linkKey: key } : { kind: "none" });
   if (tool === "transfer" || tool === "oligopoly") return sm(SM_KEY[tool]);
   const selfOn = f.calc && f.self_calculator;

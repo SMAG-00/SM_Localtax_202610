@@ -1,0 +1,16 @@
+{
+  "_설명": "혼인 증여공제 + 동일인 10년 합산 사례 — 아버지가 3년 전 2억(기납부 산출세액 2천만) 증여 후, 혼인 전후 2년 내 3억 추가 증여",
+  "type": "gift",
+  "gift_date": "2026-09-01",
+  "donor_relationship": "lineal_ascendant",
+  "recipient_is_minor": false,
+  "recipient_is_resident": true,
+  "gift_value": 300000000,
+  "deduction_used_10y": 50000000,
+  "prior_gifts_same_donor_10y": [
+    { "value": 200000000, "output_tax": 20000000 }
+  ],
+  "marriage_birth": { "applicable": true, "already_used": 0 },
+  "generation_skip": false,
+  "filed_on_time": true
+}

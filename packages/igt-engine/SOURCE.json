@@ -1,0 +1,100 @@
+{
+  "$comment": "「안심 상속증여계산기」 엔진 이식 기록 (3단계 설계 4.3 · W11-g g1). 원본은 git 저장소가 아니라 커밋 해시가 없으므로 파일별 SHA-256 + 룰셋 version + 복사 날짜로 고정한다. 원본 폴더는 읽기만 했다(쓰기 0, 그 안에서 시험 실행 0, .env·web/.env.local·web/.vercel 열람 0). verbatim = 바이트 단위로 같은 사본.",
+  "source": {
+    "name": "안심 상속증여계산기",
+    "folder": "C:/Users/juncp/00_claudecode/11_Inheritance and Gift Tax",
+    "vcs": "none (git 저장소 아님)",
+    "rulesetVersion": "2026.07.12-v1",
+    "copiedOn": "2026-10-26"
+  },
+  "excluded": [
+    "simulate_igt.py (절세 시나리오 - 결정 #21, 다른 세목 계산 파일을 동적으로 불러오는 경로 포함)",
+    "다른 세목(SM 플랫폼 몫)의 계산 파일 둘과 그 룰셋 web/rulesets/tax_rules_current.json",
+    "filing_draft.py · explain_report.py · analyze_impact.py · approve.py · law_watch.py (실행은 W10-c 파이프라인, 이름만 laws 로)",
+    "web/api/* · web/index.html · web/vercel.json · deploy_web.bat",
+    "tests/test_new_features.py · tests/test_simulate_igt.py (explain_report·filing_draft·simulate_igt 에 의존)",
+    ".env · .env.example · web/.env.local · web/.vercel/ (열지 않음)"
+  ],
+  "files": [
+    {
+      "source": "calc_igt.py",
+      "copy": "packages/igt-engine/reference/calc_igt.py",
+      "mode": "verbatim",
+      "sha256": "8a07d866ce53a3a9bae65b505a688ad6fd62301f1ef14914f0670b00ed85ee3c"
+    },
+    {
+      "source": "tests/test_calc_igt.py",
+      "copy": "packages/igt-engine/reference/tests/test_calc_igt.py",
+      "mode": "verbatim",
+      "sha256": "7581b3827c8067a7c011047b7b5e496f601078f0889bc524f49847472cb10413"
+    },
+    {
+      "source": "examples/example_gift_adult_child.json",
+      "copy": "packages/igt-engine/reference/examples/example_gift_adult_child.json",
+      "mode": "verbatim",
+      "sha256": "8f010b5a9dc1fd342c612a5d3e81a6e59ba87d319d8d49001db226dd45b6a6de"
+    },
+    {
+      "source": "examples/example_gift_marriage_aggregation.json",
+      "copy": "packages/igt-engine/reference/examples/example_gift_marriage_aggregation.json",
+      "mode": "verbatim",
+      "sha256": "9b1f2f60bae6ad80be5644ce3268407056389e63bb03c919820c872dc3eabf0a"
+    },
+    {
+      "source": "examples/example_inheritance_large_prior_gift.json",
+      "copy": "packages/igt-engine/reference/examples/example_inheritance_large_prior_gift.json",
+      "mode": "verbatim",
+      "sha256": "33e9b1a3d3353bcd4c01198006773459c02b342ccb6eb1435c902b05538beb96"
+    },
+    {
+      "source": "examples/example_inheritance_spouse_children.json",
+      "copy": "packages/igt-engine/reference/examples/example_inheritance_spouse_children.json",
+      "mode": "verbatim",
+      "sha256": "8757e7b190062ace13c54622d4d280f146ec34ba57729c5a506a1b2a29b93ee6"
+    },
+    {
+      "source": "rulesets/igt_rules_current.json",
+      "copy": "packages/igt-engine/reference/rulesets/igt_rules_current.json",
+      "mode": "verbatim (줄바꿈만 LF로 정규화)",
+      "sourceSha256": "2cf86d7e982ea39d55acafb1667e735fed7589c95b8a94a8c44578b028d5ab93",
+      "sha256": "43c48049000f595cfacb3d09b368f9aef5eb23aed0aa448961a6d5b649c9ec5c"
+    }
+  ],
+  "newFiles": {
+    "packages/igt-engine/baseline/make_baseline.py": "새로 씀(g2) - 사본에서 python -I -B 로 실행해 기존 시험 57개 호출 · 예시 4개 · 시드 20261026 무작위 입력(증여·상속 각 300)의 출력을 baseline.json 으로 고정",
+    "packages/igt-engine/baseline/baseline.json": "생성물 - 안심 현행 동작 기준선. 법령 정답 판정이 아니다",
+    "packages/igt-engine/src/*.ts": "새로 씀(g3) - calc_igt.py 의 TypeScript 이식. 내보내는 함수는 calcGift · calcInheritance 둘뿐(납부 안내 데이터는 결과 payment)",
+    "rules-igt/2026.07.json": "새로 씀(g4) - 원본 룰셋의 값을 그대로 옮긴 초안(draft, 서명 없음). 원본 approved_by 는 AI 시행령 대조 기록일 뿐 세무 감수 서명이 아니라 옮기지 않았다"
+  },
+  "deviations": [
+    "입력 숫자가 안전한 정수 범위(약 9천조)를 넘으면 계산하지 않고 오류(Python 은 임의 정밀도). 현실 입력 범위 밖",
+    "룰셋 effective_to 가 있으면 계산하지 않는다(Python 은 load_ruleset 이 같은 검사). 엔진 함수 안에서 검사한다",
+    "음의 0(-0)이 나오지 않게 한다(Python int 에는 -0 이 없다)",
+    "그 밖의 모든 출력(숫자 · 단계 이름 · 근거 · 설명 글 · 경고 · 납부 안내)은 기준선 672건과 같다",
+    "사본 룰셋 2026.07.12-v1 에는 thresholds 칸이 없어, 동일 출력 시험은 사본 룰셋에 초안의 thresholds 만 붙여 돌린다"
+  ],
+  "codeConstants": [
+    "2026-10-26 결정: 원본 코드의 숫자 15개를 rules-igt 룰셋 common.thresholds 로 옮겼다(값 그대로, needs_verification true) - 엔진 소스에는 세액 판단용 숫자 리터럴이 없다",
+    "옮긴 항목: 동일인 합산 하한 · 과세표준 부과 하한 · 세대생략 강화 기준 증여재산 · 금융재산 전액공제 기준 · 연부연납 회분 하한 · 물납 세액 기준 · 과세가액 기준 · 미성년 연령 상한 · 신고기한 개월(증여/상속/외국 거주) · 연부연납 최대 연수(상속/증여) · 물납 재산 비율 · 배우자 상속분 가산",
+    "설명 글(description)에 박힌 금액 글자(예 '5억원')는 계산이 아니라 안심 현행 출력과의 동일성을 위한 글이다"
+  ],
+  "notes": [
+    "룰셋 값은 안심이 AI 로 시행령과 대조한 미감수 값이다. 서명 전에는 draft 로만 두며 공개 계산에 쓰지 않는다(FAM-12 게이트).",
+    "기준선은 안심 현행 동작을 고정한 것이지 법령 정답 판정이 아니다.",
+    "안심 changes/20261008 의 미반영 개정 감지 3건은 이 값에 반영되지 않았다 - 감수 때 함께 검토(첫 검수 항목으로 등록)."
+  ],
+  "engineFiles": [
+    {
+      "copy": "packages/igt-engine/src/engine.ts",
+      "copySha256": "11ba2afac23bdf0b7b959ba338b00a75b7a78edb13ecc105993b3d8a02b18b0a"
+    },
+    {
+      "copy": "packages/igt-engine/src/index.ts",
+      "copySha256": "849f18eef11f974f32103b7cfc640c137b720fec93f2255b1c4cd916e8724ac3"
+    },
+    {
+      "copy": "packages/igt-engine/src/types.ts",
+      "copySha256": "c552f82ce9fc982b7dfd82c73d5ca2ea5789df2eaa02df9ed100548bc08e7ac8"
+    }
+  ]
+}

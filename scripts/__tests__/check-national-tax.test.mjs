@@ -355,12 +355,14 @@ test("NT9 AI·워크플로 경계 — assistant·agent·workflows가 상속·증
   assert.equal(near.code, 0, near.out);
 });
 
-test("실제 저장소 구역 설정 — prd_ref·구역 8개·참조 파일이 들어 있고 구역 경로가 전부 구역으로 판정된다", async () => {
+test("실제 저장소 구역 설정 — prd_ref·구역 11개·참조 파일이 들어 있고 구역 경로가 전부 구역으로 판정된다", async () => {
   const fs = await import("node:fs");
   const real = JSON.parse(fs.readFileSync(path.join(path.dirname(SCRIPT), "national-tax-zones.json"), "utf8"));
   assert.equal(real.prd_ref, "docs/PRD/PRD_최종.md");
-  assert.equal(real.allowedZones.length, 8);
+  assert.equal(real.allowedZones.length, 11);
   const cfg = buildZones(real);
+  assert.equal(zoneOf("apps/web/app/admin/(desk)/igt/page.tsx", cfg), "zone");
+  assert.equal(zoneOf("apps/web/app/api/admin/igt/route.ts", cfg), "zone");
   assert.equal(zoneOf(`packages/${SHORT}-engine/src/a.ts`, cfg), "zone");
   assert.equal(zoneOf("apps/web/app/(site)/calc/inheritance-tax/page.tsx", cfg), "zone");
   assert.equal(zoneOf("apps/web/app/(site)/calc/transfer/page.tsx", cfg), "none");

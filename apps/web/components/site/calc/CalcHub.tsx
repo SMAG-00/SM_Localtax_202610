@@ -1,6 +1,7 @@
 import { Pictogram, RulesetLabel } from "@ltr/ui";
 import { OfficialLinkCard, linkSiteLabel } from "@/components/site/OfficialLinkCard";
 import { MeasureCalculatorCards } from "@/components/site/Measure";
+import { OwnCards, hiddenExternalKeys, ownCount, type OwnState } from "@/components/site/igt/OwnCards";
 import type { GuideRow } from "@/lib/calc/guide";
 import type { ToolLink } from "@/lib/calc/tool-link";
 import type { CalcView } from "@/lib/server/public/calc";
@@ -11,6 +12,8 @@ export interface CalcHubProps {
   acquisition: ToolLink;
   holding: ToolLink;
   refund: ToolLink;
+  /** 게이트가 열린 국세 자체 카드 (W11-g, FAM-14) - 없으면 외부 카드 그대로 */
+  own?: OwnState;
   compare: boolean;
   accuracy: boolean;
   rulesetVersion: string | null;
@@ -32,11 +35,15 @@ function SelfCard({ href, icon, title, note, rank }: { href: string; icon: "acqu
   );
 }
 
-export function CalcHub({ view, acquisition, holding, refund, compare, accuracy, rulesetVersion, guides }: CalcHubProps) {
+export function CalcHub({ view, acquisition, holding, refund, own, compare, accuracy, rulesetVersion, guides }: CalcHubProps) {
   const cards: React.ReactNode[] = [];
   let rank = 0;
   if (acquisition.kind === "self") cards.push(<SelfCard key="acq" href={acquisition.href} icon="acquisition" title="취득세 계산하기" note="이 사이트 계산기" rank={++rank} />);
   if (holding.kind === "self") cards.push(<SelfCard key="hold" href={holding.href} icon="property" title="재산세·종합부동산세 계산하기" note="이 사이트 계산기" rank={++rank} />);
+  const ownRank = rank + 1;
+  rank += ownCount(own);
+  const hidden = hiddenExternalKeys(own);
+  const external = view.external.filter((c) => !hidden.includes(c.key));
   // SM 카드 - 자체 계산기로 바뀐 세목의 카드는 빠진다(세목마다 정확히 1장)
   const sm = view.sm.filter((c) => !(c.key === "acquisition" && acquisition.kind === "self") && !(c.key === "property_tax" && holding.kind === "self"));
   return (
@@ -48,9 +55,10 @@ export function CalcHub({ view, acquisition, holding, refund, compare, accuracy,
           <RulesetLabel version={rulesetVersion} />
         </div>
       )}
-      <p className="mt-2 text-[15px] text-navy-700">입력한 값은 어느 사이트로도 넘어가지 않아요. 양도세·상속세·증여세는 이 사이트에서 계산하지 않고 별도 사이트로 연결만 해요.</p>
+      <p className="mt-2 text-[15px] text-navy-700">입력한 값은 어느 사이트로도 넘어가지 않아요. {own && ownCount(own) > 0 ? "양도세는 이 사이트에서 계산하지 않고 별도 사이트로 연결만 해요. 상속세·증여세는 검증을 통과한 세목만 이 사이트에서 계산하고, 국세 금액은 지방세 금액과 합산하지 않아요." : "양도세·상속세·증여세는 이 사이트에서 계산하지 않고 별도 사이트로 연결만 해요."}</p>
       <ul data-part="tool-cards" className="mt-8 grid gap-4 sm:grid-cols-2">
         {cards}
+        {own ? <OwnCards state={own} startRank={ownRank} /> : null}
         {sm.map((c) => (
           <OfficialLinkCard key={c.id} card={c} site={linkSiteLabel(c.kind)} fallbacks={view.fallbacks} rank={++rank} />
         ))}
@@ -88,11 +96,11 @@ export function CalcHub({ view, acquisition, holding, refund, compare, accuracy,
           </ul>
         </details>
       )}
-      {view.external.length > 0 && (
+      {external.length > 0 && (
         <section aria-labelledby="calc-external" className="mt-10">
           <h2 id="calc-external" className="text-[17px] font-black text-navy-900">다른 사이트의 계산기</h2>
           <ul data-part="external-cards" className="mt-3 grid gap-4 sm:grid-cols-2">
-            {view.external.map((c) => (
+            {external.map((c) => (
               <OfficialLinkCard key={c.id} card={c} site={linkSiteLabel(c.kind)} fallbacks={view.fallbacks} rank={++rank} />
             ))}
           </ul>

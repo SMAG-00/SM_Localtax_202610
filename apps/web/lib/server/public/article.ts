@@ -42,6 +42,8 @@ import { approvedBioMap, profilePageIds } from "./brand";
 import { readTipTerms } from "./glossary";
 import type { TipTerm } from "@/lib/site/glossary-tips";
 import { firstPlayableVideo, type MediaView } from "./media-logic";
+import { getLensOwn } from "@/lib/igt/tools";
+import type { LensOwn } from "@/lib/igt/gate";
 import { getLensNationalCard } from "./inheritance-gift";
 import type { LinkPair } from "./inheritance-gift-logic";
 import { readPopularSidebar } from "./rankings";
@@ -122,6 +124,8 @@ export interface ArticleDetail {
   taxLens: TaxLensView | null;
   /** 「지방세로 읽기」 박스 옆 국세 연결 카드 (FAM-08 · W4 23단계) - 박스 세목에 상속세·증여세가 있고 inheritance_gift가 켜졌을 때만 */
   lensNational: LinkPair | null;
+  /** 게이트가 열린 국세 자체 카드 (W11-g, FAM-14) - 없으면 외부 카드 그대로 */
+  lensOwn?: LensOwn | null;
   /** 면책 — 하위 분야의 면책 대상 값 (ART-02) */
   disclaimer: boolean;
   similarCases: SimilarCase[];
@@ -319,6 +323,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
           }
         : null,
     taxLens: applyToolHref(taxLensSlot(lens, a.version, a.legal_basis_date, settings.features, reviewers), toolHref),
+    lensOwn: await getLensOwn(taxLensSlot(lens, a.version, a.legal_basis_date, settings.features, reviewers)?.topics ?? []),
     lensNational: await getLensNationalCard(taxLensSlot(lens, a.version, a.legal_basis_date, settings.features, reviewers)?.topics ?? [], settings.features.inheritance_gift),
     disclaimer: category?.needs_disclaimer === true,
     similarCases,

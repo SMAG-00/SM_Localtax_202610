@@ -7,6 +7,9 @@
     "apps/web/app/(site)/calc/{gift-tax,inheritance-tax}/**",
     "apps/web/components/site/igt/**",
     "apps/web/lib/igt/**",
+    "apps/web/app/admin/(desk)/igt/**",
+    "apps/web/app/api/admin/igt/**",
+    "apps/web/components/admin/igt/**",
     "packages/db/supabase/migrations/*_w11g_*.sql",
     "packages/db/tests/w11g-*",
     "e2e/w11g-*"
@@ -14,6 +17,11 @@
   "referenceFiles": [
     "apps/web/lib/server/public/constants.ts",
     "apps/web/lib/calc/tool-link.ts",
+    "apps/web/lib/server/public/calc-tools.ts",
+    "apps/web/lib/admin/menu.ts",
+    "packages/db/tests/admin-rights.test.mjs",
+    "apps/web/next.config.ts",
+    "apps/web/package.json",
     "e2e/w4-inheritance-gift.test.mjs",
     "scripts/national-tax-zones.json",
     "scripts/forbidden-packages.json"

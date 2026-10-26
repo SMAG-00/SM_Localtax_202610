@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { CalcHub } from "@/components/site/calc/CalcHub";
+import { ownCardState } from "@/components/site/igt/OwnCards";
 import { ComingSoon } from "@/components/site/ComingSoon";
 import { OfficialLinkCard, linkSiteLabel } from "@/components/site/OfficialLinkCard";
 import { getCalcClosedView } from "@/lib/server/public/calc";
@@ -47,6 +48,7 @@ export default async function CalcPage() {
       acquisition={toolLinkFor("acquisition", null, ctx)}
       holding={toolLinkFor("holding", null, ctx)}
       refund={toolLinkFor("refund", null, ctx)}
+      own={ownCardState(ctx)}
       compare={tools.features.calc_compare && (toolLinkFor("acquisition", null, ctx).kind === "self" || toolLinkFor("property", null, ctx).kind === "self")}
       accuracy={tools.features.calc_accuracy}
       rulesetVersion={tools.ruleset?.version ?? null}
