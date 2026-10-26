@@ -90,9 +90,9 @@ test("저장소 전체 — 스크립트가 종료 코드 0", () => {
 
 // W11-g — AI·워크플로 위치는 상속·증여 엔진(aiForbidden)을 의존하거나 불러올 수 없다 (국세 금액은 AI가 만들지 않는다)
 const ENGINE = ["@ltr/", "i", "gt", "-engine"].join("");
-const AI_RULES = { ...RULES, aiForbidden: [ENGINE], aiForbiddenDirs: ["packages/assistant", "packages/agent", "workflows"] };
+const AI_RULES = { ...RULES, aiForbidden: [ENGINE], aiForbiddenDirs: ["packages/assistant", "packages/agent", "workflows", "apps/web/lib/assistant", "apps/web/lib/server/assistant", "apps/web/lib/server/ops-ai", "apps/web/lib/agent", "apps/web/lib/server/agent"] };
 
-for (const dir of ["packages/assistant", "packages/agent", "workflows"]) {
+for (const dir of ["packages/assistant", "packages/agent", "workflows", "apps/web/lib/assistant", "apps/web/lib/server/assistant", "apps/web/lib/server/ops-ai", "apps/web/lib/agent", "apps/web/lib/server/agent"]) {
   test(`W11-g — ${dir}가 상속·증여 엔진을 import 하면 오류, package.json 의존도 오류`, () => {
     const imp = checkDeps({ root: tempRepo(base({ "scripts/forbidden-packages.json": AI_RULES, [`${dir}/src/a.ts`]: `import { f } from "${ENGINE}/sub";\n` })).dir });
     assert.ok(imp.errors.some((e) => e.includes(`${dir}/src/a.ts`) && e.includes("AI·워크플로")), imp.errors.join("\n"));
@@ -100,6 +100,13 @@ for (const dir of ["packages/assistant", "packages/agent", "workflows"]) {
     assert.ok(dep.errors.some((e) => e.includes(`${dir}/package.json`) && e.includes(ENGINE)), dep.errors.join("\n"));
   });
 }
+
+test("W12-0 — 웹 앱의 AI 위치가 아닌 곳(lib/calc 등)은 엔진을 써도 오류 아님", () => {
+  const ok = checkDeps({ root: tempRepo(base({ "scripts/forbidden-packages.json": AI_RULES, "apps/web/lib/calc/x.ts": `import { f } from "${ENGINE}";
+`, "apps/web/lib/assistant-ui/y.ts": `import { f } from "${ENGINE}";
+` })).dir });
+  assert.deepEqual(ok.errors, []);
+});
 
 test("W11-g — 웹 앱이 상속·증여 엔진을 쓰는 것과 목록이 없는 규칙 파일은 오류 아님", () => {
   const web = checkDeps({ root: tempRepo(base({ "scripts/forbidden-packages.json": AI_RULES, "apps/web/lib/x.ts": `import { f } from "${ENGINE}";\n`, "apps/web/package.json": { name: "@ltr/web", dependencies: { [ENGINE]: "workspace:*" } } })).dir });

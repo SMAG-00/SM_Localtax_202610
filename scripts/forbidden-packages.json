@@ -13,7 +13,16 @@
     "botid"
   ],
   "aiSdk": ["ai", "@ai-sdk/*", "@anthropic-ai/*", "openai"],
-  "aiSdkAllowed": ["packages/assistant", "workflows"],
+  "aiSdkAllowed": ["packages/assistant", "packages/agent", "workflows"],
   "aiForbidden": ["@ltr/igt-engine"],
-  "aiForbiddenDirs": ["packages/assistant", "packages/agent", "workflows"]
+  "aiForbiddenDirs": [
+    "packages/assistant",
+    "packages/agent",
+    "workflows",
+    "apps/web/lib/assistant",
+    "apps/web/lib/server/assistant",
+    "apps/web/lib/server/ops-ai",
+    "apps/web/lib/agent",
+    "apps/web/lib/server/agent"
+  ]
 }

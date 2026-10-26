@@ -3,7 +3,7 @@
 import { CONTENT_TYPES, FORMATS, detectPii } from "@ltr/editorial";
 import { NEXT_ACTION_KEYS, SECTION_KEYS, type SectionKey } from "@/lib/server/public/constants";
 
-/** 이벤트 이름 85종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 34종 + W10-i 4종 + W11 13종 + W11-f 3종 — DB check 제약 analytics_events.name과 같다) */
+/** 이벤트 이름 105종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 34종 + W10-i 4종 + W11 13종 + W11-f 3종 + W12 0차 20종 — DB check 제약 analytics_events.name과 같다) */
 export const EVENT_NAMES = [
   "home_entry_clicked",
   "hub_viewed",
@@ -97,6 +97,27 @@ export const EVENT_NAMES = [
   "institution_inquiry_submitted",
   "org_seat_accepted",
   "report_previewed",
+  // W12 0차 (PRD-04 15장 · 4단계 설계 3장) - 지방세봇·키워드 맵·데이터 스토리·채널 유입·보안 정책 측정 20종. 질문 원문·계산 입력값·개인정보 칸 없음
+  "ask_started",
+  "ask_entry_clicked",
+  "assistant_mode_switched",
+  "ask_clarify_answered",
+  "ask_answer_rendered",
+  "ask_fallback_shown",
+  "ask_investment_blocked",
+  "ask_scope_redirected",
+  "ask_live_fetched",
+  "ask_benefits_shown",
+  "ask_determination_shown",
+  "benefits_block_opened",
+  "citation_opened",
+  "ask_feedback",
+  "ask_quota_reached",
+  "keyword_map_viewed",
+  "keyword_map_node_clicked",
+  "data_story_viewed",
+  "channel_landing_viewed",
+  "security_page_viewed",
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -144,7 +165,7 @@ export const PROP_VALUES = {
   "calc.tool": ["acquisition", "holding", "refund", "compare"],
   "calc.input_mode": ["wizard", "form"],
   "calc.entry_path": ["home_card", "hub", "article", "tax_lens", "search", "region_hub", "assistant", "direct", "shortcut", "campaign"],
-  "calc.screen": ["calc_index", "acquisition_result", "holding_result", "refund_result", "situation", "region_hub"],
+  "calc.screen": ["calc_index", "acquisition_result", "holding_result", "refund_result", "situation", "region_hub", "ask"],
   "calc.tax_kind": ["acquisition", "property", "comprehensive", "vehicle", "refund"],
   "link.state": ["ok", "fallback"],
   "accuracy.via": ["badge", "hub"],
@@ -179,6 +200,24 @@ export const PROP_VALUES = {
   "ordinance.kind": ["urban_redevelopment", "tax_reduction", "tax_rate"],
   "ordinance.entry": ["local_hub", "tax_hub", "realestate_hub"],
   "institution.org_type": ["local_government", "tax_firm", "financial_institution"],
+  // W12 0차 - PRD-04 15장 이벤트 속성의 값 목록 (W2-c 설계 2.3). 질문·입력값을 담을 글자 칸 없음
+  "ask.entry": ["mode_switch", "search_results", "law", "case", "calc", "article", "step", "issue_map"],
+  "ask.mode": ["general", "expert"],
+  "ask.tier": ["guest", "basic", "premium", "institution"],
+  "ask.direction": ["to_agent", "to_guide"],
+  "ask.rollout": ["stage_4a", "stage_4b", "stage_4c"],
+  "ask.validation": ["passed", "regenerated", "fallback"],
+  "ask.scope": ["base", "trust_redevelopment", "inheritance", "gift"],
+  "ask.fallback_reason": ["insufficient_evidence", "outage", "budget", "scope_pending"],
+  "ask.invest_topic": ["recommendation", "prediction"],
+  "ask.redirect_reason": ["tourism", "scope_pending", "national_tax_calculator"],
+  "ask.live_target": ["law", "case", "interpretation"],
+  "ask.benefit_via": ["agent", "calculator"],
+  "ask.source_kind": ["law", "case", "interpretation", "guide", "issue_map", "publication", "article", "glossary"],
+  "ask.rating": ["up", "down"],
+  "ask.feedback_reason": ["wrong", "outdated", "unclear", "other"],
+  "data_story.via": ["article", "data_page"],
+  "security.entry": ["footer", "agent", "direct", "search"],
 } as const satisfies Record<string, readonly string[]>;
 
 type Field =
@@ -312,6 +351,30 @@ export const EVENT_SPECS: Readonly<Record<EventName, EventSpec>> = {
   institution_inquiry_submitted: { section: "none", props: {} },
   org_seat_accepted: { section: "none", props: {} },
   report_previewed: { section: "none", props: {} },
+  // W12 0차 - 지방세봇 등 20종 (PRD-04 15장). 속성 칸은 정해진 목록·개수·참거짓·키뿐
+  ask_started: { section: "none", props: { entry: oneOf(PROP_VALUES["ask.entry"]), ask_mode: oneOf(PROP_VALUES["ask.mode"]), member_tier: oneOf(PROP_VALUES["ask.tier"]) } },
+  ask_entry_clicked: { section: "optional", props: { entry: oneOf(PROP_VALUES["ask.entry"]) } },
+  assistant_mode_switched: { section: "none", props: { direction: oneOf(PROP_VALUES["ask.direction"]), rollout_stage: oneOf(PROP_VALUES["ask.rollout"]) } },
+  ask_clarify_answered: { section: "none", props: { round: count(3), unsure: bool } },
+  ask_answer_rendered: {
+    section: "none",
+    props: { citation_count: count(50), live_citation_count: count(50), validation: oneOf(PROP_VALUES["ask.validation"]), latency_ms: count(600_000), cost_won: count(1_000_000), scope: oneOf(PROP_VALUES["ask.scope"]) },
+  },
+  ask_fallback_shown: { section: "none", props: { reason: oneOf(PROP_VALUES["ask.fallback_reason"]) } },
+  ask_investment_blocked: { section: "none", props: { topic: oneOf(PROP_VALUES["ask.invest_topic"]) } },
+  ask_scope_redirected: { section: "none", props: { reason: oneOf(PROP_VALUES["ask.redirect_reason"]), scope: oneOf(PROP_VALUES["ask.scope"], true) } },
+  ask_live_fetched: { section: "none", props: { target_type: oneOf(PROP_VALUES["ask.live_target"]), succeeded: bool, latency_ms: count(600_000) } },
+  ask_benefits_shown: { section: "none", props: { tax_kind: oneOf(PROP_VALUES["calc.tax_kind"]), reduction_count: count(50) } },
+  ask_determination_shown: { section: "none", props: { kind: oneOf(PROP_VALUES["determination.kind"]) } },
+  benefits_block_opened: { section: "optional", props: { tax_kind: oneOf(PROP_VALUES["calc.tax_kind"]), via: oneOf(PROP_VALUES["ask.benefit_via"]) } },
+  citation_opened: { section: "none", props: { source_kind: oneOf(PROP_VALUES["ask.source_kind"]), live: bool } },
+  ask_feedback: { section: "none", props: { rating: oneOf(PROP_VALUES["ask.rating"]), reason: oneOf(PROP_VALUES["ask.feedback_reason"], true) } },
+  ask_quota_reached: { section: "none", props: { member_tier: oneOf(PROP_VALUES["ask.tier"]) } },
+  keyword_map_viewed: { section: "optional", props: { tax_item: key } },
+  keyword_map_node_clicked: { section: "optional", props: { tax_item: key, node_count: count(50) } },
+  data_story_viewed: { section: "optional", props: { series_key: key, via: oneOf(PROP_VALUES["data_story.via"]) } },
+  channel_landing_viewed: { section: "none", props: { utm_source: { field: { kind: "slug" } }, utm_campaign: { field: { kind: "slug" } } } },
+  security_page_viewed: { section: "none", props: { entry: oneOf(PROP_VALUES["security.entry"]) } },
 };
 
 export const isEventName = (v: unknown): v is EventName => typeof v === "string" && (EVENT_NAMES as readonly string[]).includes(v);

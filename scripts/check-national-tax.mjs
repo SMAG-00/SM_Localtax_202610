@@ -93,7 +93,12 @@ const SHORT = join("i", "gt");
 const TAX_PKG = join("@ltr/tax", "-engine");
 const INHGIFT_PKG = join("@ltr/", SHORT, "-engine");
 /** NT9 — 상속·증여 엔진을 불러오면 안 되는 위치 */
-const AI_DIRS = ["packages/assistant/", "packages/agent/", "workflows/"];
+// W12-0 — 도우미·지방세봇·운영 AI 웹 코드(apps/web)도 포함 (packages/*만 보던 빈틈 보강)
+const AI_DIRS = [
+  "packages/assistant/", "packages/agent/", "workflows/",
+  "apps/web/lib/assistant/", "apps/web/lib/server/assistant/", "apps/web/lib/server/ops-ai/",
+  "apps/web/lib/agent/", "apps/web/lib/server/agent/",
+];
 export const ZONES_FILE = "scripts/national-tax-zones.json";
 
 /** 소문자 + 밑줄·하이픈·$ 지우기 (이름 비교용) */

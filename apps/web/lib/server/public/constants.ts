@@ -147,6 +147,16 @@ export const FEATURE_KEYS = [
   // W11-g - 상속·증여세 자체 계산 /calc/gift-tax·/calc/inheritance-tax (FAM-10·11). 공개 게이트(calc_gate_status gift/inheritance ALL)가 열려야 켜진다. 마이그레이션 136, 꺼짐으로 시작
   "calc_igt_gift",
   "calc_igt_inheritance",
+  // W12 0차 - 4단계 기능 키 9개(마이그레이션 150, 모두 꺼짐). 지방세봇 모드 전환은 기존 `taxbot` 키를 마지막 스위치로 쓴다. 각 단위(W12-d~h)가 화면과 함께 쓰고 공개 승인 뒤에만 켠다 (4단계 설계 3장)
+  "ask_history",
+  "case_summaries",
+  "keyword_map",
+  "data_stories",
+  "security_page",
+  "channel_kit",
+  "kakao_login",
+  "article_ai_box",
+  "impact_banner",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;

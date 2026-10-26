@@ -123,6 +123,18 @@ export const ACTIONS = {
   "org.manage": "기관·계약·좌석·세금계산서 발행 기록·견적 요청 관리 (W11-f BIZ-07 - 스토어·구독 담당·관리자)",
   "org_security.approve": "기관 보안·개인정보 확인표 승인 기록 (W11-f BIZ-07 - 관리자(PO)만)",
   "report.publish": "프리미엄 리포트 편집·감수 기록·발행 (W11-f BIZ-07 - 편집 책임자·관리자)",
+  // W12 0차 - 4단계 공통 권한 (4단계 설계 3장). 승인·확정은 관리자(PO)만, 역할은 늘리지 않음
+  "eval.author": "평가 문항 입력·수정 (W12-e EVAL-01 - 세무 감수위원·관리자, 시험용 표시 문항 포함)",
+  "eval.grade": "평가 답변 채점 - 2인 블라인드·3인째 (W12-e EVAL-02 - 세무 감수위원·관리자)",
+  "eval.gate_approve": "평가 게이트 리포트 확정·승인 (W12-e EVAL-04 - 관리자(PO)만)",
+  "ask_scope.approve": "지방세봇 답변 범위 플래그 켜기·끄기 승인 (W12-e - 관리자(PO)만, 범위 게이트 리포트 뒤)",
+  "ask_rollout.approve": "지방세봇 공개 단계 4a·4b·4c 승인 (W12-e - 관리자(PO)만, 단계 게이트 리포트 뒤)",
+  "quality.review": "품질 표본 판정·경보 처리 (W12-e QUAL-02·03 - 세무 감수위원·관리자)",
+  "case_summary.approve": "결정례 요지·AI 태그 후보 승인 (W12-f CASE-05 - 편집 책임자·관리자)",
+  "ai_box.approve": "기사 요약 상자·개정 영향 배너 승인 (W12-f ART-13·14 - 편집 책임자·관리자)",
+  "channel.record": "채널 원고 키트 내려받기·게시 기록 (W12-h CH-01 - 편집 책임자·관리자, 게시는 사람이 함)",
+  "stats.approve": "통계 시계열 승인 (W12-h DATA-01 - 편집 책임자·관리자)",
+  "security_page.edit": "보안 정책 페이지 항목·통제 자가 점검 기록 (W12-g SEC-01 - 관리자(PO)만)",
   "special_law.confirm": "특례법 확인 기록 — 공포 확인·철회와 특례법 근거 행의 확인·철회 (관리자(PO)만, W4 20단계 PR-13)",
 } as const;
 export type Action = keyof typeof ACTIONS;
@@ -192,6 +204,11 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "ordinance_summary.sign",
   "org_security.approve",
   "report.publish",
+  // W12 0차 - 게이트 리포트 확정·범위 플래그·공개 단계·보안 정책 편집은 관리자만, 허용 밖 시도를 감사에 남긴다
+  "eval.gate_approve",
+  "ask_scope.approve",
+  "ask_rollout.approve",
+  "security_page.edit",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -475,6 +492,29 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
       return viewer.isAdmin ? ALLOW : deny("기관 보안·개인정보 확인표 승인은 관리자만 합니다");
     case "report.publish":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("프리미엄 리포트 발행은 편집 책임자와 관리자만 합니다");
+    // W12 0차 - 4단계 공통 권한 (4단계 설계 3장)
+    case "eval.author":
+      return has(viewer, "reviewer") || viewer.isAdmin ? ALLOW : deny("평가 문항 입력은 세무 감수위원과 관리자만 합니다 (EVAL-01)");
+    case "eval.grade":
+      return has(viewer, "reviewer") || viewer.isAdmin ? ALLOW : deny("평가 채점은 세무 감수위원과 관리자만 합니다 (EVAL-02)");
+    case "eval.gate_approve":
+      return viewer.isAdmin ? ALLOW : deny("평가 게이트 리포트 확정은 관리자만 합니다 (EVAL-04)");
+    case "ask_scope.approve":
+      return viewer.isAdmin ? ALLOW : deny("지방세봇 범위 플래그 승인은 관리자만 합니다");
+    case "ask_rollout.approve":
+      return viewer.isAdmin ? ALLOW : deny("지방세봇 공개 단계 승인은 관리자만 합니다");
+    case "quality.review":
+      return has(viewer, "reviewer") || viewer.isAdmin ? ALLOW : deny("품질 표본 판정은 세무 감수위원과 관리자만 합니다 (QUAL-02)");
+    case "case_summary.approve":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("결정례 요지 승인은 편집 책임자와 관리자만 합니다 (CASE-05)");
+    case "ai_box.approve":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("기사 요약 상자·개정 영향 배너 승인은 편집 책임자와 관리자만 합니다 (ART-13·14)");
+    case "channel.record":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("채널 게시 기록은 편집 책임자와 관리자만 합니다 (CH-01)");
+    case "stats.approve":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("통계 시계열 승인은 편집 책임자와 관리자만 합니다 (DATA-01)");
+    case "security_page.edit":
+      return viewer.isAdmin ? ALLOW : deny("보안 정책 페이지 편집은 관리자만 합니다 (SEC-01)");
     case "product.approve":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("자사 상품 카드 연결의 승인·철회는 편집 책임자와 관리자만 합니다 — 상품 담당은 제안까지입니다 (BIZ-03)");
     case "brand.manage":

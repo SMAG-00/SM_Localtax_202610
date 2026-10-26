@@ -124,6 +124,18 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "org.manage": [X, X, X, X, O, X, X, O, X],
   "org_security.approve": [X, X, X, X, X, X, X, O, X],
   "report.publish": [X, O, X, X, X, X, X, O, X],
+  // W12 0차 - 4단계 공통 권한: 승인·확정은 관리자(7)만, 문항·채점·품질은 감수위원(2)+관리자, 요지·상자·채널·통계는 편집 책임자(1)+관리자
+  "eval.author": [X, X, O, X, X, X, X, O, X],
+  "eval.grade": [X, X, O, X, X, X, X, O, X],
+  "eval.gate_approve": [X, X, X, X, X, X, X, O, X],
+  "ask_scope.approve": [X, X, X, X, X, X, X, O, X],
+  "ask_rollout.approve": [X, X, X, X, X, X, X, O, X],
+  "quality.review": [X, X, O, X, X, X, X, O, X],
+  "case_summary.approve": [X, O, X, X, X, X, X, O, X],
+  "ai_box.approve": [X, O, X, X, X, X, X, O, X],
+  "channel.record": [X, O, X, X, X, X, X, O, X],
+  "stats.approve": [X, O, X, X, X, X, X, O, X],
+  "security_page.edit": [X, X, X, X, X, X, X, O, X],
   "brand.manage":           [X, X, X, X, X, O, X, O, X],
   "brand.approve":          [X, X, X, X, X, X, X, O, X], // W3 7단계 — 증빙 승인·동의서·경력 표시 승인은 관리자(PO)만 (설계 6장)
   "expert.manage":          [X, X, X, X, X, X, O, O, X],
