@@ -20,6 +20,7 @@ step "편집국 API E2E (역할별 403·감사 로그·발행 판정)"; node --t
 step "운영 API E2E (분야·사전·설정·제휴사·회원 정지 — 403·422·감사 로그)"; node --test --test-concurrency=1 e2e/admin-settings-api.test.mjs
 step "홈 배치 API E2E (편집 책임자 201·편집국 외 403·7장째 409·끝난 카드 공개 0)"; node --test --test-concurrency=1 e2e/admin-home-api.test.mjs
 step "브라우저 설치 (Playwright Chromium)";  pnpm exec playwright install --with-deps chromium
+step "W12-b 수용 E2E (지방세봇 코어 - 기능 키 꺼짐·공개 단계 none 404·모델 서버 호출 0 / 게이트를 임시로 열면 SSE 첫 status 1초 이내·표준 머리글·예산 미설정 시 모델 호출 0 + 근거 목록·근거 없으면 근거 부족·투자 추천 범위 안내 / 턴 기록·질문 원문 칸 없음·anon 기록 표 읽기 0 / AI 코드 국세 엔진·SDK import 0)"; node --test --test-concurrency=1 e2e/w12b-acceptance.test.mjs
 step "W12-a 수용 E2E (검색 색인 - 작업 index-refresh 인증·새 법령 조문 1건 -> 청크(메타 모두 채움)·재실행 중복 0 / anon 키 agent_search로 찾음·표 직접 읽기 막힘·꺼진 범위(상속·증여·신탁정비)·프리미엄·권리 미확인 0·프리미엄은 건수만 / 원천 철회 -> 다음 실행에서 검색 0 / 상속·증여 엔진·AI SDK import 0·학습용 내보내기 0)"; node --test --test-concurrency=1 e2e/w12a-acceptance.test.mjs
 step "W11-z 수용 E2E (3단계 닫는 묶음 - 키 꺼짐 새 화면 404·양도 경로 404 / 증여세 계산 화면 밖 국세 금액 0 / 4단계 진입 버튼 0·도우미 소스 igt-engine import 0 / 주택 수·총비용·판정·증여세 계산 중 요청·주소·저장소·쿠키·이벤트·로그에 입력 0 / 쟁점 지도 SVG = 표 행 / 접근성 95·R1~R3 / 키 다시 끄면 404)"; node --test --test-concurrency=1 e2e/w11-acceptance.test.mjs
 step "W11-b 수용 E2E (세금 전 주기·주택 수·총비용 - 키 꺼짐/자료 없음 404·서명 전 가이드 공개 0·관리자 서명 403 / 탭 3개·원인 3칸·양도 탭 입력 칸 0·SM 카드 1장 / 원인별 다른 판정표 버전·모르겠어요 결론 0 / 총액=그래프=표=행 합·금리 0%·보유 0년·상한 거부·보유세 미포함 칩·양도 줄 0 / 계산 중 네트워크·저장소 0 / 메모리 전달 / FAM-05 카드 / 정책 모양 거부)"; node --test --test-concurrency=1 e2e/w11b-acceptance.test.mjs
@@ -127,3 +128,4 @@ step "W10-a 수용 E2E (룰셋·정확도 대조 - 권한(기자·편집 책임�
 
 step "W10-e 수용 E2E (개정 자동 감지·브리핑·알림·운영 AI - 작업 URL 401·키 꺼짐 건너뜀 / 감지 후보 1건(재실행도 1건)·승인 전 amendment_events 반영 0·승인 뒤 origin=auto 1건 / 발행 승인 전 공개 0·발행 시각 전 0·시각 뒤 1회 / 이중 확인 전 발송 대상 0·거부 뒤 0·브리핑과 알림 따로 해지 / 예산 설정 비면 AI 0·80% 경보 1건)"; node --test --test-concurrency=1 e2e/w10e-acceptance.test.mjs
 step "W12-g 수용 E2E (키워드 맵·보안 정책 - 키 꺼짐 404 / 정책 비면 404·승인 전 태그 0·노드 건수 = 목록 건수·두 노드 AND·URL 상태·SVG 원·선 수 = 표 행 수·노드 상한 / 보안 항목 관리자만·인증 단정 표현 422·7항목 확인일·자가 점검 전 404·AI SDK import 0)"; node --test --test-concurrency=1 e2e/w12g-acceptance.test.mjs
+step "W12-h 수용 E2E (데이터 스토리·채널 배포 키트 - 키 꺼짐 404 / 승인 전 404·직원 아님 403·승인 뒤 /data 200·SVG 점 수 = 표 행 수·출처·기준연도·확인일 / 기사 차트 기준연도 고정·새 기준연도 안내·철회 이유 필수 / 키트 승인 전 원고 0·게시 기록 체크리스트·https·원고당 1건 / 수집·키트 AI·외부 게시 호출 0)"; node --test --test-concurrency=1 e2e/w12h-acceptance.test.mjs

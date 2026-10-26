@@ -5,6 +5,10 @@ import { UiLink } from "@ltr/ui";
 import { cache } from "react";
 import { ArticleView } from "@/components/site/ArticleView";
 import { MeasureView } from "@/components/site/Measure";
+import { ChannelLandingMeasure } from "@/components/site/ChannelLandingMeasure";
+import { DataChart } from "@/components/site/DataStoryViews";
+import { CHANNEL_KEYS } from "@/lib/channels/kit";
+import { getArticleCharts, isRegisteredChannelPair } from "@/lib/server/public/data-stories";
 import { UnavailablePage } from "@/components/site/Unavailable";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { ColumnDisclosureBlock } from "@/components/site/ColumnDisclosureBlock";
@@ -40,7 +44,7 @@ const load = cache(async (slug: string) => {
 // 미리보기는 공개 뷰, 본문은 권한 판정을 지난 서버 함수로만. 유료 화면은 색인하지 않는다.
 const loadWall = cache(async (slug: string) => resolvePaywall(slug));
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ slug: string }>; searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const a = await load((await params).slug);
@@ -67,7 +71,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function ArticlePage({ params }: Props) {
+export default async function ArticlePage({ params, searchParams }: Props) {
   const a = await load((await params).slug);
   if (isUnavailable(a)) return <UnavailablePage />;
   if (!a) {
@@ -106,8 +110,19 @@ export default async function ArticlePage({ params }: Props) {
   const signature = a.contentType === "opinion" ? await readPublic("시그니처 연재", () => getArticleSignature(a.id), () => null) : null;
   // 구조화 데이터의 감수자(WebPage.reviewedBy)는 화면 감수 표시와 같은 값에서만 — 서명 기록이 없으면 속성 0 (W3 10단계, compareRendered 감수자 대조)
   const article = { ...(signature ? { ...a, series: signature.series } : a), view: articleViewWithReviewer(a.view, mark) };
+  // W12-h 데이터 차트 - 시계열 ID·기준연도로 고정된 승인본 (기능 키 data_stories 꺼짐이면 빈 목록). 읽지 못하면 차트 없이 본문만
+  const charts = await readPublic("기사 데이터 차트", () => getArticleCharts(a.id), () => []);
+  // W12-h 채널 유입 - 게시 기록이 등록된 (채널, 기사) 쌍일 때만 측정 (기능 키 channel_kit). 등록 값이 아니면 측정 0
+  const sp = searchParams ? await searchParams : {};
+  const utmSource = typeof sp.utm_source === "string" ? sp.utm_source : null;
+  const utmCampaign = typeof sp.utm_campaign === "string" ? sp.utm_campaign : null;
+  const channelLanding =
+    utmSource && utmCampaign && utmCampaign === (await params).slug && (CHANNEL_KEYS as readonly string[]).includes(utmSource)
+      ? await readPublic("채널 유입 확인", () => isRegisteredChannelPair(utmSource, utmCampaign), () => false)
+      : false;
   return (
     <>
+      {channelLanding === true && utmSource && <ChannelLandingMeasure channel={utmSource} articleId={a.id} slug={(await params).slug} />}
       {mark && (
         <p data-part="review-mark" className="mx-auto max-w-3xl px-4 pt-4 text-[14px] text-navy-700">
           감수{" "}
@@ -127,6 +142,13 @@ export default async function ArticlePage({ params }: Props) {
       {docs.subject[0] && <MeasureView name="interpretation_viewed" section={a.section} props={{ article_id: a.id, doc_type: docs.subject[0].doc_type }} />}
       <ThenNowBlock items={signature?.thenNow ?? []} />
       <ArticleView article={article} today={isoToKstDate(new Date().toISOString())} />
+      {Array.isArray(charts) && charts.length > 0 && (
+        <section aria-label="데이터" data-part="article-charts" className="mx-auto w-full max-w-3xl px-4">
+          {charts.map((c) => (
+            <DataChart key={c.series.id} series={c.series} via="article" caption={c.caption} newerBaseYear={c.newerBaseYear} />
+          ))}
+        </section>
+      )}
     </>
   );
 }

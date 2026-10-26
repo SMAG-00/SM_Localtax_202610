@@ -7,6 +7,19 @@ import { connect, dbUrl, isLocal } from "../scripts/db.mjs";
 // 추가만 되는 표 — 감사 기록 2종(ADM-04) + W2-a 설계 3장의 수정 이력·정정 이력·점검 결과 + 개정 단계 기록(01B TX-07) + 기획 상태 기록(NAV-09, 트리거만 쓴다)
 //   + 삭제된 기사 주소(W2-b 4단계 NAV-06 — 트리거만 쓴다, 410 응답의 원본) + 제휴 실사·점검 기록(W2-c 5단계 NAV-01·07·20 — 새 판은 새 행)
 const APPEND_ONLY = new Set([
+  // W12-b·h 새 표 - service_role은 읽기만(기록은 함수·트리거), 차트는 읽기·추가·지우기(고치기는 트리거 가드 경로 밖)
+  "public.agent_sessions",
+  "public.agent_messages",
+  "public.agent_tool_calls",
+  "public.agent_citations",
+  "public.agent_validations",
+  "public.agent_usage_daily",
+  "public.stats_series",
+  "public.stats_audit",
+  "public.channel_posts",
+  "public.channel_kit_downloads",
+  "public.channel_audit",
+  "public.article_data_charts",
   // W12 새 표 - service_role은 읽기·추가(일부 한정 수정)만, 고치기·지우기는 함수·트리거로만 (설계 W12-a·e·f·g)
   "public.article_ai_boxes",
   "public.case_summaries",

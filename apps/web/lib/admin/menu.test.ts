@@ -13,9 +13,9 @@ const EXPECTED: [string, Viewer, string[]][] = [
   [
     "편집 책임자 — 분야·사전 편집 메뉴·제휴 준비, 제휴사는 편집 메뉴 아님(목록 화면만 읽기)",
     viewer(["editor"]),
-    ["dashboard", "assignments", "articles", "reviews", "placement", "home", "amendments", "links", "calc-links", "campaigns", "realestate-weekly", "hub-points", "source-review", "review", "brief", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "reports", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "categories", "dictionaries", "query-terms", "readiness", "seo", "inquiries", "pages"],
+    ["dashboard", "assignments", "articles", "reviews", "placement", "home", "amendments", "links", "calc-links", "campaigns", "realestate-weekly", "hub-points", "source-review", "review", "brief", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "stats", "channels", "reports", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "categories", "dictionaries", "query-terms", "readiness", "seo", "inquiries", "pages"],
   ],
-  ["편집 책임자 + 기자", viewer(["editor", "reporter"]), ["dashboard", "assignments", "articles", "reviews", "placement", "home", "amendments", "links", "calc-links", "campaigns", "realestate-weekly", "hub-points", "source-review", "review", "brief", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "reports", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "categories", "dictionaries", "query-terms", "readiness", "seo", "inquiries", "pages"]],
+  ["편집 책임자 + 기자", viewer(["editor", "reporter"]), ["dashboard", "assignments", "articles", "reviews", "placement", "home", "amendments", "links", "calc-links", "campaigns", "realestate-weekly", "hub-points", "source-review", "review", "brief", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "stats", "channels", "reports", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "categories", "dictionaries", "query-terms", "readiness", "seo", "inquiries", "pages"]],
   ["세무 감수위원 — 상황 카드·허브 지방세 포인트·단계 「지방세로 읽기」는 감수 서명만", viewer(["reviewer"]), ["dashboard", "articles", "reviews", "hub-points", "guides", "ordinances", "issues", "rulesets", "national-calc", "accuracy", "eval", "project-lenses", "dev-methods", "finance", "situations"]],
   ["광고·협찬 담당 — 제휴사 관리", viewer(["ad_ops"]), ["dashboard", "campaigns", "sponsored", "partners", "inquiries", "pages"]],
   ["스토어·구독 담당", viewer(["store_ops"]), ["dashboard", "orgs", "store", "inquiries"]],
@@ -24,7 +24,7 @@ const EXPECTED: [string, Viewer, string[]][] = [
   [
     "관리자(역할 없음) — 편집 행위 메뉴 없음, 원문 검수·측정 지표·제휴 준비·설정·회원·역할",
     viewer([], true),
-    ["dashboard", "assignments", "articles", "campaigns", "realestate-weekly", "source-review", "review", "brief", "pipelines", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "security", "orgs", "reports", "rulesets", "national-calc", "accuracy", "eval", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "categories", "dictionaries", "query-terms", "sponsored", "partners", "store", "brand", "experts", "metrics", "readiness", "seo", "inquiries", "pages", "settings", "members"],
+    ["dashboard", "assignments", "articles", "campaigns", "realestate-weekly", "source-review", "review", "brief", "pipelines", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "stats", "channels", "security", "orgs", "reports", "rulesets", "national-calc", "accuracy", "eval", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "categories", "dictionaries", "query-terms", "sponsored", "partners", "store", "brand", "experts", "metrics", "readiness", "seo", "inquiries", "pages", "settings", "members"],
   ],
   ["역할 없음", viewer([]), ["dashboard"]],
 ];

@@ -54,6 +54,9 @@ const RULES: readonly MenuRule[] = [
   { id: "issue-tags", label: "쟁점 태그", href: "/admin/issue-tags", when: (a) => a.has("issue_graph.edit") || a.has("issue_tag.approve"), paths: ["/admin/issue-tags"] },
   // 편집국 AI 초안 승인 - 결정례 요지·AI 태그·기사 요약 상자·개정 영향 배너·채널 원고 (AIOPS-07~10 · CASE-05 · ART-13·14 — W12-f) 편집 책임자·관리자
   { id: "ai-desk", label: "편집국 AI", href: "/admin/ai-desk", when: (a) => a.has("case_summary.approve") || a.has("ai_box.approve"), paths: ["/admin/ai-desk"] },
+  // 지방세 통계 시계열 승인·기사 차트 연결 (DATA-01 — W12-h) / 채널 배포 키트·게시 기록 (CH-01 — W12-h) — 편집 책임자·관리자
+  { id: "stats", label: "지방세 통계", href: "/admin/stats", when: (a) => a.has("stats.approve"), paths: ["/admin/stats"] },
+  { id: "channels", label: "채널 배포 키트", href: "/admin/channels", when: (a) => a.has("channel.record"), paths: ["/admin/channels"] },
   // 보안 정책 페이지 항목·통제 자가 점검 (SEC-01 — W12-g) — 관리자(PO)만
   { id: "security", label: "보안 정책", href: "/admin/security", when: (a) => a.has("security_page.edit"), paths: ["/admin/security"] },
   // 기관 구독·계약·좌석·확인표·견적 요청 (BIZ-07·PAY-04 — W11-f) — 스토어·구독 담당·관리자 / 프리미엄 리포트 편집·발행 — 편집 책임자·관리자

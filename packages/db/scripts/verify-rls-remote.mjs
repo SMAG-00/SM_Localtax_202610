@@ -37,6 +37,11 @@ export const ANON_EXECUTE_ALLOWED = new Set([
   "agent_premium_hint",
   // W12-e - 공개 단계·범위 플래그 값만 돌려주는 공개 판정 함수(security definer, 리포트·지표·승인자 0, docs/dev/W12-e_설계.md)
   "public_ask_gate",
+  // W12-b - 지방세봇 기록·런타임 함수 4개(security definer, 입력 모양 검사, 표 직접 읽기·쓰기 0, docs/dev/W12-b_설계.md)
+  "agent_register_prompt",
+  "agent_runtime",
+  "agent_session_state",
+  "agent_record_turn",
 ]);
 
 /** 응답 판정 — 빈 배열·401·403·404는 차단, 행이 있는 200은 노출, 그 밖은 오류 */

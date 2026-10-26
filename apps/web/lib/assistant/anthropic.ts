@@ -36,13 +36,22 @@ export interface ToolDef {
   name: string;
   description: string;
   input_schema: Record<string, unknown>;
+  /** 엄격한 입력 스키마 (지방세봇 W12-b) */
+  strict?: boolean;
+}
+export interface SystemBlock {
+  type: "text";
+  text: string;
+  cache_control?: { type: "ephemeral" };
 }
 export interface MessagesRequest {
   model: string;
   max_tokens: number;
-  system: string;
+  system: string | SystemBlock[];
   messages: unknown[];
   tools?: ToolDef[];
+  /** 추론 강도 등 (지방세봇 W12-b - 칸 모양은 model-request.ts 한 곳에서 정한다) */
+  output_config?: Record<string, unknown>;
 }
 export interface ModelClient {
   create(request: MessagesRequest): Promise<MessagesResponse>;

@@ -74,6 +74,8 @@ export interface JobServices {
   draftCaseSummaries(now: Date): Promise<Record<string, unknown>>;
   /** W12-f O6 정합성 감시 - 개정 조문을 인용한 기사를 찾아 경보와 "개정 전 기준" 배너 제안을 검수 큐에만 올린다. AI 없이도 돈다 (AIOPS-09) */
   watchConsistency(now: Date): Promise<Record<string, unknown>>;
+  /** W12-h 지방세 통계 수집 - 기능 키 data_stories·인증키·주소 칸·원천 이용 조건이 모두 맞아야 요청한다. 시계열 초안만 쌓고 공개는 사람 승인 뒤. AI 없음. 결과는 수와 이유뿐 (DATA-01) */
+  collectStats(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -136,6 +138,8 @@ export const jobs: Record<string, Job> = {
   "case-summary-draft": async ({ now, services }) => withUsage(await services.draftCaseSummaries(now)),
   // W12-f 정합성 감시 (매일, 개정 감지 뒤) - 제안은 검수 큐에만. 월요일엔 깨진 연결 점검도 한다
   "consistency-watch": async ({ now, services }) => withUsage(await services.watchConsistency(now)),
+  // W12-h 지방세 통계 수집 (매일 01:55 KST) - 초안만 쌓이고 공개 화면은 바뀌지 않는다
+  "stats-collect": async ({ now, services }) => ({ detail: await services.collectStats(now), revalidatePublic: false }),
 };
 
 export function findJob(name: string): Job | undefined {
