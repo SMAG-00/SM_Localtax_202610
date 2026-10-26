@@ -20,6 +20,7 @@ step "편집국 API E2E (역할별 403·감사 로그·발행 판정)"; node --t
 step "운영 API E2E (분야·사전·설정·제휴사·회원 정지 — 403·422·감사 로그)"; node --test --test-concurrency=1 e2e/admin-settings-api.test.mjs
 step "홈 배치 API E2E (편집 책임자 201·편집국 외 403·7장째 409·끝난 카드 공개 0)"; node --test --test-concurrency=1 e2e/admin-home-api.test.mjs
 step "브라우저 설치 (Playwright Chromium)";  pnpm exec playwright install --with-deps chromium
+step "W11-z 수용 E2E (3단계 닫는 묶음 - 키 꺼짐 새 화면 404·양도 경로 404 / 증여세 계산 화면 밖 국세 금액 0 / 4단계 진입 버튼 0·도우미 소스 igt-engine import 0 / 주택 수·총비용·판정·증여세 계산 중 요청·주소·저장소·쿠키·이벤트·로그에 입력 0 / 쟁점 지도 SVG = 표 행 / 접근성 95·R1~R3 / 키 다시 끄면 404)"; node --test --test-concurrency=1 e2e/w11-acceptance.test.mjs
 step "W11-b 수용 E2E (세금 전 주기·주택 수·총비용 - 키 꺼짐/자료 없음 404·서명 전 가이드 공개 0·관리자 서명 403 / 탭 3개·원인 3칸·양도 탭 입력 칸 0·SM 카드 1장 / 원인별 다른 판정표 버전·모르겠어요 결론 0 / 총액=그래프=표=행 합·금리 0%·보유 0년·상한 거부·보유세 미포함 칩·양도 줄 0 / 계산 중 네트워크·저장소 0 / 메모리 전달 / FAM-05 카드 / 정책 모양 거부)"; node --test --test-concurrency=1 e2e/w11b-acceptance.test.mjs
 step "W11-d 수용 E2E (쟁점 지도 - 키 꺼짐 404 / 태그 기자 403·승인 전 목록 0·승인 뒤 1·폐기하면 빠짐 / 없는 조문 번호 422·번호 외 칸 422·관계 라벨 밖 422 / 서명 없이 공개 409+감사·관리자 서명 403·감수위원 서명 뒤 공개 / SVG 상자·선 수 = 표 행 수·고정 문구 / 조문 개정 -> 배지 + 검수 1건 / AI SDK import 0)"; node --test --test-concurrency=1 e2e/w11d-acceptance.test.mjs
 step "W10-b 수용 E2E (계산기 화면·위택스 - 게이트 닫힘 SM 카드 1장·열림 자체 카드 전환·질문형 한 화면 1질문·총액=명세 합계·360px·위택스 바로가기 카드·주소 점검)"; node --test --test-concurrency=1 e2e/w10b-acceptance.test.mjs

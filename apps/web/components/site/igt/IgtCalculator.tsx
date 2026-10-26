@@ -135,8 +135,8 @@ function ResultView({ result, kind, rulesetVersion, engineHash }: { result: AnyR
 function Notice() {
   return (
     <div className="mt-3 rounded-md bg-navy-50 p-4 text-[13px] text-navy-700" data-part="igt-notice">
-      <p>참고용 계산입니다. 실제 신고·납부는 국세청 안내를 따르고, 개별 사안은 세무 전문가와 확인하세요. 이 금액은 지방세 금액과 합산하지 않습니다.</p>
-      <p className="mt-1">입력한 값은 이 화면(브라우저)에만 있고 저장하거나 전송하지 않습니다. 새로고침하면 사라집니다.</p>
+      <p>참고용 계산입니다. 신고·납부는 국세청 안내를 따르고 개별 사안은 전문가와 확인하세요. 이 금액은 지방세 금액과 합산하지 않습니다.</p>
+      <p className="mt-1">입력은 브라우저에만 있고 저장·전송하지 않으며 새로고침하면 사라집니다.</p>
     </div>
   );
 }

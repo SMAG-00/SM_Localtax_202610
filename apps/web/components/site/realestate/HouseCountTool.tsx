@@ -43,7 +43,7 @@ export function HouseCountTool({ tables }: { tables: { kind: string; body: unkno
   return (
     <main id="main" data-ui="house-count" className="mx-auto w-full max-w-[760px] px-4 py-10">
       <h1 className="text-[28px] font-black text-navy-900">주택 수 판정 도우미</h1>
-      <p className="mt-2 text-[15px] text-navy-700">입력한 내용은 이 화면에만 있고 저장하거나 보내지 않습니다. 모르는 칸은 비워 두세요.</p>
+      <p className="mt-2 text-[15px] text-navy-700">입력은 이 화면에만 있고 저장·전송하지 않습니다.</p>
       <fieldset className="mt-5">
         <legend className="text-[16px] font-bold text-navy-900">어떻게 취득했나요?</legend>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -59,7 +59,7 @@ export function HouseCountTool({ tables }: { tables: { kind: string; body: unkno
         <section data-part="entries" className="mt-6 space-y-4">
           <label className="flex min-h-11 items-center gap-3 text-[15px] text-navy-800">
             <input type="checkbox" checked={listKnown} onChange={(e) => setListKnown(e.target.checked)} className="h-5 w-5" />
-            <span>보유 목록을 입력할게요 (항목이 없으면 그대로 0개로 판정합니다)</span>
+            <span>보유 목록을 입력할게요 (없으면 0개)</span>
           </label>
           {listKnown &&
             entries.map((e, i) => (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FigureToggle, MeasureIssueSources } from "./IssueMapClient";
+import { FigureToggle, MeasureIssueSources, TableToggle } from "./IssueMapClient";
 import { MeasureView } from "./Measure";
 import { DOC_TYPE_NOUN } from "@/lib/law/related";
 import type { IssueCaseListView, IssueIndexView, IssuePageView } from "@/lib/server/public/issues";
@@ -65,7 +65,7 @@ export function IssueMapPage({ view, entry }: { view: IssuePageView; entry: Issu
       <MeasureView name="issue_map_viewed" section="realestate" props={{ issue: view.slug, entry }} />
       <MeasureIssueSources issue={view.slug} />
       <p className="text-[14px] text-navy-500">
-        <Link href="/realestate/issues" className="underline-offset-2 hover:underline">쟁점 연결 지도</Link> · {ISSUE_HUB_LABEL[view.hub] ?? view.hub}
+        <Link href="/realestate/issues" className="underline-offset-2 hover:underline">목록</Link> · {ISSUE_HUB_LABEL[view.hub] ?? view.hub}
       </p>
       <h1 className="mt-1 text-[28px] font-black text-navy-900">{view.title}</h1>
       {view.stale && (
@@ -80,6 +80,8 @@ export function IssueMapPage({ view, entry }: { view: IssuePageView; entry: Issu
       <p className="mt-2 text-[14px] text-navy-700" data-part="notice">{ISSUE_MAP_NOTICE}</p>
       <div className="mt-6 flex flex-col gap-6 sm:flex-col-reverse">
         <section aria-labelledby="map-tables" data-part="tables" className="space-y-6">
+          <TableToggle>
+          <div className="space-y-6">
           <h2 id="map-tables" className="text-[20px] font-bold text-navy-900">같은 내용의 표</h2>
           <table className="w-full border-collapse text-left text-[14px]" data-part="node-table">
             <caption className="mb-1 text-left font-bold">조문·결정례 {d.nodeRows.length}건</caption>
@@ -133,6 +135,8 @@ export function IssueMapPage({ view, entry }: { view: IssuePageView; entry: Issu
               ))}
             </tbody>
           </table>
+          </div>
+          </TableToggle>
         </section>
         <figure data-part="figure">
           <FigureToggle>
