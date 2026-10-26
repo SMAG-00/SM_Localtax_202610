@@ -32,10 +32,10 @@ const go = (id, to, over = {}) => {
 };
 const statusOf = async (id) => await h.one("select status, attempts, failed_from from public.review_items where id = $1", [id]);
 
-test("원천 씨앗 13행(해석·법령 6 + 분야 데이터 7)은 모두 unchecked이고 수집할 수 없다", () =>
+test("원천 씨앗 14행(해석·법령 7 + 분야 데이터 7)은 모두 unchecked이고 수집할 수 없다", () =>
   h.tx(async () => {
     const rows = (await client.query("select key, terms_status, public.data_source_runnable(key) as runnable from public.data_sources order by key")).rows;
-    assert.deepEqual(rows.map((r) => r.key), ["admrul", "applyhome_supply", "buildinghub_permit", "court_case", "dart_disclosure", "festival_data", "fin_authority_release", "law_api", "mois_interpretation", "nts_interpretation", "pf_integrated_info", "seoul_cleanup", "tribunal_decision"]);
+    assert.deepEqual(rows.map((r) => r.key), ["admrul", "applyhome_supply", "buildinghub_permit", "court_case", "dart_disclosure", "festival_data", "fin_authority_release", "law_api", "mois_interpretation", "nts_interpretation", "ordinance_api", "pf_integrated_info", "seoul_cleanup", "tribunal_decision"]);
     assert.ok(rows.every((r) => r.terms_status === "unchecked" && r.runnable === false));
   }));
 

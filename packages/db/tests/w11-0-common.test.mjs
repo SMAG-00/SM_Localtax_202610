@@ -74,7 +74,7 @@ test("설정 씨앗 4개는 빈 객체이고 공개 설정 키 목록에 없다"
     for (const k of NEW_SETTINGS) {
       const row = (await client.query("select value from public.settings where key = $1", [k])).rows[0];
       // institution_inquiry_policy는 W11-f 134가 보존 기간 365일 한 칸을 씨앗으로 채운다 (법률 검토 대상 값은 아님 - 나머지 3개는 빈 객체)
-      assert.deepEqual(row?.value, k === "institution_inquiry_policy" ? { retention_days: 365 } : {}, k === "institution_inquiry_policy" ? `${k}는 retention_days 365` : `${k}는 빈 객체`);
+      assert.deepEqual(row?.value, k === "institution_inquiry_policy" ? { retention_days: 365 } : k === "stale_check_policy" ? { zone_days: 90, ordinance_days: 90, redevelopment_types: ["redevelopment", "reconstruction", "small_scale", "renewal"] } : {}, k === "institution_inquiry_policy" ? `${k}는 retention_days 365` : `${k}는 빈 객체`);
     }
     const pub = (await client.query("select value from public.settings where key = 'public_keys'")).rows[0]?.value;
     const publicKeys = Array.isArray(pub) ? pub : [];

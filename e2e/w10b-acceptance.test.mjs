@@ -285,7 +285,7 @@ test("e) 상속 원인 - 미포함 안내 1개·외부 카드 1장·입력값 0,
   await pick(g, "증여");
   assert.equal(await g.locator('[data-part="unsupported"]').count(), 1, "공개 전 원인은 unsupported");
   assert.equal(await g.locator('[data-part="total-amount"]').count(), 0, "금액 줄 0 (0원도 아님)");
-  assert.equal(await g.locator('[data-ui="sm-calculator-card"]').count(), 1, "SM 취득세 카드");
+  assert.equal(await g.locator('[data-ui="sm-calculator-card"][data-calc="acquisition"]').count(), 1, "SM 취득세 카드"); // 상속·증여 후 다음에 확인할 것(W11-b FAM-05)의 양도세 SM 카드는 따로 센다
   assert.equal(await g.locator('[data-ui="external-calculator-card"]').count(), 1, "외부 계산기 카드");
   await g.close();
 });

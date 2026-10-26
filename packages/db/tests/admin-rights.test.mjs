@@ -94,6 +94,14 @@ const APPEND_ONLY = new Set([
   "public.campaign_audit", // 캠페인 감사 기록(W10-i) - 읽기·추가만
   "public.realestate_weekly_issues", // 재테크 포인트 주간 호(W10-i) - 읽기·추가·고치기, 지우기 0
   "public.realestate_weekly_audit", // 재테크 포인트 감사 기록(W10-i) - 읽기·추가만
+  "public.guide_placements", // 가이드 배치(W11-c) - 읽기·추가·지우기만, 고치기 0 (바꾸면 지우고 다시)
+  "public.issue_tags", // 이슈 태그(W11-d) - 읽기·추가만, 쓰기는 관리 함수 경로
+  "public.case_issue_tags", // 사례-이슈 태그 연결(W11-d) - 읽기·추가만
+  "public.issue_graphs", // 이슈 지도(W11-d) - 읽기·추가만, 상태 변경은 함수로만
+  "public.issue_graph_signals", // 이슈 지도 갱신 신호(W11-d) - 읽기만, 함수·트리거로만 쓴다
+  "public.issue_audit", // 이슈 지도 감사 기록(W11-d) - 읽기·추가만
+  "public.ordinance_links", // 조례 연결(W11-e) - 읽기·추가·고치기, 지우기 0
+  "public.igt_rulesets", // 상속·증여 룰셋(W11-g) - 읽기·추가만, 상태는 sign_*/approve_* 함수로만
 ]);
 let client;
 

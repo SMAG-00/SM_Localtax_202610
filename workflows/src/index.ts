@@ -44,6 +44,8 @@ export interface JobServices {
   purgeInstitutionInquiries(now: Date): Promise<Record<string, unknown>>;
   /** W11-f 기관 계약 종료 정리 - 종료 시각이 지난 계약을 끝내고 남은 좌석을 회수 처리한다. 권한은 valid_until로 이미 끝나 있다. 결과는 수뿐 */
   closeExpiredOrgContracts(now: Date): Promise<Record<string, unknown>>;
+  /** W11-d 쟁점 지도 개정 신호 - 지도 노드가 가리키는 조문의 글이 새 개정판에서 달라졌으면 지도에 배지를 달고 검수 큐 항목 1건을 만든다. 해시만 바뀐 사건은 제외. AI 없음. 결과는 수뿐 (AIOPS-11 · LINK-01) */
+  detectIssueGraphStale(now: Date): Promise<Record<string, unknown>>;
   /** W10-c 법령 감시 — 기능 키 pipelines·LAW_API_OC·원천 이용 조건 중 하나라도 틀리면 요청 0으로 건너뛴다 (PIPE-01). 결과는 수와 이유뿐 */
   runLawPipeline(now: Date): Promise<Record<string, unknown>>;
   /** W10-c 행정규칙·해석·결정례 수집 — 원천마다 같은 관문 (PIPE-02~04) */
@@ -64,6 +66,8 @@ export interface JobServices {
   sendAmendmentAlerts(now: Date): Promise<Record<string, unknown>>;
   /** W10-e 운영 AI 월 예산 점검 (AIOPS-04) */
   checkOpsBudget(now: Date): Promise<Record<string, unknown>>;
+  /** W11-e 정비 현황·조례 확인일 경고 - DB 함수만 부른다(외부 요청 0). 결과는 수와 이유뿐 (AIOPS-14) */
+  refreshZones(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -96,6 +100,8 @@ export const jobs: Record<string, Job> = {
   "institution-inquiry-purge": async ({ now, services }) => ({ detail: await services.purgeInstitutionInquiries(now), revalidatePublic: false }),
   // 기관 계약 종료 정리 (하루 한 번)
   "org-contract-close": async ({ now, services }) => ({ detail: await services.closeExpiredOrgContracts(now), revalidatePublic: false }),
+  // 쟁점 지도 개정 신호 (하루 한 번, 법령 수집 뒤) - 공개 지도의 "개정 반영 검토 중" 배지가 바뀌므로 공개 화면 캐시를 비운다
+  "issue-graph-stale": async ({ now, services }) => ({ detail: await services.detectIssueGraphStale(now), revalidatePublic: true }),
   // 법령 변경 감시 (하루 한 번) — 후보는 검수 큐에만 쌓이고 공개 화면은 바뀌지 않는다
   "pipeline-law": async ({ now, services }) => ({ detail: await services.runLawPipeline(now), revalidatePublic: false }),
   // 행정규칙·해석·결정례 수집 (하루 한 번) — 후보 문서는 권리 확인 전까지 공개되지 않는다
@@ -116,6 +122,8 @@ export const jobs: Record<string, Job> = {
   "amendment-alert": async ({ now, services }) => withUsage(await services.sendAmendmentAlerts(now)),
   // W10-e 운영 AI 월 예산 점검 (하루 한 번)
   "ops-ai-budget": async ({ now, services }) => withUsage(await services.checkOpsBudget(now)),
+  // 정비 현황·조례 확인일 경고 (AIOPS-14 · TX-13 - 하루 한 번). 경고 수만 실행 기록에 남긴다
+  "zone-refresh": async ({ now, services }) => ({ detail: await services.refreshZones(now), revalidatePublic: true }),
 };
 
 export function findJob(name: string): Job | undefined {

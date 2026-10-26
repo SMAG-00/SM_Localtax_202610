@@ -144,6 +144,9 @@ export const FEATURE_KEYS = [
   // W11-f - 기관 구독·좌석 (/org/*·/store/institution 좌석 화면)·프리미엄 리포트 (/finance/reports/*)·기관 견적 요청 양식. 모두 꺼짐으로 출하 (W11-0 몫을 병렬 작업을 위해 131이 가짐)
   "institution_subscription",
   "institution_inquiry",
+  // W11-g - 상속·증여세 자체 계산 /calc/gift-tax·/calc/inheritance-tax (FAM-10·11). 공개 게이트(calc_gate_status gift/inheritance ALL)가 열려야 켜진다. 마이그레이션 136, 꺼짐으로 시작
+  "calc_igt_gift",
+  "calc_igt_inheritance",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;
@@ -283,6 +286,8 @@ const FEATURE_PREFIXES: ReadonlyArray<{ prefix: string; feature: FeatureKey; sel
   // 법령 뷰어 /law…(W10-d - 3단 보기 /law/[id]/three는 화면이 law_three 키를 따로 본다)·해석 DB /cases…(W10-d) - 공개 승인 전에는 닫힘
   { prefix: "/law", feature: "law_viewer", self: true },
   { prefix: "/cases", feature: "case_db", self: true },
+  // 쟁점 연결 지도 /realestate/issues…(W11-d) - 공개 승인(기능 키 issue_graph) 전에는 닫힘. 쟁점별 결정례·해석 목록(TRU-05·RDV-08)도 이 아래에 있다
+  { prefix: "/realestate/issues", feature: "issue_graph", self: true },
   // 용어사전 색인·용어 쪽 (W2-d 3단계 — 공개 승인 전에는 닫힘)
   { prefix: GLOSSARY_HREF, feature: "glossary", self: true },
   // 회원 화면 (W2-e — `members`, 가입·메일·약관·처리방침 게시본이 갖춰져야 열린다 — lib/policy/feature-open.ts)

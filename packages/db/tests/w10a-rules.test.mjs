@@ -423,5 +423,5 @@ test("게이트 뷰에는 설정·수동 칸이 없다 - 열림 여부는 뷰 �
     const def = (await one("select pg_get_viewdef('public.calc_gate_status'::regclass) d")).d;
     assert.ok(!/settings/i.test(def), "settings를 읽지 않는다");
     const rows = (await client.query("select tax_kind, cause_group from public.calc_gate_status order by 1, 2")).rows.map((r) => `${r.tax_kind}:${r.cause_group}`);
-    assert.deepEqual(rows, ["acquisition:GIFT", "acquisition:INHERITANCE", "acquisition:OTHER", "comprehensive:ALL", "property:ALL"], "국세 세목 묶음 없음");
+    assert.deepEqual(rows, ["acquisition:GIFT", "acquisition:INHERITANCE", "acquisition:OTHER", "comprehensive:ALL", "gift:ALL", "inheritance:ALL", "property:ALL"], "묶음 7개 고정 - 지방세 5 + 국세 증여·상속 2(W11-g, 따로 열린다)");
   }));

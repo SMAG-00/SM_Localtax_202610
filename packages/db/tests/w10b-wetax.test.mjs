@@ -142,11 +142,11 @@ test("공개 뷰: anon이 읽을 수 있고 원 표는 읽지 못한다", async 
     }
   }));
 
-test("공개 뷰 public_calc_gate: 묶음 5개 고정, 칸은 건수와 공개 여부뿐", async () =>
+test("공개 뷰 public_calc_gate: 묶음 7개 고정(W11-g가 증여·상속 추가), 칸은 건수와 공개 여부뿐", async () =>
   tx(async () => {
     const r = await attempt("select * from public.public_calc_gate order by tax_kind, cause_group", [], "anon");
     assert.ok(r.ok, r.message);
-    assert.deepEqual(r.rows.map((x) => `${x.tax_kind}/${x.cause_group}`), ["acquisition/GIFT", "acquisition/INHERITANCE", "acquisition/OTHER", "comprehensive/ALL", "property/ALL"]);
+    assert.deepEqual(r.rows.map((x) => `${x.tax_kind}/${x.cause_group}`), ["acquisition/GIFT", "acquisition/INHERITANCE", "acquisition/OTHER", "comprehensive/ALL", "gift/ALL", "inheritance/ALL", "property/ALL"]);
     assert.deepEqual(Object.keys(r.rows[0]).sort(), ["cause_group", "engine_hash", "is_open", "official_cases", "official_matched", "ruleset_version", "run_at", "sample_cases", "sample_matched", "tax_kind"].sort());
     // 활성 룰셋·실행이 없으면 어떤 묶음도 열리지 않는다
     const active = await client.query("select count(*)::int as n from public.rulesets where status = 'active'");

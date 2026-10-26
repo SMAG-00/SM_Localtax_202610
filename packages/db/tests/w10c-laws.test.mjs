@@ -25,13 +25,15 @@ async function version(law, over = {}) {
   return h.attempt(`insert into public.law_versions (${keys.join(", ")}) values (${keys.map((_, i) => `$${i + 1}`).join(", ")}) returning id`, keys.map((k) => row[k]));
 }
 
-test("감시 목록 씨앗 — 지방세 12 + 연관 국세 3, 상속세·증여세 법령은 없다", () =>
+test("감시 목록 씨앗 — 지방세 12 + 연관 국세 3 + 쟁점 지도 관련 19(W11-d 122) + 상속·증여 감시 3(W11-g 138, scope national_igt), 그 밖 scope 에 상속세·증여세 법령은 없다", () =>
   h.tx(async () => {
     const rows = (await client.query("select name, scope from public.laws")).rows;
-    assert.equal(rows.length, 15);
+    assert.equal(rows.length, 37);
     assert.equal(rows.filter((r) => r.scope === "local").length, 12);
     assert.equal(rows.filter((r) => r.scope === "linked_national").length, 3);
-    assert.ok(rows.every((r) => !/상속세|증여세/.test(r.name)));
+    assert.equal(rows.filter((r) => r.scope === "related").length, 19);
+    assert.equal(rows.filter((r) => r.scope === "national_igt").length, 3);
+    assert.ok(rows.filter((r) => r.scope !== "national_igt").every((r) => !/상속세|증여세/.test(r.name)));
   }));
 
 test("상속세·증여세 법령 이름은 법·시행령·시행규칙 어떤 형태로도 넣을 수 없다", () =>
