@@ -15,7 +15,7 @@ export interface LawRow {
   id: number;
   name: string;
   tier: "statute" | "decree" | "rule";
-  scope: "local" | "linked_national";
+  scope: "local" | "linked_national" | "related" | "national_igt";
 }
 export interface LawVersionRow {
   id: number;
