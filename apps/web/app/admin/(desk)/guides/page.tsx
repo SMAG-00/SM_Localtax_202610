@@ -6,6 +6,7 @@ import { GUIDE_HUBS, GUIDE_STATUS_LABEL, HUB_LABEL, SCOPE_LABEL, TAX_SCOPES } fr
 import { pageViewer, requirePage } from "@/lib/server/admin/pages";
 import { serviceDb } from "@/lib/server/articles/service";
 import { loadGuidesBoard } from "@/lib/server/guides/board";
+import { PLACEMENT_SURFACES } from "@/lib/tax-guide/placements";
 
 // 감수 가이드 (/admin/guides - W11-a a6, PRD-03 5장·7장 guides, docs/dev/W11-a_설계.md 5장).
 //  · 경로는 하나: 초안 -> 세무 감수위원 서명 -> 관리자 공개. 서명 없는 버전에는 [공개] 버튼이 없고, DB 함수도 거부한다.
@@ -14,6 +15,14 @@ export const metadata: Metadata = { title: "감수 가이드" };
 export const dynamic = "force-dynamic";
 
 const ENDPOINT = "/api/admin/guides";
+const PLACEMENT_ENDPOINT = "/api/admin/guides/placements";
+const SURFACE_LABEL: Record<(typeof PLACEMENT_SURFACES)[number], string> = { trust_type: "신탁 유형 페이지", finance_tax_hub: "금융 구조별 세금 가이드 허브", dev_method: "개발방법 페이지", stage: "정비 단계 페이지", situation: "상황 페이지" };
+const PLACEMENT_FIELDS: LnField[] = [
+  { name: "guide_id", label: "가이드 번호 (guides.id)", required: true },
+  { name: "surface", label: "붙일 화면", type: "select", options: [{ value: "", label: "고르세요" }, ...PLACEMENT_SURFACES.map((s) => ({ value: s, label: SURFACE_LABEL[s] }))], required: true },
+  { name: "target_key", label: "대상 키 (구조 해설 slug·방법 slug·단계 키·상황 slug·허브 주제 키)", required: true },
+  { name: "sort", label: "순서 (0~1000, 비우면 0)" },
+];
 const STATUS_TONE = { draft: "navy", reviewed: "amber", published: "emerald", retired: "navy" } as const;
 const CREATE_FIELDS: LnField[] = [
   { name: "hub", label: "허브", type: "select", options: [{ value: "", label: "고르세요" }, ...GUIDE_HUBS.map((h) => ({ value: h, label: HUB_LABEL[h] }))], required: true },
@@ -86,6 +95,12 @@ export default async function GuidesPage() {
         {canEdit && (
           <Panel id="gd-new" title="초안 만들기" description="붙여 넣은 값을 형식 검사해 초안으로만 저장합니다. 이미 있는 주제면 새 버전 초안이 됩니다. 저장해도 서명 전이라 사이트에는 나오지 않습니다.">
             <OpForm id="gd-create" op="create" label="초안 만들기" submit="초안 저장" endpoint={ENDPOINT} fields={CREATE_FIELDS} />
+          </Panel>
+        )}
+        {canEdit && (
+          <Panel id="gd-placements" title="가이드 배치" description="어느 화면에 어느 가이드를 붙일지 정합니다. 원고는 가이드 버전 한 곳에만 있고 배치는 위치만 정합니다. 서명·공개 전 가이드는 붙여 둬도 사이트에 나오지 않습니다. 금융 구조별 세금 가이드 허브는 자본시장법 검토 기록으로 기능 키를 켠 뒤에 보입니다.">
+            <OpForm id="gd-place-add" op="add" label="가이드 붙이기" submit="붙이기" endpoint={PLACEMENT_ENDPOINT} fields={PLACEMENT_FIELDS} />
+            <OpForm id="gd-place-remove" op="remove" label="가이드 빼기" submit="빼기" endpoint={PLACEMENT_ENDPOINT} fields={PLACEMENT_FIELDS.slice(0, 3)} />
           </Panel>
         )}
         <Panel id="gd-audit" title="서명·공개 기록 (최근 40건)">

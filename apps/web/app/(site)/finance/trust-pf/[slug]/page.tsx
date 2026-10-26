@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
 import { StructureDetail } from "@/components/site/FinanceViews";
+import { PlacedGuides } from "@/components/site/tax-guide/PlacedGuides";
+import { IssueMapEntry, TrustArticles, TrustJudgmentEntry } from "@/components/site/tax-guide/TaxEntries";
 import { isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
 import { getStructure } from "@/lib/server/public/finance";
 import { SLUG_RE } from "@/lib/admin/finance-rules";
@@ -24,5 +26,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const view = await load((await params).slug);
   if (view === null || isUnavailable(view)) notFound();
-  return <StructureDetail view={view} />;
+  // W11-c c2 (TRU-01·02·03): 세금 칸 - 같은 신탁 가이드는 /finance/tax-guide 와 같은 public_guides 한 곳에서 읽는다 (구조 해설은 이 경로 하나)
+  return (
+    <>
+      <StructureDetail view={view} />
+      <PlacedGuides surface="trust_type" targetKey={view.slug} id="finance-structure-tax" heading={{ eyebrow: "신탁 세금", title: "이 신탁 유형의 세금" }} />
+      <TrustArticles />
+      <div className="mx-auto max-w-5xl px-4 pb-10">
+        <TrustJudgmentEntry />
+        <IssueMapEntry hub="trust" />
+      </div>
+    </>
+  );
 }

@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
 import { SituationView } from "@/components/site/SituationView";
+import { FamilyNextLinks } from "@/components/site/realestate/FamilyNextLinks";
+import { getFamilyNextForSituation } from "@/lib/server/public/realestate-tools";
+import { PlacedGuides } from "@/components/site/tax-guide/PlacedGuides";
 import type { SearchParams } from "@/components/site/routes";
 import { UnavailablePage } from "@/components/site/Unavailable";
 import { getSituationPage, isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
@@ -31,7 +34,17 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 }
 
 export default async function SituationPage({ params, searchParams }: Props) {
-  const page = await load((await params).slug, queryValue((await searchParams).region) ?? null);
+  const slug = (await params).slug;
+  const page = await load(slug, queryValue((await searchParams).region) ?? null);
   if (isUnavailable(page)) return <UnavailablePage />;
-  return <SituationView page={page} />;
+  // W11-b b7 (FAM-05): 상속·증여 상황이면 다음에 확인할 것 링크 묶음 - 공개된 도구가 없으면 상자째 없음
+  const familyNext = await getFamilyNextForSituation(slug).catch(() => null);
+  // W11-c c9 (상황 카드 "신탁 부동산이에요"·"조합원이에요"): 3단계 칸 - 상황에 붙은 가이드가 있을 때만
+  return (
+    <>
+      <SituationView page={page} />
+      {familyNext && <FamilyNextLinks from="situation_page" cards={familyNext.cards} sm={familyNext.sm} />}
+      <PlacedGuides surface="situation" targetKey={slug} id="situation-tax-guides" heading={{ eyebrow: "세금 가이드", title: "이 상황에서 먼저 볼 세금 해설" }} />
+    </>
+  );
 }

@@ -36,8 +36,9 @@ const LISTS = {
     { key: "done", label: "시험용 다른 준공" },
   ],
 };
-const TABLE_COLUMNS = ["project_type", "stage", "lens", "drafted_by", "drafted_at", "reviewed_by", "reviewed_at", "review_status"];
-const VIEW_COLUMNS = ["project_type", "stage", "stage_position", "topics", "points", "links", "base_date", "reviewed_at", "reviewer_name"];
+// W11-c 119/120이 판정 종류(determination_kind) 칸을 표·공개 뷰 끝에 더했다
+const TABLE_COLUMNS = ["project_type", "stage", "lens", "drafted_by", "drafted_at", "reviewed_by", "reviewed_at", "review_status", "determination_kind"];
+const VIEW_COLUMNS = ["project_type", "stage", "stage_position", "topics", "points", "links", "base_date", "reviewed_at", "reviewer_name", "determination_kind"];
 const ACTOR = "user:w4pl-test";
 
 let client;
