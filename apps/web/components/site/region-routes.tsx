@@ -9,6 +9,7 @@ import { regionRobots, regionTitle } from "@/lib/server/public/region-index-logi
 import { pageTitle, queryValue } from "@/lib/site/hub-view";
 import { UNAVAILABLE_TITLE } from "@/lib/site/public-gate";
 import { RegionView } from "./RegionView";
+import { RegionStage3Blocks } from "./RegionStage3Blocks";
 import { UnavailablePage } from "./Unavailable";
 
 // 지역 화면 경로 처리 (/local/[sido] · /local/[sido]/[sigungu] — W4 3단계) — 경로 파일은 slug만 넘긴다. 요청 때 그린다(빌드 때 DB를 읽지 않는다).
@@ -49,5 +50,6 @@ export async function RegionRoute({ params, searchParams }: { params: RegionPara
   const { sido, sigungu } = await params;
   const page = await loadRegion(sido, sigungu ?? null, await topicOf(searchParams));
   if (isUnavailable(page)) return <UnavailablePage />;
-  return <RegionView page={page} />;
+  // W11-e - 정비 현황(③)·조례(⑤) 블록 (기능 키 꺼짐·항목 0이면 렌더 0)
+  return <RegionView page={page} stage3={page.level === "sido" || page.level === "sigungu" ? <RegionStage3Blocks regionCode={page.code} level={page.level} /> : undefined} />;
 }

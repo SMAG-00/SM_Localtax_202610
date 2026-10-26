@@ -104,7 +104,7 @@ function moreTargetsOf(blocks: readonly RegionHubBlock[]): Record<string, "proje
   return out;
 }
 
-export function RegionView({ page }: { page: RegionPage }) {
+export function RegionView({ page, stage3 }: { page: RegionPage; stage3?: React.ReactNode }) {
   const jsonLd = page.breadcrumb ? toJsonLdScriptContent([breadcrumbList(page.breadcrumb)]) : null;
   const find = (key: RegionHubBlock["key"]) => page.blocks.find((b) => b.key === key);
   return (
@@ -150,6 +150,7 @@ export function RegionView({ page }: { page: RegionPage }) {
                 </div>
               )}
               <LocalHubBlocks weekly={page.localNews.weekly ? weeklyBlockContent(page.localNews.weekly) : undefined} events={page.localNews.events ? eventsBlockContent(page.localNews.events) : undefined} localTax={blockContent(find("local_tax"))} realEstate={blockContent(find("realestate"))} sources={blockContent(find("official"))} />
+              {stage3}
             </div>
           }
           taxLinks={page.taxLinks ? <RegionTaxLinksBlock view={page.taxLinks} /> : undefined}
