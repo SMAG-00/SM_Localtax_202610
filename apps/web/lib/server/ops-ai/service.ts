@@ -52,12 +52,12 @@ export async function opsGate(db: Db, now: Date): Promise<OpsGate> {
   return { run: true, model, budget };
 }
 
-const usageOf = (gate: OpsGate, used: TokenUsage) => {
+export const usageOf = (gate: OpsGate, used: TokenUsage) => {
   const model = gate.model!.name;
   const cost = costOf(used, model, gate.budget!);
   return { model, inputTokens: used.inputTokens, outputTokens: used.outputTokens, ...(cost === null ? {} : { cost, costUnit: gate.budget!.unit }) };
 };
-const sum = (a: TokenUsage, b: TokenUsage): TokenUsage => ({ inputTokens: a.inputTokens + b.inputTokens, outputTokens: a.outputTokens + b.outputTokens });
+export const sum = (a: TokenUsage, b: TokenUsage): TokenUsage => ({ inputTokens: a.inputTokens + b.inputTokens, outputTokens: a.outputTokens + b.outputTokens });
 
 /** 예산 점검 작업 (하루 한 번) */
 export async function checkOpsBudget(db: Db, now: Date): Promise<Record<string, unknown>> {

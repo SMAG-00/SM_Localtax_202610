@@ -121,6 +121,19 @@ export interface CaseDetailView {
   provisions: Array<{ linkId: number; label: string; href: string; origin: "auto" | "editor" }>;
   /** 이 문서를 해설·인용한 기사 (확인된 연결, 공개 기사만) */
   articles: Array<{ linkId: number; title: string; href: string; reason: string }>;
+  /** 검수를 마친 요지 3줄 (CASE-05) - 승인 전·원문이 바뀐 뒤·기능 키 꺼짐이면 null. 사건번호·일자는 doc 값 */
+  summary: { lines: string[]; resultType: string; approvedOn: string } | null;
+}
+
+/** 승인된 결정례 요지 - 공개 뷰가 승인 ∧ 원문 해시 일치 ∧ 기능 키를 판정한다. 읽지 못하면 요지 없이 문서만 보인다 */
+async function readSummary(db: ReturnType<typeof publicDb>, id: number): Promise<CaseDetailView["summary"]> {
+  try {
+    const rows = await rowsOf<{ summary_lines: string[]; result_type: string; approved_on: string }>(db.from("public_case_summaries").select("summary_lines, result_type, approved_on").eq("case_id", id), "결정례 요지");
+    const r = rows[0];
+    return r ? { lines: r.summary_lines, resultType: r.result_type, approvedOn: r.approved_on } : null;
+  } catch {
+    return null;
+  }
 }
 
 interface PublicLink {
@@ -183,7 +196,9 @@ export async function getCaseDetail(kind: string, idParam: string): Promise<Case
   const lawRows = lawIds.length === 0 ? [] : await rowsOf<{ id: number; name: string }>(db.from("public_laws").select("id, name").in("id", lawIds), "연결 법령");
   const artIds = inc.map((l) => Number(l.src_id));
   const artRows = artIds.length === 0 ? [] : await rowsOf<{ id: number; slug: string; title: string }>(db.from("public_articles").select("id, slug, title").in("id", artIds), "연결 기사 제목");
+  const summary = await readSummary(db, id);
   return {
+    summary,
     doc: { ...doc, id: Number(doc.id) },
     paragraphs,
     citationLinksActive: active,

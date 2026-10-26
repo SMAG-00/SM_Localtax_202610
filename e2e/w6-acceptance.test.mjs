@@ -294,11 +294,14 @@ test("d) 행사 - 필수·주소·영리 규칙 422 · 키 꺼짐 404·링크 0 
   const biz = await post(u.editor, evBody(0, { organizer_type: "commercial", category: "commercial", sponsored: false }));
   assert.equal(biz.status, 422, "영리 주최는 sponsored 없이 거부");
 
-  const tax = await mkEvent(1, { category: "tax_finance", starts_at: kstDateTime(5, "10:00"), ends_at: kstDateTime(6, "12:00") });
-  const dev = await mkEvent(2, { category: "development", starts_at: kstDateTime(2, "10:00"), ends_at: kstDateTime(2, "12:00") });
-  const other = await mkEvent(3, { category: "other", starts_at: kstDateTime(1, "10:00"), ends_at: kstDateTime(1, "12:00") });
+  // 월 경계 비의존 - 정렬 시험의 네 행사(오늘+1~+6일)가 같은 달에 들도록 월말이면 시작일을 뒤로 민다 (목록은 월별로 묶이므로 달이 갈리면 분류 순서가 보이지 않는다)
+  let monthShift = 0;
+  while (kstDay(monthShift + 1).slice(0, 7) !== kstDay(monthShift + 6).slice(0, 7)) monthShift += 1;
+  const tax = await mkEvent(1, { category: "tax_finance", starts_at: kstDateTime(monthShift + 5, "10:00"), ends_at: kstDateTime(monthShift + 6, "12:00") });
+  const dev = await mkEvent(2, { category: "development", starts_at: kstDateTime(monthShift + 2, "10:00"), ends_at: kstDateTime(monthShift + 2, "12:00") });
+  const other = await mkEvent(3, { category: "other", starts_at: kstDateTime(monthShift + 1, "10:00"), ends_at: kstDateTime(monthShift + 1, "12:00") });
   const festival = await mkEvent(4, { category: "festival", starts_at: kstDateTime(4, "10:00"), ends_at: kstDateTime(4, "20:00") });
-  const ad = await mkEvent(5, { organizer_type: "commercial", category: "commercial", sponsored: true, starts_at: kstDateTime(1, "09:00"), ends_at: kstDateTime(1, "10:00") });
+  const ad = await mkEvent(5, { organizer_type: "commercial", category: "commercial", sponsored: true, starts_at: kstDateTime(monthShift + 1, "09:00"), ends_at: kstDateTime(monthShift + 1, "10:00") });
   const past = await mkEvent(6, { starts_at: kstDateTime(-10, "10:00"), ends_at: kstDateTime(-9, "12:00") });
   const draft = await mkEvent(7, {}, false);
   fx.events.push(tax, dev, other, festival, ad, past, draft);

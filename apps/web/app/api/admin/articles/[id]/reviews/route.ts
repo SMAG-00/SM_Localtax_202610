@@ -10,6 +10,7 @@ import { serviceDb } from "@/lib/server/articles/service";
 import { articleSummary, updateArticle } from "@/lib/server/articles/writes";
 import { authorize, requireViewer } from "@/lib/server/dal";
 import { dbError, errorJson, handle, json, parseId, readJson } from "@/lib/server/http";
+import { scheduleAiBox } from "@/lib/server/ops-ai/editorial";
 
 // 편집 승인(desk_edit)·세무 감수(tax_review)·광고 표기 확인(sponsor_check) 기록 (NAV-03 · NAV-12 · CORE-01)
 //  · desk_edit — 편집 책임자, 작성 기자 본인 거부(서버가 먼저 막고 DB 트리거도 막는다). checklist.noCausalClaim = '인과 단정 없음'(NAV-10)
@@ -122,5 +123,7 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
     after: { reviewId: (data as { id: number }).id, version: article.version, decision, checklist, status: after.status, editorialStatus: after.editorial_status, taxReviewStatus: after.tax_review_status },
     reason: reason ?? `${kind} ${decision}`,
   });
+  // 편집 승인되면 AI 요약 상자 초안을 응답 뒤에 만든다 (W12-f O3 - 꺼져 있으면 호출 0, 실패해도 승인에는 영향 없음, 초안은 승인 전 공개 0)
+  if (kind === "desk_edit" && decision === "approve" && after.editorial_status === "approved") await scheduleAiBox(db, id);
   return json({ review: data, article: articleSummary(after) }, 201);
 }, { revalidatesPublic: true });

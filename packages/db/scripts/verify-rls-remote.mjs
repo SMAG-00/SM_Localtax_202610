@@ -32,6 +32,11 @@ export const ANON_EXECUTE_ALLOWED = new Set([
   // W10-d - 해석 DB 검색 함수 2개(security invoker - 공개 뷰 public_legal_docs·public_links만 읽는다, docs/dev/W10-d_설계.md)
   "search_legal_docs",
   "legal_doc_type_counts",
+  // W12-a - 근거형 AI 검색 함수 2개(security definer - 필터·등급은 함수 안 SQL, 본문 읽기는 이 함수로만, docs/dev/W12-a_설계.md)
+  "agent_search",
+  "agent_premium_hint",
+  // W12-e - 공개 단계·범위 플래그 값만 돌려주는 공개 판정 함수(security definer, 리포트·지표·승인자 0, docs/dev/W12-e_설계.md)
+  "public_ask_gate",
 ]);
 
 /** 응답 판정 — 빈 배열·401·403·404는 차단, 행이 있는 200은 노출, 그 밖은 오류 */

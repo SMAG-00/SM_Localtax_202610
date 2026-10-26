@@ -120,6 +120,10 @@ export interface ArticleDetail {
   updates: UpdateEntry[];
   /** 법령 개정 신선도 검수 중 (W7 OPT-07 - 공개 뷰 public_freshness_reviews). 개정 이름·법령 내용은 담지 않는다 */
   freshnessReview: boolean;
+  /** 승인된 AI 요약 상자 (ART-13) - 승인 전·기사가 바뀐 뒤·기능 키 꺼짐이면 null */
+  aiBox: { lines: string[]; meaning: string; approvedOn: string } | null;
+  /** 편집자가 확인한 개정 영향 배너 (ART-14) - 확인 전·기능 키 꺼짐이면 빈 목록. 법령명·시행일은 원문 값 */
+  impactBanners: { lawName: string; effectiveOn: string; change: string }[];
   amendment: { title: string; href: string | null; stage: TrackerState; banner: { stageLabel: string; changedAt: string } | null } | null;
   taxLens: TaxLensView | null;
   /** 「지방세로 읽기」 박스 옆 국세 연결 카드 (FAM-08 · W4 23단계) - 박스 세목에 상속세·증여세가 있고 inheritance_gift가 켜졌을 때만 */
@@ -160,6 +164,26 @@ export function mediaOf(m: PublicMediaRow, site: string | undefined): ArticleMed
     width: m.width ?? null,
     height: m.height ?? null,
   };
+}
+
+/** 승인된 요약 상자 - 공개 뷰가 승인 ∧ 기사 버전 일치 ∧ 기능 키를 판정한다. 읽지 못하면 상자 없이 기사만 보인다 */
+async function readAiBox(articleId: number): Promise<ArticleDetail["aiBox"]> {
+  try {
+    const rows = await rowsOf<{ three_lines: string[]; meaning: string; approved_on: string }>(publicDb().from("public_article_ai_boxes").select("three_lines, meaning, approved_on").eq("article_id", articleId).limit(1), "요약 상자");
+    const r = rows[0];
+    return r ? { lines: r.three_lines, meaning: r.meaning, approvedOn: r.approved_on } : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readImpactBanners(articleId: number): Promise<ArticleDetail["impactBanners"]> {
+  try {
+    const rows = await rowsOf<{ law_name: string; effective_on: string; change: string }>(publicDb().from("public_impact_banners").select("law_name, effective_on, change").eq("article_id", articleId).order("effective_on"), "개정 영향 배너");
+    return rows.map((r) => ({ lawName: r.law_name, effectiveOn: r.effective_on, change: r.change }));
+  } catch {
+    return [];
+  }
 }
 
 export async function getArticleDetail(slug: string, now: Date = new Date()): Promise<ArticleDetail | null> {
@@ -313,6 +337,8 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     corrections: correctionEntries(corrections),
     updates: updateEntries(revisions),
     freshnessReview: freshness.length > 0,
+    aiBox: await readAiBox(id),
+    impactBanners: await readImpactBanners(id),
     amendment:
       amendment && stage
         ? {

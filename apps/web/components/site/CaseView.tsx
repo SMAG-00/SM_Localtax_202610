@@ -17,7 +17,7 @@ export function caseListHref(f: CaseFilter, over: Partial<Record<keyof CaseFilte
   return `/cases${s ? `?${s}` : ""}`;
 }
 
-export function CaseSearch({ view }: { view: CaseSearchView }) {
+export function CaseSearch({ view, keywordMapOpen = false }: { view: CaseSearchView; keywordMapOpen?: boolean }) {
   const f = view.filter;
   const pages = Math.max(1, Math.ceil(view.total / PAGE_SIZE));
   const anyFilter = Boolean(f.q || f.type || f.tax || f.decision || f.from || f.to || f.law);
@@ -25,6 +25,13 @@ export function CaseSearch({ view }: { view: CaseSearchView }) {
     <main id="main" className={SHELL}>
       <h1 className="text-[28px] font-black text-navy-900">판례·해석 검색</h1>
       <p className="mt-2 text-[15px] text-navy-700">예규·통칙·유권해석·심판·판례 원문을 찾아봅니다. 로그인 없이 볼 수 있습니다.</p>
+      {keywordMapOpen && (
+        <p className="mt-3 text-[14px]" data-part="keyword-map-link">
+          <Link href="/cases/keywords" className="font-bold underline underline-offset-4">
+            키워드 맵으로 보기
+          </Link>
+        </p>
+      )}
       <form method="get" action="/cases" role="search" data-part="filters" className="mt-6 space-y-3 text-[14px]">
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex min-w-[240px] flex-1 flex-col gap-1">
@@ -146,6 +153,7 @@ export function CaseSearch({ view }: { view: CaseSearchView }) {
 }
 
 const ORIGINS = ["search", "panel", "article"] as const;
+const SUMMARY_RESULT_LABELS: Record<string, string> = { accepted: "받아들임", dismissed: "기각", partial: "일부 받아들임", inadmissible: "각하", other: "그 밖" };
 
 export function CaseDetail({ view, from }: { view: CaseDetailView; from: string | undefined }) {
   const d = view.doc;
@@ -171,6 +179,21 @@ export function CaseDetail({ view, from }: { view: CaseDetailView; from: string 
           출처 원문 (새 창)
         </a>
       </p>
+      {view.summary && (
+        <section data-part="case-summary" aria-label="결정례 요지" className="mt-6 rounded-md border border-navy-200 bg-navy-50 p-4">
+          <h2 className="flex flex-wrap items-center gap-2 text-[17px] font-black text-navy-900">
+            요지
+            <span data-part="case-summary-badge" className="rounded bg-navy-900 px-2 py-0.5 text-[12px] font-bold text-white">검수 완료</span>
+            <span className="text-[13px] font-normal text-navy-700">결론 {SUMMARY_RESULT_LABELS[view.summary.resultType] ?? "그 밖"} · 검수일 <time dateTime={view.summary.approvedOn} className="font-mono">{view.summary.approvedOn}</time></span>
+          </h2>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-[15px] leading-7 text-navy-900">
+            {view.summary.lines.map((l, i) => (
+              <li key={i}>{l}</li>
+            ))}
+          </ol>
+          <p className="mt-2 text-[12px] text-navy-700">AI가 초안을 만들고 편집자가 원문과 대조해 승인한 요지입니다. 사건번호·결정일은 위 원문 정보를 따릅니다.</p>
+        </section>
+      )}
       <article data-part="doc-body" aria-label="원문" className="mt-6 space-y-3 text-[15px] leading-7 text-navy-900">
         {view.paragraphs.map((segs, i) => (
           <p key={i} className="whitespace-pre-wrap">

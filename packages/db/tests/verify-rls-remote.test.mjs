@@ -58,6 +58,9 @@ test("허용된 공개 함수(health_ping · 통합 검색 search_public · 지�
     "assistant_feedback",
     "search_legal_docs",
     "legal_doc_type_counts",
+    "agent_search",
+    "agent_premium_hint",
+    "public_ask_gate",
   ]);
 });
 

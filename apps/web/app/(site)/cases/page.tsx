@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { CaseSearch } from "@/components/site/CaseView";
+import { readPublicSettings } from "@/lib/server/public/reads";
 import { isUnavailable, parseCaseFilter, readPublic, searchCases, UNAVAILABLE } from "@/lib/server/public";
 import { pageTitle } from "@/lib/site/hub-view";
 
@@ -21,5 +22,6 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
     );
   }
   if (view === null) notFound();
-  return <CaseSearch view={view} />;
+  const keywordMapOpen = (await readPublic("키워드 맵 링크", async () => (await readPublicSettings()).features.keyword_map, () => false)) === true;
+  return <CaseSearch view={view} keywordMapOpen={keywordMapOpen} />;
 }

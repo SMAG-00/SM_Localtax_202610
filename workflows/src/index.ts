@@ -68,6 +68,12 @@ export interface JobServices {
   checkOpsBudget(now: Date): Promise<Record<string, unknown>>;
   /** W11-e 정비 현황·조례 확인일 경고 - DB 함수만 부른다(외부 요청 0). 결과는 수와 이유뿐 (AIOPS-14) */
   refreshZones(now: Date): Promise<Record<string, unknown>>;
+  /** W12-a 검색 색인 증분 갱신 - 새·바뀐 원천을 청킹해 색인하고 철회된 원천은 뺀다. AI 없음(임베딩 공급자가 설정되어 있을 때만 임베딩 호출). 결과는 수뿐 (RAG-03) */
+  refreshIndex(now: Date): Promise<Record<string, unknown>>;
+  /** W12-f O2 결정례 요지 초안 - 요지가 없는 결정례에 요지·태그 후보 초안을 검수 큐에만 올린다. AI가 꺼져 있으면 후보 수만 센다 (AIOPS-07) */
+  draftCaseSummaries(now: Date): Promise<Record<string, unknown>>;
+  /** W12-f O6 정합성 감시 - 개정 조문을 인용한 기사를 찾아 경보와 "개정 전 기준" 배너 제안을 검수 큐에만 올린다. AI 없이도 돈다 (AIOPS-09) */
+  watchConsistency(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -124,6 +130,12 @@ export const jobs: Record<string, Job> = {
   "ops-ai-budget": async ({ now, services }) => withUsage(await services.checkOpsBudget(now)),
   // 정비 현황·조례 확인일 경고 (AIOPS-14 · TX-13 - 하루 한 번). 경고 수만 실행 기록에 남긴다
   "zone-refresh": async ({ now, services }) => ({ detail: await services.refreshZones(now), revalidatePublic: true }),
+  // W12-a 검색 색인 증분 갱신 (매일 01:45 KST, 수집 작업 뒤 1시간 안) - 색인은 공개 화면에 보이지 않는다
+  "index-refresh": async ({ now, services }) => ({ detail: await services.refreshIndex(now), revalidatePublic: false }),
+  // W12-f 결정례 요지 초안 (매일 06:00 KST, 결정례 수집 뒤) - 초안은 승인 전 공개 0
+  "case-summary-draft": async ({ now, services }) => withUsage(await services.draftCaseSummaries(now)),
+  // W12-f 정합성 감시 (매일, 개정 감지 뒤) - 제안은 검수 큐에만. 월요일엔 깨진 연결 점검도 한다
+  "consistency-watch": async ({ now, services }) => withUsage(await services.watchConsistency(now)),
 };
 
 export function findJob(name: string): Job | undefined {

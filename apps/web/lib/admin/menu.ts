@@ -52,6 +52,10 @@ const RULES: readonly MenuRule[] = [
   // 쟁점 연결 지도 (LINK-01 — W11-d) 편집 책임자·관리자 초안·공개, 세무 감수위원 서명 / 쟁점 태그 사전 (AIOPS-12) 편집 책임자·관리자
   { id: "issues", label: "쟁점 연결 지도", href: "/admin/issues", when: (a) => a.has("issue_graph.edit") || a.has("issue_graph.sign"), paths: ["/admin/issues"] },
   { id: "issue-tags", label: "쟁점 태그", href: "/admin/issue-tags", when: (a) => a.has("issue_graph.edit") || a.has("issue_tag.approve"), paths: ["/admin/issue-tags"] },
+  // 편집국 AI 초안 승인 - 결정례 요지·AI 태그·기사 요약 상자·개정 영향 배너·채널 원고 (AIOPS-07~10 · CASE-05 · ART-13·14 — W12-f) 편집 책임자·관리자
+  { id: "ai-desk", label: "편집국 AI", href: "/admin/ai-desk", when: (a) => a.has("case_summary.approve") || a.has("ai_box.approve"), paths: ["/admin/ai-desk"] },
+  // 보안 정책 페이지 항목·통제 자가 점검 (SEC-01 — W12-g) — 관리자(PO)만
+  { id: "security", label: "보안 정책", href: "/admin/security", when: (a) => a.has("security_page.edit"), paths: ["/admin/security"] },
   // 기관 구독·계약·좌석·확인표·견적 요청 (BIZ-07·PAY-04 — W11-f) — 스토어·구독 담당·관리자 / 프리미엄 리포트 편집·발행 — 편집 책임자·관리자
   { id: "orgs", label: "기관 구독", href: "/admin/orgs", when: (a) => a.has("org.manage"), paths: ["/admin/orgs"] },
   { id: "reports", label: "프리미엄 리포트", href: "/admin/reports", when: (a) => a.has("report.publish"), paths: ["/admin/reports"] },
@@ -60,6 +64,8 @@ const RULES: readonly MenuRule[] = [
   // 상속·증여세 자체 계산 감수 (FAM-12 — W11-g) 세무 감수위원 서명·관리자 승인·대조 사례·게이트 — 룰셋과 같은 권한
   { id: "national-calc", label: "국세 계산 감수", href: "/admin/igt", when: (a) => a.has("ruleset.read"), paths: ["/admin/igt"] },
   { id: "accuracy", label: "정확도 대조", href: "/admin/accuracy", when: (a) => a.has("accuracy.manage"), paths: ["/admin/accuracy"] },
+  // 평가셋·채점·게이트 리포트·공개 단계 승인 (EVAL-01~04 — W12-e) 세무 감수위원·관리자
+  { id: "eval", label: "평가·게이트", href: "/admin/eval", when: (a) => a.has("eval.author") || a.has("eval.grade") || a.has("eval.gate_approve"), paths: ["/admin/eval"] },
   // 지역 기사 판정판 — 별도 상품 검토 큐·편집 분야 승인 대기·보류 (REG1-14·17 — W4 8단계) — 편집 책임자·관리자
   { id: "regions", label: "지역 기사 판정", href: "/admin/regions", when: (a) => a.has("regional.judge"), paths: ["/admin/regions"] },
   // 프로젝트 트래커 — 프로젝트·단계 기록·정정·공개 전환·지역 연결 (PR-02·03 — W4 14단계) — 편집 책임자·관리자

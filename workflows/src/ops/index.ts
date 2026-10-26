@@ -8,3 +8,4 @@ export * from "./ops-model.ts";
 export * from "./sm-brief.ts";
 export * from "./brief-prompt.ts";
 export * from "./brief-collect.ts";
+export * from "./editorial-ai.ts";

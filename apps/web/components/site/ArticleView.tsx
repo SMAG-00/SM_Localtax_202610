@@ -352,6 +352,31 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
           <span>법령 개정 사항을 반영해야 하는지 확인하고 있습니다. 확인이 끝나면 이 표시가 사라집니다.</span>
         </p>
       )}
+      {a.impactBanners.length > 0 && (
+        <div data-part="impact-banner" role="note" className="mx-auto w-full max-w-3xl px-4 pt-4">
+          {a.impactBanners.map((b) => (
+            <p key={`${b.lawName}-${b.effectiveOn}`} className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-[15px] text-navy-900">
+              <Chip>개정 전 기준</Chip>{" "}
+              <span>이 기사는 {b.lawName} 개정(시행일 <time dateTime={b.effectiveOn} className="font-mono">{b.effectiveOn}</time>) 전 기준으로 작성되었습니다. 현재 기준은 법령 원문에서 확인하세요.</span>
+            </p>
+          ))}
+        </div>
+      )}
+      {a.aiBox && (
+        <section data-part="ai-box" aria-label="3줄 요약과 내게 무슨 의미" className="mx-auto mt-4 w-full max-w-3xl rounded-md border border-navy-200 bg-navy-50 px-4 py-4 text-navy-900">
+          <h2 className="flex flex-wrap items-center gap-2 text-[16px] font-black">
+            3줄 요약
+            <span data-part="ai-box-badge" className="rounded bg-navy-900 px-2 py-0.5 text-[12px] font-bold text-white">AI 활용 · 편집자 검수</span>
+          </h2>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-[15px] leading-7">
+            {a.aiBox.lines.map((l, i) => (
+              <li key={i}>{l}</li>
+            ))}
+          </ol>
+          <h3 className="mt-3 text-[15px] font-black">내게 무슨 의미?</h3>
+          <p className="mt-1 text-[15px] leading-7">{a.aiBox.meaning}</p>
+        </section>
+      )}
       {/* 측정 (W2-c — article_viewed · 30초 article_engaged). 그리는 것 0 */}
       {a.contentType && <MeasureArticle articleId={a.id} section={a.section} format={a.format ?? "general"} contentType={a.contentType} />}
       {/* 다음 행동 띠 누름 → next_action_clicked (W2-c 3단계 — 첫 방문 깔때기). 그리는 것 0 */}

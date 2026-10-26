@@ -48,6 +48,9 @@
     { "path": "/api/jobs/brief-reconfirm", "schedule": "10 0 * * *" },
     { "path": "/api/jobs/ops-ai-budget", "schedule": "50 16 * * *" },
     { "path": "/api/jobs/amendment-alert", "schedule": "20 0 * * *" },
-    { "path": "/api/jobs/zone-refresh", "schedule": "40 16 * * *" }
+    { "path": "/api/jobs/zone-refresh", "schedule": "40 16 * * *" },
+    { "path": "/api/jobs/index-refresh", "schedule": "45 16 * * *" },
+    { "path": "/api/jobs/case-summary-draft", "schedule": "0 21 * * *" },
+    { "path": "/api/jobs/consistency-watch", "schedule": "10 17 * * *" }
   ]
 }
