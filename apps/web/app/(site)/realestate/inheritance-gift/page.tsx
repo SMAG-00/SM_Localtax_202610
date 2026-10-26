@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { InheritanceGiftView } from "@/components/site/InheritanceGiftView";
+import { FamilyNextLinks } from "@/components/site/realestate/FamilyNextLinks";
+import { getFamilyNext } from "@/lib/server/public/realestate-tools";
 import { CategoryRoute, categoryMetadata, type SearchParams } from "@/components/site/routes";
 import { isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
 import { getInheritanceGift } from "@/lib/server/public/inheritance-gift";
@@ -21,5 +23,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   await connection();
   const view = await readPublic("상속·증여 안내", () => getInheritanceGift("inheritance-gift"), () => UNAVAILABLE);
   if (view === null || isUnavailable(view)) return <CategoryRoute section="realestate" params={fallbackParams} searchParams={searchParams} />;
-  return <InheritanceGiftView view={view} />;
+  const next = await getFamilyNext(null).catch(() => null);
+  return <InheritanceGiftView view={view} after={next ? <FamilyNextLinks from="guide_page" cards={next.cards} sm={next.sm} /> : null} />;
 }

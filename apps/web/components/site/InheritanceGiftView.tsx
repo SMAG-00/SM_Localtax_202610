@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
 import { SituationCard, TaxKindBadge, UiLink } from "@ltr/ui";
 import type { InheritanceGiftView as View } from "@/lib/server/public/inheritance-gift";
 import { ArticleItem } from "./ArticleItem";
 import { MeasureCalculatorCards, MeasureInheritanceSituations } from "./Measure";
 import { OfficialLinkCard, linkSiteLabel } from "./OfficialLinkCard";
+import { OwnCards, ownCount } from "./igt/OwnCards";
 
 // 상속·증여 안내 (/realestate/inheritance-gift · /inheritance · /gift — W4 23단계, FAM-01·02·08). 고지 문구 1개 · 국세/지방세 구분 · 상황 카드 · 입문 기사 카드(배지·최종 감수일) ·
 // SM 취득세 카드 1 · FAM-08 카드 1. 계산·세액 입력 요소 0. 내용 문장은 설정·감수 기사에서 온다(여기는 이름과 구조만).
@@ -10,7 +12,7 @@ import { OfficialLinkCard, linkSiteLabel } from "./OfficialLinkCard";
 const H2 = "text-[19px] font-black text-navy-900";
 const RELATION = "별도 사이트 · 새 창 · 이 사이트의 결과와 합산하지 않습니다";
 
-export function InheritanceGiftView({ view }: { view: View }) {
+export function InheritanceGiftView({ view, after }: { view: View; after?: ReactNode }) {
   return (
     <main id="main" data-ui="inheritance-gift" data-path={view.path} className="mx-auto w-full max-w-[1100px] px-4 py-10">
       <MeasureInheritanceSituations />
@@ -70,7 +72,15 @@ export function InheritanceGiftView({ view }: { view: View }) {
           )}
         </section>
       )}
-      {view.fam08 && (
+      {view.own && ownCount(view.own) > 0 && (
+        <section data-part="own-calc" aria-labelledby="ig-own-title" className="mt-10">
+          <h2 id="ig-own-title" className={H2}>상속세·증여세 계산 (이 사이트)</h2>
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2">
+            <OwnCards state={view.own} startRank={1} />
+          </ul>
+        </section>
+      )}
+      {view.fam08 && !(view.own && view.own.gift && view.own.inheritance) && (
         <section data-part="fam08" aria-labelledby="ig-fam08-title" className="mt-10">
           <h2 id="ig-fam08-title" className={H2}>상속세·증여세 계산은 안심 상속증여계산기(별도 사이트)에서</h2>
           <ul className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -78,6 +88,7 @@ export function InheritanceGiftView({ view }: { view: View }) {
           </ul>
         </section>
       )}
+      {after}
     </main>
   );
 }

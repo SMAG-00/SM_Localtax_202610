@@ -28,6 +28,9 @@ export {
 } from './acquisition';
 export { calcHolding, type HoldingInput, type LandTaxType } from './holding';
 
+// 총비용 조합 (RE-05, W11-b) - 새 파일(엔진 해시 대상 아님). 세액은 위 두 계산 함수 결과 그대로, 정책 값 없음
+export { composeTotalCost, annualInterest, TOTAL_COST_REFERENCE_CODES, type TotalCostInput, type TotalCostResult, type CostLine, type CostYear, type CostLineKind, type ExtraCost, type LoanAssumption } from './total-cost';
+
 // 판정표 평가기 (CALC-04·13) - 값은 감수된 판정표 데이터에만 있다
 export {
   DeterminationTableSchema,

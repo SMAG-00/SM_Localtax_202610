@@ -14,6 +14,8 @@ import {
   type IgPath,
   type LinkPair,
 } from "./inheritance-gift-logic";
+import { getOwnCardState } from "@/lib/igt/tools";
+import type { OwnState } from "@/lib/igt/gate";
 import { readArticleList, readPublicSettings } from "./reads";
 import { SITUATION_COLUMNS, type SituationRow } from "./rows";
 import { toSituationCard, type SituationCard } from "./situation-logic";
@@ -36,6 +38,8 @@ export interface InheritanceGiftView {
   sm: LinkPair | null;
   fam08: LinkPair | null;
   selfCalculatorHref: string | null;
+  /** 게이트가 열린 국세 자체 카드 (W11-g, FAM-14) - 없으면 외부 카드 그대로 */
+  own?: OwnState;
 }
 
 /** 「지방세로 읽기」 박스 옆 국세 연결 카드 (FAM-08 - 키 inheritance_gift 켜짐 + 박스 세목에 상속세·증여세). 아니면 null(읽지 않는다) */
@@ -80,5 +84,6 @@ export async function getInheritanceGift(path: IgPath): Promise<InheritanceGiftV
     sm: smAcquisitionCard(cards, f.sm_calculator),
     fam08: fam08Card(cards),
     selfCalculatorHref: selfCalculatorHref(f.self_calculator),
+    own: await getOwnCardState(),
   };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { calcAcquisition, type DeterminationTable, type Ruleset } from "@ltr/tax-engine";
 import type { AcquisitionCause } from "@ltr/tax-engine";
 import { CALC_COPY } from "@/lib/calc/copy";
@@ -8,6 +9,9 @@ import { reductionBlock } from "@/lib/calc/reduction";
 import { buildResultView } from "@/lib/calc/result-view";
 import type { Assumptions } from "@/lib/calc/shared";
 import { wetaxCardFor, type WetaxLinkRow } from "@/lib/calc/wetax";
+import { FamilyNextLinks } from "../realestate/FamilyNextLinks";
+import { snapshotHandoff } from "@/lib/realestate/handoff";
+import type { FamilyNextData } from "@/lib/server/public/realestate-tools";
 import { CompareEntry, NationalCard, SmCard, WetaxCardView, type OfficialPair } from "./cards";
 import { ResultBlocks } from "./ResultBlocks";
 import { CalculatorShell } from "./Shell";
@@ -31,6 +35,8 @@ export interface AcquisitionCalculatorProps {
   guideHref: string | null;
   external: OfficialPair | null;
   sm: (OfficialPair & { usageNote: string }) | null;
+  /** 상속·증여 후 다음에 확인할 것 (FAM-05) - 원인별로 공개된 도구만. 없으면 null */
+  familyNext?: Partial<Record<"INHERITANCE" | "GIFT", FamilyNextData | null>>;
   /** 장애 폴백 등 화면 위 안내 (CALC-08) */
   notice?: string | null;
   /** 지역 코드 -> 허브 주소 (REG1-10) */
@@ -40,6 +46,12 @@ export interface AcquisitionCalculatorProps {
 const NATIONAL: readonly AcquisitionCause[] = ["INHERITANCE", "GIFT"];
 
 export function AcquisitionCalculator(p: AcquisitionCalculatorProps) {
+  // 주택 수 판정에서 넘어온 값은 브라우저 메모리로만 받는다 (RE-04) - 서버 렌더에는 없고 하이드레이션 뒤에 들어와 Shell을 새 값으로 다시 시작한다
+  const handoff = useSyncExternalStore(() => () => {}, snapshotHandoff, () => null);
+  const family = (cause: AcquisitionCause | undefined) => {
+    const d = cause === "INHERITANCE" || cause === "GIFT" ? p.familyNext?.[cause] : null;
+    return d ? <FamilyNextLinks from="acquisition_result" cards={d.cards} sm={d.sm} /> : null;
+  };
   const ready = (form: AcquisitionForm, unknown: ReadonlySet<string>) => buildAcquisition(form, unknown, p.assumptions).input !== null;
 
   const blocked = (form: AcquisitionForm) =>
@@ -53,6 +65,7 @@ export function AcquisitionCalculator(p: AcquisitionCalculatorProps) {
         )}
         <SmCard sm={p.sm} />
         {NATIONAL.includes(form.cause) && <NationalCard external={p.external} />}
+        {family(form.cause)}
       </section>
     ) : null;
 
@@ -83,11 +96,12 @@ export function AcquisitionCalculator(p: AcquisitionCalculatorProps) {
             <CompareEntry isMember={p.isMember} enabled={p.compareEnabled} />
             <WetaxCardView screen="acquisition" rows={p.wetax} action="위택스에서 신고하러 가기" />
             {national && <NationalCard external={p.external} />}
+            {family(cause)}
           </>
         }
       />
     );
   };
 
-  return <CalculatorShell<AcquisitionForm> tool="acquisition" rulesetVersion={p.ruleset.version} notice={p.notice ?? null} regionLinks={p.regionLinks} eyebrow="ACQUISITION · 취득세" title="취득세 계산" questions={ACQUISITION_QUESTIONS} initial={{}} ready={ready} blocked={blocked} result={result} />;
+  return <CalculatorShell<AcquisitionForm> key={handoff ? `handoff-${handoff.houseCount}` : "plain"} tool="acquisition" rulesetVersion={p.ruleset.version} notice={p.notice ?? null} regionLinks={p.regionLinks} eyebrow="ACQUISITION · 취득세" title="취득세 계산" questions={ACQUISITION_QUESTIONS} initial={handoff ? { houseCount: handoff.houseCount } : {}} ready={ready} blocked={blocked} result={result} />;
 }
