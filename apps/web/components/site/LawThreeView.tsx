@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PrintButton } from "./PrintButton";
 import { articleLabel, articleSegment, lawHref, lawThreeHref } from "@/lib/law/article-ref";
 import type { ProvRef } from "@/lib/law/three";
 import type { LawArticleRow, ThreeColumn, ThreePageView } from "@/lib/server/public/law";
@@ -58,6 +59,9 @@ export function LawThree({ view }: { view: ThreePageView }) {
     <main id="main" className="mx-auto w-full max-w-[1400px] px-4 py-10">
       <MeasureLaw lawId={view.statute.law.id} asOfUsed={view.asOf.explicit} view="three" />
       <h1 className="text-[28px] font-black text-navy-900">{view.statute.law.name} 3단 보기</h1>
+      <style>{`@page { size: A4 landscape; margin: 12mm; } @media print { [data-part="interpretation-column"], [data-part="as-of"], header, nav, footer { display: none !important; } [data-part="print-head"] { display: block !important; position: fixed; top: 0; left: 0; right: 0; } [data-part="three-grid"] { margin-top: 10mm; } [data-part="three-grid"] section { break-inside: avoid; display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); } [data-part="three-head"] { position: static !important; display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); } main { max-width: none !important; padding: 0 !important; } }`}</style>
+      <p data-part="print-head" className="hidden text-[11px]">{view.statute.law.name} · 기준일 {view.asOf.date}</p>
+      <div className="mt-2 print:hidden"><PrintButton /></div>
       <form method="get" action={lawThreeHref(view.statute.law.name)} data-part="as-of" className="mt-4 flex flex-wrap items-end gap-3 text-[14px]">
         {sel && <input type="hidden" name="article" value={articleSegment(sel.no, sel.branch)} />}
         <label className="flex flex-col gap-1">

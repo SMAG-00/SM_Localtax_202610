@@ -7,6 +7,8 @@ import { compareBlocks } from "@/lib/law/compare";
 import type { ArticlePageView, LawIndexView, LawPageView } from "@/lib/server/public/law";
 import { MeasureLaw } from "./MeasureLaw";
 import { RelatedPanel } from "./RelatedPanel";
+import { RelatedV2Slot } from "./RelatedV2Slot";
+import { ScrapSlot } from "./ScrapSlot";
 
 // 법령 뷰어 화면 (LAW-01~04 · LAW-06) - 글자는 DB의 조문 그대로이고 이 파일에 법령 문장은 없다.
 // 기준일은 GET 폼(?date=) - JS가 꺼져도 동작한다. 항·호·목에 앵커(#p1 ...)를 붙여 같은 시점·위치로 열 수 있다.
@@ -214,6 +216,10 @@ export function LawArticle({ view }: { view: ArticlePageView }) {
           </article>
           <div className="lg:w-[360px]">
             <RelatedPanel items={view.related} asOf={date} place="law_view" searchHref={`/cases?law=${encodeURIComponent(view.law.name)}&article=${articleSegment(view.ref.no, view.ref.branch)}`} />
+            <RelatedV2Slot lawId={view.law.id} refArticle={view.ref} searchHref={`/cases?law=${encodeURIComponent(view.law.name)}&article=${articleSegment(view.ref.no, view.ref.branch)}`} />
+            <div className="mt-3">
+              <ScrapSlot targetKind="law_article" targetId={view.article.id} label={`${view.law.name} ${label}`} />
+            </div>
           </div>
         </div>
       )}

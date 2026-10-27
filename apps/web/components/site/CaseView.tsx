@@ -3,6 +3,7 @@ import { AgentEntry } from "./AgentEntry";
 import { DOC_TYPE_NOUN } from "@/lib/law/related";
 import { DECISION_KINDS, DECISION_LABELS, DOC_TYPES, PAGE_SIZE, type CaseDetailView, type CaseFilter, type CaseSearchView } from "@/lib/server/public/cases";
 import { MeasureCase } from "./MeasureLaw";
+import { ScrapSlot } from "./ScrapSlot";
 
 // 해석 DB 화면 (CASE-01 · CASE-02 · TX-10) - 검색·원문은 로그인 없이. 필터는 GET 폼이라 JS가 꺼져도 동작한다.
 // 글자는 DB의 문서 원문 그대로이고 이 파일에 해석 문장은 없다.
@@ -181,6 +182,9 @@ export function CaseDetail({ view, from }: { view: CaseDetailView; from: string 
           출처 원문 (새 창)
         </a>
       </p>
+      <div className="mt-3">
+        <ScrapSlot targetKind="legal_doc" targetId={d.id} label={`${d.issuer} ${d.doc_no}`} />
+      </div>
       {view.summary && (
         <section data-part="case-summary" aria-label="결정례 요지" className="mt-6 rounded-md border border-navy-200 bg-navy-50 p-4">
           <h2 className="flex flex-wrap items-center gap-2 text-[17px] font-black text-navy-900">
