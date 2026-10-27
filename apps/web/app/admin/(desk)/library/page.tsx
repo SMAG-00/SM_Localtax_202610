@@ -15,13 +15,13 @@ const ENDPOINT = "/api/admin/library";
 const TONE = { rights_confirmed: "amber", extracted: "amber", structured: "amber", proofread: "navy", approved: "emerald" } as const;
 const KIND_LABEL = { node: "노드", issue: "권호", issue_article: "권호 기사" } as const;
 const CREATE_FIELDS: LnField[] = [
-  { name: "target_kind", label: "대상 종류 (node·issue·issue_article)", required: true },
+  { name: "target_kind", label: "대상 종류 (node, issue, issue_article 중 하나)", required: true },
   { name: "target_id", label: "대상 번호 (공개 권리 확인된 초안)", required: true },
   { name: "source_file", label: "원본 파일 이름", required: true },
 ];
 const ADVANCE_FIELDS: LnField[] = [
   { name: "job_id", label: "작업 번호", required: true },
-  { name: "to", label: "다음 단계 (extracted·structured·proofread)", required: true },
+  { name: "to", label: "다음 단계 (extracted, structured, proofread 중 하나)", required: true },
 ];
 const APPROVE_FIELDS: LnField[] = [
   { name: "job_id", label: "작업 번호 (교정 단계)", required: true },
@@ -31,8 +31,8 @@ const APPROVE_FIELDS: LnField[] = [
 const RIGHTS_FIELDS: LnField[] = [
   { name: "item_kind", label: "대상 종류", required: true },
   { name: "item_id", label: "대상 번호", required: true },
-  { name: "field", label: "권리 칸 (rights_public·rights_index·rights_summary·rights_sale·rights_pdf)", required: true },
-  { name: "value", label: "값 (unchecked·confirmed·restricted)", required: true },
+  { name: "field", label: "권리 칸 (rights_public, rights_index, rights_summary, rights_sale, rights_pdf 중 하나)", required: true },
+  { name: "value", label: "값 (unchecked, confirmed, restricted 중 하나)", required: true },
   { name: "rights_ref", label: "근거 (확인 때 필수)" },
   { name: "rights_confirmed_on", label: "확인일 YYYY-MM-DD (확인 때 필수)" },
 ];
