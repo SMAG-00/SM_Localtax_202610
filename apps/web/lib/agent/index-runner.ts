@@ -52,6 +52,9 @@ export function chunksFromPayload(p: SourcePayload): ChunkResult {
         { title: s("title"), version: Number(p.version ?? 1), summary: (p.summary as string | null) ?? null, nodeRows: (p.nodeRows as { nodeId: string; kind: string; label: string | null }[]) ?? [], edgeRows: (p.edgeRows as { from: string; to: string; relation: string; note?: string }[]) ?? [] },
         meta,
       );
+    case "publication":
+      // W13-a 지식창고 - library_chunk_source_load가 돌려준 경로(서명 판 > 제목)와 본문을 한 절로 청킹한다
+      return chunkGuide({ title: s("path"), sections: [{ heading: "본문", body: s("body") }] }, meta);
     default:
       return { ok: false, code: "no_loader" };
   }

@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveEmbeddingProvider } from "@/lib/agent/embedding";
+import { INDEX_VERSION } from "@/lib/agent/chunking";
 import { runIndexRefresh, type IndexStore, type QueueItem, type SourcePayload } from "@/lib/agent/index-runner";
 import { dbError } from "@/lib/server/http";
 import { embeddingEnv } from "./env";
@@ -31,6 +32,8 @@ export function supabaseIndexStore(db: SupabaseClient): IndexStore {
       );
     },
     async load(item) {
+      // W13-a 지식창고 출판물은 전용 읽기 함수(권리 색인 자격을 다시 확인한다). 나머지는 기존 그대로
+      if (item.sourceType === "publication") return ((await rpc("library_chunk_source_load", { p_source_id: item.sourceId })) as SourcePayload | null) ?? null;
       return ((await rpc("chunk_source_load", { p_source_type: item.sourceType, p_source_id: item.sourceId })) as SourcePayload | null) ?? null;
     },
     async put(item, meta, chunks, indexVersion) {
@@ -59,4 +62,12 @@ export async function refreshIndex(db: SupabaseClient, now: Date): Promise<Recor
   const provider = resolveEmbeddingProvider(embeddingEnv(), (url, init) => fetch(url, init));
   const r = await runIndexRefresh(supabaseIndexStore(db), { now, provider });
   return { checkedAt: now.toISOString(), ...r };
+}
+
+/** 작업 library-index-sync (W13-a a8 - LIB-06) - 권리 철회·승인 취소된 지식창고 청크를 색인에서 빼고 색인할 원천을 대기열에 쌓는다. AI 없음, 결과는 수뿐 */
+export async function syncLibraryIndex(db: SupabaseClient, now: Date): Promise<Record<string, unknown>> {
+  const { data, error } = await db.rpc("library_index_sync", { p_index_version: INDEX_VERSION, p_now: now.toISOString() });
+  if (error) throw dbError(error, "library_index_sync");
+  const d = data as { ok?: boolean; retired?: number; enqueued?: number } | null;
+  return { checkedAt: now.toISOString(), retired: Number(d?.retired ?? 0), enqueued: Number(d?.enqueued ?? 0) };
 }
