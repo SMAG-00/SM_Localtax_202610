@@ -68,6 +68,8 @@ export interface ExpertListView {
   open: boolean;
   /** 연락 요청 양식이 열려 있다 (기능 키 expert_requests) */
   requestsOpen: boolean;
+  /** 라운지(/qna)가 열려 있다 - 기능 키 qna ∧ 중립성 고지 승인 (W13-g) */
+  qnaOpen: boolean;
   notice: { version: string; text: string } | null;
   categories: { code: string; name: string; count: number }[];
   /** 고른 분류 - 목록 밖 값은 null(필터 없이 전체 + 안내) */
@@ -78,13 +80,14 @@ export interface ExpertListView {
 
 /** 목록 (EXPL-01) - 분류 필터는 쿼리 하나(?category=), 지역 쿼리는 읽지 않는다 (지역 필터·정렬 0) */
 export async function getExpertList(params: { category?: string | null } = {}): Promise<ExpertListView> {
-  const closed: ExpertListView = { open: false, requestsOpen: false, notice: null, categories: [], selected: null, badCategory: false, profiles: [] };
+  const closed: ExpertListView = { open: false, requestsOpen: false, qnaOpen: false, notice: null, categories: [], selected: null, badCategory: false, profiles: [] };
   const features = (await readPublicSettings()).features;
   if (!features.experts) return closed;
-  const [notice, cats, rows] = await Promise.all([
+  const [notice, cats, rows, qna] = await Promise.all([
     readNotice(),
     rowsOf<{ code: string; name: string; sort_order: number; profile_count: number }>(publicDb().from("public_expert_categories").select("code, name, sort_order, profile_count").order("sort_order"), "전문가 분류"),
     rowsOf<ProfileRow>(publicDb().from("public_expert_profiles").select(COLUMNS).limit(500), "전문가 프로필"),
+    rowsOf<{ version: string }>(publicDb().from("public_qna_notice").select("version"), "라운지 열림"),
   ]);
   const order = new Map(cats.map((c) => [c.code, c.sort_order]));
   const wanted = (params.category ?? "").trim();
@@ -94,6 +97,7 @@ export async function getExpertList(params: { category?: string | null } = {}): 
   return {
     open: true,
     requestsOpen: features.expert_requests,
+    qnaOpen: qna.length > 0,
     notice,
     categories: cats.map((c) => ({ code: c.code, name: c.name, count: c.profile_count })),
     selected: selected ? { code: selected.code, name: selected.name } : null,

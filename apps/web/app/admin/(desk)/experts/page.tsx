@@ -5,6 +5,8 @@ import { DataTable, EmptyNote, MONO, PageTitle, Panel, TD, TEXT_LINK, ToneChip }
 import { serviceDb } from "@/lib/server/articles/service";
 import { pageViewer, requirePage } from "@/lib/server/admin/pages";
 import { loadExpertBoard, type BoardProfile } from "@/lib/server/experts/board";
+import { ExpertLinksPanel } from "@/components/admin/ExpertLinksPanel";
+import { loadLinkBoard } from "@/lib/server/qna/admin";
 
 // SM 전문가 등재 (/admin/experts - W7c, PRD-01C EXPL-01·02·05·07·08·13·17~21, docs/dev/W7c_설계.md 1장 3단계).
 //  · 프로필 등록·공개·내림·철회와 분류·고지문·연락 정책·요청 처리는 관리자(PO)만 한다. 전문가 담당(expert_ops)은 화면 읽기까지.
@@ -59,6 +61,7 @@ export default async function ExpertsPage() {
   requirePage(viewer, "expert.manage");
   const isAdmin = viewer.isAdmin;
   const board = await loadExpertBoard(serviceDb(), { withRequests: isAdmin });
+  const linkBoard = isAdmin ? await loadLinkBoard(serviceDb()) : null;
   const catName = (code: string) => board.categories.find((c) => c.code === code)?.name ?? code;
   const noticeApproved = board.notice.approved === true;
   const policyApproved = board.policy.approved === true;
@@ -78,6 +81,8 @@ export default async function ExpertsPage() {
           </p>
           {!isAdmin && <p className="text-[14px] text-navy-600">이 화면의 쓰기와 요청 열람은 관리자만 합니다.</p>}
         </Panel>
+
+        {linkBoard && <ExpertLinksPanel links={linkBoard.links} profiles={linkBoard.publishedProfiles} />}
 
         {isAdmin && (
           <>

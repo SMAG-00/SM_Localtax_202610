@@ -73,6 +73,13 @@ export function ExpertsListView({ view }: { view: ExpertListView }) {
               </UiLink>
             </p>
           )}
+          {view.qnaOpen && (
+            <p>
+              <UiLink href="/qna" data-part="qna-entry" className={`${TEXT_LINK} inline-flex min-h-11 items-center`}>
+                지방세 고민 해결 라운지
+              </UiLink>
+            </p>
+          )}
           <nav aria-label="분류" data-part="category-filter" className="flex flex-wrap gap-2">
             <UiLink href="/experts" data-active={view.selected ? "false" : "true"} className={TEXT_LINK}>
               전체
