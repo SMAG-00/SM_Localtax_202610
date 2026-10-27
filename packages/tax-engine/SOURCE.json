@@ -16,6 +16,7 @@
     "packages/tax-engine/src/index.ts": "새로 씀 - 지방세 모듈과 판정표 평가기만 내보냄(transfer·compare 삭제, oligopoly는 공개 진입점에 넣지 않음)",
     "packages/tax-engine/package.json": "새로 씀 - 이름 @ltr/tax-engine, 이 저장소 고정 버전(vitest 5.0.3·typescript 5.9.3·zod 4.6.7)",
     "packages/tax-engine/tsconfig.json": "새로 씀",
+    "packages/tax-engine/src/expert.ts": "새로 씀(W13-f) - 전문가 계산기(과점주주 상장 여부 분기·법인지방소득세 구간·개인 대 법인 지방세 합산). 값은 전문가 룰셋(ExpertRuleset)에만 있고 공개 진입점 밖('@ltr/tax-engine/expert'). 엔진 해시 대상 아님. 시험 test/expert.test.ts도 새로 씀",
     "packages/tax-engine/src/determination.ts": "새로 씀(a4) - 판정표 평가기. 값 없음, 비교 연산만. 시험 test/determination.test.ts·boundary.test.ts도 새로 씀",
     "packages/tax-engine/src/total-cost.ts": "새로 씀(W11-b b5) - 총비용 조합(취득 지방세 + 해마다 보유세 + 사용자 가정 비용). 세액은 calcAcquisition·calcHolding 결과 그대로, 정책 값 없음. 엔진 해시 대상 아님(files 목록 밖). 시험 test/total-cost.test.ts도 새로 씀",
     "packages/tax-engine/test/boundary.test.ts": "새로 씀 - 패키지 경계·SOURCE.json 해시 시험",
