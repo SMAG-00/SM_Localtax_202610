@@ -1,6 +1,9 @@
 // 수집 요청 검사 시험 — 같은 사이트·본문 형식·IP·본문 크기 상한
-import { describe, expect, test } from "vitest";
-import { MAX_EVENT_BYTES, clientIp, isSameSite, mediaType, readLimited } from "./request";
+import { describe, expect, test, vi } from "vitest";
+import { MAX_EVENT_BYTES, clientIp, trustedClientIp, isSameSite, mediaType, readLimited } from "./request";
+
+vi.mock("server-only", () => ({}));
+const { quotaSubject } = await import("@/lib/server/agent/d-store");
 
 const H = (h: Record<string, string>) => new Headers(h);
 const HOSTS = ["127.0.0.1:3001", "e2e.example.test"];
@@ -32,6 +35,22 @@ describe("본문 형식·IP", () => {
     expect(clientIp(H({ "x-real-ip": "198.51.100.1", "x-forwarded-for": "203.0.113.9" }))).toBe("198.51.100.1");
     expect(clientIp(H({ "x-forwarded-for": "203.0.113.9, 10.0.0.1" }))).toBe("203.0.113.9");
     expect(clientIp(H({}))).toBe("unknown");
+  });
+  test("한도용 IP — x-forwarded-for 마지막 값만, 사용자가 끼운 앞 값과 x-real-ip는 무시", () => {
+    expect(trustedClientIp(H({ "x-forwarded-for": "203.0.113.9" }))).toBe("203.0.113.9");
+    expect(trustedClientIp(H({ "x-forwarded-for": "6.6.6.6, 203.0.113.9" }))).toBe("203.0.113.9");
+    expect(trustedClientIp(H({ "x-forwarded-for": "203.0.113.9, " }))).toBe("203.0.113.9");
+    expect(trustedClientIp(H({ "x-real-ip": "6.6.6.6" }))).toBe("unknown");
+    expect(trustedClientIp(H({ "x-real-ip": "6.6.6.6", "x-forwarded-for": "203.0.113.9" }))).toBe("203.0.113.9");
+    expect(trustedClientIp(H({}))).toBe("unknown");
+    expect(trustedClientIp(H({ "x-forwarded-for": "9".repeat(100) }))).toHaveLength(64);
+  });
+  test("한도 대상 값 — 머리글을 바꿔 보내도 같은 접속 주소면 같은 대상이라 한도가 초기화되지 않는다", () => {
+    const subject = (h: Record<string, string>) => quotaSubject({ userId: null, ip: trustedClientIp(H(h)), secret: "s" });
+    const real = subject({ "x-forwarded-for": "203.0.113.9" });
+    expect(subject({ "x-forwarded-for": "1.1.1.1, 203.0.113.9" })).toBe(real);
+    expect(subject({ "x-forwarded-for": "203.0.113.9", "x-real-ip": "2.2.2.2" })).toBe(real);
+    expect(subject({ "x-forwarded-for": "203.0.113.10" })).not.toBe(real);
   });
 });
 

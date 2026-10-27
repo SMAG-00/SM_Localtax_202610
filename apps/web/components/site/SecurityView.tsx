@@ -9,9 +9,7 @@ export function SecurityPage({ view, entry }: { view: SecurityPageView; entry: S
     <main id="main" className="mx-auto w-full max-w-[860px] px-4 py-10" data-part="security">
       <MeasureSecurity entry={entry} />
       <h1 className="text-[28px] font-black text-navy-900">보안 정책</h1>
-      <p className="mt-2 text-[15px] text-navy-700">
-        7개 항목을 항목별 마지막 확인일과 함께 공개합니다. 내부 통제 목록은 ISO/IEC 27001 부속서 A를 본뜬 것이며 정기적으로 자가 점검합니다.
-      </p>
+      <p className="mt-2 text-[15px] text-navy-700">7개 항목을 항목별 마지막 확인일과 함께 공개합니다.</p>
       {view.lastCheckOn && (
         <p className="mt-2 text-[14px] text-navy-500" data-part="self-check">
           마지막 자가 점검 완료일 <time dateTime={view.lastCheckOn} className="font-mono">{view.lastCheckOn}</time>
@@ -29,6 +27,7 @@ export function SecurityPage({ view, entry }: { view: SecurityPageView; entry: S
           </li>
         ))}
       </ol>
+      <p className="mt-8 text-[14px] text-navy-500" data-part="controls-note">내부 통제 목록은 ISO/IEC 27001 부속서 A를 본뜬 것이며 정기적으로 자가 점검합니다.</p>
     </main>
   );
 }

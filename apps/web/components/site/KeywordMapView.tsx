@@ -21,7 +21,7 @@ export function KeywordMap({ view }: { view: View }) {
         <Link href="/cases" className="underline-offset-2 hover:underline">판례·해석 검색</Link> · 키워드 맵
       </p>
       <h1 className="mt-1 text-[28px] font-black text-navy-900">키워드 맵</h1>
-      <p className="mt-2 text-[15px] text-navy-700">편집국이 승인한 쟁점 태그가 같은 결정례에 함께 붙은 관계입니다. 노드를 누르면 그 태그가 붙은 결정례로 목록이 좁혀지고, 여러 노드를 고르면 모두 붙은 결정례만 남습니다. 로그인 없이 볼 수 있습니다.</p>
+      <p className="mt-2 text-[15px] text-navy-700">편집국이 승인한 쟁점 태그가 같은 결정례에 함께 붙은 관계입니다.</p>
       <nav aria-label="세목" className="mt-5 flex flex-wrap gap-2 text-[14px]" data-part="tax-tabs">
         {view.taxes.map((t) => (
           <Link key={t} href={keywordHref(t, [])} data-tax-tab={t} aria-current={t === view.tax ? "page" : undefined} className={`rounded-full border px-3 py-1 ${t === view.tax ? "border-navy-900 font-bold" : "border-navy-200"}`}>
@@ -138,6 +138,7 @@ export function KeywordMap({ view }: { view: View }) {
           {view.page < view.pages && <Link href={keywordHref(view.tax, view.tags, view.page + 1)} className="underline underline-offset-4">다음</Link>}
         </nav>
       )}
+          <p className="mt-8 text-[14px] text-navy-500" data-part="usage-note">노드를 누르면 그 태그가 붙은 결정례로 목록이 좁혀지고, 여러 노드를 고르면 모두 붙은 결정례만 남습니다. 로그인 없이 볼 수 있습니다.</p>
     </main>
   );
 }

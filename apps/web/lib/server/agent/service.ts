@@ -15,7 +15,7 @@ import { db } from "@/lib/server/assistant/store";
 import { viewerIsInternal } from "@/lib/server/assistant/service";
 import { askAllowed } from "@/lib/agent/rollout";
 import { withEntryContext } from "@/lib/agent/entry";
-import { clientIp } from "@/lib/analytics/request";
+import { trustedClientIp } from "@/lib/analytics/request";
 import { guardSecret } from "@/lib/server/env";
 import { adminClient } from "@/lib/server/supabase";
 import { consumeQuota, openSession, quotaSubject, readModeGate, refundQuota, sessionStateFor } from "./d-store";
@@ -77,7 +77,7 @@ export async function handleAskPost(request: Request): Promise<Response> {
   // W12-d d4: 보내기를 눌러 요청이 온 이 시점에만 하루 한도를 차감한다 (진입·창 열기는 이 API를 부르지 않는다). 프리미엄 등급은 5단계 구독 연결 전이라 회원 한도를 쓴다
   const secret = guardSecret();
   if (!viewer && !secret) return json({ error: "서버 설정이 끝나지 않았습니다" }, 503);
-  const subject = quotaSubject({ userId: viewer?.userId ?? null, ip: clientIp(request.headers), secret: secret ?? "" });
+  const subject = quotaSubject({ userId: viewer?.userId ?? null, ip: trustedClientIp(request.headers), secret: secret ?? "" });
   const quota = await consumeQuota(admin, subject, tier);
   if (!quota.allowed) return json({ error: "quota", code: quota.code, next: quota.next, limit: quota.limit, used: quota.used }, 429);
   const opened = await openSession(admin, { sessionId, userId: viewer?.userId ?? null, mode: req.mode, entry: req.entry, internal, retainDays: ASSISTANT_DEFAULTS.retentionDays, save: !req.saveOff });

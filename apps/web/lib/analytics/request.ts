@@ -46,6 +46,18 @@ export function clientIp(headers: HeaderGetter): string {
   return forwarded ? forwarded.slice(0, 64) : "unknown";
 }
 
+/**
+ * 하루 한도(비회원)처럼 우회하면 비용이 새는 곳에 쓰는 IP - `x-forwarded-for`의 마지막 값만 본다.
+ * Vercel은 이 머리글을 플랫폼이 덮어쓰고, 사내 Caddy(deploy/Caddyfile, trusted_proxies 없음)는 들어온 값을 버리고 접속 주소로 다시 쓴다.
+ * 그 앞에 프록시가 더 붙으면 가장 가까운 프록시가 덧붙인 마지막 값이 믿을 수 있는 값이다. 사용자가 앞에 끼워 넣은 값과 `x-real-ip`
+ * (Caddy는 덮어쓰지 않아 사용자가 마음대로 보낼 수 있다)는 보지 않는다. 저장·기록하지 않는다
+ */
+export function trustedClientIp(headers: HeaderGetter): string {
+  const parts = headers.get("x-forwarded-for")?.split(",").map((v) => v.trim()).filter((v) => v !== "");
+  const last = parts?.at(-1);
+  return last ? last.slice(0, 64) : "unknown";
+}
+
 export type BodyRead = { ok: true; text: string } | { ok: false; tooLarge: true };
 
 /** 본문을 상한까지만 읽는다 — `content-length`가 크면 읽지 않고, 실제로 읽은 양이 넘어도 멈춘다 */

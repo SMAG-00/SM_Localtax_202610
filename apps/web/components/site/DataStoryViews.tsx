@@ -11,7 +11,7 @@ export function DataChart({ series, via, caption, newerBaseYear }: { series: Ser
   return (
     <figure data-part="data-chart" data-series={series.series_key} data-base-year={series.base_year} className="my-6 rounded-2xl border border-navy-100 p-4">
       {measurableKey(series.series_key) && <MeasureView name="data_story_viewed" section="tax" props={{ series_key: series.series_key, via }} />}
-      <figcaption className="text-[16px] font-bold text-navy-900">{caption ?? series.title}</figcaption>
+      <figcaption className="break-words text-[16px] font-bold text-navy-900">{caption ?? series.title}</figcaption>
       <svg role="img" aria-label={`${series.title} 선 그래프`} viewBox={`0 0 ${c.width} ${c.height}`} className="mt-2 h-auto w-full" data-chart-svg>
         <title>{series.title}</title>
         <polyline points={c.line} fill="none" className="stroke-navy-500" strokeWidth={2} />
@@ -72,7 +72,7 @@ export function DataSeriesPage({ series, baseYears, isCurrent }: { series: Serie
   return (
     <main id="main" className={SHELL} data-part="data-series" data-series={series.series_key}>
       <p className="text-[14px] text-navy-500"><Link href="/data" className="underline-offset-2 hover:underline">지방세 데이터</Link></p>
-      <h1 className="mt-1 text-[28px] font-black text-navy-900">{series.title}</h1>
+      <h1 className="mt-1 break-words text-[28px] font-black text-navy-900">{series.title}</h1>
       {!isCurrent && <p data-part="old-base-year" className="mt-2 text-[14px] text-navy-700">이전 기준연도({series.base_year}) 자료입니다. <Link href={seriesHref(series.series_key)} className="font-bold underline underline-offset-2">현재 자료 보기</Link></p>}
       <DataChart series={series} via="data_page" />
       {baseYears.length > 1 && (

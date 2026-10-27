@@ -1,5 +1,7 @@
 # 사내 서버 앞단 중계 (FND-07) — 웹 컨테이너로 넘긴다.
 # flush_interval -1: 응답을 모아 두지 않고 바로 흘려보낸다 (AI 도우미 스트리밍 SSE 응답 — PRD_최종 §9.1)
+# 접속 주소 머리글: trusted_proxies를 두지 않으므로 Caddy가 들어온 X-Forwarded-For를 버리고 접속 주소로 다시 쓴다.
+# 앱의 비회원 한도는 이 머리글의 마지막 값만 믿는다 (apps/web/lib/analytics/request.ts trustedClientIp). trusted_proxies·X-Real-IP 전달을 넣지 말 것 (e2e/w12-acceptance 확인)
 :80 {
 	encode zstd gzip
 	reverse_proxy web:3000 {
