@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Eyebrow, brand } from "@ltr/ui";
+import { MyNotifyLinks } from "@/components/account/MyNotifyLinks";
 import { InterestFields } from "@/components/account/interest-fields";
 import { SignupCompletedBeacon } from "@/components/account/signup-completed-beacon";
 import { CONSENT_KINDS, loadMyProfile, loadPickerOptions, type ConsentKind } from "@/lib/server/accounts/my-data";
@@ -57,6 +58,7 @@ export default async function MyPage({ searchParams }: Props) {
       <div className="mt-8 rounded-2xl border border-navy-100 bg-white p-6">
         <Eyebrow>MY</Eyebrow>
         <h1 className="mt-3 text-[28px] leading-tight font-black text-navy-900">내 화면</h1>
+        <MyNotifyLinks db={db} />
         {welcome && (
           <p role="status" data-testid="my-welcome" className="mt-4 rounded-xl border border-navy-100 bg-navy-50 px-4 py-3 text-[15px] font-bold text-navy-900">
             가입이 완료되었습니다
