@@ -21,7 +21,7 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 
 | 이름 | 값 |
 |---|---|
-| analytics_events.name (이벤트 이름 — PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 0차 34종 + W10-i 4종 + W11 0차 13종 + W11-f 3종 + W12 0차 20종) | `home_entry_clicked` · `hub_viewed` · `article_viewed` · `article_engaged` · `article_shared` · `search_submitted` · `glossary_opened` · `situation_card_clicked` · `next_action_clicked` · `hot_article_clicked` · `popular_article_clicked` · `video_played` · `partner_content_viewed` · `signup_completed` · `brief_preregistered` · `inquiry_submitted` · `policy_page_viewed` · `redirect_hit` · `not_found_viewed` · `calculator_card_clicked` · `amendment_viewed` · `interpretation_viewed` · `region_viewed` · `regional_news_opened` · `regional_source_opened` · `region_to_tax_clicked` · `region_to_realestate_clicked` · `project_viewed` · `dev_method_viewed` · `product_clicked` · `order_link_clicked` · `calc_started` · `calc_completed` · `calc_step_viewed` · `calc_step_left` · `calc_compared` · `calc_compare_gated` · `reduction_shown` · `reduction_expanded` · `refund_diagnosed` · `wetax_handoff` · `external_calculator_opened` · `calc_offline_used` · `calendar_exported` · `accuracy_viewed` · `content_to_tool` · `law_viewed` · `related_panel_opened` · `case_viewed` · `brief_subscribe_viewed` · `brief_subscribed` · `brief_confirmed` · `brief_opened` · `brief_unsubscribed` · `brief_link_visited` · `review_decided` · `sm_calculator_opened` · `amendment_alert_subscribed` · `amendment_alert_sent` · `paywall_viewed` · `subscription_started` · `subscription_cancelled` · `order_paid` · `certificate_issued` · `training_quote_requested` · `shortcut_clicked` · `realestate_weekly_viewed` · `campaign_landing_viewed` · `campaign_cta_clicked` · `guide_viewed` · `determination_completed` · `total_cost_started` · `total_cost_completed` · `family_next_check_opened` · `step_viewed` · `zone_viewed` · `issue_map_viewed` · `issue_map_source_opened` · `ordinance_viewed` · `institution_inquiry_sent` · `premium_report_viewed` · `org_seat_invited` · `institution_inquiry_submitted` · `org_seat_accepted` · `report_previewed` · `ask_started` · `ask_entry_clicked` · `assistant_mode_switched` · `ask_clarify_answered` · `ask_answer_rendered` · `ask_fallback_shown` · `ask_investment_blocked` · `ask_scope_redirected` · `ask_live_fetched` · `ask_benefits_shown` · `ask_determination_shown` · `benefits_block_opened` · `citation_opened` · `ask_feedback` · `ask_quota_reached` · `keyword_map_viewed` · `keyword_map_node_clicked` · `data_story_viewed` · `channel_landing_viewed` · `security_page_viewed` |
+| analytics_events.name (이벤트 이름 — PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 0차 34종 + W10-i 4종 + W11 0차 13종 + W11-f 3종 + W12 0차 20종 + W13 0차 19종) | `home_entry_clicked` · `hub_viewed` · `article_viewed` · `article_engaged` · `article_shared` · `search_submitted` · `glossary_opened` · `situation_card_clicked` · `next_action_clicked` · `hot_article_clicked` · `popular_article_clicked` · `video_played` · `partner_content_viewed` · `signup_completed` · `brief_preregistered` · `inquiry_submitted` · `policy_page_viewed` · `redirect_hit` · `not_found_viewed` · `calculator_card_clicked` · `amendment_viewed` · `interpretation_viewed` · `region_viewed` · `regional_news_opened` · `regional_source_opened` · `region_to_tax_clicked` · `region_to_realestate_clicked` · `project_viewed` · `dev_method_viewed` · `product_clicked` · `order_link_clicked` · `calc_started` · `calc_completed` · `calc_step_viewed` · `calc_step_left` · `calc_compared` · `calc_compare_gated` · `reduction_shown` · `reduction_expanded` · `refund_diagnosed` · `wetax_handoff` · `external_calculator_opened` · `calc_offline_used` · `calendar_exported` · `accuracy_viewed` · `content_to_tool` · `law_viewed` · `related_panel_opened` · `case_viewed` · `brief_subscribe_viewed` · `brief_subscribed` · `brief_confirmed` · `brief_opened` · `brief_unsubscribed` · `brief_link_visited` · `review_decided` · `sm_calculator_opened` · `amendment_alert_subscribed` · `amendment_alert_sent` · `paywall_viewed` · `subscription_started` · `subscription_cancelled` · `order_paid` · `certificate_issued` · `training_quote_requested` · `shortcut_clicked` · `realestate_weekly_viewed` · `campaign_landing_viewed` · `campaign_cta_clicked` · `guide_viewed` · `determination_completed` · `total_cost_started` · `total_cost_completed` · `family_next_check_opened` · `step_viewed` · `zone_viewed` · `issue_map_viewed` · `issue_map_source_opened` · `ordinance_viewed` · `institution_inquiry_sent` · `premium_report_viewed` · `org_seat_invited` · `institution_inquiry_submitted` · `org_seat_accepted` · `report_previewed` · `ask_started` · `ask_entry_clicked` · `assistant_mode_switched` · `ask_clarify_answered` · `ask_answer_rendered` · `ask_fallback_shown` · `ask_investment_blocked` · `ask_scope_redirected` · `ask_live_fetched` · `ask_benefits_shown` · `ask_determination_shown` · `benefits_block_opened` · `citation_opened` · `ask_feedback` · `ask_quota_reached` · `keyword_map_viewed` · `keyword_map_node_clicked` · `data_story_viewed` · `channel_landing_viewed` · `security_page_viewed` · `pricing_viewed` · `subscription_renewed` · `library_opened` · `workspace_opened` · `note_saved` · `split_view_opened` · `timeline_opened` · `export_downloaded` · `briefing_opened` · `copilot_used` · `qna_posted` · `qna_answered` · `qna_accepted` · `expert_strip_clicked` · `solved_case_clicked` · `expert_verified` · `notification_setting_changed` · `notification_opened` · `partner_feed_requested` |
 | analytics_events.mode (모드 — PRD-00 13장 일반·전문가) | `general` · `expert` |
 | analytics_events.tier (회원 등급 — PRD-00 6장 비회원·일반·프리미엄·기관 좌석) | `guest` · `basic` · `premium` · `institution` |
 | analytics_events.entry (진입 경로 — PRD-00 13장) | `search` · `ai_answer_engine` · `naver` · `brief` · `assistant` · `experts` · `tax_lens` · `campaign` · `direct` · `referral` |
@@ -142,6 +142,25 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 | `data_story_viewed` | 선택 | `series_key` · `via` |
 | `channel_landing_viewed` | 없음 | `utm_source` · `utm_campaign` |
 | `security_page_viewed` | 없음 | `entry` |
+| `pricing_viewed` | 없음 | `via` |
+| `subscription_renewed` | 없음 | `product_id` · `period` |
+| `library_opened` | 없음 | `kind` |
+| `workspace_opened` | 없음 | 없음 |
+| `note_saved` | 없음 | 없음 |
+| `split_view_opened` | 없음 | `panel_count` |
+| `timeline_opened` | 없음 | `entry` |
+| `export_downloaded` | 없음 | `format` · `target` |
+| `briefing_opened` | 없음 | `channel` |
+| `copilot_used` | 없음 | `feature` |
+| `qna_posted` | 없음 | `tax_item`(선택) |
+| `qna_answered` | 없음 | `tax_item`(선택) · `by_expert` |
+| `qna_accepted` | 없음 | `tax_item`(선택) · `by_expert` |
+| `expert_strip_clicked` | 없음 | `rank` |
+| `solved_case_clicked` | 없음 | `placement` |
+| `expert_verified` | 없음 | `qualification` |
+| `notification_setting_changed` | 없음 | `kind` · `enabled` · `entry` |
+| `notification_opened` | 없음 | `kind` |
+| `partner_feed_requested` | 없음 | `partner_id` · `scope` |
 
 속성 값의 모양 — 번호(`article_id`·`term_id`·`partner_id`·`amendment_id`)는 1 이상 정수, 개수(`query_length` 0~200 · `result_count` 0~10000 · `result_type_count` 0~20 · `interest_count`·`region_count` 0~20), 순위(`rank`) 1~100, 참·거짓(`region_classified`·`pinned`), `situation`·`category`는 slug(영문 소문자·숫자·`-`, 100자 이하), 주소(`from_path`·`to_path`·`path`)는 `/`로 시작하는 경로만(쿼리·조각 없음, 200자 이하, 풀어 읽은 글자에 이메일·전화·주민등록번호 모양 0), 나머지는 아래 2.3 목록 값이다. `format`·`content_type`은 W2-a 값 목록(`general` … · `reported_news` …), `action`은 W2-b 2.3 `next_action` 키다. 검색어 원문·질문 원문·계산 입력값·이메일·주소를 담을 칸은 어느 이벤트에도 없다. W3 10단계 3종(W3 설계 2.5): `calculator_card_clicked` — 바깥 연결 카드(`/calc`·상황 페이지 공용 카드)의 이동 링크를 누를 때 1건, `rank`는 그 화면 안 카드 차례(1부터 — `/calc`는 SM 카드 다음 바깥 계산기 카드), 분야는 상황 페이지만 · `amendment_viewed` — 트래커 상세를 열 때 1건(분야 `tax`) · `interpretation_viewed` — 원문 블록이 있는 해석 해설 기사를 열 때 1건(기사 분야). 카드 주소·이용자 입력·표식 값은 어느 칸에도 없다. W4 24단계 7종(W4 설계 2.5): 지역 코드(`region_code`)는 `regions.code` 숫자 10자리, 분야는 모두 필수 · `region_viewed` — 지역 허브(`/local/[시·도]`·`/[시·군·구]`)를 열 때 1건(분야 `local`, `level` = 시·도/시·군·구) · `regional_news_opened` — 허브 블록 ②③⑤의 지역 기사 카드 링크를 누를 때 1건(`field` = 기사 편집 분야) · `regional_source_opened` — 허브 ⑤ 공식 자료 원문 카드의 [원문 보기]를 누를 때 1건(`source_type` = 자료 종류, 원문 주소 0) · `region_to_tax_clicked` — 지역 세금 연결 블록의 상황 카드·감수 해설·공식 원문 링크를 누를 때 1건(`target`: `situation`·`explainer`·`official_source`) · `region_to_realestate_clicked` — 허브 ③ 부동산·개발의 프로젝트 카드·분양 카드·더 보기 링크를 누를 때 1건(`target`: `project`·`project_list`·`supply`·`supply_list`) · `project_viewed` — 프로젝트 상세를 열 때 1건(분야 `realestate`, 지역 코드·사업 유형 키·현재 단계 키) · `dev_method_viewed` — 개발방법 상세를 열 때 1건(분야 `realestate`, `method` = 방법 slug). SM 취득세 카드(별도 사이트)의 누름은 이 7종이 아니라 `calculator_card_clicked`(`region_hub`·`project`·`inheritance_gift`·`dev_method` 화면) 하나로 센다 — 링크 한 번에 이벤트 한 건.
 
@@ -226,6 +245,17 @@ PRD-01A 9장 W2-c(분석 이벤트·첫 방문·지표 대시보드, 많이 본 
 | ask.feedback_reason (피드백 사유 - W12 0차) | `wrong` · `outdated` · `unclear` · `other` |
 | data_story.via (데이터 스토리 진입 - W12 0차) | `article` · `data_page` |
 | security.entry (보안 정책 진입 - W12 0차) | `footer` · `agent` · `direct` · `search` |
+| pricing.via (요금 안내 진입 경로 - W13 0차) | `paywall` · `menu` · `brief` · `local_hub` · `library` · `workspace` · `direct` |
+| library.kind (지식창고 유형 - W13 0차) | `ebook` · `wiki` · `column` · `premium_column` |
+| timeline.entry (쟁점 타임라인 진입 - W13 0차) | `law` · `keyword` |
+| export.format (내보내기 형식 - W13 0차) | `docx` · `csv` |
+| export.target (내보내기 대상 - W13 0차) | `notes` · `scraps` · `saved_searches` · `copilot_result` |
+| briefing.channel (맞춤 브리핑 채널 - W13 0차) | `web` · `email` |
+| copilot.feature (코파일럿 기능 - W13 0차) | `compare` · `history_summary` · `publication_summary` · `issue_memo` |
+| solved_case.placement (해결 사례 위치 - W13 0차) | `home` |
+| notification.kind (알림 종류 - W13 0차) | `law` · `saved_search` · `region` · `calendar` |
+| notification.entry (알림 설정 진입 - W13 0차) | `local_hub` · `settings` |
+| partner_feed.scope (제휴 피드 범위 - W13 0차) | `summary` · `full` |
 | client.entry (브라우저가 정해 보내도 되는 진입 경로 — 사이트 안 출발점) | `assistant` · `experts` · `tax_lens` · `campaign` |
 | settings.analytics_keys (수집·집계 설정 키) | `analytics` · `bot_user_agents` · `analytics_referrers` · `hot_weights` · `popular_rules` |
 

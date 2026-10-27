@@ -23,6 +23,9 @@
     "apps/web/lib/server/assistant",
     "apps/web/lib/server/ops-ai",
     "apps/web/lib/agent",
-    "apps/web/lib/server/agent"
+    "apps/web/lib/server/agent",
+    "apps/web/lib/server/copilot",
+    "apps/web/lib/server/workspace",
+    "apps/web/lib/server/library"
   ]
 }

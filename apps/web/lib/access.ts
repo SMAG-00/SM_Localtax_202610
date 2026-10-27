@@ -135,6 +135,17 @@ export const ACTIONS = {
   "channel.record": "채널 원고 키트 내려받기·게시 기록 (W12-h CH-01 - 편집 책임자·관리자, 게시는 사람이 함)",
   "stats.approve": "통계 시계열 승인 (W12-h DATA-01 - 편집 책임자·관리자)",
   "security_page.edit": "보안 정책 페이지 항목·통제 자가 점검 기록 (W12-g SEC-01 - 관리자(PO)만)",
+  // W13 0차 - 5단계 공통 권한 (5단계 설계 3장). 권리·이관 승인·계정 연결·키 발급·계약·인증 계획은 관리자(PO)만, 역할은 늘리지 않음
+  "library.edit": "지식창고 출판물·노드 편집 (W13-a LIB-01 - 편집 책임자·관리자)",
+  "library.rights": "지식창고 용도별 권리 확인·철회 기록 (W13-a LIB-04 - 관리자(PO)만)",
+  "digitize.approve": "출판물 이관 단계 승인 - 표본 오류율 확인 뒤 (W13-a LIB-06 - 관리자(PO)만)",
+  "columns.publish": "프리미엄 칼럼 발행 (W13-a - 편집 책임자·관리자, 계약 유효 필자만)",
+  "qna.moderate": "라운지 신고 처리·글 숨김 (W13-g QNA-08 - 편집 책임자·관리자)",
+  "expert_link.edit": "SM 전문가 계정 연결·해제 (W13-g EXP-01·02 - 관리자(PO)만)",
+  "solved_case.approve": "홈 해결 사례 승인 (W13-h HOME-11 - 편집 책임자·관리자)",
+  "feeds.issue": "제휴 피드 키 발급·폐기 (W13-i PART-01 - 관리자(PO)만, 계약 기록이 있어야 함)",
+  "licenses.edit": "데이터 라이선스 계약 기록 (W13-i BIZ-11 - 관리자(PO)만)",
+  "security_cert.edit": "정보보호 인증 추진 계획·승인 기록 (W13-j SEC-02 - 관리자(PO)만)",
   "special_law.confirm": "특례법 확인 기록 — 공포 확인·철회와 특례법 근거 행의 확인·철회 (관리자(PO)만, W4 20단계 PR-13)",
 } as const;
 export type Action = keyof typeof ACTIONS;
@@ -209,6 +220,13 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "ask_scope.approve",
   "ask_rollout.approve",
   "security_page.edit",
+  // W13 0차 - 권리 확인·이관 승인·계정 연결·키 발급·계약·인증 계획은 관리자만, 허용 밖 시도를 감사에 남긴다
+  "library.rights",
+  "digitize.approve",
+  "expert_link.edit",
+  "feeds.issue",
+  "licenses.edit",
+  "security_cert.edit",
 ]);
 
 /** 판정 대상 기사 — 서버가 DB에서 읽어 채운다 */
@@ -515,6 +533,27 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("통계 시계열 승인은 편집 책임자와 관리자만 합니다 (DATA-01)");
     case "security_page.edit":
       return viewer.isAdmin ? ALLOW : deny("보안 정책 페이지 편집은 관리자만 합니다 (SEC-01)");
+    // W13 0차 - 5단계 공통 권한 (5단계 설계 3장)
+    case "library.edit":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("지식창고 편집은 편집 책임자와 관리자만 합니다 (LIB-01)");
+    case "library.rights":
+      return viewer.isAdmin ? ALLOW : deny("지식창고 권리 확인·철회는 관리자만 합니다 (LIB-04)");
+    case "digitize.approve":
+      return viewer.isAdmin ? ALLOW : deny("출판물 이관 승인은 관리자만 합니다 (LIB-06)");
+    case "columns.publish":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("프리미엄 칼럼 발행은 편집 책임자와 관리자만 합니다");
+    case "qna.moderate":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("라운지 신고 처리는 편집 책임자와 관리자만 합니다 (QNA-08)");
+    case "expert_link.edit":
+      return viewer.isAdmin ? ALLOW : deny("SM 전문가 계정 연결은 관리자만 합니다 (EXP-01)");
+    case "solved_case.approve":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("홈 해결 사례 승인은 편집 책임자와 관리자만 합니다 (HOME-11)");
+    case "feeds.issue":
+      return viewer.isAdmin ? ALLOW : deny("제휴 피드 키 발급은 관리자만 합니다 (PART-01)");
+    case "licenses.edit":
+      return viewer.isAdmin ? ALLOW : deny("데이터 라이선스 계약 기록은 관리자만 합니다 (BIZ-11)");
+    case "security_cert.edit":
+      return viewer.isAdmin ? ALLOW : deny("정보보호 인증 계획 편집은 관리자만 합니다 (SEC-02)");
     case "product.approve":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("자사 상품 카드 연결의 승인·철회는 편집 책임자와 관리자만 합니다 — 상품 담당은 제안까지입니다 (BIZ-03)");
     case "brand.manage":

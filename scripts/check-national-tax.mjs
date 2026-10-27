@@ -98,6 +98,8 @@ const AI_DIRS = [
   "packages/assistant/", "packages/agent/", "workflows/",
   "apps/web/lib/assistant/", "apps/web/lib/server/assistant/", "apps/web/lib/server/ops-ai/",
   "apps/web/lib/agent/", "apps/web/lib/server/agent/",
+  // W13-0 - 워크스페이스·코파일럿·지식창고 서버 코드
+  "apps/web/lib/server/copilot/", "apps/web/lib/server/workspace/", "apps/web/lib/server/library/",
 ];
 export const ZONES_FILE = "scripts/national-tax-zones.json";
 

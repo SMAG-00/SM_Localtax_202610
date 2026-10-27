@@ -90,9 +90,9 @@ test("저장소 전체 — 스크립트가 종료 코드 0", () => {
 
 // W11-g — AI·워크플로 위치는 상속·증여 엔진(aiForbidden)을 의존하거나 불러올 수 없다 (국세 금액은 AI가 만들지 않는다)
 const ENGINE = ["@ltr/", "i", "gt", "-engine"].join("");
-const AI_RULES = { ...RULES, aiForbidden: [ENGINE], aiForbiddenDirs: ["packages/assistant", "packages/agent", "workflows", "apps/web/lib/assistant", "apps/web/lib/server/assistant", "apps/web/lib/server/ops-ai", "apps/web/lib/agent", "apps/web/lib/server/agent"] };
+const AI_RULES = { ...RULES, aiForbidden: [ENGINE], aiForbiddenDirs: ["packages/assistant", "packages/agent", "workflows", "apps/web/lib/assistant", "apps/web/lib/server/assistant", "apps/web/lib/server/ops-ai", "apps/web/lib/agent", "apps/web/lib/server/agent", "apps/web/lib/server/copilot", "apps/web/lib/server/workspace", "apps/web/lib/server/library"] };
 
-for (const dir of ["packages/assistant", "packages/agent", "workflows", "apps/web/lib/assistant", "apps/web/lib/server/assistant", "apps/web/lib/server/ops-ai", "apps/web/lib/agent", "apps/web/lib/server/agent"]) {
+for (const dir of ["packages/assistant", "packages/agent", "workflows", "apps/web/lib/assistant", "apps/web/lib/server/assistant", "apps/web/lib/server/ops-ai", "apps/web/lib/agent", "apps/web/lib/server/agent", "apps/web/lib/server/copilot", "apps/web/lib/server/workspace", "apps/web/lib/server/library"]) {
   test(`W11-g — ${dir}가 상속·증여 엔진을 import 하면 오류, package.json 의존도 오류`, () => {
     const imp = checkDeps({ root: tempRepo(base({ "scripts/forbidden-packages.json": AI_RULES, [`${dir}/src/a.ts`]: `import { f } from "${ENGINE}/sub";\n` })).dir });
     assert.ok(imp.errors.some((e) => e.includes(`${dir}/src/a.ts`) && e.includes("AI·워크플로")), imp.errors.join("\n"));

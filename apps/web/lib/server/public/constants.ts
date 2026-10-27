@@ -157,6 +157,23 @@ export const FEATURE_KEYS = [
   "kakao_login",
   "article_ai_box",
   "impact_banner",
+  // W13 0차 - 5단계 기능 키 16개(마이그레이션 190, 모두 꺼짐). 이미 있는 experts·taxbot·members는 다시 만들지 않는다. 각 단위(W13-a~j)가 화면과 함께 쓰고 게이트·권리·계약이 갖춰진 뒤에만 켠다 (5단계 설계 4.2)
+  "library",
+  "library_premium",
+  "workspace",
+  "law_split",
+  "law_timeline",
+  "research_copilot",
+  "expert_calc",
+  "qna",
+  "solved_cases",
+  "my_notifications",
+  "my_briefings",
+  "partner_feeds",
+  "licenses",
+  "naver_series",
+  "account_links",
+  "security_cert_plan",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export type Features = Readonly<Record<FeatureKey, boolean>>;

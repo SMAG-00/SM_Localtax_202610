@@ -136,6 +136,17 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "channel.record": [X, O, X, X, X, X, X, O, X],
   "stats.approve": [X, O, X, X, X, X, X, O, X],
   "security_page.edit": [X, X, X, X, X, X, X, O, X],
+  // W13 0차 - 5단계 공통 권한: 권리·이관 승인·계정 연결·키 발급·계약·인증 계획은 관리자(7)만, 편집·발행·신고·해결 사례는 편집 책임자(1)+관리자
+  "library.edit": [X, O, X, X, X, X, X, O, X],
+  "library.rights": [X, X, X, X, X, X, X, O, X],
+  "digitize.approve": [X, X, X, X, X, X, X, O, X],
+  "columns.publish": [X, O, X, X, X, X, X, O, X],
+  "qna.moderate": [X, O, X, X, X, X, X, O, X],
+  "expert_link.edit": [X, X, X, X, X, X, X, O, X],
+  "solved_case.approve": [X, O, X, X, X, X, X, O, X],
+  "feeds.issue": [X, X, X, X, X, X, X, O, X],
+  "licenses.edit": [X, X, X, X, X, X, X, O, X],
+  "security_cert.edit": [X, X, X, X, X, X, X, O, X],
   "brand.manage":           [X, X, X, X, X, O, X, O, X],
   "brand.approve":          [X, X, X, X, X, X, X, O, X], // W3 7단계 — 증빙 승인·동의서·경력 표시 승인은 관리자(PO)만 (설계 6장)
   "expert.manage":          [X, X, X, X, X, X, O, O, X],

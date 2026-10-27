@@ -3,7 +3,7 @@
 import { CONTENT_TYPES, FORMATS, detectPii } from "@ltr/editorial";
 import { NEXT_ACTION_KEYS, SECTION_KEYS, type SectionKey } from "@/lib/server/public/constants";
 
-/** 이벤트 이름 105종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 34종 + W10-i 4종 + W11 13종 + W11-f 3종 + W12 0차 20종 — DB check 제약 analytics_events.name과 같다) */
+/** 이벤트 이름 124종 (PRD-01A 12장 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 34종 + W10-i 4종 + W11 13종 + W11-f 3종 + W12 0차 20종 + W13 0차 19종 — DB check 제약 analytics_events.name과 같다) */
 export const EVENT_NAMES = [
   "home_entry_clicked",
   "hub_viewed",
@@ -118,6 +118,26 @@ export const EVENT_NAMES = [
   "data_story_viewed",
   "channel_landing_viewed",
   "security_page_viewed",
+  // W13 0차 (PRD-05 11장 · 5단계 설계 W13-0) - 구독·지식창고·워크스페이스·라운지·알림·제휴 측정 19종. 이미 있는 paywall_viewed·subscription_started·subscription_cancelled·org_seat_invited는 다시 만들지 않는다. 질문 원문·입력값·개인정보 칸 없음
+  "pricing_viewed",
+  "subscription_renewed",
+  "library_opened",
+  "workspace_opened",
+  "note_saved",
+  "split_view_opened",
+  "timeline_opened",
+  "export_downloaded",
+  "briefing_opened",
+  "copilot_used",
+  "qna_posted",
+  "qna_answered",
+  "qna_accepted",
+  "expert_strip_clicked",
+  "solved_case_clicked",
+  "expert_verified",
+  "notification_setting_changed",
+  "notification_opened",
+  "partner_feed_requested",
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -218,6 +238,18 @@ export const PROP_VALUES = {
   "ask.feedback_reason": ["wrong", "outdated", "unclear", "other"],
   "data_story.via": ["article", "data_page"],
   "security.entry": ["footer", "agent", "direct", "search"],
+  // W13 0차 - PRD-05 11장 이벤트 속성의 값 목록 (W2-c 설계 2.3)
+  "pricing.via": ["paywall", "menu", "brief", "local_hub", "library", "workspace", "direct"],
+  "library.kind": ["ebook", "wiki", "column", "premium_column"],
+  "timeline.entry": ["law", "keyword"],
+  "export.format": ["docx", "csv"],
+  "export.target": ["notes", "scraps", "saved_searches", "copilot_result"],
+  "briefing.channel": ["web", "email"],
+  "copilot.feature": ["compare", "history_summary", "publication_summary", "issue_memo"],
+  "solved_case.placement": ["home"],
+  "notification.kind": ["law", "saved_search", "region", "calendar"],
+  "notification.entry": ["local_hub", "settings"],
+  "partner_feed.scope": ["summary", "full"],
 } as const satisfies Record<string, readonly string[]>;
 
 type Field =
@@ -375,6 +407,26 @@ export const EVENT_SPECS: Readonly<Record<EventName, EventSpec>> = {
   data_story_viewed: { section: "optional", props: { series_key: key, via: oneOf(PROP_VALUES["data_story.via"]) } },
   channel_landing_viewed: { section: "none", props: { utm_source: { field: { kind: "slug" } }, utm_campaign: { field: { kind: "slug" } } } },
   security_page_viewed: { section: "none", props: { entry: oneOf(PROP_VALUES["security.entry"]) } },
+  // W13 0차 - 구독·지식창고·워크스페이스·라운지·알림·제휴 19종 (PRD-05 11장). 속성 칸은 정해진 목록·개수·참거짓·키·번호뿐
+  pricing_viewed: { section: "none", props: { via: oneOf(PROP_VALUES["pricing.via"]) } },
+  subscription_renewed: { section: "none", props: { product_id: id, period: oneOf(PROP_VALUES["billing.period"]) } },
+  library_opened: { section: "none", props: { kind: oneOf(PROP_VALUES["library.kind"]) } },
+  workspace_opened: { section: "none", props: {} },
+  note_saved: { section: "none", props: {} },
+  split_view_opened: { section: "none", props: { panel_count: count(4) } },
+  timeline_opened: { section: "none", props: { entry: oneOf(PROP_VALUES["timeline.entry"]) } },
+  export_downloaded: { section: "none", props: { format: oneOf(PROP_VALUES["export.format"]), target: oneOf(PROP_VALUES["export.target"]) } },
+  briefing_opened: { section: "none", props: { channel: oneOf(PROP_VALUES["briefing.channel"]) } },
+  copilot_used: { section: "none", props: { feature: oneOf(PROP_VALUES["copilot.feature"]) } },
+  qna_posted: { section: "none", props: { tax_item: { ...key, optional: true } } },
+  qna_answered: { section: "none", props: { tax_item: { ...key, optional: true }, by_expert: bool } },
+  qna_accepted: { section: "none", props: { tax_item: { ...key, optional: true }, by_expert: bool } },
+  expert_strip_clicked: { section: "none", props: { rank } },
+  solved_case_clicked: { section: "none", props: { placement: oneOf(PROP_VALUES["solved_case.placement"]) } },
+  expert_verified: { section: "none", props: { qualification: { field: { kind: "slug" } } } },
+  notification_setting_changed: { section: "none", props: { kind: oneOf(PROP_VALUES["notification.kind"]), enabled: bool, entry: oneOf(PROP_VALUES["notification.entry"]) } },
+  notification_opened: { section: "none", props: { kind: oneOf(PROP_VALUES["notification.kind"]) } },
+  partner_feed_requested: { section: "none", props: { partner_id: id, scope: oneOf(PROP_VALUES["partner_feed.scope"]) } },
 };
 
 export const isEventName = (v: unknown): v is EventName => typeof v === "string" && (EVENT_NAMES as readonly string[]).includes(v);

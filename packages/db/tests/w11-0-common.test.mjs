@@ -45,7 +45,7 @@ test("이벤트 이름 제약 - 제약 값 집합은 W2-c 2.1 표 85종과 같�
   tx(async () => {
     const line = W2C.split("\n").find((l) => l.startsWith("| analytics_events.name "));
     const names = [...line.matchAll(/`([a-z_]+)`/g)].map((m) => m[1]);
-    assert.equal(names.length, 105);
+    assert.equal(names.length, 124);
     for (const n of NEW_EVENTS) assert.ok(names.includes(n), `2.1 표에 ${n}`);
     const def = (await client.query("select pg_get_constraintdef(oid) d from pg_constraint where conname = 'analytics_events_name_check'")).rows[0].d;
     const inDb = [...def.matchAll(/'([a-z_]+)'::text/g)].map((m) => m[1]);

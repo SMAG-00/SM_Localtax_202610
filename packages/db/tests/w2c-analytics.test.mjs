@@ -133,10 +133,10 @@ async function checkValues(table, column) {
 
 // ── 설계 문서 ─────────────────────────────────────────────
 
-test("설계 문서 2장의 표·씨앗 블록을 모두 읽었다 — 이벤트 85종(PRD-01A 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 0차 34종 + W10-i 4종 + W11 0차 13종 + W11-f 3종), 설정 키 5개", () => {
+test("설계 문서 2장의 표·씨앗 블록을 모두 읽었다 — 이벤트 124종(PRD-01A 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 0차 34종 + W10-i 4종 + W11 0차 13종 + W11-f 3종 + W12 0차 20종 + W13 0차 19종), 설정 키 5개", () => {
   assert.ok(VALUES && PROPS_VALUES, "2.1·2.3 소절이 있어야 한다");
   for (const name of VALUES.keys()) assert.match(name, /^analytics_events\./, `2.1 '${name}'은 analytics_events 칸이어야 한다`);
-  assert.equal(VALUES.get("analytics_events.name").length, 105, "PRD-01A 12장 이벤트 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 0차 34종 + W10-i 4종 + W11 0차 13종 + W11-f 3종 + W12 0차 20종");
+  assert.equal(VALUES.get("analytics_events.name").length, 124, "PRD-01A 12장 이벤트 19종 + W3 10단계 3종 + W4 24단계 7종 + W8 2종 + W10 0차 34종 + W10-i 4종 + W11 0차 13종 + W11-f 3종 + W12 0차 20종 + W13 0차 19종");
   assert.deepEqual(VALUES.get("analytics_events.section"), ["tax", "realestate", "finance", "local"]);
   assert.deepEqual([...SEEDS.keys()].sort(), [...PROPS_VALUES.get("settings.analytics_keys")].sort(), "2.3 설정 키 = 2.5 씨앗 블록");
 });

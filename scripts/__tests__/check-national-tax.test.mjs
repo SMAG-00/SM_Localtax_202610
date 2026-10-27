@@ -348,13 +348,13 @@ test("NT9 AI·워크플로 경계 — assistant·agent·workflows가 상속·증
   assert.match(dep.out, /packages\/agent\/package\.json NT9/);
 
   // W12-0 — 웹 앱 안의 도우미·지방세봇·운영 AI 코드도 같은 경계
-  for (const f of ["apps/web/lib/assistant/a.ts", "apps/web/lib/server/assistant/a.ts", "apps/web/lib/server/ops-ai/a.ts", "apps/web/lib/agent/a.ts", "apps/web/lib/server/agent/a.ts"]) {
+  for (const f of ["apps/web/lib/assistant/a.ts", "apps/web/lib/server/assistant/a.ts", "apps/web/lib/server/ops-ai/a.ts", "apps/web/lib/agent/a.ts", "apps/web/lib/server/agent/a.ts", "apps/web/lib/server/copilot/a.ts", "apps/web/lib/server/workspace/a.ts", "apps/web/lib/server/library/a.ts"]) {
     const r = zoned({ [f]: imp });
     assert.equal(r.code, 1, `${f} ${r.out}`);
     assert.match(r.out, new RegExp(`${f.replace(/\//g, "\/")} NT9`));
   }
   // 같은 웹 앱의 AI 경로가 아닌 곳(계산·화면 코드)과 폴더 이름만 비슷한 곳은 통과
-  assert.equal(zoned({ [`apps/web/lib/${SHORT}/agent-extra.ts`]: imp, [`apps/web/lib/${SHORT}/assistant-ui.ts`]: imp }).code, 0);
+  assert.equal(zoned({ [`apps/web/lib/${SHORT}/agent-extra.ts`]: imp, [`apps/web/lib/${SHORT}/assistant-ui.ts`]: imp, [`apps/web/lib/${SHORT}/copilot-ui.ts`]: imp }).code, 0);
   // 같은 import가 구역 안(웹 화면 쪽)이거나 AI 경로가 아니면 NT9 아님
   const ok = zoned({ [`apps/web/lib/${SHORT}/use.ts`]: imp, "packages/assistant/src/b.ts": 'import { x } from "@ltr/tax-engine";\n' });
   assert.equal(ok.code, 0, ok.out);
