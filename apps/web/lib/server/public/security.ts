@@ -1,5 +1,6 @@
 import "server-only";
-import { SECURITY_ITEM_KEYS, isSecurityItemKey, securityPageReady, type SecurityItemKey } from "@/lib/security/items";
+import { certKindLabel, certPlanPublicLine, isCertKind } from "@/lib/security/cert-plan";
+import { SECURITY_ITEM_KEYS, findCertClaims, isSecurityItemKey, securityPageReady, type SecurityItemKey } from "@/lib/security/items";
 import { publicDb, rowsOf } from "./db";
 import { readPublicSettings } from "./reads";
 
@@ -9,6 +10,8 @@ export interface SecurityPageView {
   items: Array<{ item_key: SecurityItemKey; body: string; confirmed_on: string }>;
   lastCheckOn: string | null;
   controls: number | null;
+  /** 인증 추진 중 표기 (SEC-02, W13-j) - 기능 키 security_cert_plan 켜짐 + 승인된 계획이 있을 때만. 종류 이름과 승인일뿐이고 취득을 뜻하지 않는다 */
+  certPlan: { label: string; approvedOn: string } | null;
 }
 
 export async function getSecurityPage(): Promise<SecurityPageView | null> {
@@ -18,5 +21,15 @@ export async function getSecurityPage(): Promise<SecurityPageView | null> {
   const items = SECURITY_ITEM_KEYS.flatMap((k) => rows.filter((r) => r.item_key === k && isSecurityItemKey(r.item_key)).map((r) => ({ item_key: k, body: r.body, confirmed_on: r.confirmed_on })));
   if (!securityPageReady(items)) return null;
   const st = await rowsOf<{ completed_on: string; controls: number }>(db.from("public_security_status").select("completed_on, controls"), "보안 점검 요약");
-  return { items, lastCheckOn: st[0]?.completed_on ?? null, controls: st[0] ? Number(st[0].controls) : null };
+  let certPlan: SecurityPageView["certPlan"] = null;
+  if ((await readPublicSettings()).features.security_cert_plan) {
+    const cp = await rowsOf<{ cert_kind: string; other_kind_name: string | null; approved_on: string }>(db.from("public_security_cert_status").select("cert_kind, other_kind_name, approved_on"), "인증 추진 계획");
+    const row = cp[0];
+    if (row && isCertKind(row.cert_kind)) {
+      const label = certKindLabel(row.cert_kind, row.other_kind_name);
+      // 이중 방어 - 이름이 비었거나 고정 문구까지 합친 글이 단정 표현 검사에 걸리면 표기하지 않는다
+      if (label !== "" && findCertClaims(certPlanPublicLine(label, row.approved_on)).length === 0) certPlan = { label, approvedOn: row.approved_on };
+    }
+  }
+  return { items, lastCheckOn: st[0]?.completed_on ?? null, controls: st[0] ? Number(st[0].controls) : null, certPlan };
 }
