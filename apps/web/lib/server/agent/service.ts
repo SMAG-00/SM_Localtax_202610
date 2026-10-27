@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto";
 import { createFetchClient, ModelError, type ModelClient } from "@/lib/assistant/anthropic";
 import { readAgentConfig } from "@/lib/agent/ask-config";
 import { budgetState } from "@/lib/agent/ask-limits";
-import { EMPTY_DICTIONARY } from "@/lib/agent/clarify";
 import { EMPTY_COPY } from "@/lib/agent/fixed-copy";
 import { runAgentTurn, type AgentTurnRecord } from "@/lib/agent/flow";
 import { parseAskRequest } from "@/lib/agent/request";
@@ -14,8 +13,15 @@ import { getViewer } from "@/lib/server/dal";
 import { anthropicApiKey, anthropicBaseUrl, anthropicWorkspaceId } from "@/lib/server/assistant/env";
 import { db } from "@/lib/server/assistant/store";
 import { viewerIsInternal } from "@/lib/server/assistant/service";
+import { askAllowed } from "@/lib/agent/rollout";
+import { withEntryContext } from "@/lib/agent/entry";
+import { clientIp } from "@/lib/analytics/request";
+import { guardSecret } from "@/lib/server/env";
+import { adminClient } from "@/lib/server/supabase";
+import { consumeQuota, openSession, quotaSubject, readModeGate, refundQuota, sessionStateFor } from "./d-store";
 import { agentEnv } from "./env";
-import { readRuntime, recordTurn, registerPrompts, sessionState } from "./store";
+import { loadCalcPort, loadRequirementDictionary } from "./calc-port";
+import { readRuntime, recordResults, recordTurn, registerPrompts, sessionState } from "./store";
 import { createAgentToolbox } from "./toolbox";
 
 // /api/ask 한 번의 처리 (W12-b b6 - ASK-01, PRD-04 6.13). 가드: 모델 설정 → 공개 단계·기능 키 → 요청 스키마 → 세션 상태 → 흐름(SSE) → 기록.
@@ -42,6 +48,12 @@ export async function handleAskPost(request: Request): Promise<Response> {
   if (!rt || !rt.taxbot || !rt.limits || !rt.live) return json({ error: "not found" }, 404);
   const internal = await viewerIsInternal(request);
   if (rt.stage === "none" || (rt.stage !== "4c" && !internal)) return json({ error: "not found" }, 404);
+  // W12-d d1: 화면의 모드 버튼과 같은 판정(기능 키 ∧ 공개 단계 ∧ 모드 고지 승인 ∧ 대상 계정). 서버 연결은 service_role로만 기록·한도를 다룬다
+  const admin = adminClient();
+  if (!admin) return json({ error: "not found" }, 404);
+  const viewer = await getViewer(request).catch(() => null);
+  const audience = internal ? "internal" : viewer ? "member" : "guest";
+  if (!askAllowed(await readModeGate(client), audience)) return json({ error: "not found" }, 404);
 
   const raw = await request.text();
   if (raw.length > 8000) return json({ error: "요청이 너무 깁니다" }, 413);
@@ -58,13 +70,26 @@ export async function handleAskPost(request: Request): Promise<Response> {
   const prompts = await registerPrompts(client);
   if (!prompts) return json({ error: "잠시 후 다시 시도해 주세요" }, 503);
   const sessionId = req.sessionId ?? randomUUID();
-  const state = (await sessionState(client, sessionId)) ?? { turns: 0, clarifyRounds: 0 };
-  const viewer = await getViewer(request).catch(() => null);
+  const state = (await sessionStateFor(admin, sessionId, viewer?.userId ?? null)) ?? (await sessionState(client, sessionId)) ?? { turns: 0, clarifyRounds: 0 };
   const tier = viewer ? "member" : "guest";
   const today = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
 
+  // W12-d d4: 보내기를 눌러 요청이 온 이 시점에만 하루 한도를 차감한다 (진입·창 열기는 이 API를 부르지 않는다). 프리미엄 등급은 5단계 구독 연결 전이라 회원 한도를 쓴다
+  const secret = guardSecret();
+  if (!viewer && !secret) return json({ error: "서버 설정이 끝나지 않았습니다" }, 503);
+  const subject = quotaSubject({ userId: viewer?.userId ?? null, ip: clientIp(request.headers), secret: secret ?? "" });
+  const quota = await consumeQuota(admin, subject, tier);
+  if (!quota.allowed) return json({ error: "quota", code: quota.code, next: quota.next, limit: quota.limit, used: quota.used }, 429);
+  const opened = await openSession(admin, { sessionId, userId: viewer?.userId ?? null, mode: req.mode, entry: req.entry, internal, retainDays: ASSISTANT_DEFAULTS.retentionDays, save: !req.saveOff });
+  if (!opened) {
+    await refundQuota(admin, subject);
+    return json({ error: "잠시 후 다시 시도해 주세요" }, 503);
+  }
+
+  // W12-c - 계산·판정 포트(공개 읽기)와 3단계 요건 사전. 읽기 실패는 빈 사전·닫힌 포트로 이어진다
+  const [calcPort, dictionary] = await Promise.all([loadCalcPort(), loadRequirementDictionary(client)]);
   const gen = runAgentTurn(
-    { message: req.message, mode: req.mode, turn: state.turns, clarify: { rounds: state.clarifyRounds, answers: req.clarifyAnswers } },
+    { message: withEntryContext(req.message, req.entry, req.entryId, state.turns), mode: req.mode, turn: state.turns, clarify: { rounds: state.clarifyRounds, answers: req.clarifyAnswers } },
     {
       config: cfg.config,
       limits: rt.limits,
@@ -76,7 +101,8 @@ export async function handleAskPost(request: Request): Promise<Response> {
       liveFetcher: null,
       scopeFlags: rt.scopes,
       copy: EMPTY_COPY,
-      dictionary: EMPTY_DICTIONARY,
+      dictionary,
+      calc: calcPort,
       tier,
       budget: budgetState(rt.spentMonthWon, rt.budget, rt.pricing),
       pricing: rt.pricing,
@@ -89,7 +115,9 @@ export async function handleAskPost(request: Request): Promise<Response> {
 
   const stream = eventStream<AgentTurnRecord>(gen, async (rec) => {
     if (!rec) return;
-    await recordTurn(client, {
+    // 서버가 service_role로만 기록한다 (169 - anon 기록 위조 차단). 서버 장애(error)로 답을 못 낸 요청은 한도를 되돌린다
+    if (rec.kind === "error") await refundQuota(admin, subject);
+    await recordTurn(admin, {
       session_id: sessionId,
       mode: req.mode,
       entry: req.entry,
@@ -116,6 +144,7 @@ export async function handleAskPost(request: Request): Promise<Response> {
         failure_codes: [...new Set(rec.failures.map((f) => f.code))],
       },
     });
+    await recordResults(admin, sessionId, state.turns + 1, rec.results);
   });
   return new Response(stream, { status: 200, headers: { ...SSE_HEADERS, "x-ask-session": sessionId } });
 }

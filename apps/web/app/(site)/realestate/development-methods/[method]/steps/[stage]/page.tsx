@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
 import { UiLink } from "@ltr/ui";
+import { AgentEntry } from "@/components/site/AgentEntry";
 import { MeasureView } from "@/components/site/Measure";
 import { IssueMapEntry } from "@/components/site/tax-guide/TaxEntries";
 import { SiteSection } from "@/components/site/SiteSection";
@@ -76,6 +77,7 @@ export default async function Page({ params }: Props) {
         <IssueMapEntry hub="redevelopment" />
         {kind && <DeterminationEntry href={href} label="이 단계의 세금 판정 보기" typeIds={typeIds} />}
       </SiteSection>
+      <AgentEntry entry="step" entryId={entry.stage} label="이 단계에 대해 지방세봇에게 묻기" />
       <PlacedGuides surface="stage" targetKey={entry.stage} id="dev-method-step-guides" heading={{ eyebrow: "단계별 세금 가이드", title: `${entry.stageLabel} 단계의 세금` }} />
     </div>
   );

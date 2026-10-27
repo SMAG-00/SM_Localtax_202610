@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AgentEntry } from "./AgentEntry";
 import { splitProvision } from "@/lib/law/anchors";
 import { articleLabel, articleSegment, lawHref, lawThreeHref } from "@/lib/law/article-ref";
 import { upcomingBadge } from "@/lib/law/as-of";
@@ -209,6 +210,7 @@ export function LawArticle({ view }: { view: ArticlePageView }) {
         <div className="mt-6 flex flex-col gap-6 lg:flex-row">
           <article data-part="article-body" className="min-w-0 flex-1">
             <Blocks body={view.article.body} />
+            <AgentEntry entry="law" entryId={`${view.law.id}:${articleSegment(view.ref.no, view.ref.branch)}`} label="이 조문에 대해 지방세봇에게 묻기" />
           </article>
           <div className="lg:w-[360px]">
             <RelatedPanel items={view.related} asOf={date} place="law_view" searchHref={`/cases?law=${encodeURIComponent(view.law.name)}&article=${articleSegment(view.ref.no, view.ref.branch)}`} />

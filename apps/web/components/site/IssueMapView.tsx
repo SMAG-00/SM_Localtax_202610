@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AgentEntry } from "./AgentEntry";
 import { FigureToggle, MeasureIssueSources, TableToggle } from "./IssueMapClient";
 import { MeasureView } from "./Measure";
 import { DOC_TYPE_NOUN } from "@/lib/law/related";
@@ -68,6 +69,7 @@ export function IssueMapPage({ view, entry }: { view: IssuePageView; entry: Issu
         <Link href="/realestate/issues" className="underline-offset-2 hover:underline">목록</Link> · {ISSUE_HUB_LABEL[view.hub] ?? view.hub}
       </p>
       <h1 className="mt-1 text-[28px] font-black text-navy-900">{view.title}</h1>
+      <AgentEntry entry="issue_map" entryId={view.slug} label="이 쟁점에 대해 지방세봇에게 묻기" />
       {view.stale && (
         <p role="status" data-part="stale-badge" className="mt-3 inline-block rounded-lg border-2 border-hermes-500 px-3 py-1 text-[14px] font-bold text-navy-900">
           개정 반영 검토 중

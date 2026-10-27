@@ -2,6 +2,9 @@
 //  마스킹·범위 → 역질문 → 검색 계획 → 검색 → 재순위 → (실시간 조회는 모델의 도구 호출) → 답변(인용) → 문단 검증 V1~V6 → 재생성 1회 → 근거 목록.
 // 첫 이벤트(status)는 어떤 I/O보다 먼저 낸다(ASK-01 진행 상태 ≤ 1초). 가드 앞에서 모델을 부르는 길은 없다.
 // 이 파일은 상속·증여 엔진을 불러오지 않고 국세 금액을 만들지 않는다(NT9).
+import { benefitsEventData, calcEventData, calcToolText, determinationEventData, determinationToolText, summaryOfBenefits, summaryOfCalc, summaryOfDetermination, type AgentResultSummary, type CalcPort } from "./calc-run";
+import { EMPTY_CALC_COPY, type CalcCopy } from "./calc-copy";
+import { buildCalcToolDefs, isCalcToolName, parseCalcToolInput } from "./calc-tools";
 import { ModelError, type ContentBlock, type MessagesResponse, type ModelClient, type ToolUseBlock } from "../assistant/anthropic";
 import { maskText } from "../assistant/mask";
 import type { AgentConfig } from "./ask-config";
@@ -39,6 +42,9 @@ export interface AgentDeps {
   personNames: readonly string[];
   maxOutputTokens: number;
   /** W12-c 확장 자리 - 계산·감면·판정 이벤트를 만든다 (이 단위에서는 없음) */
+  /** W12-c - 계산·감면·판정 포트 (없으면 계산·판정 도구 정의 0) */
+  calc?: CalcPort;
+  calcCopy?: CalcCopy;
   extras?: (ctx: { docs: readonly EvidenceDoc[]; masked: string }) => Promise<AgentEvent[]>;
 }
 
@@ -75,6 +81,8 @@ export interface AgentTurnRecord {
   modelCalls: number;
   clarifyRound: number;
   measure: MeasureEvent[];
+  /** W12-c - 계산·감면·판정 결과 요약 (입력값 없음) */
+  results: AgentResultSummary[];
 }
 
 type FallbackKind = "evidence_list" | "scope_guide";
@@ -109,7 +117,7 @@ function addUsage(u: AgentUsage, role: "answer" | "utility", r: MessagesResponse
 function emptyRecord(): AgentTurnRecord {
   return {
     questionMasked: "", kind: "answer", answerMasked: null, fallbackReason: null, scope: "base", validation: null, failures: [], passes: {}, regenerated: false,
-    citations: [], toolCalls: [], usage: emptyAgentUsage(), costWon: 0, modelCalls: 0, clarifyRound: 0, measure: [],
+    citations: [], toolCalls: [], usage: emptyAgentUsage(), costWon: 0, modelCalls: 0, clarifyRound: 0, measure: [], results: [],
   };
 }
 
@@ -122,7 +130,7 @@ export async function* runAgentTurn(input: AgentInput, deps: AgentDeps): AsyncGe
   rec.questionMasked = g.masked || "(빈 질문)";
   rec.scope = g.scopeTag;
 
-  const fallback = function* (reason: FallbackReason, kind: FallbackKind, results: readonly EvidenceDoc[], spec?: { copyKey: keyof FixedCopy; links: readonly LinkSpec[]; expertField: string | null }): Generator<AgentEvent> {
+  const fallback = function* (reason: FallbackReason, kind: FallbackKind, results: readonly EvidenceDoc[], spec?: { copyKey: keyof FixedCopy; links: readonly LinkSpec[]; expertField: string | null }, extraData?: Record<string, unknown>): Generator<AgentEvent> {
     rec.kind = "fallback";
     rec.fallbackReason = reason;
     rec.validation = "fallback";
@@ -138,6 +146,7 @@ export async function* runAgentTurn(input: AgentInput, deps: AgentDeps): AsyncGe
         expertField: spec?.expertField ?? "local-tax",
         peopleButtons: PEOPLE_BUTTONS,
         results: kind === "evidence_list" ? results.slice(0, EVIDENCE_LIST_SIZE).map((d) => ({ sourceId: d.sourceId, path: d.path, chip: renderChip(d) })) : [],
+        ...(extraData ?? {}),
         measurement: reason === "scope" ? null : { name: "ask_fallback_shown", props: { reason: FALLBACK_MEASURE[reason as Exclude<FallbackReason, "scope">] } },
       },
     };
@@ -153,7 +162,7 @@ export async function* runAgentTurn(input: AgentInput, deps: AgentDeps): AsyncGe
       asOfApprox: g.asOf.approx,
       highRisk: g.flags.highRisk,
       scope: g.scopeTag,
-      rulesetVersion: null,
+      rulesetVersion: rec.results.find((r) => r.ruleset_version !== null)?.ruleset_version ?? null,
       citationCount: rec.citations.length,
       liveCitationCount: rec.citations.filter((c) => c.isLive).length,
       costWon: rec.costWon,
@@ -165,7 +174,8 @@ export async function* runAgentTurn(input: AgentInput, deps: AgentDeps): AsyncGe
   if (g.block) {
     const spec = SCOPE_RESPONSES[g.block.reason];
     if (g.block.event) rec.measure.push(g.block.event);
-    for (const e of fallback("scope", "scope_guide", [], { ...spec, copyKey: g.block.copyKey })) yield e;
+    const igt = g.block.reason === "inherit_gift_amount" && deps.calc ? { amount: 0, cards: deps.calc.igtCards(g.masked), cardNote: (deps.calcCopy ?? EMPTY_CALC_COPY).igt_card_note } : undefined;
+    for (const e of fallback("scope", "scope_guide", [], { ...spec, copyKey: g.block.copyKey }, igt)) yield e;
     yield doneEvent();
     return rec;
   }
@@ -230,7 +240,14 @@ export async function* runAgentTurn(input: AgentInput, deps: AgentDeps): AsyncGe
 
   // ⑧ 답변 생성 (도구 호출 왕복 포함)
   yield { event: "status", data: { phase: "writing" } };
-  const toolDefs = buildToolDefs({ liveAvailable, officialSearchEnabled: deps.officialSearch && !!deps.tools.webSearchOfficial });
+  const calcAvail = deps.calc?.availability();
+  const toolDefs = [
+    ...buildToolDefs({ liveAvailable, officialSearchEnabled: deps.officialSearch && !!deps.tools.webSearchOfficial }),
+    ...(calcAvail ? buildCalcToolDefs({ calculatorOpen: calcAvail.calculator, determinationTypes: calcAvail.determinationTypes }) : []),
+  ];
+  const calcEvents: AgentEvent[] = [];
+  const cc = deps.calcCopy ?? EMPTY_CALC_COPY;
+  let resultSeq = 0;
   const openScopes = (Object.keys(deps.scopeFlags) as Array<keyof ScopeFlags>).filter((k) => deps.scopeFlags[k]);
   const varText = variableBlockText({
     asOf: g.asOf.date, asOfApprox: g.asOf.approx, mode: input.mode, tier: deps.tier, openScopes, tourismMixed: g.flags.tourismMixed, assumptions, impersonationRequested: g.flags.impersonation,
@@ -265,9 +282,38 @@ export async function* runAgentTurn(input: AgentInput, deps: AgentDeps): AsyncGe
   const yield_status: AgentEvent[] = [];
   const runTool = async (tu: ToolUseBlock): Promise<{ text: string; newDocs: EvidenceDoc[] }> => {
     const started = Date.now();
-    const parsed = parseToolInput(tu.name, tu.input);
+    const parsed = isCalcToolName(tu.name) ? null : parseToolInput(tu.name, tu.input);
     const record = (ok: boolean, summary: string, targetType: string | null = null, snapshotId: number | null = null) =>
       rec.toolCalls.push({ name: tu.name, ok, latencyMs: Date.now() - started, inputSummary: maskText(summary).text.slice(0, 120), targetType, snapshotId });
+    if (isCalcToolName(tu.name)) {
+      // 입력은 이 블록 안에서만 쓰고 기록에는 도구 이름만 남긴다 (입력 구조체 저장 0)
+      const cp = deps.calc ? parseCalcToolInput(tu.name, tu.input) : null;
+      if (!cp || !deps.calc) {
+        record(false, "입력 모양 오류");
+        return { text: "도구 입력이 올바르지 않습니다", newDocs: [] };
+      }
+      if (cp.name === "run_calculator") {
+        const run = deps.calc.run(cp, g.asOf.date);
+        calcEvents.push({ event: "calc", data: calcEventData(run.outcome, `r${++resultSeq}`, { calc: cc.calc_notice, unsupported: cc.unsupported_note }) });
+        rec.results.push(summaryOfCalc(run.outcome));
+        if (run.outcome.status === "calculated") {
+          // 감면 점검 - 계산 답변마다 서버가 자동으로 돌린다 (모델이 빠뜨릴 수 없다)
+          const bStarted = Date.now();
+          const b = deps.calc.benefits(run);
+          rec.results.push(summaryOfBenefits(b));
+          const bd = benefitsEventData(b, `r${++resultSeq}`, cc.benefits_notice);
+          if (bd) calcEvents.push({ event: "benefits", data: bd });
+          rec.toolCalls.push({ name: "check_benefits", ok: true, latencyMs: Date.now() - bStarted, inputSummary: "", targetType: null, snapshotId: null });
+        }
+        record(run.outcome.status !== "unsupported", "run_calculator");
+        return { text: calcToolText(run.outcome), newDocs: [] };
+      }
+      const d = deps.calc.determine(cp);
+      rec.results.push(summaryOfDetermination(d));
+      if (d.status !== "unavailable") calcEvents.push({ event: "determination", data: determinationEventData(d, `r${++resultSeq}`, cc.determination_notice) });
+      record(d.status !== "unavailable", "run_determination");
+      return { text: determinationToolText(d), newDocs: [] };
+    }
     if (!parsed) {
       record(false, "입력 모양 오류");
       return { text: "도구 입력이 올바르지 않습니다", newDocs: [] };
@@ -414,6 +460,7 @@ export async function* runAgentTurn(input: AgentInput, deps: AgentDeps): AsyncGe
     const chips: Chip[] = p.cited.map(renderChip);
     yield { event: "paragraph", data: { index, text: p.text, citations: chips } };
   }
+  for (const e of calcEvents) yield e;
   if (deps.extras) for (const e of await deps.extras({ docs, masked: g.masked }).catch(() => [])) yield e;
   let actions: ActionSpec[] = [];
   try {

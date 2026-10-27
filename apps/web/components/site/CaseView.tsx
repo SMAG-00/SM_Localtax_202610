@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AgentEntry } from "./AgentEntry";
 import { DOC_TYPE_NOUN } from "@/lib/law/related";
 import { DECISION_KINDS, DECISION_LABELS, DOC_TYPES, PAGE_SIZE, type CaseDetailView, type CaseFilter, type CaseSearchView } from "@/lib/server/public/cases";
 import { MeasureCase } from "./MeasureLaw";
@@ -161,6 +162,7 @@ export function CaseDetail({ view, from }: { view: CaseDetailView; from: string 
   return (
     <main id="main" className={SHELL}>
       {origin && <MeasureCase docType={d.doc_type} origin={origin} />}
+      <AgentEntry entry="case" entryId={String(d.id)} label="이 결정례에 대해 지방세봇에게 묻기" />
       <p className="text-[14px]">
         <Link href="/cases" className="underline underline-offset-4">
           판례·해석 검색

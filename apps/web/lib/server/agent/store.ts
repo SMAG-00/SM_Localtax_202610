@@ -60,6 +60,17 @@ export async function registerPrompts(client: SupabaseClient): Promise<{ answer:
   return { answer: Number(a.data), utility: Number(u.data) };
 }
 
+/** W12-c - 한 턴의 계산·감면·판정 결과 요약 기록 (160, service_role 전용). 입력값은 받지 않는다 */
+export async function recordResults(client: SupabaseClient, sessionId: string, turn: number, results: readonly object[]): Promise<boolean> {
+  if (results.length === 0) return true;
+  const { error } = await client.rpc("agent_record_results", { p_session: sessionId, p_turn: turn, p: results });
+  if (error) {
+    console.error("[agent] 결과 요약 기록 실패:", error.code);
+    return false;
+  }
+  return true;
+}
+
 export async function recordTurn(client: SupabaseClient, payload: Record<string, unknown>): Promise<boolean> {
   const { error } = await client.rpc("agent_record_turn", { p: payload });
   if (error) {

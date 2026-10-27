@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { AgentEntry } from "@/components/site/AgentEntry";
 import { SearchUnavailable, SearchView } from "@/components/site/SearchView";
 import { ToolCardsRow } from "@/components/site/calc/ToolCardsRow";
 import type { CardTool } from "@/lib/calc/tool-cards";
@@ -43,6 +44,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
         <section aria-label="계산기" data-ui="search-tool-cards" className="mx-auto w-full max-w-[1100px] px-4 pt-6">
           <ToolCardsRow cards={tools.cards} smLinks={tools.smLinks} fallbacks={tools.fallbacks} measure="search" />
         </section>
+      )}
+      {data.options.q !== "" && (
+        <div className="mx-auto w-full max-w-[1100px] px-4">
+          <AgentEntry entry="search_results" prefill={data.options.q} variant="card" />
+        </div>
       )}
       <SearchView data={data} blankSubmitted={blankSubmitted} />
     </>

@@ -47,7 +47,7 @@ describe("SSE (ASK-01 · 6.13)", () => {
 describe("요청 스키마", () => {
   it("정상 요청", () => {
     const r = parseAskRequest({ message: " 시험용 질문 ", mode: "expert", entry: "law", clarifyAnswers: [{ slot: "slot_a", value: "a1" }] });
-    expect(r).toEqual({ ok: true, value: { message: "시험용 질문", sessionId: null, mode: "expert", entry: "law", clarifyAnswers: { slot_a: "a1" } } });
+    expect(r).toEqual({ ok: true, value: { message: "시험용 질문", sessionId: null, mode: "expert", entry: "law", clarifyAnswers: { slot_a: "a1" }, saveOff: false, entryId: null } });
   });
   it("모르는 칸·잘못된 값은 거부", () => {
     expect(parseAskRequest({ message: "q", calcInput: {} }).ok).toBe(false);

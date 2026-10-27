@@ -1,4 +1,5 @@
 import { OwnCards } from "@/components/site/igt/OwnCards";
+import { AgentEntry } from "./AgentEntry";
 import { JsonLd } from "./JsonLd";
 import { OfficialLinkCard } from "./OfficialLinkCard";
 import { pageJsonLd, toJsonLdScriptContent } from "@ltr/structured-data";
@@ -345,6 +346,9 @@ export function ArticleView({ article: a, today }: { article: ArticleDetail; tod
 
   return (
     <article data-ui="article-page" data-article-id={a.id} data-format={a.format ?? "general"} data-content-type={a.contentType ?? "none"}>
+      <div className="mx-auto w-full max-w-[1100px] px-4">
+        <AgentEntry entry="article" entryId={String(a.id)} label="이 기사에 대해 지방세봇에게 묻기" />
+      </div>
       <JsonLd content={jsonLd} />
       {a.freshnessReview && (
         <p data-part="freshness-review" role="status" className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-2 px-4 pt-4 text-[15px] text-navy-700">
