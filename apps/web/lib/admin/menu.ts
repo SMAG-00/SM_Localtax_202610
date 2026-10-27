@@ -69,6 +69,8 @@ const RULES: readonly MenuRule[] = [
   { id: "accuracy", label: "정확도 대조", href: "/admin/accuracy", when: (a) => a.has("accuracy.manage"), paths: ["/admin/accuracy"] },
   // 평가셋·채점·게이트 리포트·공개 단계 승인 (EVAL-01~04 — W12-e) 세무 감수위원·관리자
   { id: "eval", label: "평가·게이트", href: "/admin/eval", when: (a) => a.has("eval.author") || a.has("eval.grade") || a.has("eval.gate_approve"), paths: ["/admin/eval"] },
+  // 품질 콘솔 — 경보·차단 로그·표본 판정·평가 실행 (QUAL-01~04 — W12-e) 세무 감수위원·관리자
+  { id: "quality", label: "품질 콘솔", href: "/admin/quality", when: (a) => a.has("quality.review"), paths: ["/admin/quality"] },
   // 지역 기사 판정판 — 별도 상품 검토 큐·편집 분야 승인 대기·보류 (REG1-14·17 — W4 8단계) — 편집 책임자·관리자
   { id: "regions", label: "지역 기사 판정", href: "/admin/regions", when: (a) => a.has("regional.judge"), paths: ["/admin/regions"] },
   // 프로젝트 트래커 — 프로젝트·단계 기록·정정·공개 전환·지역 연결 (PR-02·03 — W4 14단계) — 편집 책임자·관리자
