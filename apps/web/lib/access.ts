@@ -57,6 +57,7 @@ export const ACTIONS = {
   "partner.read": "제휴사 목록 열람",
   "media.edit": "사진 보관함 — 사진 올리기·목록·출처 메타 고치기 (F1 - 기자·편집 책임자·관리자)",
   "media.rights": "사진 권리 확인·반려 (F1 NAV-04 - 편집 책임자·관리자)",
+  "people.manage": "기자·기고자 등록부 - 인물 등록·고치기·편집국 계정 연결·해제 (F2 NAV-19 - 관리자만)",
   "member.read": "회원·편집국 계정 조회",
   "member.suspend": "계정 정지·정지 해제",
   "member.delete": "회원 계정 삭제",
@@ -163,6 +164,7 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "article.hot",
   "article.home",
   "media.rights",
+  "people.manage",
   "correction.decide",
   "role.grant",
   "role.revoke",
@@ -420,6 +422,7 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("분야·사전 편집은 편집 책임자와 관리자만 합니다");
 
     case "settings.edit":
+    case "people.manage":
     case "role.grant":
     case "role.revoke":
     case "audit.read":

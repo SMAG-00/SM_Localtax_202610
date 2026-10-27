@@ -26,9 +26,14 @@ export interface MediaRow {
   license_cleared: boolean;
 }
 
-/** 응답·화면 모양 — 저장 경로와 그릴 수 있는 주소(url)를 함께 */
+/**
+ * 응답·화면 모양 — 저장 경로와 그릴 수 있는 주소(url)를 함께.
+ * DB 계산 칸 license_cleared(공공누리 유형이 사이트의 허용 유형 설정에 든다 — media_license_guard)는 '권리 확인'으로 읽히기 쉬워
+ * 응답에서는 license_type_allowed로 이름을 바꾼다. 권리 확인 여부는 rights_status만 본다 (confirmed일 때만 공개 화면에 나온다)
+ */
 export function mediaView(row: MediaRow) {
-  return { ...row, id: Number(row.id), url: absolute(siteUrl(), row.path) };
+  const { license_cleared, ...rest } = row;
+  return { ...rest, id: Number(row.id), license_type_allowed: license_cleared, url: absolute(siteUrl(), row.path) };
 }
 export type MediaView = ReturnType<typeof mediaView>;
 

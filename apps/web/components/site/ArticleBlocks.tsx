@@ -1,11 +1,12 @@
-import { Callout, FaqBlock, InfographicBlock, KeySummary, StatusBox, UiLink } from "@ltr/ui";
+import { Callout, FaqBlock, InfographicBlock, KeySummary, StatusBox } from "@ltr/ui";
 import type { StoredBlock } from "@/lib/server/articles/content";
 import type { ArticleMedia } from "@/lib/server/public";
 import type { SectionKey } from "@/lib/server/public/constants";
-import { paragraphSegments, tableView } from "@/lib/site/article-view";
+import { tableView } from "@/lib/site/article-view";
 import type { PlannedRun } from "@/lib/site/glossary-tips";
 import { infographicNotes, infographicView, photoCreditLine, videoTitle } from "@/lib/site/media-view";
 import { TipPieces, TipRuns } from "./GlossaryTip";
+import { INLINE_LINK_CLASS, InlineText } from "./InlineText";
 import { VideoPlayer } from "./VideoPlayer";
 
 // 기사 본문 블록 (ART-01 블록 9종 — 카드뉴스 장은 CardNewsSlider) — 문단·표·이미지·인용·상자·인포그래픽·동영상·FAQ·핵심 요약 상자.
@@ -20,7 +21,7 @@ import { VideoPlayer } from "./VideoPlayer";
 //    문단 링크·상자 제목·인용 발언자·표·FAQ·핵심 요약에는 붙지 않는다. 계획이 없는 블록은 글 그대로
 
 const PARAGRAPH = "text-[17px] leading-[1.8] text-navy-900 [overflow-wrap:anywhere]";
-const PARAGRAPH_LINK = "font-bold text-hermes-800 underline underline-offset-4 hover:text-hermes-900";
+const PARAGRAPH_LINK = INLINE_LINK_CLASS;
 
 function Paragraph({ text, tips }: { text: string; tips?: readonly PlannedRun[] }) {
   return (
@@ -28,23 +29,15 @@ function Paragraph({ text, tips }: { text: string; tips?: readonly PlannedRun[] 
       {tips ? (
         <TipRuns runs={tips} linkClass={PARAGRAPH_LINK} />
       ) : (
-        paragraphSegments(text).map((s, i) =>
-          s.kind === "text" ? (
-            <span key={i}>{s.text}</span>
-          ) : (
-            <UiLink key={i} href={s.href} className={PARAGRAPH_LINK} {...(s.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-              {s.text}
-              {s.external && <span className="sr-only"> (새 창)</span>}
-            </UiLink>
-          ),
-        )
+        <InlineText text={text} linkClass={PARAGRAPH_LINK} />
       )}
     </p>
   );
 }
 
 /** 인용·상자 글 — 툴팁 계획이 있으면 용어 자리를 단추로 */
-function BlockText({ text, tips }: { text: string; tips?: readonly PlannedRun[] }) {
+function BlockText({ text, tips, inline }: { text: string; tips?: readonly PlannedRun[]; inline?: boolean }) {
+  if (inline) return tips ? <TipRuns runs={tips} linkClass={PARAGRAPH_LINK} /> : <InlineText text={text} linkClass={PARAGRAPH_LINK} />;
   const run = tips?.[0];
   return run && run.kind === "text" ? <TipPieces pieces={run.pieces} /> : <>{text}</>;
 }
@@ -101,7 +94,7 @@ function Block({ block, media, index, article, tips }: { block: StoredBlock; med
                   <tr>
                     {t.head.map((c, i) => (
                       <th key={i} scope="col" className="border-b border-navy-200 px-4 py-2 text-[13px] font-bold text-navy-700">
-                        {c}
+                        <InlineText text={c} />
                       </th>
                     ))}
                   </tr>
@@ -112,7 +105,7 @@ function Block({ block, media, index, article, tips }: { block: StoredBlock; med
                   <tr key={r} className="border-b border-navy-100 last:border-b-0">
                     {row.map((c, i) => (
                       <td key={i} className="px-4 py-2 tabular-nums">
-                        {c}
+                        <InlineText text={c} />
                       </td>
                     ))}
                   </tr>
@@ -161,7 +154,7 @@ function Block({ block, media, index, article, tips }: { block: StoredBlock; med
         return (
           <StatusBox kind="mistake" title="자주 틀리는 점">
             <p className="whitespace-pre-line">
-              <BlockText text={block.text} tips={tips} />
+              <BlockText text={block.text} tips={tips} inline />
             </p>
           </StatusBox>
         );
@@ -169,7 +162,7 @@ function Block({ block, media, index, article, tips }: { block: StoredBlock; med
         return (
           <StatusBox kind="tip" title={block.title || "절세 체크포인트"}>
             <p className="whitespace-pre-line">
-              <BlockText text={block.text} tips={tips} />
+              <BlockText text={block.text} tips={tips} inline />
             </p>
           </StatusBox>
         );
@@ -177,7 +170,7 @@ function Block({ block, media, index, article, tips }: { block: StoredBlock; med
         <div data-block="callout" data-kind={block.kind}>
           {block.title && <p className="mb-1 text-[15px] font-black text-navy-900">{block.title}</p>}
           <Callout className="whitespace-pre-line text-[16px] text-navy-800">
-            <BlockText text={block.text} tips={tips} />
+            <BlockText text={block.text} tips={tips} inline />
           </Callout>
         </div>
       );

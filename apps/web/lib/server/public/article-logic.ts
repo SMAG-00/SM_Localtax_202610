@@ -211,7 +211,19 @@ export function openParagraphLinks(text: string, features: Features): string {
 
 /** 본문 블록 — 문단마다 openParagraphLinks (다른 블록은 그대로) */
 export function openBlockLinks(blocks: readonly StoredBlock[], features: Features): StoredBlock[] {
-  return blocks.map((b) => (b.type === "paragraph" ? { ...b, text: openParagraphLinks(b.text, features) } : b));
+  return blocks.map((b) => {
+    if (b.type === "paragraph") return { ...b, text: openParagraphLinks(b.text, features) };
+    // F2 — 안내 상자 본문·표 칸에도 같은 링크 규칙. 바뀐 것이 없으면 같은 블록 그대로
+    if (b.type === "callout") {
+      const text = openParagraphLinks(b.text, features);
+      return text === b.text ? b : { ...b, text };
+    }
+    if (b.type === "table") {
+      const rows = b.rows.map((r) => r.map((c) => openParagraphLinks(c, features)));
+      return rows.every((r, i) => r.every((c, j) => c === b.rows[i]![j])) ? b : { ...b, rows };
+    }
+    return b;
+  });
 }
 
 /** 본문 블록이 가리키는 media 번호 — 이미지·인포그래픽 · 동영상 썸네일 (DB 계산 칸 body_media_ids와 같은 규칙) */

@@ -66,7 +66,7 @@ export async function personForUser(db: Db, userId: string): Promise<PersonRow |
 
 export async function requirePersonForUser(db: Db, userId: string): Promise<PersonRow> {
   const person = await personForUser(db, userId);
-  if (!person) throw new HttpError(409, "이 계정에 연결된 편집국 인물(people)이 없습니다 — 관리자에게 인물 등록을 요청하세요");
+  if (!person) throw new HttpError(409, "이 계정에 연결된 편집국 인물(people)이 없습니다 — 관리자가 기자·기고자 등록부(/admin/people)에서 인물을 등록하고 이 계정에 연결해야 합니다");
   return person;
 }
 

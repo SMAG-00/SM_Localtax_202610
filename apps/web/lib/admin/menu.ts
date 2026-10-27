@@ -100,6 +100,8 @@ const RULES: readonly MenuRule[] = [
   },
   // 사진 보관함 (F1) — 올리기는 기자·편집 책임자·관리자, 권리 확인 버튼은 화면 안에서 편집 책임자·관리자만
   { id: "media", label: "사진 보관함", href: "/admin/media", when: (a) => a.has("media.edit"), paths: ["/admin/media"] },
+  // 기자·기고자 등록부 (F2 NAV-19) — 관리자만
+  { id: "people", label: "기자·기고자 등록부", href: "/admin/people", when: (a) => a.has("people.manage"), paths: ["/admin/people"] },
   { id: "categories", label: "분야", href: "/admin/categories", when: (a) => a.has("category.edit"), paths: ["/admin/categories"] },
   { id: "dictionaries", label: "사전", href: "/admin/dictionaries", when: (a) => a.has("dictionary.edit"), paths: ["/admin/dictionaries"] },
   // 검색어 집계 (SRCH-03) — 편집 책임자·관리자 (W2-d 설계 8.3)

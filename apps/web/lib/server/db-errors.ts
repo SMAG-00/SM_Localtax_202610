@@ -79,7 +79,7 @@ const CHECK_CONSTRAINTS: Record<string, [number, string]> = {
 const UNIQUE_CONSTRAINTS: Record<string, string> = {
   articles_slug_key: "같은 주소(slug)의 기사가 이미 있습니다",
   staff_roles_pkey: "이미 부여된 역할입니다",
-  people_staff_user_id_key: "이 계정에는 이미 인물이 등록되어 있습니다",
+  people_staff_user_id_key: "이 계정은 이미 다른 인물에 연결되어 있습니다 — 한 계정에 인물은 하나입니다 (NAV-19)",
   article_revisions_article_id_version_key: "다른 사람이 먼저 고쳤습니다 — 새로 불러온 뒤 다시 저장하세요",
   categories_section_slug_key: "이 분야에 같은 주소(slug)의 하위 분야가 이미 있습니다 (CAT-01)",
   categories_section_name_key: "이 분야에 같은 이름의 하위 분야가 이미 있습니다 (CAT-01)",
@@ -87,11 +87,13 @@ const UNIQUE_CONSTRAINTS: Record<string, string> = {
   situations_slug_key: "같은 주소(slug)의 상황이 이미 있습니다 — 다른 주소를 적으세요",
   situations_hub_slot_unique: "이 분야 허브의 그 자리에 이미 다른 상황 카드가 있습니다 (UX-05)",
   search_synonyms_term_key_unique: "같은 낱말이 이미 동의어 사전에 있습니다 (띄어쓰기·기호만 다른 것 포함) — 그 줄을 고치세요",
+  people_slug_key: "같은 주소(slug)의 인물이 이미 있습니다 — 다른 주소를 쓰세요 (NAV-19)",
   article_sources_supersedes_once: "이 출처에는 이미 새 버전이 있습니다 — 최신 판을 고치세요 (REG1-09)",
 };
 
 const FK_CONSTRAINTS: Record<string, string> = {
   articles_category_section: "하위 분야는 기사의 분야(section) 안의 것만 고를 수 있습니다 (CAT-01)",
+  people_staff_user_id_fkey: "그런 사용자 계정이 없습니다",
   staff_roles_user_id_fkey: "그런 사용자 계정이 없습니다",
   article_corrections_before_revision: "정정 전 버전은 같은 기사의 수정 이력이어야 합니다",
   article_corrections_after_revision: "정정 뒤 버전은 같은 기사의 수정 이력이어야 합니다",

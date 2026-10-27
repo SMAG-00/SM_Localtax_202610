@@ -112,7 +112,7 @@ async function blockerRules(page) {
 
 test("a) 역할별 메뉴 — 편집 책임자 분야·사전(제휴사 편집 메뉴 0), 관리자 설정·회원·역할, 광고 담당 제휴사 / 화면 403", async () => {
   const editor = await login(u.editor);
-  assert.deepEqual(await menuLabels(editor), ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "바깥 연결", "계산기 연결", "캠페인 랜딩", "금주 부동산 재테크", "허브 지방세 포인트", "원문 검수", "공통 검수", "브리핑", "감수 가이드", "조례 연결", "쟁점 연결 지도", "쟁점 태그", "편집국 AI", "지방세 통계", "채널 배포 키트", "지식창고", "프리미엄 리포트", "지역 기사 판정", "프로젝트", "분양 정보", "개발방법 비교", "부동산금융", "지자체뉴스", "상황 카드", "분야", "사전", "검색어", "라운지 관리", "해결 사례", "제휴 준비", "검색 최적화", "문의함", "정책 페이지"]);
+  assert.deepEqual(await menuLabels(editor), ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "바깥 연결", "계산기 연결", "캠페인 랜딩", "금주 부동산 재테크", "허브 지방세 포인트", "원문 검수", "공통 검수", "브리핑", "감수 가이드", "조례 연결", "쟁점 연결 지도", "쟁점 태그", "편집국 AI", "지방세 통계", "채널 배포 키트", "지식창고", "프리미엄 리포트", "지역 기사 판정", "프로젝트", "분양 정보", "개발방법 비교", "부동산금융", "지자체뉴스", "상황 카드", "사진 보관함", "분야", "사전", "검색어", "라운지 관리", "해결 사례", "제휴 준비", "검색 최적화", "문의함", "정책 페이지"]);
   for (const path of ["/admin/settings", "/admin/members"]) {
     assert.equal((await open(editor, path)).status(), 403, `편집자 ${path}`);
     await editor.getByRole("heading", { name: "이 화면을 쓸 권한이 없습니다" }).waitFor();
@@ -132,7 +132,7 @@ test("a) 역할별 메뉴 — 편집 책임자 분야·사전(제휴사 편집 �
   assert.equal(await ad.locator("summary", { hasText: "새 제휴사 적기" }).count(), 1, "광고 담당은 등록 폼을 본다");
 
   const reporter = await login(u.reporter);
-  assert.deepEqual(await menuLabels(reporter), ["첫 화면", "기사 기획", "기사", "금주 부동산 재테크", "상황 카드", "문의함"]);
+  assert.deepEqual(await menuLabels(reporter), ["첫 화면", "기사 기획", "기사", "금주 부동산 재테크", "상황 카드", "사진 보관함", "문의함"]);
   for (const path of ["/admin/categories", "/admin/dictionaries", "/admin/partners", "/admin/settings", "/admin/members"]) {
     assert.equal((await open(reporter, path)).status(), 403, `기자 ${path}`);
   }

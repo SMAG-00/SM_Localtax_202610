@@ -91,6 +91,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "partner.read":           [X, O, X, O, X, X, X, O, X], // 편집 책임자는 읽기만 (등록·수정은 sponsored.manage)
   "media.edit":             [O, O, X, X, X, X, X, O, X], // F1 — 사진 올리기·메타 고치기는 기자·편집 책임자·관리자
   "media.rights":           [X, O, X, X, X, X, X, O, X], // F1 — 사진 권리 확인·반려는 편집 책임자·관리자 (거부 감사)
+  "people.manage":          [X, X, X, X, X, X, X, O, X], // F2 — 기자·기고자 등록부와 계정 연결은 관리자만 (거부 감사)
   "member.read":            [X, X, X, X, X, X, X, O, X],
   "member.suspend":         [X, X, X, X, X, X, X, O, X],
   "member.delete":          [X, X, X, X, X, X, X, O, X],

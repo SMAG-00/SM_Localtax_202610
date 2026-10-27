@@ -27,9 +27,9 @@ export interface TipTerm {
 export type TipPiece = { kind: "text"; text: string } | { kind: "term"; text: string; term: TipTerm };
 
 /** 블록 글의 한 조각 — 글(붙여도 되는지 표시) 또는 링크 */
-export type TipRun = { kind: "text"; text: string; eligible: boolean } | { kind: "link"; text: string; href: string; external: boolean };
+export type TipRun = { kind: "text"; text: string; eligible: boolean; bold?: true } | { kind: "link"; text: string; href: string; external: boolean; bold?: true };
 /** 계획한 조각 — 글은 툴팁 자리로 나눈 조각들, 링크는 그대로 */
-export type PlannedRun = { kind: "text"; pieces: TipPiece[] } | { kind: "link"; text: string; href: string; external: boolean };
+export type PlannedRun = { kind: "text"; pieces: TipPiece[]; bold?: true } | { kind: "link"; text: string; href: string; external: boolean; bold?: true };
 
 export interface TipUnit {
   runs: readonly TipRun[];
@@ -94,7 +94,7 @@ export function markUnits(units: readonly TipUnit[], terms: readonly TipTerm[]):
     return unit.runs.map((run): PlannedRun => {
       if (run.kind === "link") return run;
       const text = run.text.normalize("NFC");
-      if (!run.eligible || byFirst.size === 0) return { kind: "text", pieces: [{ kind: "text", text }] };
+      if (!run.eligible || byFirst.size === 0) return { kind: "text", pieces: [{ kind: "text", text }], ...(run.bold ? { bold: true as const } : {}) };
       const pieces: TipPiece[] = [];
       let buf = "";
       for (let i = 0; i < text.length; ) {
@@ -122,7 +122,7 @@ export function markUnits(units: readonly TipUnit[], terms: readonly TipTerm[]):
         pieces.push({ kind: "term", text: matched, term: hit.c.term });
       }
       if (buf || pieces.length === 0) pieces.push({ kind: "text", text: buf });
-      return { kind: "text", pieces };
+      return { kind: "text", pieces, ...(run.bold ? { bold: true as const } : {}) };
     });
   });
 }
@@ -137,11 +137,11 @@ function paragraphRuns(text: string): TipRun[] {
     }
     let last = 0;
     for (const m of seg.text.matchAll(MARKDOWN_LINK)) {
-      if (m.index! > last) out.push({ kind: "text", text: seg.text.slice(last, m.index), eligible: true });
-      out.push({ kind: "text", text: m[0], eligible: false });
+      if (m.index! > last) out.push({ kind: "text", text: seg.text.slice(last, m.index), eligible: true, ...(seg.bold ? { bold: true as const } : {}) });
+      out.push({ kind: "text", text: m[0], eligible: false, ...(seg.bold ? { bold: true as const } : {}) });
       last = m.index! + m[0].length;
     }
-    if (last < seg.text.length) out.push({ kind: "text", text: seg.text.slice(last), eligible: true });
+    if (last < seg.text.length) out.push({ kind: "text", text: seg.text.slice(last), eligible: true, ...(seg.bold ? { bold: true as const } : {}) });
   }
   return out;
 }
@@ -151,8 +151,9 @@ function blockRuns(block: StoredBlock): TipRun[] | null {
   switch (block.type) {
     case "paragraph":
       return paragraphRuns(block.text);
-    case "quote":
     case "callout":
+      return paragraphRuns(block.text);
+    case "quote":
       return [{ kind: "text", text: block.text, eligible: true }];
     default:
       return null;

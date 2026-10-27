@@ -1,5 +1,6 @@
 // 공개 사이트 공용 값 — docs/dev/W2-b_설계.md 2.3 표와 같다 (시험 constants.test.ts가 설계 문서를 읽어 대조한다). 순수 모듈.
 import { ARTICLE_TYPE_BADGE_LABELS, HEADER_SECTIONS, HEADER_UTILITIES, TOPIC_FILTER_ITEMS, type LocalTopic } from "@ltr/ui";
+import { INLINE_LINK_SOURCE } from "@/lib/text/inline-markup";
 
 /** 4대 분야 `section` (W2-a 설계 §2) — 순서는 HOME-01·HOME-02 고정 */
 export const SECTION_KEYS = ["tax", "realestate", "finance", "local"] as const;
@@ -349,7 +350,7 @@ export function isOpenPath(href: string, features: Features): boolean {
 }
 
 /** 기사 문단의 링크 표기 [글](주소) — 공개 데이터 함수(열린 화면만 링크로)와 화면(링크 조각)이 같은 표기를 읽는다 */
-export const MARKDOWN_LINK = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
+export const MARKDOWN_LINK = new RegExp(INLINE_LINK_SOURCE, "g");
 
 export const newsHref = (slug: string) => `/news/${encodeURIComponent(slug)}`;
 export const personHref = (slug: string) => `/people/${encodeURIComponent(slug)}`;

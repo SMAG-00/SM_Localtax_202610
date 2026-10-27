@@ -2,6 +2,7 @@
 import type { EditorView } from "@/lib/server/articles/editor-view";
 import { BLOCK_TYPE_LABELS, CALLOUT_KIND_LABELS, CLAIM_KIND_LABELS, labelOf } from "@/lib/admin/labels";
 import { INFOGRAPHIC_TEMPLATE_LABELS } from "@/lib/admin/media-blocks";
+import { InlineText } from "@/components/site/InlineText";
 import { MONO, Panel } from "./ui";
 
 const TEXT = "whitespace-pre-wrap text-[17px] text-navy-900 [overflow-wrap:anywhere]";
@@ -17,7 +18,7 @@ export function ArticlePreview({ view }: { view: EditorView }) {
             <p className={`text-navy-600 ${MONO}`}>
               {i + 1} · {BLOCK_TYPE_LABELS[b.type]}
             </p>
-            {b.type === "paragraph" && <p className={TEXT}>{b.text || "(빈 문단)"}</p>}
+            {b.type === "paragraph" && <p className={TEXT}>{b.text ? <InlineText text={b.text} /> : "(빈 문단)"}</p>}
             {b.type === "heading" && <p className={`${TEXT} font-black`}>{`${"#".repeat(b.level)} ${b.text || "(빈 소제목)"}`}</p>}
             {b.type === "key_summary" && (
               <ul className="list-disc space-y-1 rounded-xl bg-ivory p-4 pl-8 text-[17px] text-navy-900">
@@ -37,7 +38,7 @@ export function ArticlePreview({ view }: { view: EditorView }) {
                       <tr key={j}>
                         {r.map((cell, k) => (
                           <td key={k} className="border border-navy-100 px-3 py-2">
-                            {cell}
+                            <InlineText text={cell} />
                           </td>
                         ))}
                       </tr>
@@ -61,7 +62,7 @@ export function ArticlePreview({ view }: { view: EditorView }) {
                   {labelOf(CALLOUT_KIND_LABELS, b.kind)}
                   {b.title ? ` — ${b.title}` : ""}
                 </p>
-                <p className={TEXT}>{b.text}</p>
+                <p className={TEXT}><InlineText text={b.text} /></p>
               </div>
             )}
             {b.type === "faq" && (

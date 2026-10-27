@@ -54,10 +54,16 @@ export function TipRuns({ runs, linkClass }: { runs: readonly PlannedRun[]; link
     <>
       {runs.map((r, i) =>
         r.kind === "text" ? (
-          <TipPieces key={i} pieces={r.pieces} />
+          r.bold ? (
+            <strong key={i}>
+              <TipPieces pieces={r.pieces} />
+            </strong>
+          ) : (
+            <TipPieces key={i} pieces={r.pieces} />
+          )
         ) : (
           <UiLink key={i} href={r.href} className={linkClass} {...(r.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-            {r.text}
+            {r.bold ? <strong>{r.text}</strong> : r.text}
             {r.external && <span className="sr-only"> (새 창)</span>}
           </UiLink>
         ),

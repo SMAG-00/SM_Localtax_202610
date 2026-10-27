@@ -24,7 +24,7 @@ const EXPECTED: [string, Viewer, string[]][] = [
   [
     "관리자(역할 없음) — 편집 행위 메뉴 없음, 원문 검수·측정 지표·제휴 준비·설정·회원·역할",
     viewer([], true),
-    ["dashboard", "assignments", "articles", "campaigns", "realestate-weekly", "source-review", "review", "brief", "pipelines", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "stats", "channels", "library", "security", "feeds", "licenses", "orgs", "reports", "rulesets", "national-calc", "accuracy", "eval", "quality", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "media", "categories", "dictionaries", "query-terms", "sponsored", "partners", "store", "brand", "experts", "qna", "solved-cases", "metrics", "readiness", "seo", "inquiries", "pages", "settings", "members"],
+    ["dashboard", "assignments", "articles", "campaigns", "realestate-weekly", "source-review", "review", "brief", "pipelines", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "stats", "channels", "library", "security", "feeds", "licenses", "orgs", "reports", "rulesets", "national-calc", "accuracy", "eval", "quality", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "media", "people", "categories", "dictionaries", "query-terms", "sponsored", "partners", "store", "brand", "experts", "qna", "solved-cases", "metrics", "readiness", "seo", "inquiries", "pages", "settings", "members"],
   ],
   ["역할 없음", viewer([]), ["dashboard"]],
 ];

@@ -36,6 +36,7 @@ import type { AdLabel, ArticleForLint, LintContext, SimilarityStatus } from "@lt
 import type { SimilaritySource } from "@ltr/similarity";
 import { displayTitle, sponsorLabelText, type ArticleView, type RenderedFacts, type SponsorLabel } from "@ltr/structured-data";
 import { evidenceRef, readChecklists, readStoredBody, readStoredSolvedCase, readStoredTaxLens, sourceRef, type StoredBlock } from "./content";
+import { INLINE_LINK_SOURCE, stripInlineMarkup } from "@/lib/text/inline-markup";
 import type { ArticleGraph, ArticleRow, MediaRow, PartnerRow, PersonRow, ReviewRow } from "./rows";
 
 export interface ViewOptions {
@@ -354,7 +355,7 @@ function internalLinkCount(article: ArticleForPublish, siteUrl: string | undefin
   for (const block of article.blocks) {
     if (block.type !== "paragraph") continue;
     // 문단 안 마크다운 링크 [글](주소)
-    for (const m of block.text.matchAll(/\]\(([^)\s]+)\)/g)) if (isInternal(m[1]!)) urls.add(m[1]!);
+    for (const m of block.text.matchAll(new RegExp(INLINE_LINK_SOURCE, "g"))) if (isInternal(m[2]!)) urls.add(m[2]!);
   }
   return urls.size;
 }
@@ -376,7 +377,7 @@ export function bodyTextOf(article: ArticleForPublish): string {
         case "paragraph":
         case "heading":
         case "callout":
-          return [b.text];
+          return [stripInlineMarkup(b.text)];
         case "key_summary":
           return [...b.lines];
         case "faq":
@@ -391,7 +392,7 @@ export function bodyTextOf(article: ArticleForPublish): string {
 /** 리드 — 본문 첫 문단 (AEO 「리드 직접 답」) */
 export function leadOf(article: ArticleForPublish): string {
   const first = article.blocks.find((b) => b.type === "paragraph");
-  return first?.type === "paragraph" ? first.text : "";
+  return first?.type === "paragraph" ? stripInlineMarkup(first.text) : "";
 }
 
 export function toLintArticle(graph: ArticleGraph, article: ArticleForPublish, view: ArticleView, opts: ViewOptions, extras: LintExtras): ArticleForLint {
@@ -470,13 +471,13 @@ export function similarityDraft(article: ArticleForPublish): string {
     switch (b.type) {
       case "paragraph":
       case "heading":
-        lines.push(b.text);
+        lines.push(stripInlineMarkup(b.text));
         break;
       case "key_summary":
         lines.push(...b.lines);
         break;
       case "callout":
-        lines.push(b.text);
+        lines.push(stripInlineMarkup(b.text));
         break;
       case "slide":
         lines.push(...[b.title, b.text].filter((t) => t.trim() !== ""));
