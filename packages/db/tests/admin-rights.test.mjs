@@ -14,6 +14,7 @@ const APPEND_ONLY = new Set([
   "public.agent_citations",
   "public.agent_validations",
   "public.agent_usage_daily",
+  "public.agent_results",
   "public.stats_series",
   "public.stats_audit",
   "public.channel_posts",
@@ -134,6 +135,11 @@ const APPEND_ONLY = new Set([
   "public.issue_audit", // 이슈 지도 감사 기록(W11-d) - 읽기·추가만
   "public.ordinance_links", // 조례 연결(W11-e) - 읽기·추가·고치기, 지우기 0
   "public.igt_rulesets", // 상속·증여 룰셋(W11-g) - 읽기·추가만, 상태는 sign_*/approve_* 함수로만
+  "public.agent_feedback", // 에이전트 피드백(W12-d) - 읽기만, 쓰기는 함수로만
+  "public.agent_member_prefs", // 회원 대화 보관 설정(W12-d) - 함수로만
+  "public.agent_quota_daily", // 에이전트 일일 사용량(W12-d) - 함수로만
+  "public.quality_judgments", // 품질 판정(W12-e) - 읽기만, 쓰기는 quality_judge 함수로만
+  "public.quality_alerts", // 품질 경보(W12-e) - 읽기만, 쓰기는 함수로만
 ]);
 let client;
 

@@ -52,6 +52,8 @@
     { "path": "/api/jobs/index-refresh", "schedule": "45 16 * * *" },
     { "path": "/api/jobs/case-summary-draft", "schedule": "0 21 * * *" },
     { "path": "/api/jobs/consistency-watch", "schedule": "10 17 * * *" },
-    { "path": "/api/jobs/stats-collect", "schedule": "55 16 * * *" }
+    { "path": "/api/jobs/stats-collect", "schedule": "55 16 * * *" },
+    { "path": "/api/jobs/quality-daily", "schedule": "5 17 * * *" },
+    { "path": "/api/jobs/agent-purge", "schedule": "5 17 * * *" }
   ]
 }

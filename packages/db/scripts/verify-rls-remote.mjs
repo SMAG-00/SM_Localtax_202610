@@ -41,7 +41,9 @@ export const ANON_EXECUTE_ALLOWED = new Set([
   "agent_register_prompt",
   "agent_runtime",
   "agent_session_state",
-  "agent_record_turn",
+  // W12-d - 모드 공개 판정(값만)·피드백 제출(자유 글 칸 0, 169에서 agent_record_turn은 service_role 전용으로 바뀌어 목록에서 뺐다)
+  "public_ask_mode",
+  "agent_feedback_submit",
 ]);
 
 /** 응답 판정 — 빈 배열·401·403·404는 차단, 행이 있는 200은 노출, 그 밖은 오류 */

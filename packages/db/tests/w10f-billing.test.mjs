@@ -44,7 +44,11 @@ async function attempt(sql, params = [], role = null) {
 /** 13~19자리 숫자열(공백·하이픈 허용)이면서 Luhn 검사를 통과하는 것 - 날짜·식별자 오탐을 줄인다 */
 function cardLikeRuns(text) {
   const out = [];
-  for (const m of text.matchAll(/(?<![0-9])[0-9](?:[ -]?[0-9]){12,18}(?![0-9])/g)) {
+  // 무작위로 만든 UUID(숫자 구간이 이어지면 우연히 카드번호 모양이 됨)와 날짜·시각은 카드번호가 아니라서 먼저 뺀다
+  const scan = text
+    .replace(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g, "<uuid>")
+    .replace(/[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9:.]+(?:[+-][0-9]{2}(?::?[0-9]{2})?|Z)?/g, "<ts>");
+  for (const m of scan.matchAll(/(?<![0-9])[0-9](?:[ -]?[0-9]){12,18}(?![0-9])/g)) {
     const d = m[0].replace(/[ -]/g, "");
     let sum = 0;
     for (let i = 0; i < d.length; i++) {
@@ -570,6 +574,7 @@ test("카드 정보 0 — 결제 표에 카드 이름 칸이 없고, 모든 글�
     // 스캐너 자체 확인 - 통과하는 시험용 번호(공개된 시험 카드 번호)는 잡고, 날짜·UUID 같은 긴 숫자열은 잡지 않는다
     assert.equal(cardLikeRuns("카드 4111 1111 1111 1111 입니다").length, 1);
     assert.equal(cardLikeRuns("2026-10-24 23:51:43.641+00 6f1c2a9e-0000-4000-8000-123456789012").length, 0);
+    assert.equal(cardLikeRuns("id 12345678-1234-4123-8123-123456789012 ok").length, 0);
   }));
 
 test("빌링키 뒤늦게 붙이기 - 웹훅이 먼저 반영해 빌링키 없이 만든 구독에 승인 경로의 빌링키가 붙고 자동갱신이 켜진다", () =>

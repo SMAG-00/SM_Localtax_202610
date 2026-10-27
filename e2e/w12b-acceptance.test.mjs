@@ -17,7 +17,7 @@ import { StaffFixture } from "./lib/staff.mjs";
 const SITE = "https://e2e-w12b.example.test";
 const GUARD = "e2e-w12b-guard-secret";
 const ROOT = path.resolve(import.meta.dirname, "..");
-const KEYS = ["feature_flags", "ask_rollout", "ask_budget", "ask_pricing"];
+const KEYS = ["feature_flags", "ask_rollout", "ask_budget", "ask_pricing", "ask_mode_notice", "ask_mode_targets", "ask_limits"];
 
 let sb, server, staff, db, base, modelServer, modelHits, saved;
 const sessions = [];
@@ -103,6 +103,11 @@ test("a) 기능 키 꺼짐 · 공개 단계 none이면 /api/ask는 404이고 모
 
 test("b) 게이트를 열면 SSE로 응답한다 - 첫 status 1초 이내, 표준 머리글, 예산 미설정이면 모델 호출 0 + 근거 목록", async () => {
   await setSetting("ask_rollout", { stage: "4c" });
+  // W12-d: /api/ask는 모드 고지 승인·대상 계정도 본다 (시험용 문구 - 실제 고지 문구가 아니다)
+  await setSetting("ask_mode_notice", { approved: true, version: "e2e-w12b", mode_notice: "시험용 모드 고지", answer_footer: "시험용 하단", privacy_paragraph: "" });
+  await setSetting("ask_mode_targets", { guest: true, member: true });
+  // W12-d: 비회원 하루 한도(3)에 이 시험의 여러 질문이 걸리지 않게 시험 동안만 올린다 (끝나면 저장해 둔 값으로 되돌림)
+  await setSetting("ask_limits", { ...saved.ask_limits, guest_daily: 1000 });
   const sessionId = crypto.randomUUID();
   sessions.push(sessionId);
   const res = await ask({ message: "시험용 취득세 질문입니다", sessionId });

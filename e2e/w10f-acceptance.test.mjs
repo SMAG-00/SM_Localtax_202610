@@ -48,7 +48,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function luhnRuns(text) {
   const out = [];
-  for (const m of text.matchAll(/(?<![0-9])[0-9](?:[ -]?[0-9]){12,18}(?![0-9])/g)) {
+  // 무작위로 만든 UUID(숫자 구간이 이어지면 우연히 카드번호 모양이 됨)와 날짜·시각은 카드번호가 아니라서 먼저 뺀다 (packages/db/tests/w10f-billing.test.mjs와 같은 규칙)
+  const scan = text
+    .replace(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g, "<uuid>")
+    .replace(/[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9:.]+(?:[+-][0-9]{2}(?::?[0-9]{2})?|Z)?/g, "<ts>");
+  for (const m of scan.matchAll(/(?<![0-9])[0-9](?:[ -]?[0-9]){12,18}(?![0-9])/g)) {
     const d = m[0].replace(/[ -]/g, "");
     let sum = 0;
     for (let i = 0; i < d.length; i++) {
@@ -431,7 +435,9 @@ test("h) 정기 작업 - 고지 기록 없는 만기 구독은 갱신 0(닫힘),
   const periodEnd = (await db.query("select current_period_end > now() as future from public.subscriptions where id = $1", [subId])).rows[0];
   assert.equal(periodEnd.future, true);
 
-  // 카드번호 패턴 0 - 결제 표 전체
+  // 카드번호 패턴 0 - 결제 표 전체 (검사기 자체: 시험 카드번호는 잡고, 숫자만 이어진 UUID·시각은 거른다)
+  assert.equal(luhnRuns("카드 4111 1111 1111 1111 입니다").length, 1);
+  assert.equal(luhnRuns("2026-10-24 23:51:43.641+00 12345678-1234-4123-8123-123456789012").length, 0);
   for (const t of ["orders", "subscriptions", "payment_events", "renewal_notices", "entitlements", "product_plans"]) {
     const rows = (await db.query(`select x::text as s from public.${t} x`)).rows;
     for (const r of rows) assert.deepEqual(luhnRuns(r.s), [], `${t} 에 카드번호 모양 값`);

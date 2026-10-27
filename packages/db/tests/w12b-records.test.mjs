@@ -19,7 +19,8 @@ before(async () => {
 after(async () => client?.end());
 
 const prompt = async (body = `시험용 지시문 ${randomUUID()}`) => (await h.attempt("select public.agent_register_prompt('agent_answer', 'w12b-test', $1) as id", [body], "anon"));
-async function turn(over = {}, role = "anon") {
+// 169(W12-d)부터 기록 함수는 service_role 전용이다 - 서버만 기록한다
+async function turn(over = {}, role = "service_role") {
   const pid = (await prompt()).rows[0].id;
   const p = {
     session_id: randomUUID(), mode: "general", kind: "answer", scope: "base", model: "test-model", prompt_version_id: pid, as_of_date: "2026-10-27",
@@ -112,10 +113,10 @@ test("모양이 틀린 입력은 거부", () =>
     assert.equal((await turn({ mode: "x" })).r.ok, false);
     assert.equal((await turn({ kind: "x" })).r.ok, false);
     assert.equal((await turn({ citations: "x" })).r.ok, false);
-    assert.equal((await turn({ tool_calls: [{ tool: "run_calculator", ok: true }] })).r.ok, false, "계산 도구 이름은 허용 목록에 없다");
+    assert.equal((await turn({ tool_calls: [{ tool: "drop_everything", ok: true }] })).r.ok, false, "허용 목록에 없는 도구 이름은 거부");
     assert.equal((await turn({ prompt_version_id: 999999999 })).r.ok, false);
     assert.equal((await turn({ fallback_reason: "임의" })).r.ok, false);
-    const notObj = await h.attempt("select public.agent_record_turn('[]'::jsonb)", [], "anon");
+    const notObj = await h.attempt("select public.agent_record_turn('[]'::jsonb)", [], "service_role");
     assert.equal(notObj.ok, false);
   }));
 

@@ -76,6 +76,10 @@ export interface JobServices {
   watchConsistency(now: Date): Promise<Record<string, unknown>>;
   /** W12-h 지방세 통계 수집 - 기능 키 data_stories·인증키·주소 칸·원천 이용 조건이 모두 맞아야 요청한다. 시계열 초안만 쌓고 공개는 사람 승인 뒤. AI 없음. 결과는 수와 이유뿐 (DATA-01) */
   collectStats(now: Date): Promise<Record<string, unknown>>;
+  /** W12-e 품질 일일 검사 - 예산 80/100%·표본 감수 부족·차단율 경보를 DB 함수로 확인하고, 평가 조건(지시문·모델·색인·룰셋·판정표)이 바뀌었으면 회귀 필요 알림(설정 eval_regression이 켜진 때만 가짜 모델 회귀 실행). 실제 API 호출 0. 결과는 수와 이유뿐 (QUAL-02~04·EVAL-03) */
+  runQualityDaily(now: Date): Promise<Record<string, unknown>>;
+  /** W12-d 지방세봇 대화 기한 파기 - 비회원·회원 기한을 각자 판정해 기한 지난 대화 글을 비운다. AI 없음, 결과는 수뿐 */
+  purgeAgentConversations(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -140,6 +144,10 @@ export const jobs: Record<string, Job> = {
   "consistency-watch": async ({ now, services }) => withUsage(await services.watchConsistency(now)),
   // W12-h 지방세 통계 수집 (매일 01:55 KST) - 초안만 쌓이고 공개 화면은 바뀌지 않는다
   "stats-collect": async ({ now, services }) => ({ detail: await services.collectStats(now), revalidatePublic: false }),
+  // W12-e 품질 일일 검사 (매일 02:05 KST) - 경보·알림만 만들고 공개 화면은 바뀌지 않는다
+  "quality-daily": async ({ now, services }) => ({ detail: await services.runQualityDaily(now), revalidatePublic: false }),
+  // W12-d 지방세봇 대화 기한 파기 (매일 02:05 KST) - 공개 화면은 바뀌지 않는다
+  "agent-purge": async ({ now, services }) => ({ detail: await services.purgeAgentConversations(now), revalidatePublic: false }),
 };
 
 export function findJob(name: string): Job | undefined {

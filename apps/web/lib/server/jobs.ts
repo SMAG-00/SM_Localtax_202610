@@ -21,6 +21,8 @@ import { detectIssueGraphStale } from "./issue-graph/stale";
 import { refreshZones } from "./zones/service";
 import { refreshIndex } from "./agent/index-refresh";
 import { collectStats } from "./stats/service";
+import { runQualityDaily } from "./quality/service";
+import { purgeAgentConversations } from "./agent/d-store";
 import { draftCaseSummaries, watchConsistency } from "./ops-ai/editorial";
 
 // 배치 작업(@ltr/workflows 목록)에 넘기는 서버 기능 — 작업 경로(/api/jobs/[job])가 service_role 클라이언트로 만든다.
@@ -60,5 +62,7 @@ export function jobServices(db: SupabaseClient): JobServices {
     draftCaseSummaries: (now) => draftCaseSummaries(db, now),
     watchConsistency: (now) => watchConsistency(db, now),
     collectStats: (now) => collectStats(db, now),
+    runQualityDaily: (now) => runQualityDaily(db, now),
+    purgeAgentConversations: (now) => purgeAgentConversations(db, now),
   };
 }

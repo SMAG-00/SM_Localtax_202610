@@ -21,7 +21,8 @@ before(async () => {
 });
 
 after(async () => {
-  await client?.query("drop table if exists public.__rls_leak_probe");
+  await client?.query("drop table if exists public.__rls_leak_probe_remote");
+  await client?.query("select pg_advisory_unlock_all()");
   await client?.end();
 });
 
@@ -64,23 +65,28 @@ test("허용된 공개 함수(health_ping · 통합 검색 search_public · 지�
     "agent_register_prompt",
     "agent_runtime",
     "agent_session_state",
-    "agent_record_turn",
+    "public_ask_mode",
+    "agent_feedback_submit",
   ]);
 });
 
 test("일부러 새는 표(anon 읽기 정책 + 행 1개)를 만들면 노출로 잡는다", async () => {
-  await client.query("create table public.__rls_leak_probe (id int)");
-  await client.query("alter table public.__rls_leak_probe enable row level security");
-  await client.query("grant select on public.__rls_leak_probe to anon");
-  await client.query("create policy leak on public.__rls_leak_probe for select to anon using (true)");
-  await client.query("insert into public.__rls_leak_probe values (1)");
+  // 확정된 누출 표가 있는 동안 다른 시험 파일의 전체 검사(verify-rls.test.mjs)가 돌지 않도록 같은 키로 직렬화한다
+  await client.query("select pg_advisory_lock(7120651)");
+  await client.query("create table public.__rls_leak_probe_remote (id int)");
+  await client.query("alter table public.__rls_leak_probe_remote enable row level security");
+  await client.query("grant select on public.__rls_leak_probe_remote to anon");
+  await client.query("create policy leak on public.__rls_leak_probe_remote for select to anon using (true)");
+  await client.query("insert into public.__rls_leak_probe_remote values (1)");
   await client.query("notify pgrst, 'reload schema'");
   // PostgREST가 스키마를 다시 읽을 때까지 잠시 기다린다
   let r;
   for (let i = 0; i < 20; i++) {
-    r = await probeRest(rest.url, rest.anonKey, ["__rls_leak_probe"], []);
+    r = await probeRest(rest.url, rest.anonKey, ["__rls_leak_probe_remote"], []);
     if (r.exposed.length) break;
     await new Promise((s) => setTimeout(s, 250));
   }
-  assert.deepEqual(r.exposed, ["__rls_leak_probe"]);
+  assert.deepEqual(r.exposed, ["__rls_leak_probe_remote"]);
+  await client.query("drop table if exists public.__rls_leak_probe_remote");
+  await client.query("select pg_advisory_unlock(7120651)");
 });

@@ -54,8 +54,15 @@ test("anon에게 열린 정책이 있으면 노출로 판정한다", async () =>
   assert.ok(exposed.some((e) => e.table === "public.__rls_probe" && e.rows === 1), JSON.stringify(exposed));
 });
 
-test("현재 로컬 DB 전체 검사 — 스크립트가 종료 코드 0", () => {
-  const r = spawnSync(process.execPath, [SCRIPT], { encoding: "utf8", env: { ...process.env, SUPABASE_DB_URL: dbUrl() } });
+test("현재 로컬 DB 전체 검사 — 스크립트가 종료 코드 0", async () => {
+  // verify-rls-remote.test.mjs가 잠깐 만드는 누출 표(커밋됨)가 사라질 때까지 기다린다(같은 키)
+  await client.query("select pg_advisory_lock(7120651)");
+  let r;
+  try {
+    r = spawnSync(process.execPath, [SCRIPT], { encoding: "utf8", env: { ...process.env, SUPABASE_DB_URL: dbUrl() } });
+  } finally {
+    await client.query("select pg_advisory_unlock(7120651)");
+  }
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /통과/);
 });
