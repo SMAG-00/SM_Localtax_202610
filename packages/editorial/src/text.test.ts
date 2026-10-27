@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countChars, normalizeText, splitSentences } from "./text";
+import { blockSentences, countChars, normalizeText, splitSentences } from "./text";
 
 describe("문장 나누기 (R8 문장 수·글자 수 검사의 단위)", () => {
   it("마침표·물음표·느낌표 뒤 띄어쓰기에서 나눈다", () => {
@@ -53,5 +53,12 @@ describe("표현 비교용 정리", () => {
 
   it("조합형(NFD) 한글을 완성형(NFC)으로 맞춘다", () => {
     expect(normalizeText("절세 보장".normalize("NFD"))).toBe("절세 보장");
+  });
+});
+
+describe("소제목 블록 글 (heading)", () => {
+  it("소제목 글이 검사할 문장으로 나온다 — 금지·압박 표현 검사가 소제목도 본다", () => {
+    expect(blockSentences({ type: "heading", level: 2, text: "신고 기한은 언제인가요?" })).toEqual(["신고 기한은 언제인가요?"]);
+    expect(blockSentences({ type: "heading", level: 3, text: "" })).toEqual([]);
   });
 });

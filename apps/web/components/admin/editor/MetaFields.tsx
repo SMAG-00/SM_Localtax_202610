@@ -146,7 +146,7 @@ export function MetaFields({
           id="meta-lead-media"
           label="대표 이미지"
           disabled={readOnly}
-          hint={mediaOptions.length === 0 ? "등록된 이미지가 없습니다" : "권리 확인된 이미지만 공개 화면에 나옵니다"}
+          hint={mediaOptions.length === 0 ? "등록된 이미지가 없습니다 — 사진 보관함(/admin/media)에서 올린 뒤 고릅니다" : "권리 확인된 이미지만 공개 화면에 나옵니다"}
           options={mediaOptions}
           placeholder="없음"
           value={state.leadMediaId}

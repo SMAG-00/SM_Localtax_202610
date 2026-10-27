@@ -80,6 +80,12 @@ function Block({ block, media, index, article, tips }: { block: StoredBlock; med
   switch (block.type) {
     case "paragraph":
       return <Paragraph text={block.text} tips={tips} />;
+    case "heading":
+      return block.level === 3 ? (
+        <h3 className="text-[19px] font-black leading-snug text-navy-900 [overflow-wrap:anywhere]">{block.text}</h3>
+      ) : (
+        <h2 className="text-[23px] font-black leading-snug text-navy-900 [overflow-wrap:anywhere]">{block.text}</h2>
+      );
     case "key_summary":
       return <KeySummary lines={block.lines} />;
     case "table": {

@@ -28,6 +28,7 @@ export const targetOf = {
   setting: (key: string) => `settings:${key}`,
   glossary: (id: number | string) => `glossary_terms:${id}`,
   partner: (id: number | string) => `partners:${id}`,
+  media: (id: number | string) => `media:${id}`,
   member: (userId: string) => `members:${userId}`,
   amendment: (id: number | string) => `amendments:${id}`,
   officialLink: (id: number | string) => `official_links:${id}`,

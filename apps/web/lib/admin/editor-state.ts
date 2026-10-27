@@ -62,6 +62,8 @@ export interface BlockDraft {
   key: string;
   type: BlockType;
   text: string;
+  /** 소제목 단계 (2 = h2 · 3 = h3) */
+  level: 2 | 3;
   caption: string;
   rowsText: string;
   axis: string;
@@ -146,6 +148,7 @@ export interface EditorState {
 
 const EMPTY_BLOCK: Omit<BlockDraft, "key" | "type"> = {
   text: "",
+  level: 2,
   caption: "",
   rowsText: "",
   axis: "",
@@ -184,6 +187,8 @@ export function blockFromStored(b: StoredBlock, key: string): BlockDraft {
   switch (b.type) {
     case "paragraph":
       return { ...d, text: b.text };
+    case "heading":
+      return { ...d, level: b.level, text: b.text };
     case "table":
       return { ...d, caption: b.caption, rowsText: rowsToText(b.rows), axis: b.chart?.axis ?? "", unit: b.chart?.unit ?? "", source: b.chart?.source ?? "" };
     case "image":
@@ -236,6 +241,8 @@ export function blockToStored(d: BlockDraft): StoredBlock {
   switch (d.type) {
     case "paragraph":
       return { type: "paragraph", text: d.text, ...checklist };
+    case "heading":
+      return { type: "heading", level: d.level, text: d.text, ...checklist };
     case "table":
       return { type: "table", caption: d.caption, rows: textToRows(d.rowsText), chart: chartOf(d), ...checklist };
     case "image":

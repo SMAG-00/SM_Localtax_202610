@@ -18,6 +18,7 @@ export function ArticlePreview({ view }: { view: EditorView }) {
               {i + 1} · {BLOCK_TYPE_LABELS[b.type]}
             </p>
             {b.type === "paragraph" && <p className={TEXT}>{b.text || "(빈 문단)"}</p>}
+            {b.type === "heading" && <p className={`${TEXT} font-black`}>{`${"#".repeat(b.level)} ${b.text || "(빈 소제목)"}`}</p>}
             {b.type === "key_summary" && (
               <ul className="list-disc space-y-1 rounded-xl bg-ivory p-4 pl-8 text-[17px] text-navy-900">
                 {b.lines.map((l, j) => (

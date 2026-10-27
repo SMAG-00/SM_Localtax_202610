@@ -58,10 +58,21 @@ describe("본문 블록", () => {
     expect(errorsOf(r)).toEqual([
       "body.blocks[0].text: 글자가 필요합니다",
       "body.blocks[1].refId: 근거 참조(src:<번호> 또는 ev:<번호>)여야 합니다",
-      "body.blocks[2].type: paragraph·table·image·quote·callout·infographic·video·faq·key_summary·slide 중 하나여야 합니다",
+      "body.blocks[2].type: paragraph·heading·table·image·quote·callout·infographic·video·faq·key_summary·slide 중 하나여야 합니다",
       "body.claims[0].evidenceIds: 근거 참조 형식이 아닙니다 (x)",
       "body.claims[0].blockIndex: 본문 블록 번호여야 합니다",
     ]);
+  });
+  test("소제목(heading) — 단계 2·3과 글만 저장, 다른 단계·빈 글·200자 초과는 거부", () => {
+    const ok = parseBodyInput({ blocks: [{ type: "heading", level: 2, text: "신고 기한" }, { type: "heading", level: 3, text: "예외", extra: "버린다" }] });
+    expect(ok).toEqual({ ok: true, value: { blocks: [{ type: "heading", level: 2, text: "신고 기한" }, { type: "heading", level: 3, text: "예외" }], claims: [] } });
+    expect(errorsOf(parseBodyInput({ blocks: [{ type: "heading", level: 4, text: "x" }, { type: "heading", text: "단계 없음" }, { type: "heading", level: 2 }] }))).toEqual([
+      "body.blocks[0].level: 소제목 단계는 2 또는 3이어야 합니다",
+      "body.blocks[1].level: 소제목 단계는 2 또는 3이어야 합니다",
+      "body.blocks[2].text: 글자가 필요합니다",
+    ]);
+    expect(errorsOf(parseBodyInput({ blocks: [{ type: "heading", level: 2, text: "가".repeat(201) }] }))).toEqual(["body.blocks[0].text: 200자 이하여야 합니다"]);
+    expect(parseBodyInput({ blocks: [{ type: "heading", level: 2, text: "가".repeat(200) }] }).ok).toBe(true);
   });
   test("카드뉴스 장(slide) — 제목·글·대체 텍스트만 저장하고, 빈 칸은 저장된다(발행 판정이 막는다)", () => {
     const r = parseBodyInput({ blocks: [{ type: "slide", title: "1. 취득세", text: "60일 안에 신고합니다", alt: "달력 그림", extra: "버린다" }, { type: "slide" }] });

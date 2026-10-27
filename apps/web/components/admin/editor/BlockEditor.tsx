@@ -18,7 +18,7 @@ import {
   type InfographicDataKind,
 } from "@/lib/admin/media-blocks";
 import { FieldErrorText, TextAreaField } from "../fields";
-import { OUTLINE_BUTTON, ToneChip } from "../ui";
+import { OUTLINE_BUTTON, TEXT_LINK, ToneChip } from "../ui";
 import type { RefOption, SectionProps } from "./types";
 
 /** 발행 전 확인 줄 — 글자로 '됨'·'빠짐'을 적는다(색만으로 구분 0). 최종 판정은 점검 패널(발행 판정)이 한다 */
@@ -106,6 +106,23 @@ export function BlockEditor({ state, update, errors, readOnly, refs, media, make
                   <TextAreaField id={f("text")} label="문단" rows={4} disabled={readOnly} value={b.text} onChange={(e) => patch(b.key, { text: e.target.value })} error={errors[f("text")]} />
                 )}
 
+                {b.type === "heading" && (
+                  <>
+                    <SelectField
+                      id={f("level")}
+                      label="소제목 단계"
+                      disabled={readOnly}
+                      options={[
+                        { value: "2", label: "큰 소제목 (h2)" },
+                        { value: "3", label: "작은 소제목 (h3)" },
+                      ]}
+                      value={String(b.level)}
+                      onChange={(e) => patch(b.key, { level: e.target.value === "3" ? 3 : 2 })}
+                    />
+                    <TextField id={f("text")} label="소제목" disabled={readOnly} value={b.text} onChange={(e) => patch(b.key, { text: e.target.value })} error={errors[f("text")]} />
+                  </>
+                )}
+
                 {b.type === "key_summary" && (
                   <TextAreaField
                     id={f("linesText")}
@@ -155,13 +172,19 @@ export function BlockEditor({ state, update, errors, readOnly, refs, media, make
                       label="이미지"
                       required
                       disabled={readOnly}
-                      hint={mediaOptions.length === 0 ? "등록된 이미지가 없습니다 — 이미지 등록 뒤 고릅니다" : "권리 상태·출처는 이미지 기록에서 읽습니다. 그림은 원본 비율 그대로 보이고 잘리지 않습니다"}
+                      hint={mediaOptions.length === 0 ? "등록된 이미지가 없습니다 — 사진 보관함에서 올린 뒤 고릅니다" : "권리 상태·출처는 이미지 기록에서 읽습니다. 그림은 원본 비율 그대로 보이고 잘리지 않습니다"}
                       options={mediaOptions}
                       placeholder="골라 주세요"
                       value={b.mediaId}
                       onChange={(e) => patch(b.key, { mediaId: e.target.value })}
                       error={errors[f("mediaId")]}
                     />
+                    <p className="text-[14px] text-navy-600">
+                      <a href="/admin/media" target="_blank" rel="noopener noreferrer" className={TEXT_LINK} data-testid="media-library-link">
+                        사진 보관함 열기<span className="sr-only"> (새 창)</span>
+                      </a>
+                      {" — 사진을 올리고 권리를 확인한 뒤 이 화면을 새로 고치면 목록에 나옵니다"}
+                    </p>
                     <TextField
                       id={f("alt")}
                       label="대체 텍스트"

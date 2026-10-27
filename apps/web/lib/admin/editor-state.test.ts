@@ -456,3 +456,18 @@ describe("형식 콘텐츠 블록 (ART-07 인포그래픽 · ART-08 동영상) �
     expect(needsActionCheck({ ...s.blocks[1]!, dataText: "가산세 안내" })).toBe(true);
   });
 });
+
+describe("소제목 블록 (heading) — 편집기 ↔ 저장 모양", () => {
+  const stored: StoredBody = { blocks: [{ type: "heading", level: 3, text: "예외 사항" }, { type: "paragraph", text: "본문" }], claims: [] };
+  test("저장된 소제목을 편집기 상태로 읽고 같은 모양으로 되돌린다 (왕복)", () => {
+    const s = editorStateFromArticle(article({ body: stored }), key);
+    expect(s.blocks[0]).toMatchObject({ type: "heading", level: 3, text: "예외 사항" });
+    expect(editorPayload(s, { published: false, version: 3 }).body).toEqual(stored);
+  });
+  test("새 소제목 블록은 큰 소제목(2단계)으로 시작하고 API 입력 검사를 통과한다", () => {
+    const blocks = addBlock([], "heading", key);
+    expect(blocks[0]).toMatchObject({ type: "heading", level: 2, text: "" });
+    const body = { blocks: [{ type: "heading", level: blocks[0]!.level, text: "제목" }], claims: [] };
+    expect(parseBodyInput(body).ok).toBe(true);
+  });
+});

@@ -75,6 +75,7 @@ function blockText(b: unknown): string {
   const str = (v: unknown) => (typeof v === "string" ? v : "");
   switch (o.type) {
     case "paragraph":
+    case "heading":
       return str(o.text);
     case "quote":
       return [str(o.text), str(o.speaker)].filter(Boolean).join(" — ");

@@ -178,7 +178,7 @@ class Checker {
 
 // ── 본문 (body) ────────────────────────────────────────────
 
-const BLOCK_TYPES = ["paragraph", "table", "image", "quote", "callout", "infographic", "video", "faq", "key_summary", "slide"] as const;
+const BLOCK_TYPES = ["paragraph", "heading", "table", "image", "quote", "callout", "infographic", "video", "faq", "key_summary", "slide"] as const;
 const CLAIM_KINDS = ["fact", "tax_calculation", "legal"] as const;
 const MEDIA_ID = /^[1-9]\d*$/;
 const MAX_BLOCKS = 400;
@@ -275,6 +275,11 @@ function block(c: Checker, raw: unknown, path: string): StoredBlock | null {
   switch (type) {
     case "paragraph":
       return { type, text: c.text(o, "text", path), ...extra };
+    case "heading": {
+      const level = o.level;
+      if (level !== 2 && level !== 3) c.fail(`${path}.level`, "소제목 단계는 2 또는 3이어야 합니다");
+      return { type, level: level === 3 ? 3 : 2, text: c.text(o, "text", path, { max: 200 }), ...extra };
+    }
     case "table": {
       const rows = o.rows;
       const okRows = Array.isArray(rows) && rows.every((r) => Array.isArray(r) && r.every((x) => typeof x === "string"));

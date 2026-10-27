@@ -151,3 +151,17 @@ describe("「지방세로 읽기」 박스 링크 · 기자 소개 정책 링크
   });
 });
 
+
+describe("문단 링크 — XSS 방어 (F1 확인)", () => {
+  test("data:·vbscript:·대문자 JavaScript: 주소는 링크가 되지 않고 글 그대로 남는다", () => {
+    for (const href of ["data:text/html,<script>alert(1)</script>", "vbscript:msgbox(1)", "JavaScript:alert(1)", " javascript:alert(1)"]) {
+      const segs = paragraphSegments(`[누르기](${href})`);
+      expect(segs.every((s) => s.kind === "text")).toBe(true);
+    }
+  });
+  test("글 자리의 HTML은 해석되지 않는 글 조각으로만 나온다 (컴포넌트가 글자로 그린다)", () => {
+    expect(paragraphSegments("[<img src=x onerror=alert(1)>](https://example.test/a)")).toEqual([
+      { kind: "link", text: "<img src=x onerror=alert(1)>", href: "https://example.test/a", external: true },
+    ]);
+  });
+});

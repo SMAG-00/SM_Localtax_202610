@@ -72,6 +72,7 @@ export const CORRECTION_KIND_LABELS = {
 
 export const BLOCK_TYPE_LABELS = {
   paragraph: "문단",
+  heading: "소제목",
   table: "표",
   image: "이미지",
   quote: "인용",

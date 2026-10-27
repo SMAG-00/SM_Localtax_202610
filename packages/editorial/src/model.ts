@@ -204,6 +204,7 @@ export const VIDEO_THUMBNAIL_RATIO = { width: 16, height: 9, tolerance: 0.01 } a
 /** 본문 블록 종류 (ART-01) */
 export const BLOCK_TYPES = [
   "paragraph",
+  "heading",
   "table",
   "image",
   "quote",
@@ -237,6 +238,16 @@ export interface ChartLabels {
 
 export interface ParagraphBlock extends BlockBase {
   type: "paragraph";
+  text: string;
+}
+
+/** 소제목 (h2·h3) — 본문을 나누는 제목. 문단과 달리 링크 표기를 쓰지 않는 글자만 */
+export const HEADING_LEVELS = [2, 3] as const;
+export type HeadingLevel = (typeof HEADING_LEVELS)[number];
+
+export interface HeadingBlock extends BlockBase {
+  type: "heading";
+  level: HeadingLevel;
   text: string;
 }
 
@@ -361,6 +372,7 @@ export interface SlideBlock extends BlockBase {
 
 export type ArticleBlock =
   | ParagraphBlock
+  | HeadingBlock
   | TableBlock
   | ImageBlock
   | QuoteBlock

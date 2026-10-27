@@ -115,7 +115,7 @@ export function articleText(body: unknown): string {
   const parts: string[] = [];
   for (const b of blocks) {
     switch (b.type) {
-      case "paragraph": case "quote": parts.push(String(b.text ?? "")); break;
+      case "paragraph": case "heading": case "quote": parts.push(String(b.text ?? "")); break;
       case "callout": parts.push(`${String(b.title ?? "")} ${String(b.text ?? "")}`); break;
       case "key_summary": parts.push(...((b.lines as string[] | undefined) ?? [])); break;
       case "faq": parts.push(...((b.items as { question: string; answer: string }[] | undefined) ?? []).map((i) => `${i.question} ${i.answer}`)); break;

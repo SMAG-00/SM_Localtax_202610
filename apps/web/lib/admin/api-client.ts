@@ -30,6 +30,23 @@ export async function adminApi(method: "GET" | "POST" | "PUT" | "PATCH" | "DELET
   }
 }
 
+/** 파일 올리기(multipart/form-data) — 사진 보관함. content-type은 브라우저가 경계값과 함께 붙인다 */
+export async function adminUpload(path: string, form: FormData): Promise<ApiResult> {
+  try {
+    const res = await fetch(path, { method: "POST", credentials: "same-origin", headers: { accept: "application/json" }, body: form, cache: "no-store" });
+    const text = await res.text();
+    let parsed: unknown = {};
+    try {
+      parsed = text ? JSON.parse(text) : {};
+    } catch {
+      parsed = {};
+    }
+    return { status: res.status, body: typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {} };
+  } catch {
+    return { status: 0, body: {} };
+  }
+}
+
 const DEFAULTS: Record<number, string> = {
   400: "요청 모양이 맞지 않습니다",
   403: "이 작업을 할 권한이 없습니다",

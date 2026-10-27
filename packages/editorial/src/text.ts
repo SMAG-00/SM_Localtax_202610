@@ -101,6 +101,7 @@ export interface TextUnit {
 export function blockSentences(block: ArticleBlock): string[] {
   switch (block.type) {
     case "paragraph":
+    case "heading":
       return splitSentences(block.text);
     case "quote":
       return [...splitSentences(block.text), ...splitSentences(block.speaker)];

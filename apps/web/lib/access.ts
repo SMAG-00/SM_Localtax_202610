@@ -55,6 +55,8 @@ export const ACTIONS = {
   "dictionary.edit": "금지 표현·공포 표현·용어 사전 편집",
   "settings.edit": "운영 설정 편집",
   "partner.read": "제휴사 목록 열람",
+  "media.edit": "사진 보관함 — 사진 올리기·목록·출처 메타 고치기 (F1 - 기자·편집 책임자·관리자)",
+  "media.rights": "사진 권리 확인·반려 (F1 NAV-04 - 편집 책임자·관리자)",
   "member.read": "회원·편집국 계정 조회",
   "member.suspend": "계정 정지·정지 해제",
   "member.delete": "회원 계정 삭제",
@@ -160,6 +162,7 @@ export const AUDITED_DENIALS: ReadonlySet<Action> = new Set<Action>([
   "article.sort",
   "article.hot",
   "article.home",
+  "media.rights",
   "correction.decide",
   "role.grant",
   "role.revoke",
@@ -403,6 +406,11 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
 
     case "situation.edit":
       return has(viewer, "reporter", "editor") || viewer.isAdmin ? ALLOW : deny("상황 카드는 기자·편집 책임자·관리자가 씁니다 — 세무 감수위원은 감수 서명만 합니다");
+
+    case "media.edit":
+      return has(viewer, "reporter", "editor") || viewer.isAdmin ? ALLOW : deny("사진 보관함은 기자·편집 책임자·관리자가 씁니다 — 편집국 외 역할은 사진을 올리지 않습니다");
+    case "media.rights":
+      return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("사진 권리 확인·반려는 편집 책임자와 관리자만 합니다 (NAV-04)");
 
     case "situation.publish":
       return has(viewer, "editor") ? ALLOW : deny(`상황 카드 공개·허브 배치는 ${EDITOR_ONLY}`);

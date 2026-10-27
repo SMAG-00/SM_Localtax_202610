@@ -284,9 +284,16 @@ export function canonicalUrl(siteUrl: string | undefined, slug: string): string 
   return siteUrl ? `${siteUrl}/news/${encodeURIComponent(slug)}` : null;
 }
 
+/** 사진 보관(Storage) 공개 경로의 앞부분 — media.path에 `storage/v1/object/public/media/<파일>`로 저장한다 (F1) */
+export const STORAGE_PUBLIC_PREFIX = "storage/v1/object/public/";
+
 /** 사이트 주소를 붙인 절대 주소 — 이미 http(s) 주소면 그대로 (화면 이미지 주소와 JSON-LD 이미지 주소가 같은 함수에서 나온다) */
 export function absolute(siteUrl: string | undefined, path: string): string {
   if (/^https?:\/\//.test(path)) return path;
+  // 저장소 공개 경로(storage/v1/object/public/…, F1)는 Supabase 주소에 붙는다 — 주소를 모르면 옛 상대 경로와 같게 둔다
+  const bare = path.replace(/^\/+/, "");
+  const storage = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (bare.startsWith(STORAGE_PUBLIC_PREFIX) && storage) return `${storage.replace(/\/+$/, "")}/${bare}`;
   return `${siteUrl ?? ""}/${path.replace(/^\/+/, "")}`;
 }
 
@@ -367,6 +374,7 @@ export function bodyTextOf(article: ArticleForPublish): string {
     .flatMap((b) => {
       switch (b.type) {
         case "paragraph":
+        case "heading":
         case "callout":
           return [b.text];
         case "key_summary":
@@ -418,8 +426,8 @@ export function toLintArticle(graph: ArticleGraph, article: ArticleForPublish, v
       pageBadge: sponsorship ? sponsorLabelText(sponsorship) : null,
       structuredHeadline: extras.structuredHeadline,
     },
-    // 블록 모델에 소제목 블록이 없다 — 질문형 소제목 점검은 경고로 남는다
-    headings: [],
+    // 소제목 블록(h2·h3)의 글 — 질문형 소제목 점검 (AEO)
+    headings: article.blocks.flatMap((b) => (b.type === "heading" ? [{ level: b.level, text: b.text }] : [])),
     lead: leadOf(article),
     bodyText: bodyTextOf(article),
     internalLinkCount: internalLinkCount(article, opts.siteUrl),
@@ -461,6 +469,7 @@ export function similarityDraft(article: ArticleForPublish): string {
   for (const b of article.blocks) {
     switch (b.type) {
       case "paragraph":
+      case "heading":
         lines.push(b.text);
         break;
       case "key_summary":
