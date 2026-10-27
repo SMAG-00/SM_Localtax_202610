@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
+import { AuthorLibrary } from "@/components/site/LibraryViews";
 import { PersonView } from "@/components/site/PersonView";
 import type { SearchParams } from "@/components/site/routes";
 import { UnavailablePage } from "@/components/site/Unavailable";
+import { getAuthorItems } from "@/lib/server/library/read";
 import { getPersonPage, isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
 import { pageTitle, parsePage } from "@/lib/site/hub-view";
 import { UNAVAILABLE_TITLE } from "@/lib/site/public-gate";
@@ -34,5 +36,11 @@ export default async function PersonPageRoute({ params, searchParams }: Props) {
   const person = await load((await params).slug, parsePage((await searchParams).page));
   if (isUnavailable(person)) return <UnavailablePage />;
   if (!person) notFound();
-  return <PersonView person={person} />;
+  const libraryItems = await getAuthorItems(person.slug); // 지식창고 항목 - 공개 뷰(권리·기능 키 통과분)만, 비면 아무것도 그리지 않는다
+  return (
+    <>
+      <PersonView person={person} />
+      <AuthorLibrary items={libraryItems} />
+    </>
+  );
 }

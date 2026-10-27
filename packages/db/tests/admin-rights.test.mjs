@@ -7,6 +7,27 @@ import { connect, dbUrl, isLocal } from "../scripts/db.mjs";
 // 추가만 되는 표 — 감사 기록 2종(ADM-04) + W2-a 설계 3장의 수정 이력·정정 이력·점검 결과 + 개정 단계 기록(01B TX-07) + 기획 상태 기록(NAV-09, 트리거만 쓴다)
 //   + 삭제된 기사 주소(W2-b 4단계 NAV-06 — 트리거만 쓴다, 410 응답의 원본) + 제휴 실사·점검 기록(W2-c 5단계 NAV-01·07·20 — 새 판은 새 행)
 const APPEND_ONLY = new Set([
+  // W13-b·e·j 새 표 - 함수로만 쓴다(설계상 service_role 직접 쓰기 없음). copilot_*는 서버 함수 전용(직접 읽기도 없음), 저장 검색은 한도 함수 경유, 내보내기·인증 이력/계획은 기록·함수 경유
+  "public.copilot_runs",
+  "public.copilot_usage",
+  "public.saved_searches",
+  "public.workspace_exports",
+  "public.security_cert_audit",
+  "public.security_cert_plans",
+  // W13-i 새 표 - 제휴 피드·계약·연재 원고는 함수로만 쓴다 (service_role은 읽기만)
+  "public.partner_feeds",
+  "public.partner_feed_usage",
+  "public.partner_feed_audit",
+  "public.license_contracts",
+  "public.naver_series_manuscripts",
+  // W13-c 새 표 - 계정과목 연결은 지울 수 없다 (새 버전 행으로 대체, 서명만 한 번 채움)
+  "public.account_mappings",
+  // W13-a 새 표 - 기록·작업 표는 함수·트리거로만 쓴다 (service_role은 읽기만)
+  "public.library_rights_log",
+  "public.digitization_jobs",
+  "public.digitization_audit",
+  "public.library_access_log",
+  "public.library_abuse_log",
   // W12-b·h 새 표 - service_role은 읽기만(기록은 함수·트리거), 차트는 읽기·추가·지우기(고치기는 트리거 가드 경로 밖)
   "public.agent_sessions",
   "public.agent_messages",
@@ -66,6 +87,15 @@ const APPEND_ONLY = new Set([
   "public.expert_profile_events", // 프로필 상태 기록(W7c EXPL-03) — 읽기만, 트리거가 쓴다
   "public.expert_requests", // 연락 요청(W7c EXPL-19·21) — 지우기 0, 개인 칸은 파기 함수로만 비운다
   "public.expert_request_events", // 연락 요청 상태 기록(W7c EXPL-21) — 읽기만, 트리거가 쓴다
+  // W13-g 새 표 - 연결·글·신고·제재는 RPC·서버 경로로만 쓰고 지우기 0(계정 삭제는 FK cascade), 이력은 트리거가 쓴다
+  "public.expert_verifications", // SM 전문가 계정 연결(EXP-01) — 읽기만, 연결·해제는 RPC
+  "public.expert_verification_events", // 연결 이력(EXP-02) — 읽기만, 트리거가 쓴다
+  "public.qna_questions", // 라운지 질문(QNA-01) — 읽기·추가·일부 칸 고치기, 지우기 0
+  "public.qna_answers", // 라운지 답변(QNA-02) — 읽기·추가·일부 칸 고치기, 지우기 0
+  "public.qna_reports", // 라운지 신고(QNA-05) — 읽기·추가·처리 칸 고치기, 지우기 0
+  "public.qna_sanctions", // 라운지 제재(QNA-05) — 읽기·추가·해제 칸 고치기, 지우기 0
+  "public.qna_solved_cases", // 홈 해결 사례 카드(W13-h HOME-11) — 읽기만, 저장·승인·내리기는 RPC, 지우기 0
+  "public.qna_classifications", // 질문 분류 제안 큐(W13-h AIOPS-15) — 읽기만, 제안·검토는 RPC, 지우기 0
   "public.article_tombstones",
   "public.freshness_review_queue", // 신선도 검수 큐(W7 OPT-07) — 읽기·처리(UPDATE)만, 지우기 0, 트리거가 만든다
   "public.ai_citation_samples", // AI 검색 인용 표본(W7 OPT-09) — 지우기 0, 칸은 함수로 만들고 사람이 입력만

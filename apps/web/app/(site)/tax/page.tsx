@@ -1,3 +1,4 @@
+import { LibraryLink } from "@/components/site/LibraryLink";
 import { HubTools } from "@/components/site/calc/HubTools";
 import { HubRoute, hubMetadata, type SearchParams } from "@/components/site/routes";
 
@@ -9,6 +10,7 @@ export default function Page({ searchParams }: { searchParams: SearchParams }) {
     <>
       <HubRoute section="tax" searchParams={searchParams} />
       <HubTools />
+      <LibraryLink />
     </>
   );
 }

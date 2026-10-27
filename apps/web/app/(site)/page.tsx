@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { HomeSections } from "@/components/site/HomeSections";
+import { SolvedCasesSlot } from "@/components/site/SolvedCasesSlot";
 import { closedHomeData, getHomeData, getHomeHeroMedia, readPublic, type HomeData } from "@/lib/server/public";
 
 // 홈 (HOME-01~04 · PRD_최종 §4.1) — 섹션 순서 고정, 내용 0건 섹션은 빠진다. 공개 데이터 함수(anon 키·RLS)만 부른다.
@@ -13,5 +14,11 @@ async function home(): Promise<HomeData> {
 export default async function HomePage() {
   await connection();
   const [data, { hero, cards }] = await Promise.all([home(), getHomeHeroMedia()]);
-  return <HomeSections home={data} heroMedia={hero} cardImages={cards} />;
+  // 해결 사례(W13-h)는 기능 키 solved_cases·승인된 사례가 있을 때만 홈 섹션 뒤에 붙는다 (없으면 렌더 0)
+  return (
+    <>
+      <HomeSections home={data} heroMedia={hero} cardImages={cards} />
+      {data.unavailable ? null : <SolvedCasesSlot />}
+    </>
+  );
 }

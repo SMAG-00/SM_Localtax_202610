@@ -44,6 +44,8 @@ export const ANON_EXECUTE_ALLOWED = new Set([
   // W12-d - 모드 공개 판정(값만)·피드백 제출(자유 글 칸 0, 169에서 agent_record_turn은 service_role 전용으로 바뀌어 목록에서 뺐다)
   "public_ask_mode",
   "agent_feedback_submit",
+  // W13-a - 지식창고 기능 키 켜짐 여부만 돌려주는 함수(security definer, boolean 하나 - 공개 뷰 조건이 부른다, docs/dev/W13-a_설계.md)
+  "library_feature_on",
 ]);
 
 /** 응답 판정 — 빈 배열·401·403·404는 차단, 행이 있는 200은 노출, 그 밖은 오류 */

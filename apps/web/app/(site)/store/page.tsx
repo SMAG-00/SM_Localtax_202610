@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { LibraryLink } from "@/components/site/LibraryLink";
 import { StoreListPage } from "@/components/site/StoreViews";
 import { UnavailablePage } from "@/components/site/Unavailable";
 import { isUnavailable, readPublic, UNAVAILABLE } from "@/lib/server/public";
@@ -15,5 +16,10 @@ export default async function StorePage() {
   const view = await readPublic("스토어 목록", () => getStoreList(), () => UNAVAILABLE);
   if (isUnavailable(view)) return <UnavailablePage />;
   if (!view.open) notFound();
-  return <StoreListPage view={view} />;
+  return (
+    <>
+      <StoreListPage view={view} />
+      <LibraryLink />
+    </>
+  );
 }

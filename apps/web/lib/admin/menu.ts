@@ -57,8 +57,13 @@ const RULES: readonly MenuRule[] = [
   // 지방세 통계 시계열 승인·기사 차트 연결 (DATA-01 — W12-h) / 채널 배포 키트·게시 기록 (CH-01 — W12-h) — 편집 책임자·관리자
   { id: "stats", label: "지방세 통계", href: "/admin/stats", when: (a) => a.has("stats.approve"), paths: ["/admin/stats"] },
   { id: "channels", label: "채널 배포 키트", href: "/admin/channels", when: (a) => a.has("channel.record"), paths: ["/admin/channels"] },
+  // 지식창고 이관·권리 (LIB-06·AIOPS-16 — W13-a) — 편집 책임자·관리자(권리·승인 버튼은 화면 안에서 관리자만)
+  { id: "library", label: "지식창고", href: "/admin/library", when: (a) => a.has("library.edit"), paths: ["/admin/library"] },
   // 보안 정책 페이지 항목·통제 자가 점검 (SEC-01 — W12-g) — 관리자(PO)만
   { id: "security", label: "보안 정책", href: "/admin/security", when: (a) => a.has("security_page.edit"), paths: ["/admin/security"] },
+  // 제휴 피드 키 (PART-01) / 라이선스 계약·네이버 프리미엄 연재 원고 (BIZ-11·CH-02) — W13-i — 관리자(PO)만
+  { id: "feeds", label: "제휴 피드", href: "/admin/feeds", when: (a) => a.has("feeds.issue"), paths: ["/admin/feeds"] },
+  { id: "licenses", label: "라이선스·연재", href: "/admin/licenses", when: (a) => a.has("licenses.edit"), paths: ["/admin/licenses"] },
   // 기관 구독·계약·좌석·확인표·견적 요청 (BIZ-07·PAY-04 — W11-f) — 스토어·구독 담당·관리자 / 프리미엄 리포트 편집·발행 — 편집 책임자·관리자
   { id: "orgs", label: "기관 구독", href: "/admin/orgs", when: (a) => a.has("org.manage"), paths: ["/admin/orgs"] },
   { id: "reports", label: "프리미엄 리포트", href: "/admin/reports", when: (a) => a.has("report.publish"), paths: ["/admin/reports"] },
@@ -108,6 +113,10 @@ const RULES: readonly MenuRule[] = [
   { id: "store", label: "스토어·구독", href: "/admin/store", when: (a) => a.has("product.manage"), paths: ["/admin/store"] },
   { id: "brand", label: "브랜드 관리", href: "/admin/brand", when: (a) => a.has("brand.manage"), paths: ["/admin/brand"] },
   { id: "experts", label: "전문가 등재", href: "/admin/experts", when: (a) => a.has("expert.manage"), paths: ["/admin/experts"] },
+  // 라운지 관리 (W13-g QNA-03·05) — 게시 보류 확인·신고 처리·제재. 편집 책임자·관리자
+  { id: "qna", label: "라운지 관리", href: "/admin/qna", when: (a) => a.has("qna.moderate"), paths: ["/admin/qna"] },
+  // 홈 해결 사례·질문 분류 큐 (W13-h HOME-11·AIOPS-15) — 동의한 채택 질문의 카드 승인. 편집 책임자·관리자
+  { id: "solved-cases", label: "해결 사례", href: "/admin/solved-cases", when: (a) => a.has("solved_case.approve"), paths: ["/admin/solved-cases"] },
   // 측정 지표 대시보드 (GROW-01) — 관리자만 (W2-c 설계 9장)
   { id: "metrics", label: "측정 지표", href: "/admin/metrics", when: (a) => a.has("metrics.read"), paths: ["/admin/metrics"] },
   // 기사 생산·제휴 준비 대시보드·규정 버전 (NAV-13·14) — 편집 책임자·관리자 (PRD-01A 3장)

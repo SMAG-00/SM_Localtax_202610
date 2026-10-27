@@ -19,11 +19,13 @@ import { checkOpsBudget, detectAmendments, draftBrief } from "./ops-ai/service";
 import { runFieldPipelines } from "./field-data/service";
 import { detectIssueGraphStale } from "./issue-graph/stale";
 import { refreshZones } from "./zones/service";
-import { refreshIndex } from "./agent/index-refresh";
+import { refreshIndex, syncLibraryIndex } from "./agent/index-refresh";
 import { collectStats } from "./stats/service";
 import { runQualityDaily } from "./quality/service";
 import { purgeAgentConversations } from "./agent/d-store";
 import { draftCaseSummaries, watchConsistency } from "./ops-ai/editorial";
+import { dbError } from "./http";
+import { runNotifyDaily } from "./notify/service";
 
 // 배치 작업(@ltr/workflows 목록)에 넘기는 서버 기능 — 작업 경로(/api/jobs/[job])가 service_role 클라이언트로 만든다.
 // 작업 목록은 '어떤 이름이 무엇을 하는가'만 정하고, DB 읽기·쓰기는 여기 서버 모듈이 한다.
@@ -59,10 +61,17 @@ export function jobServices(db: SupabaseClient): JobServices {
     checkOpsBudget: (now) => checkOpsBudget(db, now),
     refreshZones: (now) => refreshZones(db, now),
     refreshIndex: (now) => refreshIndex(db, now),
+    syncLibraryIndex: (now) => syncLibraryIndex(db, now),
     draftCaseSummaries: (now) => draftCaseSummaries(db, now),
     watchConsistency: (now) => watchConsistency(db, now),
     collectStats: (now) => collectStats(db, now),
     runQualityDaily: (now) => runQualityDaily(db, now),
     purgeAgentConversations: (now) => purgeAgentConversations(db, now),
+    runNotifyDaily: (now) => runNotifyDaily(db, now),
+    expireExpertLinks: async (now) => {
+      const { data, error } = await db.rpc("expert_links_expire", { p_at: now.toISOString() });
+      if (error) throw dbError(error, "expert_links_expire");
+      return { expired: Number(data ?? 0) };
+    },
   };
 }

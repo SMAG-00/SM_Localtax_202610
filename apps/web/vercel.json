@@ -49,11 +49,14 @@
     { "path": "/api/jobs/ops-ai-budget", "schedule": "50 16 * * *" },
     { "path": "/api/jobs/amendment-alert", "schedule": "20 0 * * *" },
     { "path": "/api/jobs/zone-refresh", "schedule": "40 16 * * *" },
+    { "path": "/api/jobs/library-index-sync", "schedule": "42 16 * * *" },
     { "path": "/api/jobs/index-refresh", "schedule": "45 16 * * *" },
     { "path": "/api/jobs/case-summary-draft", "schedule": "0 21 * * *" },
     { "path": "/api/jobs/consistency-watch", "schedule": "10 17 * * *" },
     { "path": "/api/jobs/stats-collect", "schedule": "55 16 * * *" },
     { "path": "/api/jobs/quality-daily", "schedule": "5 17 * * *" },
-    { "path": "/api/jobs/agent-purge", "schedule": "5 17 * * *" }
+    { "path": "/api/jobs/agent-purge", "schedule": "5 17 * * *" },
+    { "path": "/api/jobs/expert-badge-expiry", "schedule": "25 17 * * *" },
+    { "path": "/api/jobs/notify-daily", "schedule": "15 23 * * *" }
   ]
 }

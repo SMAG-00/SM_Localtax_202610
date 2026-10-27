@@ -80,6 +80,12 @@ export interface JobServices {
   runQualityDaily(now: Date): Promise<Record<string, unknown>>;
   /** W12-d 지방세봇 대화 기한 파기 - 비회원·회원 기한을 각자 판정해 기한 지난 대화 글을 비운다. AI 없음, 결과는 수뿐 */
   purgeAgentConversations(now: Date): Promise<Record<string, unknown>>;
+  /** W13-g 전문가 계정 연결 재검증 기한 만료 - 기한이 지난 연결을 닫아 배지·활동 띠에서 뺀다. AI 없음, 결과는 닫은 수뿐 */
+  expireExpertLinks(now: Date): Promise<Record<string, unknown>>;
+  /** W13-a 지식창고 색인 동기화 - 권리 철회·승인 취소된 출판물 청크를 색인에서 빼고 색인할 원천을 대기열에 쌓는다. AI 없음, 결과는 수뿐 (LIB-06) */
+  syncLibraryIndex(now: Date): Promise<Record<string, unknown>>;
+  /** W13-d 알림·맞춤 브리핑 - 새 공개 기사·개정을 알림으로 모으고 빈도에 맞게 묶음 메일을 보낸다. 월요일(한국)에는 맞춤 브리핑 생성·발송. 기능 키 꺼짐이면 0. AI 없음, 결과는 수뿐 (NOTI-01·WS-06) */
+  runNotifyDaily(now: Date): Promise<Record<string, unknown>>;
 }
 
 export type JobContext = { now: Date; services: JobServices };
@@ -148,6 +154,12 @@ export const jobs: Record<string, Job> = {
   "quality-daily": async ({ now, services }) => ({ detail: await services.runQualityDaily(now), revalidatePublic: false }),
   // W12-d 지방세봇 대화 기한 파기 (매일 02:05 KST) - 공개 화면은 바뀌지 않는다
   "agent-purge": async ({ now, services }) => ({ detail: await services.purgeAgentConversations(now), revalidatePublic: false }),
+  // W13-g 전문가 계정 연결 만료 (매일 02:25 KST) - 닫은 연결의 배지가 공개 화면에서 빠지므로 공개 캐시를 비운다
+  "expert-badge-expiry": async ({ now, services }) => ({ detail: await services.expireExpertLinks(now) }),
+  // W13-a 지식창고 색인 동기화 (매일 01:42 KST, 색인 갱신 index-refresh 직전) - 공개 화면은 요청마다 권리를 다시 읽으므로 캐시를 비우지 않는다
+  "library-index-sync": async ({ now, services }) => ({ detail: await services.syncLibraryIndex(now), revalidatePublic: false }),
+  // W13-d 알림·맞춤 브리핑 (매일 08:15 KST = 23:15 UTC) - 공개 화면은 바뀌지 않는다
+  "notify-daily": async ({ now, services }) => ({ detail: await services.runNotifyDaily(now), revalidatePublic: false }),
 };
 
 export function findJob(name: string): Job | undefined {
