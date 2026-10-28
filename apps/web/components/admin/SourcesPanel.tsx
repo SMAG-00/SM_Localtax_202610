@@ -163,17 +163,17 @@ function SourceFields({
     <>
       <div className="grid gap-4 sm:grid-cols-2">
         {withKind && (
-          <SelectField id={id("kind")} label="출처 종류" required options={optionsOf(SOURCE_KIND_LABELS)} value={form.kind} onChange={set("kind")} error={errors[id("kind")]} />
+          <SelectField id={id("kind")} label="출처 종류" required hint="법안 상태 기사의 공식 자료는 '공식 문서'를 고릅니다. 인터뷰·자체 자료는 해당 종류를 고릅니다" options={optionsOf(SOURCE_KIND_LABELS)} value={form.kind} onChange={set("kind")} error={errors[id("kind")]} />
         )}
-        <TextField id={id("title")} label="출처 이름" required value={form.title} onChange={set("title")} error={errors[id("title")]} />
-        <TextField id={id("url")} label="원문 URL" required={official} value={form.url} onChange={set("url")} error={errors[id("url")]} />
-        <TextField id={id("source-name")} label="발표기관" required={official} value={form.sourceName} onChange={set("sourceName")} error={errors[id("source-name")]} />
-        <TextField id={id("verified")} label="확인일" type="date" required={official} value={form.lastVerifiedDate} onChange={set("lastVerifiedDate")} error={errors[id("verified")]} />
+        <TextField id={id("title")} label="출처 이름" required hint="독자에게 보이는 자료 이름 (예: 지방세법 일부개정법률안)" placeholder="예: 지방세법 일부개정법률안" value={form.title} onChange={set("title")} error={errors[id("title")]} />
+        <TextField id={id("url")} label="원문 URL" required={official} hint="원문 페이지 주소 전체 (https://로 시작)" placeholder="https://" value={form.url} onChange={set("url")} error={errors[id("url")]} />
+        <TextField id={id("source-name")} label="발표기관" required={official} hint="자료를 낸 기관 (예: 국회, 행정안전부)" placeholder="예: 국회" value={form.sourceName} onChange={set("sourceName")} error={errors[id("source-name")]} />
+        <TextField id={id("verified")} label="확인일" type="date" required={official} hint="원문을 직접 연 날 (오늘 열었다면 오늘 날짜)" value={form.lastVerifiedDate} onChange={set("lastVerifiedDate")} error={errors[id("verified")]} />
         <TextField
           id={id("license")}
           label="이용 조건"
           required={official}
-          hint="원문에 적힌 이용 조건 글자 (예: 출처표시)"
+          hint="원문에 적힌 이용 조건 글자 (예: 공공누리 제1유형 출처표시)"
           value={form.licenseStatus}
           onChange={set("licenseStatus")}
           error={errors[id("license")]}
@@ -194,7 +194,7 @@ function SourceFields({
             id={id("source-type")}
             label="자료 종류"
             placeholder="없음 (법령·기타)"
-            hint="허용 목록(운영 설정)에서만 고릅니다. 교통·관광·음식점·생활 안내는 공식 자료로 넣지 않습니다 (REG1-07)"
+            hint="허용 목록(운영 설정)에서만 고릅니다. 법안 상태 기사는 '법률안·입법예고(bill)'를 고릅니다. 교통·관광·음식점·생활 안내는 공식 자료로 넣지 않습니다 (REG1-07)"
             options={officialSourceTypes.map((t) => ({ value: t, label: sourceTypeLabel(t) }))}
             value={form.sourceType}
             onChange={set("sourceType")}

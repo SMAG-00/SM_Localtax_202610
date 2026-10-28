@@ -347,6 +347,7 @@ test("e) 기자·광고 담당 403·메뉴 0·API 403(새 버전 거부는 감�
   for (const user of [u.editor, u.admin]) {
     const page = await login(user);
     assert.ok((await menuLabels(page)).includes("제휴 준비"), `${user.email} 메뉴`);
+    await page.locator('nav[aria-label="편집국 메뉴"] button[data-group]', { hasText: "수익·제휴" }).click();
     await page.locator('nav[aria-label="편집국 메뉴"] a', { hasText: "제휴 준비" }).click();
     await page.waitForURL(`${base}/admin/news-readiness`);
     assert.equal(await page.locator('nav[aria-label="편집국 메뉴"] a[aria-current="page"]').innerText(), "제휴 준비");

@@ -98,6 +98,8 @@ async function login(user, { width = 1280, height = 900, next } = {}) {
 async function menuLabels(page) {
   return page.locator('nav[aria-label="편집국 메뉴"] a').allInnerTexts();
 }
+// 묶음 메뉴(F4) — 상단 그룹 버튼 글자. 항목 링크는 닫힌 그룹에서도 문서에 남아 menuLabels가 전체 목록을 읽는다
+const menuGroupLabels = (page) => page.locator('nav[aria-label="편집국 메뉴"] button[data-group]').allInnerTexts();
 
 async function createAssignment(page, { hypothesis, method }) {
   await open(page, "/admin/stories");
@@ -359,7 +361,7 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   await sourceForm.locator("#src-title").fill("가온시 지방세 세목별 징수 실적(2026년 6월 말)");
   await sourceForm.getByRole("button", { name: "출처 더하기" }).click();
   assert.match(await sourceForm.locator("#src-url-error").innerText(), /FND-04/);
-  assert.equal(await sourceForm.locator("#src-url").getAttribute("aria-describedby"), "src-url-error", "오류 문장이 칸에 이어진다");
+  assert.match(await sourceForm.locator("#src-url").getAttribute("aria-describedby"), /(^| )src-url-error( |$)/, "오류 문장이 칸에 이어진다");
   assert.equal((await one("select count(*)::int n from public.article_sources where article_id = $1", [id])).n, 0);
   const src = await addSource(reporter, {
     kind: "dataset",
@@ -629,13 +631,15 @@ test("d) 편집국 외 역할 4종 — 승인·정렬·발행 메뉴 0, 검토·
 
   const editor = await login(u.editor);
   const menu = await menuLabels(editor);
-  assert.deepEqual(menu, ["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "바깥 연결", "계산기 연결", "캠페인 랜딩", "금주 부동산 재테크", "허브 지방세 포인트", "원문 검수", "공통 검수", "브리핑", "감수 가이드", "조례 연결", "쟁점 연결 지도", "쟁점 태그", "편집국 AI", "지방세 통계", "채널 배포 키트", "지식창고", "프리미엄 리포트", "지역 기사 판정", "프로젝트", "분양 정보", "개발방법 비교", "부동산금융", "지자체뉴스", "상황 카드", "사진 보관함", "분야", "사전", "검색어", "라운지 관리", "해결 사례", "제휴 준비", "검색 최적화", "문의함", "정책 페이지"]);
+  assert.deepEqual([...menu].sort(), [...["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "바깥 연결", "계산기 연결", "캠페인 랜딩", "금주 부동산 재테크", "허브 지방세 포인트", "원문 검수", "공통 검수", "브리핑", "감수 가이드", "조례 연결", "쟁점 연결 지도", "쟁점 태그", "편집국 AI", "지방세 통계", "채널 배포 키트", "지식창고", "프리미엄 리포트", "지역 기사 판정", "프로젝트", "분양 정보", "개발방법 비교", "부동산금융", "지자체뉴스", "상황 카드", "사진 보관함", "분야", "사전", "검색어", "라운지 관리", "해결 사례", "제휴 준비", "검색 최적화", "문의함", "정책 페이지"]].sort());
+  assert.deepEqual(await menuGroupLabels(editor), ["기사 만들기·발행", "배치·노출", "지방세 자료·연결", "검수·품질", "분야 콘텐츠", "수익·제휴", "운영·설정"], "편집자 그룹 7개 (F4)");
   assert.equal((await open(editor, "/admin/home")).status(), 200, "편집자 홈 배치 화면");
   for (const label of OPERATIONS_MENUS) assert.ok(!menu.includes(label));
   for (const path of ["/admin/store", "/admin/brand", "/admin/experts"]) assert.equal((await open(editor, path)).status(), 403, `편집자 ${path}`);
 
   const reporter = await login(u.reporter);
-  assert.deepEqual(await menuLabels(reporter), ["첫 화면", "기사 기획", "기사", "금주 부동산 재테크", "상황 카드", "사진 보관함", "문의함"]);
+  assert.deepEqual([...await menuLabels(reporter)].sort(), [...["첫 화면", "기사 기획", "기사", "금주 부동산 재테크", "상황 카드", "사진 보관함", "문의함"]].sort());
+  assert.deepEqual(await menuGroupLabels(reporter), ["기사 만들기·발행", "배치·노출", "운영·설정"], "기자 그룹 3개 (F4)");
   for (const path of ["/admin/reviews", "/admin/placement", "/admin/home"]) assert.equal((await open(reporter, path)).status(), 403, `기자 ${path}`);
 
   // 편집자가 쓰는 백오피스 화면 전부 — AI 도우미 런처 0 (open이 확인한다)

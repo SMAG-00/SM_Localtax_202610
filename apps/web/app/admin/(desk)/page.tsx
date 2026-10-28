@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Callout, LinkCard } from "@ltr/ui";
-import { PageTitle } from "@/components/admin/ui";
+import { PageTitle, TEXT_LINK } from "@/components/admin/ui";
 import { allowedActions, can } from "@/lib/access";
 import { adminMenu } from "@/lib/admin/menu";
 import { pageViewer } from "@/lib/server/admin/pages";
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
       <PageTitle title="편집국 첫 화면" description="오늘 할 일을 확인하세요." />
       {!hasRoles && <Callout>이 계정에는 편집국 역할이 없습니다. 관리자에게 역할 부여를 요청하세요.</Callout>}
       {hasRoles && newsroom && !person && (
-        <Callout>이 계정에 연결된 편집국 인물(기자 등록)이 없습니다. 기사를 쓰려면 관리자에게 인물 등록을 요청하세요.</Callout>
+        <Callout>이 계정에 연결된 편집국 인물(기자 등록)이 없습니다. 기사를 쓰려면 관리자에게 인물 등록을 요청하세요. 관리자는 <Link href="/admin/people" className={TEXT_LINK} data-testid="people-register-link">기자·기고자 등록부</Link>에서 바로 등록할 수 있습니다.</Callout>
       )}
       {cards.length > 0 && (
         <ul aria-label="할 일" className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

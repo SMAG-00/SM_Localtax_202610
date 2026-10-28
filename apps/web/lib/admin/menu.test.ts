@@ -3,7 +3,17 @@
 //  · 편집자 화면에 상품·광고·전문가 등재·브랜드 관리 편집 메뉴 0
 import { describe, expect, test } from "vitest";
 import type { StaffRole, Viewer } from "@/lib/access";
-import { ADMIN_MENU_IDS, APPROVE_SORT_PUBLISH_MENU_IDS, OPERATIONS_MENU_IDS, activeMenuId, adminMenu } from "./menu";
+import {
+  ADMIN_MENU_IDS,
+  ALL_MENU_IDS,
+  APPROVE_SORT_PUBLISH_MENU_IDS,
+  MENU_GROUPS,
+  OPERATIONS_MENU_IDS,
+  activeMenuId,
+  adminMenu,
+  adminMenuGroups,
+  groupOfMenuId,
+} from "./menu";
 
 const viewer = (roles: StaffRole[], isAdmin = false): Viewer => ({ userId: "u-1", email: "staff@example.test", isAdmin, roles });
 const ids = (v: Viewer) => adminMenu(v).map((m) => m.id);
@@ -62,6 +72,52 @@ describe("역할별 메뉴 (ADM-01)", () => {
     for (const m of all) expect(m.href.startsWith("/admin")).toBe(true);
     const admin = adminMenu(viewer([], true));
     expect(new Set(admin.map((m) => m.label)).size).toBe(admin.length);
+  });
+});
+
+describe("메뉴 묶음 (F4)", () => {
+  test("그룹은 7개이고 이름·순서가 권고안 그대로다", () => {
+    expect(MENU_GROUPS.map((g) => g.label)).toEqual(["기사 만들기·발행", "배치·노출", "지방세 자료·연결", "검수·품질", "분야 콘텐츠", "수익·제휴", "운영·설정"]);
+  });
+
+  test("모든 메뉴 항목이 정확히 한 그룹에 속하고, 그룹이 모르는 항목 id는 없다", () => {
+    const listed = MENU_GROUPS.flatMap((g) => [...g.itemIds]);
+    expect(new Set(listed).size).toBe(listed.length);
+    expect([...listed].sort()).toEqual([...ALL_MENU_IDS].sort());
+  });
+
+  test.each(EXPECTED)("%s — 묶음 메뉴가 보이는 항목 집합을 바꾸지 않는다", (_name, v, expected) => {
+    const groups = adminMenuGroups(v);
+    expect(groups.flatMap((g) => g.items.map((i) => i.id)).sort()).toEqual([...expected].sort());
+    for (const g of groups) expect(g.items.length).toBeGreaterThan(0);
+  });
+
+  test("기자 — 보이는 그룹 3개와 그 안의 항목", () => {
+    expect(adminMenuGroups(viewer(["reporter"])).map((g) => [g.label, g.items.map((i) => i.label)])).toEqual([
+      ["기사 만들기·발행", ["첫 화면", "기사 기획", "기사", "사진 보관함"]],
+      ["배치·노출", ["금주 부동산 재테크", "상황 카드"]],
+      ["운영·설정", ["문의함"]],
+    ]);
+  });
+
+  test("항목이 없는 그룹은 숨긴다 — 역할 없음은 그룹 하나, 브랜드 담당은 두 개", () => {
+    expect(adminMenuGroups(viewer([])).map((g) => g.id)).toEqual(["make"]);
+    expect(adminMenuGroups(viewer(["brand_ops"])).map((g) => [g.id, g.items.map((i) => i.id)])).toEqual([
+      ["make", ["dashboard"]],
+      ["ops", ["brand"]],
+    ]);
+  });
+
+  test("관리자 — 7개 그룹이 모두 보이고 항목은 그룹 목록 순서", () => {
+    const groups = adminMenuGroups(viewer([], true));
+    expect(groups.map((g) => g.id)).toEqual(MENU_GROUPS.map((g) => g.id));
+    expect(groups[0]!.items.map((i) => i.id)).toEqual(["dashboard", "assignments", "articles", "media", "people", "guides", "ai-desk"]);
+  });
+
+  test("groupOfMenuId — 항목이 속한 그룹, 모르는 id는 빈 문자열", () => {
+    expect(groupOfMenuId("situations")).toBe("place");
+    expect(groupOfMenuId("members")).toBe("ops");
+    expect(groupOfMenuId("nope")).toBe("");
   });
 });
 

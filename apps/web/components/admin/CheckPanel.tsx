@@ -150,7 +150,7 @@ export function CheckPanel({
         <button type="button" className={OUTLINE_BUTTON} onClick={() => setNonce((n) => n + 1)}>
           {PANEL_COPY.recheck}
         </button>
-        <DarkButton onClick={publish} disabled={button.disabled || publishing || !hydrated} aria-describedby={button.reason ? "publish-reason" : undefined}>
+        <DarkButton id="publish-button" onClick={publish} disabled={button.disabled || publishing || !hydrated} aria-describedby={button.reason ? "publish-reason" : undefined}>
           {publishing ? PANEL_COPY.publishing : PANEL_COPY.publish}
         </DarkButton>
       </div>

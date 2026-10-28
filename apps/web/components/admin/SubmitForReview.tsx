@@ -39,7 +39,7 @@ export function SubmitForReview({ articleId, status, onChanged }: { articleId: n
           <StatusNote>{done}</StatusNote>
         </div>
       ) : (
-        <DarkButton className="mt-3" onClick={submit} disabled={pending || !hydrated}>
+        <DarkButton id="submit-for-review" className="mt-3" onClick={submit} disabled={pending || !hydrated}>
           {pending ? "요청 중" : "검토 요청"}
         </DarkButton>
       )}

@@ -141,6 +141,55 @@ export const OPERATIONS_MENU_IDS = ["sponsored", "partners", "store", "brand", "
 /** 관리자 전용 메뉴 — 측정 지표(GROW-01) · 운영 설정 · 회원·역할 (ADM-02) */
 export const ADMIN_MENU_IDS = ["metrics", "settings", "members"] as const;
 
+/**
+ * 메뉴 묶음 (F4) — 상단에는 그룹 7개만 보이고, 그룹을 누르면 안의 항목이 펼쳐진다. 모든 메뉴 항목은 정확히 한 그룹에 속한다(시험이 확인).
+ * 순서는 발행 절차·작업 흐름 순이다. 항목의 보이는 조건(when)은 위 RULES 그대로이고, 보이는 항목이 0개인 그룹은 숨긴다.
+ */
+export const MENU_GROUPS = [
+  { id: "make", label: "기사 만들기·발행", itemIds: ["dashboard", "assignments", "articles", "reviews", "media", "people", "guides", "ai-desk"] },
+  { id: "place", label: "배치·노출", itemIds: ["placement", "home", "campaigns", "hub-points", "realestate-weekly", "situations", "channels", "seo"] },
+  {
+    id: "data",
+    label: "지방세 자료·연결",
+    itemIds: ["amendments", "ordinances", "issues", "issue-tags", "stats", "library", "links", "calc-links", "categories", "dictionaries", "query-terms"],
+  },
+  {
+    id: "quality",
+    label: "검수·품질",
+    itemIds: ["source-review", "review", "project-lenses", "national-calc", "rulesets", "accuracy", "eval", "quality", "regions"],
+  },
+  { id: "fields", label: "분야 콘텐츠", itemIds: ["brief", "supply", "dev-methods", "finance", "local-news", "projects", "solved-cases", "qna", "experts"] },
+  { id: "revenue", label: "수익·제휴", itemIds: ["sponsored", "partners", "feeds", "readiness", "licenses", "orgs", "reports", "store"] },
+  { id: "ops", label: "운영·설정", itemIds: ["pipelines", "metrics", "inquiries", "pages", "brand", "security", "members", "settings"] },
+] as const satisfies readonly { id: string; label: string; itemIds: readonly string[] }[];
+
+export interface MenuGroup {
+  id: string;
+  label: string;
+  items: MenuItem[];
+}
+
+/** 모든 메뉴 항목 id (시험용 — 그룹 소속 확인) */
+export const ALL_MENU_IDS: readonly string[] = RULES.map((r) => r.id);
+
+/** 로그인한 사람의 묶음 메뉴 — 보이는 항목이 0개인 그룹은 뺀다. 항목 순서는 그룹 목록 순서 */
+export function adminMenuGroups(viewer: Viewer): MenuGroup[] {
+  const visible = new Map(adminMenu(viewer).map((m) => [m.id, m]));
+  return MENU_GROUPS.map((g) => ({
+    id: g.id,
+    label: g.label,
+    items: g.itemIds.flatMap((id) => {
+      const item = visible.get(id);
+      return item ? [item] : [];
+    }),
+  })).filter((g) => g.items.length > 0);
+}
+
+/** 지금 보는 메뉴 id가 속한 그룹 id — 없으면 "" */
+export function groupOfMenuId(menuId: string): string {
+  return MENU_GROUPS.find((g) => (g.itemIds as readonly string[]).includes(menuId))?.id ?? "";
+}
+
 /** 로그인한 사람의 메뉴 — 순서는 위 목록 순서 */
 export function adminMenu(viewer: Viewer): MenuItem[] {
   const actions = new Set(allowedActions(viewer));

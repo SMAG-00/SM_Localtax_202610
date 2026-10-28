@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminNav } from "@/components/admin/AdminNav";
-import { adminMenu } from "@/lib/admin/menu";
+import { adminMenuGroups } from "@/lib/admin/menu";
 import { pageViewer } from "@/lib/server/admin/pages";
 
 // 백오피스 화면 틀 — 로그인 확인(DAL) 뒤 역할별 메뉴(ADM-01). 메뉴 항목은 허용 작업(allowedActions)에서만 나온다.
@@ -19,7 +19,7 @@ export default async function DeskLayout({ children }: { children: ReactNode }) 
         본문으로 건너뛰기
       </a>
       <AdminHeader viewer={viewer} />
-      <AdminNav items={adminMenu(viewer)} />
+      <AdminNav groups={adminMenuGroups(viewer)} />
       <main id="main" className="mx-auto w-full max-w-6xl px-4 py-8">
         {children}
       </main>
