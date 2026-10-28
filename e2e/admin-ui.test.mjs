@@ -432,7 +432,7 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   await reporterPanel.getByTestId("publish-reason").filter({ hasText: "발행은 편집 책임자(editor)만 합니다" }).waitFor();
   assert.equal(await reporterPanel.getByRole("button", { name: "발행", exact: true }).isDisabled(), true);
   await reporter.getByRole("button", { name: "검토 요청" }).click();
-  await reporter.getByText("검토를 요청했습니다").waitFor();
+  await reporter.getByRole("status").filter({ hasText: "검토를 요청했습니다" }).waitFor();
   assert.equal((await one("select status from public.articles where id = $1", [id])).status, "in_review");
 
   // 편집자 — 검토 대기 → 점검 패널: 차단 항목이 남아 발행 버튼이 꺼져 있다
@@ -538,7 +538,7 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
   assert.deepEqual(log.perspectives.residents_taxpayers, { status: "interviewed", evidenceId: resident, contactedAt: "2026-10-13" });
   assert.deepEqual(log.originalTextChecks, [{ sourceId: ordinance, checkedAt: "2026-10-14" }]);
   await reporter.getByRole("button", { name: "검토 요청" }).click();
-  await reporter.getByText("검토를 요청했습니다").waitFor();
+  await reporter.getByRole("status").filter({ hasText: "검토를 요청했습니다" }).waitFor();
 
   const editor = await login(u.editor);
   await open(editor, `/admin/reviews/${id}`);
