@@ -60,6 +60,7 @@ const PRD_HOME_NAMES = {
   "핵심 메시지": "hero",
   "(2단계) 바로가기 카드 4장": "shortcuts",
   "4대 분야 카드": "fields",
+  "이번 주 브리핑": "briefing",
   "최신 자체 취재": "latest_reports",
   "금주 핫뉴스": "weekly_hot",
   "개정 트래커 하이라이트": "amendments",
