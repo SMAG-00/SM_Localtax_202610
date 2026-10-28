@@ -57,6 +57,11 @@ describe("값 목록 = 설계 2.1 · 2.2 = 마이그레이션 …41 = 코드 상
     expect(sourceTypeLabel("notice")).toBe("고시");
     expect(sourceTypeLabel("public_property")).toBe("public_property");
   });
+  test("자료 종류 글자 — 미리 둔 종류(bill)는 한국어지만 씨앗 허용 목록에는 들지 않는다", () => {
+    expect(sourceTypeLabel("bill")).toBe("법률안·입법예고");
+    expect(OFFICIAL_SOURCE_TYPES as readonly string[]).not.toContain("bill");
+    expect(officialSourceTypesErrors([...OFFICIAL_SOURCE_TYPES, "bill"])).toEqual([]);
+  });
 });
 
 describe("운영 설정 검사 — official_source_types (REG1-07)", () => {

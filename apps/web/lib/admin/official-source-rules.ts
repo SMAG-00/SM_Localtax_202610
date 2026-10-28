@@ -23,7 +23,11 @@ export const SOURCE_TYPE_LABELS: Readonly<Record<string, string>> = {
   realestate_transaction: "부동산 거래/공시",
   redevelopment: "정비/개발",
 };
-export const sourceTypeLabel = (t: string): string => SOURCE_TYPE_LABELS[t] ?? t;
+/** 씨앗에는 없지만 편집국이 허용 목록에 더할 수 있게 글자를 미리 둔 종류 (F3 — 정부 법률안·입법예고, PR-13 법안 상태 기사의 공식 자료) */
+export const EXTRA_SOURCE_TYPE_LABELS: Readonly<Record<string, string>> = {
+  bill: "법률안·입법예고",
+};
+export const sourceTypeLabel = (t: string): string => SOURCE_TYPE_LABELS[t] ?? EXTRA_SOURCE_TYPE_LABELS[t] ?? t;
 
 /** 공공누리 유형 배지 글자 — 모르는 값·빈 값은 null (지어내지 않는다) */
 export function licenseBadge(t: string | null | undefined): string | null {
