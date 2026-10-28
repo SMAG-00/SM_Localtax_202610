@@ -1,8 +1,8 @@
 // 홈 섹션 순서와 대체 규칙 (HOME-01 · HOME-03 · HOME-04)
 import { describe, expect, test } from "vitest";
 import { trackerState, type TrackerSource } from "./cards";
-import { HOME_SECTION_KEYS } from "./constants";
-import { activeCurations, closedHomeSections, homeSections, latestReports, pickStories, pickTrackers, type HomeInput } from "./home-logic";
+import { HOME_BRIEFING_TITLE_PREFIX, HOME_SECTION_KEYS } from "./constants";
+import { activeCurations, closedHomeSections, homeSections, latestReports, pickBriefing, pickStories, pickTrackers, type HomeInput } from "./home-logic";
 import { CLOSED_FEATURES } from "./settings";
 import { curation, listItem, stageEvent } from "./test-items";
 
@@ -133,6 +133,47 @@ describe("최신 자체 취재 (HOME-04)", () => {
   });
 });
 
+describe("이번 주 브리핑 (HOME-04 옆 별도 칸)", () => {
+  const briefing = (id: number, over = {}) => listItem({ id, contentType: "explainer", title: `${HOME_BRIEFING_TITLE_PREFIX} 10월 ${id}주`, ...over });
+
+  test("제목이 접두어로 시작하는 해설만 — 접두어가 중간에 있거나 다른 제목이면 제외", () => {
+    expect(pickBriefing([briefing(1)])?.id).toBe(1);
+    expect(pickBriefing([listItem({ id: 2, title: `이번 주 ${HOME_BRIEFING_TITLE_PREFIX}` }), listItem({ id: 3, title: "다른 해설" })])).toBeNull();
+  });
+
+  test("해설이 아닌 기사는 제목이 같아도 제외 — 보도·가이드·광고·금주 핫뉴스", () => {
+    const others = ["reported_news", "guide", "opinion", "sponsored", "digest", null].map((contentType, i) => briefing(10 + i, { contentType }));
+    expect(pickBriefing(others)).toBeNull();
+  });
+
+  test("여러 건이면 가장 최근 발행 1건, 발행 시각이 같으면 번호가 큰 것", () => {
+    const items = [
+      briefing(1, { publishedAt: "2026-10-05T00:00:00Z" }),
+      briefing(2, { publishedAt: "2026-10-19T00:00:00Z" }),
+      briefing(3, { publishedAt: "2026-10-12T00:00:00Z" }),
+      briefing(4, { publishedAt: "2026-10-19T00:00:00Z" }),
+    ];
+    expect(pickBriefing(items)?.id).toBe(4);
+    expect(pickBriefing(items.slice(0, 3))?.id).toBe(2);
+  });
+
+  test("카드는 제목·요약·발행일·기사 주소를 기사 그대로 옮긴다", () => {
+    const a = briefing(7, { slug: "briefing-7", summary: "이번 주 지방세 소식", publishedOn: "2026-10-26" });
+    expect(pickBriefing([a])).toEqual({ id: 7, href: "/news/briefing-7", title: a.title, summary: "이번 주 지방세 소식", publishedOn: "2026-10-26" });
+  });
+
+  test("0건이면 null, 없으면 섹션째 숨기고 있으면 최신 소식 바로 앞에 놓인다", () => {
+    expect(pickBriefing([])).toBeNull();
+    const input: HomeInput = { coreMessage: "m", searchEnabled: false, searchChips: [], latestReports: [listItem({ contentType: "reported_news", reportedApproved: true })], weeklyHot: null, trackers: { items: [], source: "none" }, stories: [], column: null, product: null, experts: null };
+    expect(homeSections(input).some((s) => s.key === "briefing")).toBe(false);
+    expect(homeSections({ ...input, briefing: pickBriefing([briefing(1)]) }).map((s) => s.key)).toEqual(["hero", "fields", "briefing", "latest_reports"]);
+  });
+
+  test("최신 소식(HOME-04) 목록에는 브리핑(해설)이 들어가지 않는다", () => {
+    expect(latestReports([briefing(1, { reportedApproved: true })])).toEqual([]);
+  });
+});
+
 describe("홈 섹션 순서 (HOME-01)", () => {
   const empty: HomeInput = {
     coreMessage: "취득·보유·상속·증여·양도 등 모든 순간 — 지방세와 부동산 세금을 알면 재테크가 보입니다",
@@ -188,6 +229,7 @@ describe("홈 섹션 순서 (HOME-01)", () => {
     const full = homeSections({
       ...empty,
       shortcuts: [{ key: "calc", label: "부동산 세금 계산기", href: "/calc", note: null }],
+      briefing: pickBriefing([listItem({ contentType: "explainer", title: `${HOME_BRIEFING_TITLE_PREFIX} 10월 3주` })]),
       latestReports: [listItem({ contentType: "reported_news", reportedApproved: true })],
       weeklyHot: { key: "weekly_hot", weekHref: "/local/seoul/weekly/2026-42", items: [{ title: "t", summary: "s", sourceUrl: "https://x.go.kr", issuer: "서울시", publishedOn: "2026-10-14" }] },
       trackers: trackerCard,

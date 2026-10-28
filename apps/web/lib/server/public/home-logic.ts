@@ -3,7 +3,7 @@
 //  · 트래커 하이라이트: 오늘 노출 중인 지정(순서) → 지정이 0건이면 현재 단계가 가장 최근에 바뀐 공개 트래커 1건 → 공개 트래커가 없으면 섹션 숨김
 //  · 해설 스토리: 지정(순서, 6장까지) → 3장 미만이면 최신 해설(explainer)로 3장까지 (지정과 겹침 0)
 //  · 노출 기간이 끝난 카드는 DB(RLS)가 0행으로 주지만 여기서도 한국 날짜로 다시 거른다
-import { amendmentHref, HOME_SECTION_KEYS, LIMITS, SECTION_INFO, SECTION_KEYS, type Features, type HomeSectionKey, type SectionKey } from "./constants";
+import { amendmentHref, HOME_BRIEFING_TITLE_PREFIX, HOME_SECTION_KEYS, LIMITS, SECTION_INFO, SECTION_KEYS, type Features, type HomeSectionKey, type SectionKey } from "./constants";
 import type { SignatureHomeItem } from "./signature-logic";
 import type { ArticleListItem, TrackerSource, TrackerState } from "./cards";
 import type { CurationRow } from "./rows";
@@ -137,6 +137,18 @@ export interface FieldsSection {
   /** 카드마다 '이 분야의 지방세 포인트' 한 줄 (CORE-02 — 감수 서명이 있는 분야의 첫 줄만, W3 9단계) */
   points: Partial<Record<SectionKey, string>>;
 }
+/** 이번 주 브리핑 — 주간 「부동산·지방세 브리핑」 해설 중 가장 최근 1건. 0건이면 섹션째 없다 (최신 소식 목록과 섞지 않는다) */
+export interface BriefingCard {
+  id: number;
+  href: string;
+  title: string;
+  summary: string;
+  publishedOn: string;
+}
+export interface BriefingSection {
+  key: "briefing";
+  item: BriefingCard;
+}
 export interface LatestReportsSection {
   key: "latest_reports";
   items: ArticleListItem[];
@@ -170,7 +182,7 @@ export interface ExpertsSection {
   items: { name: string; href: string; field: string }[];
 }
 
-export type HomeSection = HeroSection | ShortcutsSection | FieldsSection | LatestReportsSection | WeeklyHotSection | AmendmentsSection | ColumnSection | ProductSection | ExpertsSection;
+export type HomeSection = HeroSection | ShortcutsSection | FieldsSection | BriefingSection | LatestReportsSection | WeeklyHotSection | AmendmentsSection | ColumnSection | ProductSection | ExpertsSection;
 
 /** 바로가기 카드 (HOME-13) - 열린 바로가기만, 설명은 설정 home_shortcut_copy의 30자 이하 한 줄(없으면 null) */
 export interface ShortcutCard {
@@ -195,6 +207,8 @@ export interface HomeInput {
   /** 검색 화면 공개 여부 (기능 키 search) */
   searchEnabled: boolean;
   searchChips: string[];
+  /** 이번 주 브리핑 1건 (pickBriefing) — 없으면 섹션째 뺀다 */
+  briefing?: BriefingCard | null;
   latestReports: readonly ArticleListItem[];
   weeklyHot: WeeklyHotSection | null;
   trackers: { items: TrackerCard[]; source: "designated" | "fallback" | "none" };
@@ -212,6 +226,14 @@ export function latestReports(items: readonly ArticleListItem[]): ArticleListIte
     .slice(0, LIMITS.homeLatestReports);
 }
 
+/** 이번 주 브리핑 — 제목이 접두어로 시작하는 해설(explainer) 중 가장 최근 발행 1건 (발행 시각 내림차순, 같으면 번호 큰 것). 없으면 null */
+export function pickBriefing(items: readonly ArticleListItem[]): BriefingCard | null {
+  const [a] = items
+    .filter((i) => i.contentType === "explainer" && i.title.startsWith(HOME_BRIEFING_TITLE_PREFIX))
+    .sort((x, y) => Date.parse(y.publishedAt ?? "") - Date.parse(x.publishedAt ?? "") || y.id - x.id);
+  return a ? { id: a.id, href: a.href, title: a.title, summary: a.summary, publishedOn: a.publishedOn } : null;
+}
+
 /** 섹션 목록 — 설계 2.3 순서, 내용 0건이면 뺀다 */
 export function homeSections(input: HomeInput): HomeSection[] {
   const byKey: Record<HomeSectionKey, HomeSection | null> = {
@@ -222,6 +244,7 @@ export function homeSections(input: HomeInput): HomeSection[] {
         : null,
     shortcuts: input.shortcuts && input.shortcuts.length ? { key: "shortcuts", cards: input.shortcuts.map((c) => ({ ...c, note: c.note && c.note.length <= 30 ? c.note : null })) } : null,
     fields: { key: "fields", cards: SECTION_KEYS.map((s) => ({ section: s, name: SECTION_INFO[s].name, href: SECTION_INFO[s].href })), points: { ...(input.fieldPoints ?? {}) } },
+    briefing: input.briefing ? { key: "briefing", item: input.briefing } : null,
     latest_reports: input.latestReports.length ? { key: "latest_reports", items: input.latestReports.slice(0, LIMITS.homeLatestReports) } : null,
     weekly_hot: input.weeklyHot && input.weeklyHot.items.length ? input.weeklyHot : null,
     // 공개 트래커가 없으면 섹션째 숨긴다 — 스토리 카드만 남기지 않는다 (HOME-03)

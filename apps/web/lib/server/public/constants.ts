@@ -195,8 +195,11 @@ export const NEXT_ACTION_LABELS: Readonly<Record<NextActionKey, string>> = {
   taxbot: "지방세봇에게 묻기",
 };
 
+/** 이번 주 브리핑 칸에 올릴 해설(explainer)의 제목 머리말 — 주간 「부동산·지방세 브리핑」 (PO 결정 2026-10-28) */
+export const HOME_BRIEFING_TITLE_PREFIX = "부동산·지방세 브리핑";
+
 /** 홈 섹션 — 순서 고정 (HOME-01 · PRD_최종 §4.1) */
-export const HOME_SECTION_KEYS = ["hero", "shortcuts", "fields", "latest_reports", "weekly_hot", "amendments", "column", "product", "experts"] as const;
+export const HOME_SECTION_KEYS = ["hero", "shortcuts", "fields", "briefing", "latest_reports", "weekly_hot", "amendments", "column", "product", "experts"] as const;
 export type HomeSectionKey = (typeof HOME_SECTION_KEYS)[number];
 
 /** 기사 하단 정책 링크 7종 (ART-02 · PRD_최종 §4.1) — 정책 페이지가 공개 승인되면(기능 키) 나온다 (HELP-05) */

@@ -5,9 +5,9 @@ import { readShortcutInputs } from "./shortcuts";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { latestChangedTracker, trackerState, type ArticleListItem, type TrackerSource } from "./cards";
-import { LIMITS } from "./constants";
+import { HOME_BRIEFING_TITLE_PREFIX, LIMITS } from "./constants";
 import { publicDb, rowsOf } from "./db";
-import { activeCurations, closedHomeSections, homeSections, latestReports, pickStories, pickTrackers, type AmendmentsSection, type HomeSection } from "./home-logic";
+import { activeCurations, closedHomeSections, homeSections, latestReports, pickBriefing, pickStories, pickTrackers, type AmendmentsSection, type HomeSection } from "./home-logic";
 import { getSignatureHome } from "./signature";
 import { getHomeProduct } from "./store";
 import { readHubTaxPoints } from "./hub-points";
@@ -78,8 +78,10 @@ export async function getHomeAmendments(now: Date = new Date()): Promise<{ today
 export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
   const db = publicDb();
   const settings = await readPublicSettings();
-  const [latest, amendments, signature, hubPoints, homeProduct] = await Promise.all([
+  const [latest, briefings, amendments, signature, hubPoints, homeProduct] = await Promise.all([
     readArticleList(db, { contentType: "reported_news", reportedApproved: true, limit: LIMITS.homeLatestReports }),
+    // 이번 주 브리핑 — 제목 머리말이 맞는 해설 중 최신 1건 (최신 소식 목록과 별도 칸)
+    readArticleList(db, { contentType: "explainer", titlePrefix: HOME_BRIEFING_TITLE_PREFIX, limit: 1 }),
     getHomeAmendments(now),
     // 김의효 칼럼 영역 (BR-04 — W3 8단계): 기능 키 tax_columns + 공개 회차가 있을 때만, 아니면 빈 목록 → 섹션째 숨김
     getSignatureHome(),
@@ -96,6 +98,7 @@ export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
     fieldPoints: fieldCardPoints(hubPoints),
     searchEnabled: settings.features.search,
     searchChips: settings.searchChips,
+    briefing: pickBriefing(briefings.items),
     latestReports: latestReports(latest.items),
     weeklyHot: null,
     trackers: amendments.section

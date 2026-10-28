@@ -19,6 +19,7 @@ type BodySectionKey = Exclude<HomeSectionKey, "hero">;
 export const SECTION_HEADINGS: Readonly<Record<BodySectionKey, { eyebrow?: string; title: string }>> = {
   shortcuts: { title: "바로가기" },
   fields: { eyebrow: "FIELDS", title: "4대 분야" },
+  briefing: { eyebrow: "BRIEFING", title: "이번 주 브리핑" },
   latest_reports: { eyebrow: "NEWS", title: "최신 자체 취재" },
   weekly_hot: { eyebrow: "THIS WEEK", title: "금주 핫뉴스" },
   amendments: { eyebrow: "AMENDMENTS", title: "개정 트래커 하이라이트" },

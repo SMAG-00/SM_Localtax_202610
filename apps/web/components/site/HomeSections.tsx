@@ -142,6 +142,18 @@ function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: stri
           <MeasureHomeEntry />
         </div>
       );
+    case "briefing":
+      // 주간 브리핑 1건 — 기사 카드와 같은 틀(흰 카드·navy 선), 다음 행동은 기사로 가는 링크 하나
+      return (
+        <article data-part="briefing-card" data-article-id={section.item.id} className="mt-8 max-w-2xl rounded-2xl border border-navy-100 bg-white p-6">
+          <h3 className="text-[19px] leading-snug font-black text-navy-900 [overflow-wrap:anywhere]">{section.item.title}</h3>
+          {section.item.summary && <p className="mt-3 text-[15px] leading-relaxed text-navy-700">{section.item.summary}</p>}
+          <p className="mt-3 font-mono text-[13px] tracking-wide text-navy-600">{section.item.publishedOn}</p>
+          <UiLink href={section.item.href} className="mt-3 inline-flex min-h-11 items-center font-bold text-navy-900 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
+            브리핑 읽기
+          </UiLink>
+        </article>
+      );
     case "latest_reports":
       return (
         <CardGrid part="latest-reports">

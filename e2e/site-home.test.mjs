@@ -459,6 +459,33 @@ test("g) 단계가 바뀌면 — 편집국 쓰기는 바로 홈에 반영(캐시
   assert.ok(elapsed < 60_000, `1분 안에 반영 — ${elapsed}ms`);
 });
 
+test("이번 주 브리핑 칸 — 0건이면 칸 0, 해설 브리핑이 있으면 최신 1건만 최신 소식 앞에, 최신 소식엔 해설 0, 360px 가로 스크롤 0", async () => {
+  const PREFIX = "부동산·지방세 브리핑";
+  const briefingCard = (page) => page.$$eval('[data-home-section="briefing"] [data-part="briefing-card"]', (els) => els.map((e) => ({ id: Number(e.getAttribute("data-article-id")), text: e.textContent, href: e.querySelector("a")?.getAttribute("href") })));
+  let page = await openHome();
+  assert.equal(await page.locator('[data-home-section="briefing"]').count(), 0, "브리핑 0건이면 섹션째 없다");
+  await page.close();
+
+  // 오래된 브리핑·접두어 불일치 해설·보도 유형 같은 제목 — 모두 뒤로 밀려야 한다
+  const older = await article("briefing-old", { title: `${PREFIX} 10월 1주`, publishedAt: hoursAgo(300) });
+  const newest = await article("briefing-new", { title: `${PREFIX} 10월 3주`, publishedAt: hoursAgo(20) });
+  await article("briefing-not-prefix", { title: `이번 주 ${PREFIX}`, publishedAt: hoursAgo(1) });
+  await article("briefing-reported", { title: `${PREFIX} 보도형`, contentType: "reported_news", publishedAt: hoursAgo(2) });
+  await setFeatures([]); // 편집국 쓰기 — 공개 데이터 캐시를 만료시켜 방금 넣은 기사를 바로 읽게 한다
+  for (const viewport of [{ width: 360, height: 740 }, { width: 1280, height: 800 }]) {
+    page = await openHome(viewport);
+    const cards = await briefingCard(page);
+    assert.deepEqual(cards.map((c) => c.id), [newest], `${viewport.width}px 가장 최근 1건만 (오래된 ${older} 0)`);
+    assert.ok(cards[0].text.includes(`${PREFIX} 10월 3주`) && cards[0].text.includes("브리핑 읽기"), "제목과 다음 행동 글자");
+    assert.ok(cards[0].href.startsWith("/news/"), "기사로 가는 링크");
+    const keys = (await sectionLayout(page)).map((s) => s.key);
+    assert.deepEqual(keys, ["hero", "fields", "briefing", "latest_reports", "amendments"], "브리핑은 최신 소식 바로 앞");
+    assert.equal(await page.locator('[data-part="latest-reports"] [data-article-id]').evaluateAll((els, ids) => els.filter((e) => ids.includes(Number(e.getAttribute("data-article-id")))).length, [older, newest]), 0, "최신 소식에 해설 0");
+    if (viewport.width === 360) assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 0, "360px 가로 스크롤 0");
+    await page.close();
+  }
+});
+
 test("공개 데이터를 읽지 못하면(접속값 없음·DB 꺼짐) 닫힌 홈 200 — 상단 메뉴 4·4대 분야 카드·안내 한 줄, 유틸 메뉴·정책 링크·히어로 0", async () => {
   for (const env of [{}, { NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:9", NEXT_PUBLIC_SUPABASE_ANON_KEY: sb.anonKey }]) {
     const down = await startServer(env);

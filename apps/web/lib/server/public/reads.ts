@@ -122,6 +122,8 @@ export interface ListFilter {
   /** 제휴사 (W2-c 4단계 — 제휴사 프로필의 기사 목록, ART-10) */
   partnerId?: number;
   ids?: readonly number[];
+  /** 제목이 이 글자로 시작하는 기사만 (홈 이번 주 브리핑) */
+  titlePrefix?: string;
   /** 이 지역 코드 가운데 하나라도 태그된 기사 */
   regionCodes?: readonly string[];
   limit: number;
@@ -151,6 +153,7 @@ export async function readArticleList(db: Db, f: ListFilter): Promise<{ items: A
   if (f.format) q = q.eq("format", f.format);
   if (f.partnerId !== undefined) q = q.eq("partner_id", f.partnerId);
   if (f.ids) q = q.in("id", [...f.ids]);
+  if (f.titlePrefix) q = q.like("title", `${f.titlePrefix.replace(/[\\%_]/g, "\\$&")}%`);
   if (f.regionCodes?.length) q = q.overlaps("region_codes", [...f.regionCodes]);
   const from = f.offset ?? 0;
   const { rows, total } = await pageOf<PublicArticleListRow>(

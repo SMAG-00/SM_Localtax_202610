@@ -16,12 +16,13 @@ describe("섹션 바탕 — 보이는 순서대로 ivory ↔ ivory-dark", () => 
     expect(sectionTones(HOME_SECTION_KEYS).map((t) => `${t.key}:${t.tone}`)).toEqual([
       "shortcuts:ivory",
       "fields:ivory-dark",
-      "latest_reports:ivory",
-      "weekly_hot:ivory-dark",
-      "amendments:ivory",
-      "column:ivory-dark",
-      "product:ivory",
-      "experts:ivory-dark",
+      "briefing:ivory",
+      "latest_reports:ivory-dark",
+      "weekly_hot:ivory",
+      "amendments:ivory-dark",
+      "column:ivory",
+      "product:ivory-dark",
+      "experts:ivory",
     ]);
   });
 
@@ -51,8 +52,9 @@ describe("배지 글자", () => {
 });
 
 describe("섹션 머리 글자", () => {
-  test("히어로 밖 섹션 7개 모두 아이브로와 제목이 있다 — 제목은 PRD 화면 표의 섹션 이름", () => {
+  test("히어로 밖 섹션 8개 모두 아이브로와 제목이 있다 — 제목은 PRD 화면 표의 섹션 이름", () => {
     expect(Object.keys(SECTION_HEADINGS)).toEqual(HOME_SECTION_KEYS.filter((k) => k !== "hero"));
+    expect(SECTION_HEADINGS.briefing).toEqual({ eyebrow: "BRIEFING", title: "이번 주 브리핑" });
     expect(SECTION_HEADINGS.latest_reports.title).toBe("최신 자체 취재");
     expect(SECTION_HEADINGS.shortcuts).toEqual({ title: "바로가기" }); // 영문 아이브로 없음 (PO 2026-10-26)
     expect(SECTION_HEADINGS.amendments.title).toBe("개정 트래커 하이라이트");
