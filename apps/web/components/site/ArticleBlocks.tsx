@@ -86,7 +86,8 @@ function Block({ block, media, index, article, tips }: { block: StoredBlock; med
       if (!t) return null;
       return (
         <figure data-block="table">
-          <div className="overflow-x-auto rounded-xl border border-navy-100 bg-white">
+          {/* relative: 칸 안 외부 링크의 sr-only '(새 창)'(absolute)이 가로 스크롤 상자 밖으로 빠져 화면 전체가 넓어지지 않게 */}
+          <div className="relative overflow-x-auto rounded-xl border border-navy-100 bg-white">
             <table className="w-full min-w-max border-collapse text-left text-[15px] text-navy-800">
               <caption className="px-4 pt-3 text-left text-[15px] font-bold text-navy-900">{block.caption}</caption>
               {t.head && (

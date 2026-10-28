@@ -194,7 +194,7 @@ before(async () => {
   fx.mainBlocks = [
     { type: "key_summary", lines: ["주택을 사면 취득일부터 60일 안에 신고합니다.", "취득일은 잔금일과 등기일 중 빠른 날입니다.", "신고와 납부는 함께 합니다."] },
     { type: "paragraph", text: "취득일은 잔금을 치른 날과 등기를 마친 날 중 빠른 날이다. 자세한 흐름은 [지방세 허브](/tax)에서 볼 수 있다." },
-    { type: "table", caption: "취득일 정하는 법", rows: [["경우", "취득일"], ["잔금이 먼저", "잔금일"], ["등기가 먼저", "등기일"]], chart: { axis: "경우", unit: "날짜", source: "지방세법 시행령" } },
+    { type: "table", caption: "취득일 정하는 법", rows: [["경우", "취득일", "근거"], ["잔금이 먼저", "잔금일", "잔금을 먼저 치르고 나중에 등기를 마친 경우에는 잔금을 치른 날이 취득일이 됩니다 [시행령 원문](https://www.law.go.kr/법령/지방세법시행령)"], ["등기가 먼저", "등기일", "등기를 먼저 마친 경우"]], chart: { axis: "경우", unit: "날짜", source: "지방세법 시행령" } },
     { type: "image", mediaId: String(fx.media.id), alt: "취득세 신고 절차 그림", caption: "신고 절차" },
     { type: "quote", text: "취득세는 취득일부터 60일 이내에 신고하고 납부하여야 한다.", speaker: "지방세법 제20조", origin: "document", refId: law.body.source.ref },
     { type: "callout", kind: "tip", title: "절세 체크포인트", text: "생애 첫 주택이면 감면 요건을 먼저 확인하세요." },
