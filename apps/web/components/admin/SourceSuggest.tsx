@@ -87,6 +87,8 @@ function Card({
         />
         <Row testId="suggest-source-type" label="자료 종류" value={c.source_type ? sourceTypeLabel(c.source_type) : ""} basis={c.basis.source_type} />
         <Row testId="suggest-published" label="발표일" value={c.published_on} basis={c.basis.published_on} />
+        <Row testId="suggest-reference" label="기준일" value={c.reference_date} basis={c.basis.reference_date} />
+        <Row testId="suggest-region-unit" label="지역 단위" value={c.region_unit} basis={c.basis.region_unit} />
         <Row testId="suggest-collected" label="수집일" value={c.collected_on} basis={c.basis.collected_on} />
       </dl>
       {blockers.length > 0 && (

@@ -7,7 +7,7 @@ import { EMPTY_SOURCE_FORM } from "./records-form";
 import { domainInfo } from "./source-domains";
 
 /** 후보 칸마다의 근거 — 어느 글자·어느 표에서 왔는지 (비면 값도 비어 있다) */
-export type CandidateBasis = Record<"kind" | "title" | "url" | "publisher" | "published_on" | "source_type" | "collected_on", string>;
+export type CandidateBasis = Record<"kind" | "title" | "url" | "publisher" | "published_on" | "reference_date" | "region_unit" | "source_type" | "collected_on", string>;
 
 export interface SourceCandidate {
   kind: string;
@@ -16,6 +16,10 @@ export interface SourceCandidate {
   publisher: string;
   /** YYYY-MM-DD 또는 "" */
   published_on: string;
+  /** 기준일 YYYY-MM-DD 또는 "" — 문서 자료(법률안·고시·조례)만 발표일을 그대로 쓴다 */
+  reference_date: string;
+  /** 지역 단위 — 전국 기관이면 '전국', 모르면 "" */
+  region_unit: string;
   source_type: string;
   /** 오늘(한국 날짜) */
   collected_on: string;
@@ -130,6 +134,9 @@ function rawLinks(blocks: readonly unknown[]): Raw[] {
   return out;
 }
 
+/** 기준일을 발표일과 같게 두는 문서 자료 종류 — 데이터(세수·거래 등)는 기준 시점이 따로 있어 비운다 */
+const DOCUMENT_SOURCE_TYPES: ReadonlySet<string> = new Set(["bill", "notice", "ordinance"]);
+
 /** 본문 블록 → 출처 후보 목록 (주소 하나에 후보 하나, 등록된 주소 제외, 본문에 나온 순서) */
 export function suggestSources(blocks: readonly unknown[], opts: SuggestOptions): SourceCandidate[] {
   const existing = new Set(opts.existingUrls.map(normalizeUrl));
@@ -145,13 +152,18 @@ export function suggestSources(blocks: readonly unknown[], opts: SuggestOptions)
     if (out.length >= MAX_CANDIDATES) break;
     const info = domainInfo(raw.url);
     const bill = opts.coversBillStatus && info.kind === "official_doc" && opts.allowedSourceTypes.includes("bill");
+    const sourceType = bill ? "bill" : "";
+    const refFromPublished = info.kind === "official_doc" && DOCUMENT_SOURCE_TYPES.has(sourceType) && raw.date !== null && raw.date !== undefined;
+    const national = info.kind === "official_doc" && info.national;
     out.push({
       kind: info.kind,
       title: raw.title,
       url: raw.url.trim(),
       publisher: info.publisher,
       published_on: raw.date?.iso ?? "",
-      source_type: bill ? "bill" : "",
+      reference_date: refFromPublished ? (raw.date?.iso ?? "") : "",
+      region_unit: national ? "전국" : "",
+      source_type: sourceType,
       collected_on: opts.today,
       basis: {
         kind: info.known ? `도메인 표: ${info.host}` : info.kind === "official_doc" ? `정부 도메인(.go.kr): ${info.host}` : `도메인 표에 없는 주소: ${info.host}`,
@@ -159,6 +171,8 @@ export function suggestSources(blocks: readonly unknown[], opts: SuggestOptions)
         url: `본문 링크 [${raw.linkText}]`,
         publisher: info.known ? `도메인 표: ${info.host} → ${info.publisher}` : "",
         published_on: raw.date ? `'출처:' 줄 날짜 ${raw.date.raw}` : "",
+        reference_date: refFromPublished ? `문서 자료(${sourceType})는 발표일을 기준일로 씁니다 — '출처:' 줄 날짜 ${raw.date?.raw}` : "",
+        region_unit: national ? `도메인 표: ${info.host} → ${info.publisher}(전국 기관)` : "",
         source_type: bill ? "법안 상태를 다룬 기사 + 공식 문서 (허용 목록에 bill 있음)" : "",
         collected_on: "오늘 (한국 시각)",
       },
@@ -181,6 +195,8 @@ export function candidateToForm(c: SourceCandidate, check: SourceCheck | null): 
     licenseType: ok ? (check?.license_type ?? "") : "",
     sourceType: c.source_type,
     publishedOn: c.published_on,
+    referenceDate: c.reference_date,
+    regionUnit: c.region_unit,
     collectedDate: c.collected_on,
   };
 }

@@ -9,16 +9,18 @@ export interface DomainEntry {
   name: string;
   /** gov = 정부·공공기관, press = 언론사 */
   type: "gov" | "press";
+  /** 중앙정부·국회 등 전국을 맡는 기관 — 공식 자료의 지역 단위를 '전국'으로 채운다 */
+  national?: boolean;
 }
 
 export const DOMAIN_TABLE: readonly DomainEntry[] = [
-  { domain: "mois.go.kr", name: "행정안전부", type: "gov" },
-  { domain: "law.go.kr", name: "법제처 국가법령정보센터", type: "gov" },
-  { domain: "molit.go.kr", name: "국토교통부", type: "gov" },
+  { national: true, domain: "mois.go.kr", name: "행정안전부", type: "gov" },
+  { national: true, domain: "law.go.kr", name: "법제처 국가법령정보센터", type: "gov" },
+  { national: true, domain: "molit.go.kr", name: "국토교통부", type: "gov" },
   // [확인 필요] moef.go.kr 기관 명칭 — 기획재정부 / 재정경제부(개편 뒤 현 명칭)를 운영 시점에 확인합니다. 지금은 기획재정부로 둡니다.
-  { domain: "moef.go.kr", name: "기획재정부", type: "gov" },
-  { domain: "assembly.go.kr", name: "국회", type: "gov" },
-  { domain: "nts.go.kr", name: "국세청", type: "gov" },
+  { national: true, domain: "moef.go.kr", name: "기획재정부", type: "gov" },
+  { national: true, domain: "assembly.go.kr", name: "국회", type: "gov" },
+  { national: true, domain: "nts.go.kr", name: "국세청", type: "gov" },
   { domain: "yna.co.kr", name: "연합뉴스", type: "press" },
   { domain: "mk.co.kr", name: "매일경제", type: "press" },
   { domain: "newspim.com", name: "뉴스핌", type: "press" },
@@ -33,6 +35,8 @@ export interface DomainInfo {
   publisher: string;
   /** 표에서 찾았는가 */
   known: boolean;
+  /** 표에서 찾은 전국 기관인가 */
+  national: boolean;
   host: string;
 }
 
@@ -48,7 +52,7 @@ export function hostOf(url: string): string {
 export function domainInfo(url: string): DomainInfo {
   const host = hostOf(url);
   const hit = DOMAIN_TABLE.filter((e) => host === e.domain || host.endsWith(`.${e.domain}`)).sort((a, b) => b.domain.length - a.domain.length)[0];
-  if (hit) return { kind: hit.type === "gov" ? "official_doc" : "other", publisher: hit.name, known: true, host };
+  if (hit) return { kind: hit.type === "gov" ? "official_doc" : "other", publisher: hit.name, known: true, national: hit.national === true, host };
   const gov = host.endsWith(".go.kr");
-  return { kind: gov ? "official_doc" : "other", publisher: "", known: false, host };
+  return { kind: gov ? "official_doc" : "other", publisher: "", known: false, national: false, host };
 }

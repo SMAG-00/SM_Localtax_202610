@@ -30,6 +30,26 @@ describe("suggestSources — 기사 1번 출처 줄", () => {
     expect(suggestSources([para(MOIS)], { ...OPTS, allowedSourceTypes: ["ordinance"] })[0]!.source_type).toBe("");
   });
 
+  test("행안부 법률안 자료: 기준일=발표일, 지역 단위=전국 — 발행 판정(REG1-09) 칸이 근거와 함께 채워진다", () => {
+    const [c] = suggestSources([para(MOIS)], OPTS);
+    expect([c!.reference_date, c!.region_unit]).toEqual(["2026-08-26", "전국"]);
+    expect(c!.basis.reference_date).toContain("발표일을 기준일로");
+    expect(c!.basis.region_unit).toContain("행정안전부(전국 기관)");
+    const ok: SourceCheck = { ok: true, reason: null, verified_on: "2026-10-28", license_type: "kogl_1", license_status: "공공누리 1유형(출처표시)", license_basis: "x", auto_verified: true };
+    expect(publishGaps(candidateToForm(c!, ok))).toEqual([]);
+  });
+
+  test("기준일·지역 단위는 근거가 없으면 비운다 — 자료 종류 없음·모르는 정부 도메인·언론사·날짜 없음", () => {
+    const notBill = suggestSources([para(MOIS)], { ...OPTS, coversBillStatus: false })[0]!;
+    expect([notBill.reference_date, notBill.region_unit]).toEqual(["", "전국"]);
+    const unknownGov = suggestSources([para("출처: 어느 시청 · 2026.9.1 [고시](https://www.example.go.kr/notice/1)")], OPTS)[0]!;
+    expect([unknownGov.kind, unknownGov.reference_date, unknownGov.region_unit]).toEqual(["official_doc", "2026-09-01", ""]);
+    const press = suggestSources([para(CHOSUN)], OPTS)[0]!;
+    expect([press.reference_date, press.region_unit, press.basis.reference_date, press.basis.region_unit]).toEqual(["", "", "", ""]);
+    const noDate = suggestSources([para("출처: 행정안전부 [보도자료](https://www.mois.go.kr/x)")], OPTS)[0]!;
+    expect([noDate.published_on, noDate.reference_date, noDate.region_unit]).toEqual(["", "", "전국"]);
+  });
+
   test("한 줄에 링크 둘: 링크 앞 구간마다 제목·날짜를 따로 읽고 언론사는 기타 종류", () => {
     const list = suggestSources([para(MULTI)], OPTS);
     expect(list.map((c) => [c.kind, c.title, c.publisher, c.published_on, c.source_type])).toEqual([
@@ -102,11 +122,13 @@ describe("candidateToForm · addBlockers", () => {
   const [cand] = suggestSources([para(MOIS)], OPTS);
   const ok: SourceCheck = { ok: true, reason: null, verified_on: "2026-10-28", license_type: "kogl_1", license_status: "공공누리 1유형(출처표시)", license_basis: "x", auto_verified: true };
 
-  test("확인 성공: 확인일·공공누리·이용 조건이 폼에 들어가 이대로 추가 가능, 기준일·지역 단위는 발행 전 빈 칸", () => {
+  test("확인 성공: 확인일·공공누리·이용 조건이 폼에 들어가 이대로 추가 가능, 기준일·지역 단위도 채워져 발행 전 빈 칸 0", () => {
     const f = candidateToForm(cand!, ok);
     expect(f).toMatchObject({ lastVerifiedDate: "2026-10-28", licenseType: "kogl_1", licenseStatus: "공공누리 1유형(출처표시)", sourceName: "행정안전부", sourceType: "bill" });
     expect(addBlockers(f)).toEqual([]);
-    expect(publishGaps(f)).toEqual(["기준일", "지역 단위"]);
+    expect(f).toMatchObject({ referenceDate: "2026-08-26", regionUnit: "전국" });
+    expect(publishGaps(f)).toEqual([]);
+    expect(publishGaps({ ...f, referenceDate: "", regionUnit: "" })).toEqual(["기준일", "지역 단위"]);
   });
 
   test("확인 실패·미확인: 확인일·공공누리를 비우고 이대로 추가를 막는다", () => {
