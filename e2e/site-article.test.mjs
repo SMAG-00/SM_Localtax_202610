@@ -366,7 +366,8 @@ test("a) ART-02 — 머리·본문 블록·면책·기자 소개, 유형 배지 
   assert.deepEqual(types, fx.mainBlocks.map((b) => b.type));
   assert.equal(await page.locator('[data-part="blocks"] [data-ui="key-summary"] li').count(), 3);
   assert.equal(await page.locator('[data-part="blocks"] a[href="/tax"]').count(), 1, "문단 링크 [글](주소)");
-  assert.equal(await page.locator('[data-part="blocks"] table th').count(), 2);
+  assert.equal(await page.locator('[data-part="blocks"] table th').count(), 3);
+  assert.equal(await page.locator('[data-part="blocks"] table td a[href^="https://www.law.go.kr/"]').getAttribute("target"), "_blank", "표 칸 외부 링크는 새 창");
   assert.equal(await page.locator('[data-part="blocks"] figure[data-block="image"] img').getAttribute("alt"), "취득세 신고 절차 그림");
   assert.match(await page.locator('[data-part="blocks"] figure[data-block="image"]').textContent(), /사진·그림 편집국/);
   assert.deepEqual(await page.$$eval('[data-part="blocks"] [data-ui="status-box"]', (els) => els.map((e) => e.getAttribute("data-kind"))), ["tip", "mistake"]);
