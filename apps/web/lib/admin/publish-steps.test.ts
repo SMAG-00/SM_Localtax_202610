@@ -43,9 +43,8 @@ describe("발행까지 할 일 단계표 (F4)", () => {
     const s = step(publishSteps(input([f])), "sources");
     expect(s.status).toBe("todo");
     expect(s.items.map((i) => i.message)).toEqual([f.message]);
-    expect(s.target).toEqual({ kind: "local", selector: "#src-kind" });
-    expect(s.description).toContain("법률안·입법예고(bill)");
-    expect(s.description).toContain("확인일=원문을 연 날");
+    expect(s.target).toEqual({ kind: "local", selector: "#source-suggest-button" });
+    expect(s.description).toBe("본문 링크에서 자동으로 채워 드립니다 — 확인 후 추가");
   });
 
   test("사진 권리 막힘은 사진 보관함 화면으로 가고, 확인 권한이 없으면 다른 사람 차례", () => {

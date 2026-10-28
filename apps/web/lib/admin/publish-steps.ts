@@ -71,7 +71,7 @@ const DESK_EDIT_IDS = new Set(["nav03.desk-edit-required", "nav12.self-desk-edit
 const TAX_REVIEW_IDS = new Set(["nav03.tax-review-required"]);
 
 const CHECK_PANEL = '[data-testid="check-panel"]';
-export const SOURCE_FORM_FOCUS = "#src-kind";
+export const SOURCE_FORM_FOCUS = "#source-suggest-button";
 
 const FIELD_TARGET: Record<string, string> = {
   title: "#meta-title",
@@ -174,9 +174,7 @@ export function publishSteps(input: StepsInput): PublishStep[] {
       who: WHO.reporter,
       whoIsMe: viewer.canEdit,
       description:
-        sources.length > 0
-          ? "출처 탭의 '출처 더하기'에 넣습니다. 법안 상태 기사는 출처 종류=공식 문서, 자료 종류=법률안·입법예고(bill), 확인일=원문을 연 날을 적습니다."
-          : "필요한 출처가 갖춰졌습니다.",
+sources.length > 0 ? "본문 링크에서 자동으로 채워 드립니다 — 확인 후 추가" : "필요한 출처가 갖춰졌습니다.",
       target: { kind: "local", selector: SOURCE_FORM_FOCUS },
       items: sources.map((f) => ({ message: f.message, target: { kind: "local", selector: SOURCE_FORM_FOCUS } as StepTarget })),
       note: null,

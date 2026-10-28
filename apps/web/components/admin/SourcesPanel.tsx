@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { DarkButton, SelectField, TextField } from "@ltr/ui";
 import { LICENSE_REQUIRED_KINDS, LICENSE_TYPE_LABELS } from "@ltr/editorial";
@@ -18,6 +18,7 @@ import {
   type SourceForm,
 } from "@/lib/admin/records-form";
 import { ErrorSummary, StatusNote, TextAreaField } from "./fields";
+import { SourceSuggest } from "./SourceSuggest";
 import { EmptyNote, MONO, OUTLINE_BUTTON, ToneChip } from "./ui";
 import { useHydrated } from "./useHydrated";
 
@@ -82,6 +83,8 @@ export function SourcesPanel({
   officialSourceTypes: readonly string[];
 }) {
   const [editing, setEditing] = useState<number | null>(null);
+  // [고쳐서 추가] — 후보 값을 출처 더하기 폼에 채운다 (nonce가 바뀌면 폼을 새로 만든다)
+  const [prefill, setPrefill] = useState<{ form: SourceForm | null; nonce: number }>({ form: null, nonce: 0 });
   return (
     <div className="space-y-4">
       {sources.length === 0 ? (
@@ -133,7 +136,8 @@ export function SourcesPanel({
           })}
         </ul>
       )}
-      {!readOnly && <AddSourceForm articleId={articleId} officialSourceTypes={officialSourceTypes} />}
+      {!readOnly && <SourceSuggest articleId={articleId} onFill={(form) => setPrefill((p) => ({ form, nonce: p.nonce + 1 }))} />}
+      {!readOnly && <AddSourceForm key={prefill.nonce} articleId={articleId} officialSourceTypes={officialSourceTypes} initial={prefill.form} />}
     </div>
   );
 }
@@ -235,11 +239,15 @@ function useSourceForm(initial: SourceForm) {
   return { form, setForm, set };
 }
 
-function AddSourceForm({ articleId, officialSourceTypes }: { articleId: number; officialSourceTypes: readonly string[] }) {
+function AddSourceForm({ articleId, officialSourceTypes, initial }: { articleId: number; officialSourceTypes: readonly string[]; initial: SourceForm | null }) {
   const hydrated = useHydrated();
   const router = useRouter();
-  const { form, setForm, set } = useSourceForm(EMPTY_SOURCE_FORM);
-  const [errors, setErrors] = useState<FieldErrors>({});
+  const { form, setForm, set } = useSourceForm(initial ?? EMPTY_SOURCE_FORM);
+  // 채워 온 폼은 빈 칸 안내를 바로 보여 주고 제목 칸으로 포커스를 옮긴다
+  const [errors, setErrors] = useState<FieldErrors>(() => (initial ? validateSource(initial, officialSourceTypes) : {}));
+  useEffect(() => {
+    if (initial) document.getElementById("src-title")?.focus();
+  }, [initial]);
   const [failure, setFailure] = useState<{ title: string; details: string[] } | null>(null);
   const [done, setDone] = useState("");
   const [pending, setPending] = useState(false);

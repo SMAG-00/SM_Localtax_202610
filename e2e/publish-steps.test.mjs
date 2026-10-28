@@ -1,7 +1,7 @@
 // 발행까지 할 일 단계표·묶음 메뉴 E2E (F4) — docs/dev/F4_설계.md
 // standalone 빌드를 로컬 Supabase에 붙인다.
 //  a) 출처 없는 보도기사 편집 화면 맨 위에 단계표 — 출처 단계 '할 일'·누가(기자, 지금 계정 가능)·편집 승인은 작성자 본인이라 안내 문장
-//  b) [바로 가기] — 출처 단계 버튼이 출처 더하기 폼의 첫 칸(src-kind)에 포커스를 옮기고, 법안 상태 안내(법률안·입법예고(bill))가 칸 설명에 있다
+//  b) [바로 가기] — 출처 단계 버튼이 [본문에서 출처 자동 채우기](source-suggest-button)에 포커스를 옮기고, 법안 상태 안내(법률안·입법예고(bill))가 칸 설명에 있다
 //  c) 출처를 더하면 새로고침 없이 단계표가 새 판정으로 바뀐다(출처 단계 '끝남 ✓')
 //  d) 묶음 메뉴 — 그룹 버튼 aria-expanded, 지금 화면의 그룹은 펼쳐져 있고 Esc로 닫으면 그 버튼에 포커스
 //  e) 360px — 가로 스크롤 0, 메뉴는 '메뉴' 버튼 하나로 접힌다
@@ -90,7 +90,7 @@ test("a~d) 단계표 노출 → 바로 가기로 출처 폼 포커스 → 출처
 
     // 바로 가기 → 출처 더하기 폼의 첫 칸
     await page.getByTestId("step-go-sources").click();
-    assert.equal(await page.evaluate(() => document.activeElement?.id), "src-kind");
+    assert.equal(await page.evaluate(() => document.activeElement?.id), "source-suggest-button");
     // 칸 설명 — 법안 상태 기사의 공식 자료 안내
     await page.selectOption("#src-kind", "official_doc");
     const formText = await page.locator('form[aria-label="출처 더하기"]').innerText();
