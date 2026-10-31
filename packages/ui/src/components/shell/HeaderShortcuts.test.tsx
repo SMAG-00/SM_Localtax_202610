@@ -10,13 +10,14 @@ describe("바로가기 이름 표", () => {
       ["calc", "부동산 세금 계산기", "/calc"],
       ["realestate_weekly", "금주 부동산 재테크", "/realestate/weekly"],
       ["brief_weekly", "금주 지방세 최신법령·유권해석", "/brief"],
-      ["expert_request", `(가칭)${brand.productName} 전문가 상담요청`, "/experts/request"],
+      ["expert_request", `${brand.productName} 전문가 상담요청`, "/experts/request"],
     ]);
   });
 
-  it("상담 요청 이름은 (가칭)으로 시작하고 제품 이름을 brand에서 가져온다", () => {
+  it("상담 요청 이름은 제품 이름(brand)으로 시작하고 「(가칭)」이 없다 (PO 2026-11-01)", () => {
     const label = HEADER_SHORTCUTS.find((s) => s.key === "expert_request")!.label;
-    expect(label.startsWith("(가칭)")).toBe(true);
+    expect(label.startsWith(brand.productName)).toBe(true);
+    expect(label).not.toContain("가칭");
     expect(label).toContain(brand.productName);
     expect(label.endsWith("전문가 상담요청")).toBe(true);
   });

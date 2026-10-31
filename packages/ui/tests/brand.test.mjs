@@ -26,9 +26,9 @@ test("사이트 이름은 「지방세연구」, 운영 주체는 따로 SM(선�
   assert.notEqual(brand.operatorName, brand.productName);
 });
 
-test("제호는 제품명에 「(가칭)」을 붙인 값이고, 제품명이 바뀌면 함께 바뀐다 (바닥글 매체 정보·저작권 문구·Copyright 줄이 이 값을 쓴다)", () => {
-  assert.equal(brand.mastheadName, `${brand.productName}(가칭)`);
-  assert.equal(brand.mastheadName, "지방세연구(가칭)");
+test("제호는 사이트 이름 그대로이고 「(가칭)」이 없다 (PO 2026-11-01 — 바닥글 매체 정보·저작권 문구·Copyright 줄이 이 값을 쓴다)", () => {
+  assert.equal(brand.mastheadName, brand.productName);
+  assert.ok(!brand.mastheadName.includes("가칭"));
 });
 
 test("제품명 문자열이 brand.ts 한 곳에만 있다 ('월간지방세연구'·'한국지방세연구회'처럼 다른 이름 속 글자는 빼고 낱말로만 센다)", () => {

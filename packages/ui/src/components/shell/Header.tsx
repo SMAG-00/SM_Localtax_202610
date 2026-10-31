@@ -49,7 +49,7 @@ export const HEADER_SHORTCUTS: ReadonlyArray<{ key: HeaderShortcutKey; label: st
   { key: "calc", label: "부동산 세금 계산기", href: "/calc" },
   { key: "realestate_weekly", label: "금주 부동산 재테크", href: "/realestate/weekly" },
   { key: "brief_weekly", label: "금주 지방세 최신법령·유권해석", href: "/brief" },
-  { key: "expert_request", label: `(가칭)${brand.productName} 전문가 상담요청`, href: "/experts/request" },
+  { key: "expert_request", label: `${brand.productName} 전문가 상담요청`, href: "/experts/request" },
 ];
 
 export type HeaderShortcut = { key: HeaderShortcutKey; label: string; href: string };
