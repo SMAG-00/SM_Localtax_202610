@@ -1,5 +1,5 @@
 // 백오피스(편집국) 화면 E2E (W2-a 4-1단계 — PRD-01A 9장 W2-a 끝났다는 증거) — ADM-01 · ART-01 · ART-05 · NAV-03 · NAV-06 · NAV-09~12 · OPT-03
-//  a) 정량형 1건: 로그인 화면 → 기획 등록·상태 진행 → 정량형 템플릿 → 출처·근거·재현 정보·확인 목록 → 검토 요청 → 편집자 점검 패널(차단) → 채움 →
+//  a) 정량형 1건(지역 기사): 로그인 화면 → 기획 등록·상태 진행 → 정량형 템플릿 → 출처·근거·재현 정보·확인 목록 → 검토 요청 → 편집자 점검 패널(간편 발행 — 빠진 기록은 경고) → 채움 →
 //     편집 승인 → 발행 → 공개 REST(anon)로 읽힘 → 기획 발행
 //  b) 정성형 1건: 인터뷰 기록·인용·관점별 기록·원문 대조 → 승인 → 발행 → 공개
 //  c) 정정: 이유 없이 저장하면 칸 오류·저장 0, 이유가 있으면 전후 버전과 함께 기록
@@ -66,6 +66,8 @@ after(async () => {
 /** 화면 스크립트가 살아날 때까지 — 작업 버튼은 그 전까지 꺼져 있다(useHydrated). 머리의 로그아웃·로그인 버튼이 켜지면 화면 전체가 살아났다 */
 async function interactive(page) {
   await page.waitForFunction(() => [...document.querySelectorAll("button")].some((b) => /^(로그아웃|로그인)$/.test(b.textContent.trim()) && !b.disabled));
+  // 기사 편집 화면의 접힌 칸('그 밖의 칸')과 점검 결과를 편다 — 이 시험은 그 안의 칸까지 채운다 (간편 발행 2026-10-31, F4 설계 2.2)
+  await page.evaluate(() => document.querySelectorAll("details#more-sections, details#check-fold").forEach((d) => (d.open = true)));
 }
 
 /** 화면을 연다 — 연 백오피스 화면마다 AI 도우미 런처 0을 확인한다 (ADM-01) */
@@ -236,6 +238,13 @@ async function anonEvidenceText(id) {
   return res.text();
 }
 
+/** 점검 패널의 경고 규칙 ID — 간편 발행에서 발행을 막지 않고 발행 기록에 남는 항목 */
+async function warnings(page) {
+  const panel = page.getByTestId("check-panel");
+  await panel.getByTestId("warning-count").waitFor();
+  return panel.locator('[data-testid="check-warnings"] li').evaluateAll((els) => els.map((e) => e.getAttribute("data-rule")));
+}
+
 /** 검토·발행 화면에서 편집 승인(확인 항목 모두 + 승인) */
 async function approveDesk(page) {
   const form = page.getByRole("form", { name: "편집 승인 결정" });
@@ -334,7 +343,7 @@ test("e) 로그인 안 하면 로그인 화면으로 · 틀린 비밀번호는 �
 
 // ── a) 정량형: 기획 → 취재 → 검증 → 승인 → 공개 ─────────────
 
-test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출처·근거·재현 정보 → 검토 요청 → 점검 패널 차단 → 채움 → 편집 승인 → 발행 → 공개", async () => {
+test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출처·근거·재현 정보 → 검토 요청 → 점검 패널 경고 → 채움 → 편집 승인 → 발행 → 공개", async () => {
   const reporter = await login(u.reporter);
   const hypothesis = `가온시 상반기 취득세 감소는 거래 감소와 같이 움직였다 ${staff.run}`;
   const asg = await createAssignment(reporter, { hypothesis, method: "quantitative" });
@@ -442,12 +451,12 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   await editor.getByTestId(`desk-row-${id}`).getByRole("link").click();
   await editor.waitForURL(new RegExp(`/admin/reviews/${id}$`));
   await interactive(editor);
-  const before = await blockers(editor);
-  for (const rule of ["nav10.related-party-check", "nav10.no-causal-claim", "nav03.desk-edit-required", "core01.box-or-reason"]) assert.ok(before.includes(rule), `차단 ${rule}: ${before}`);
-  assert.ok(!before.includes("nav10.source-data") && !before.includes("nav10.calculation"), "채운 묶음은 차단에 없다");
+  // 간편 발행 (2026-10-31) — 빠진 취재 기록·편집 승인·「지방세로 읽기」는 발행을 막지 않고 경고로 보인다
+  assert.deepEqual(await blockers(editor, { expectCount: 0 }), []);
+  const before = await warnings(editor);
+  for (const rule of ["nav10.related-party-check", "nav10.no-causal-claim", "nav03.desk-edit-required", "core01.box-or-reason"]) assert.ok(before.includes(rule), `경고 ${rule}: ${before}`);
+  assert.ok(!before.includes("nav10.source-data") && !before.includes("nav10.calculation"), "채운 묶음은 경고에도 없다");
   const panel = editor.getByTestId("check-panel");
-  assert.equal(await panel.getByRole("button", { name: "발행", exact: true }).isDisabled(), true, "차단 항목이 남으면 발행 버튼이 꺼진다");
-  assert.match(await panel.getByTestId("publish-reason").innerText(), new RegExp(`차단 항목 ${before.length}개`));
   await panel.locator('[data-rule="nav10.related-party-check"]').getByText("관계자 확인 묶음이 비었습니다").waitFor();
   // 점수 안내 문구는 접힌 '품질 점수 보기' 안에 있다 — 숨은 글자까지 읽는다
   assert.match(await panel.textContent(), /내부 품질 지표 — 검색 순위 예측이 아닙니다/);
@@ -461,7 +470,9 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   await editor.getByTestId("quant-groups").getByText("정량형 필수 7묶음 (NAV-10) — 7/7 채움").waitFor();
 
   await open(editor, `/admin/reviews/${id}`);
-  assert.deepEqual((await blockers(editor, { expectCount: 2 })).sort(), ["nav03.desk-edit-required", "nav10.no-causal-claim"]);
+  assert.deepEqual(await blockers(editor, { expectCount: 0 }), []);
+  const left = await warnings(editor);
+  assert.ok(left.includes("nav03.desk-edit-required") && left.includes("nav10.no-causal-claim") && !left.includes("nav10.related-party-check"), `채운 뒤 남은 경고: ${left}`);
   await approveDesk(editor);
   await publishFromPanel(editor, id);
   const review = await one("select checklist, version from public.editorial_reviews where article_id = $1 and kind = 'desk_edit' order by id desc limit 1", [id]);
@@ -544,7 +555,8 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
 
   const editor = await login(u.editor);
   await open(editor, `/admin/reviews/${id}`);
-  const before = await blockers(editor);
+  assert.deepEqual(await blockers(editor, { expectCount: 0 }), [], "간편 발행 — 남은 항목은 경고");
+  const before = await warnings(editor);
   assert.ok(before.includes("core01.box-or-reason") && before.includes("nav03.desk-edit-required"), `${before}`);
   assert.ok(!before.some((r) => r.startsWith("nav11.")), `정성형 필수 기록은 모두 채웠다: ${before}`);
   await open(editor, `/admin/articles/${id}`);
@@ -552,7 +564,8 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
   await editor.fill("#taxlens-omission", "세금 계산이 아닌 신청 절차 기사 — 감면 해설은 별도 해설 기사로");
   assert.equal(await save(editor), 3);
   await open(editor, `/admin/reviews/${id}`);
-  assert.deepEqual(await blockers(editor, { expectCount: 1 }), ["nav03.desk-edit-required"]);
+  assert.deepEqual(await blockers(editor, { expectCount: 0 }), []);
+  assert.ok((await warnings(editor)).includes("nav03.desk-edit-required"));
   const deskForm = editor.getByRole("form", { name: "편집 승인 결정" });
   assert.equal(await deskForm.getByLabel(/인과 단정 없음/).count(), 0, "정성형 승인에는 '인과 단정 없음' 항목이 없다");
   // 지역 기사면 W4 7단계 지역 확인 3항목(근거·관계·광고 독립성)이 더 붙는다 — 그것을 뺀 기본 항목은 4개

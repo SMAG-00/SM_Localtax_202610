@@ -110,8 +110,9 @@ describe("메뉴 묶음 (F4)", () => {
     expect(adminMenuGroups(viewer(["brand_ops"])).map((g) => [g.id, g.items.map((i) => i.id)])).toEqual([["ops", ["brand"]]]);
   });
 
-  test("날마다 쓰는 메뉴 — 편집 책임자는 첫 화면·기사·사진·검토·브리핑, 관리자는 + 측정 지표(순서 고정), 광고 담당은 첫 화면만", () => {
-    expect(adminDailyMenu(viewer(["editor"])).map((i) => i.id)).toEqual(["dashboard", "articles", "media", "reviews", "brief"]);
+  test("날마다 쓰는 메뉴 — 편집 책임자는 첫 화면·기사·사진·브리핑(검토·발행은 더 보기로), 관리자는 + 측정 지표(순서 고정), 광고 담당은 첫 화면만", () => {
+    expect(adminDailyMenu(viewer(["editor"])).map((i) => i.id)).toEqual(["dashboard", "articles", "media", "brief"]);
+    expect(adminMenuGroups(viewer(["editor"])).find((g) => g.id === "make")!.items.map((i) => i.id)).toContain("reviews");
     expect(adminDailyMenu(viewer([], true)).map((i) => i.id)).toEqual(["dashboard", "articles", "media", "brief", "metrics"]);
     expect(adminDailyMenu(viewer(["ad_ops"])).map((i) => i.id)).toEqual(["dashboard"]);
   });

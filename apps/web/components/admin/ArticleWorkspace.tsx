@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { PrimaryButton, SelectField } from "@ltr/ui";
+import { DarkButton, PrimaryButton, SelectField } from "@ltr/ui";
 import type { Finding } from "@ltr/editorial";
 import type { EditorView } from "@/lib/server/articles/editor-view";
 import { adminApi, apiErrorDetails, apiErrorMessage } from "@/lib/admin/api-client";
@@ -44,8 +44,8 @@ type Category = { id: number; section: string; name: string };
 type Partner = { id: number; name: string; contract_to: string | null };
 type Media = EditorMedia;
 
-// 발행된 기사는 고칠 칸만 — 나머지는 아래 '그 밖의 칸' 하나로 접는다
-const PUBLISHED_NAV = new Set(["meta", "blocks", "save"]);
+// 간편 발행 (2026-10-31 PO 결정) — 쓰는 칸은 기본 정보·본문·저장(발행)만, 나머지는 아래 '그 밖의 칸' 하나로 접는다
+const MAIN_NAV = new Set(["meta", "blocks", "save"]);
 
 const SECTIONS_NAV: [string, string][] = [
   ["meta", "기본 정보"],
@@ -59,8 +59,9 @@ const SECTIONS_NAV: [string, string][] = [
 ];
 
 /**
- * 기사 편집기 (ART-01 · ART-05 · OPT-03) — 왼쪽은 원고(기본 정보·블록·핵심 주장·출처·취재 근거·확인 목록·「지방세로 읽기」·저장),
- * 오른쪽(1024px 이상, 그 아래는 원고 뒤)은 최적화 점검 패널과 검토 요청. 저장은 PATCH 한 번 — 버전으로 동시 수정을 막는다.
+ * 기사 편집기 (ART-01 · ART-05 · OPT-03) — 간편 발행(2026-10-31 PO 결정): 기본 정보 → 본문 → 저장·[발행] 순서로 보이고,
+ * 핵심 주장·출처·취재 근거·확인 목록·「지방세로 읽기」는 '그 밖의 칸'에, 점검 결과는 오른쪽 '점검 결과 보기'에 접어 둔다.
+ * [발행]은 저장하지 않은 입력을 먼저 저장(PATCH)한 뒤 발행(POST publish)한다. 저장은 버전으로 동시 수정을 막는다.
  */
 export function ArticleWorkspace({
   view,
@@ -69,6 +70,7 @@ export function ArticleWorkspace({
   media,
   perms,
   today,
+  publishBlockers = [],
 }: {
   view: EditorView;
   categories: readonly Category[];
@@ -77,6 +79,8 @@ export function ArticleWorkspace({
   perms: EditorPermissions;
   /** 한국 날짜 YYYY-MM-DD (서버가 정한다 — 제휴사 계약 종료 판정) */
   today: string;
+  /** 발행 전에 고칠 것 — 서버 판정(간편 발행 정책)의 남은 차단 문장. 저장본 기준 */
+  publishBlockers?: readonly string[];
 }) {
   const hydrated = useHydrated();
   const router = useRouter();
@@ -94,6 +98,8 @@ export function ArticleWorkspace({
   const [failure, setFailure] = useState<{ title: string; details: string[]; conflict: boolean } | null>(null);
   const [saved, setSaved] = useState<{ message: string; checks: Finding[] } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishFailure, setPublishFailure] = useState<{ title: string; details: string[] } | null>(null);
   // 저장 전 입력 점검 (OPT-03) — 저장 요청과 같은 본문에서 버전·수정 사유 칸을 뺀 값이 저장해 둔 값과 다르면 패널이 이 입력으로 다시 점검한다
   const draftBody = (() => {
     const { expectedVersion: _version, ...body } = editorPayload(state, { published: false, version: 0 });
@@ -113,6 +119,11 @@ export function ArticleWorkspace({
 
   async function save(e: FormEvent) {
     e.preventDefault();
+    await persist();
+  }
+
+  /** 저장(PATCH) — 성공하면 true. 칸 오류·서버 거부는 저장 칸에 보인다 */
+  async function persist(): Promise<boolean> {
     setSaved(null);
     setFailure(null);
     // 발행 기사 수정 사유를 비워 두면 바꾼 칸으로 만든 문장을 쓴다 (예: "요약 수정")
@@ -123,7 +134,7 @@ export function ArticleWorkspace({
     if (Object.keys(v).length > 0) {
       setFailure({ title: `고칠 칸이 ${Object.keys(v).length}개 있습니다`, details: Object.values(v), conflict: false });
       focusField(Object.keys(v)[0]!);
-      return;
+      return false;
     }
     setSaving(true);
     const submittedJson = draftJson;
@@ -138,7 +149,7 @@ export function ArticleWorkspace({
       setSaved({ message: r.body.unchanged ? "바뀐 내용이 없습니다" : `저장했습니다 — 버전 ${next}`, checks });
       if (published) update({ updateKind: "", reason: "" });
       refresh();
-      return;
+      return true;
     }
     const fieldErrors = fieldErrorsFromServer(
       Array.isArray(r.body.errors) ? (r.body.errors as string[]) : undefined,
@@ -147,6 +158,22 @@ export function ArticleWorkspace({
     );
     setErrors(fieldErrors);
     setFailure({ title: apiErrorMessage(r), details: apiErrorDetails(r), conflict: r.status === 409 && typeof r.body.version === "number" });
+    return false;
+  }
+
+  /** [발행] — 저장하지 않은 입력이 있으면 먼저 저장하고, 발행 API를 부른다 (간편 발행) */
+  async function publishNow() {
+    setPublishFailure(null);
+    if (draftJson !== savedJson && !(await persist())) return;
+    setPublishing(true);
+    const r = await adminApi("POST", `/api/admin/articles/${view.article.id}/publish`);
+    setPublishing(false);
+    if (r.status === 200) {
+      setSaved({ message: "발행했습니다 — 공개 화면에 올라갔습니다", checks: [] });
+      refresh();
+      return;
+    }
+    setPublishFailure({ title: apiErrorMessage(r), details: apiErrorDetails(r) });
   }
 
   const quant = method === "quantitative" || method === "mixed";
@@ -165,8 +192,19 @@ export function ArticleWorkspace({
       />
     </Panel>
   );
+  const canPublishNow = !published && perms.canPublish && view.article.status !== "deleted";
   const savePanel = !readOnly && (
-    <Panel id="save" title="저장" description={published ? "수정 종류만 고르면 저장됩니다. 사유는 바꾼 칸으로 자동으로 남깁니다 (ART-05)." : "저장하면 새 버전이 되고, 편집 승인을 다시 받아야 합니다."}>
+    <Panel
+      id="save"
+      title={canPublishNow ? "저장·발행" : "저장"}
+      description={
+        published
+          ? "수정 종류만 고르면 저장됩니다. 사유는 바꾼 칸으로 자동으로 남깁니다 (ART-05)."
+          : canPublishNow
+            ? "[발행]을 누르면 저장하고 바로 공개합니다. 발행한 사람·시각과 빠진 확인 항목은 발행 기록에 남습니다."
+            : "저장하면 새 버전이 됩니다."
+      }
+    >
       <form onSubmit={save} noValidate className="space-y-4" aria-label="기사 저장">
         {published && (
           <>
@@ -216,9 +254,27 @@ export function ArticleWorkspace({
             )}
           </div>
         )}
-        <PrimaryButton type="submit" disabled={saving || !hydrated}>
-          {saving ? "저장 중" : "저장"}
-        </PrimaryButton>
+        {canPublishNow && publishBlockers.length > 0 && (
+          <div data-testid="publish-blockers" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[15px] text-rose-800">
+            <p className="font-bold">발행 전에 고칠 것 {publishBlockers.length}개</p>
+            <ul className="mt-1 list-disc pl-5">
+              {publishBlockers.map((m, i) => (
+                <li key={i}>{m}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {publishFailure && <ErrorSummary id="publish-failure" title={publishFailure.title} messages={publishFailure.details} />}
+        <div className="flex flex-wrap items-center gap-3">
+          <PrimaryButton type="submit" disabled={saving || publishing || !hydrated}>
+            {saving ? "저장 중" : "저장"}
+          </PrimaryButton>
+          {canPublishNow && (
+            <DarkButton id="publish-now" type="button" onClick={publishNow} disabled={saving || publishing || !hydrated}>
+              {publishing ? "발행 중" : "발행"}
+            </DarkButton>
+          )}
+        </div>
       </form>
     </Panel>
   );
@@ -228,20 +284,18 @@ export function ArticleWorkspace({
       <div className="min-w-0 space-y-6">
         <nav aria-label="편집 화면 칸" className="rounded-2xl border border-navy-100 bg-white px-4 py-2">
           <ul className="flex flex-wrap gap-x-4">
-            {SECTIONS_NAV.filter(([id]) => (id !== "save" || !readOnly) && (!published || PUBLISHED_NAV.has(id))).map(([id, label]) => (
+            {SECTIONS_NAV.filter(([id]) => (id !== "save" || !readOnly) && MAIN_NAV.has(id)).map(([id, label]) => (
               <li key={id}>
                 <a href={`#${id}`} className={TEXT_LINK}>
                   {label}
                 </a>
               </li>
             ))}
-            {published && (
-              <li>
-                <a href="#more-sections" className={TEXT_LINK}>
-                  그 밖의 칸
-                </a>
-              </li>
-            )}
+            <li>
+              <a href="#more-sections" className={TEXT_LINK}>
+                그 밖의 칸
+              </a>
+            </li>
           </ul>
         </nav>
         {readOnly && (
@@ -266,16 +320,14 @@ export function ArticleWorkspace({
           />
         </Panel>
 
-        {!published && regionalPanel}
-
         <Panel id="blocks" title="본문 블록" description="블록을 더하고, 지우고, 위아래로 옮깁니다.">
           <BlockEditor state={state} update={update} errors={errors} readOnly={readOnly} refs={refs} media={media} makeKey={makeKey} />
         </Panel>
 
-        {published && savePanel}
+        {savePanel}
 
-        <MoreSections folded={published}>
-          {published && regionalPanel}
+        <MoreSections>
+          {regionalPanel}
 
           <Panel id="claims" title="핵심 주장" description="결론 문장을 표시하고 근거(출처·취재 근거)를 잇습니다. 근거 없는 핵심 주장은 발행되지 않습니다.">
             <ClaimsEditor state={state} update={update} errors={errors} readOnly={readOnly} refs={refs} makeKey={makeKey} />
@@ -310,12 +362,10 @@ export function ArticleWorkspace({
             </Panel>
           )}
         </MoreSections>
-
-        {!published && savePanel}
       </div>
 
       <aside aria-label="점검·발행" className="mt-6 space-y-4 lg:sticky lg:top-4 lg:mt-0 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
-        <PublishedFold folded={published}>
+        <CheckFold>
           <CheckPanel
             articleId={view.article.id}
             status={view.article.status}
@@ -325,9 +375,10 @@ export function ArticleWorkspace({
             draft={readOnly || draftJson === savedJson ? null : draftBody}
             onChanged={refresh}
           />
-        </PublishedFold>
-        {perms.canSubmit && <SubmitForReview articleId={view.article.id} status={view.article.status} onChanged={refresh} />}
-        {perms.canReview && (
+        </CheckFold>
+        {/* 검토 요청·검토 화면 — 발행 권한이 없는 사람(예: 남의 기사를 고치는 기자)만 쓴다 */}
+        {perms.canSubmit && !perms.canPublish && <SubmitForReview articleId={view.article.id} status={view.article.status} onChanged={refresh} />}
+        {perms.canReview && !perms.canPublish && (
           <p className="rounded-2xl border border-navy-100 bg-white p-6 text-[15px]">
             <Link href={`/admin/reviews/${view.article.id}`} className={TEXT_LINK}>
               검토·발행 화면에서 승인하기
@@ -339,9 +390,8 @@ export function ArticleWorkspace({
   );
 }
 
-/** 발행된 기사에서는 고칠 칸이 아닌 칸(근거·출처·확인 목록)을 하나로 접는다 — 칸 오류로 포커스가 가면 focusField가 연다 */
-function MoreSections({ folded, children }: { folded: boolean; children: ReactNode }) {
-  if (!folded) return <>{children}</>;
+/** 기본 정보·본문 밖의 칸(지역 판정·핵심 주장·출처·취재 근거·확인 목록·「지방세로 읽기」)을 하나로 접는다 — 칸 오류로 포커스가 가면 focusField가 연다 */
+function MoreSections({ children }: { children: ReactNode }) {
   return (
     <details id="more-sections" className="scroll-mt-4 rounded-2xl border border-navy-100 bg-white">
       <summary className="cursor-pointer px-6 py-4 text-[17px] font-black text-navy-900">그 밖의 칸 — 핵심 주장·출처·취재 근거·확인 목록·「지방세로 읽기」 (바로잡을 때만 엽니다)</summary>
@@ -350,12 +400,11 @@ function MoreSections({ folded, children }: { folded: boolean; children: ReactNo
   );
 }
 
-/** 발행된 기사의 점검 결과는 접어 둔다 — 이미 발행 기준을 통과한 기사라 고칠 때 매번 볼 필요가 없다 */
-function PublishedFold({ folded, children }: { folded: boolean; children: ReactNode }) {
-  if (!folded) return <>{children}</>;
+/** 점검 결과(경고·점수)는 접어 둔다 — 발행을 막는 항목은 저장·발행 칸에 따로 보인다 (간편 발행) */
+function CheckFold({ children }: { children: ReactNode }) {
   return (
-    <details className="rounded-2xl border border-navy-100 bg-white">
-      <summary className="cursor-pointer px-6 py-4 text-[15px] font-bold text-navy-900">발행 점검 결과 보기</summary>
+    <details id="check-fold" className="rounded-2xl border border-navy-100 bg-white">
+      <summary className="cursor-pointer px-6 py-4 text-[15px] font-bold text-navy-900">점검 결과 보기 (경고·점수)</summary>
       {children}
     </details>
   );

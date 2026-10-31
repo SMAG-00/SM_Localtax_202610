@@ -4,7 +4,7 @@ import { sponsorBadge } from "@ltr/editorial";
 import { sponsorLabelText } from "@ltr/structured-data";
 import { runGate, kstDate, parseGateSettings, saveChecks } from "./gate";
 import { isSelfPublished, renderedFacts, similarityDraft, similaritySources, toArticleForPublish, toArticleView, toLintArticle } from "./mapping";
-import { AUTHOR_PERSON, EDITOR_PERSON, GATE_OPTIONS, SETTINGS, articleRow, graph, mediaRow } from "./test-graph";
+import { AUTHOR_PERSON, EDITOR_PERSON, GATE_OPTIONS, SETTINGS, SIMPLE_GATE_OPTIONS, articleRow, graph, mediaRow } from "./test-graph";
 
 const failedOf = (g: ReturnType<typeof graph>) => runGate(g, SETTINGS, GATE_OPTIONS).failed;
 
@@ -94,6 +94,35 @@ describe("편집 승인 — 버전과 사람 (NAV-03 · NAV-12)", () => {
     expect(failedOf(explainer)).toEqual(["nav03.tax-review-required"]);
     const tax = { id: 2, article_id: 101, version: 3, kind: "tax_review", reviewer_id: 33, decision: "approve", checklist: {}, reason: null, at: "2026-10-12T08:00:00+00:00" };
     expect(failedOf({ ...explainer, reviews: [...explainer.reviews, tax] })).toEqual([]);
+  });
+});
+
+describe("간편 발행 정책 (2026-10-31 PO 결정 — gateFor 기본값)", () => {
+  const explainer = graph(
+    { category: { id: 1, section: "tax", slug: "interpretations", name: "해석", needs_disclaimer: true, needs_tax_lens: false }, datasets: [], evidence: [] },
+    { section: "tax", content_type: "explainer", reporting_method: null, legal_basis_date: "2026-10-01", tax_lens: null, check_log: null, body: { blocks: [{ type: "paragraph", text: "취득세는 60일 안에 신고한다." }], claims: [] } },
+  );
+  test("편집 승인·세무 감수가 없는 세법 해설도 발행할 수 있고, 빠진 승인은 경고로 발행 기록에 남는다", () => {
+    const bare = { ...explainer, reviews: [] };
+    expect(runGate(bare, SETTINGS, GATE_OPTIONS).failed).toEqual(["nav03.desk-edit-required", "nav03.tax-review-required"]);
+    const simple = runGate(bare, SETTINGS, SIMPLE_GATE_OPTIONS);
+    expect(simple.canPublish).toBe(true);
+    expect(simple.failed).toEqual([]);
+    expect(simple.warnings).toEqual(expect.arrayContaining(["nav03.desk-edit-required", "nav03.tax-review-required"]));
+  });
+  test("사진 권리 미확인(NAV-04)은 간편 발행에서도 막는다 — 법적 의무", () => {
+    const body = articleRow().body as { blocks: unknown[]; claims: unknown[] };
+    const withImage = { ...body, blocks: [...body.blocks, { type: "image", mediaId: "9", alt: "민원 창구", caption: "", rightsStatus: "confirmed" }] };
+    const unconfirmed = graph({ media: [mediaRow({ id: 9, alt: "민원 창구", rights_status: "unconfirmed" })] }, { body: withImage });
+    expect(runGate(unconfirmed, SETTINGS, SIMPLE_GATE_OPTIONS).failed).toContain("nav04.image-rights");
+  });
+  test("정량형 필수 기록(NAV-10)이 비어도 간편 발행은 막지 않는다 — 경고로 남는다", () => {
+    const base = graph();
+    const g = { ...base, datasets: [{ ...base.datasets[0]!, denominator: null }] };
+    expect(runGate(g, SETTINGS, GATE_OPTIONS).failed).toContain("nav10.indicator-definition");
+    const simple = runGate(g, SETTINGS, SIMPLE_GATE_OPTIONS);
+    expect(simple.failed).not.toContain("nav10.indicator-definition");
+    expect(simple.warnings).toContain("nav10.indicator-definition");
   });
 });
 

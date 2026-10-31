@@ -451,7 +451,7 @@ test("d) 사진 — 제2·3유형은 기본값에서 공개 렌더 0(화면·ano
   assert.deepEqual(await imagesOn(), { lead: 0, body: ["자체 촬영 시험 사진"] }, "되돌리면 다시 0");
 });
 
-test("e) 고시 자료를 쓴 해설 — 세무 감수 없이 발행 422(대상 이유 REG1-07)·DB도 거부, 감수 승인 뒤 발행 200", async () => {
+test("e) 고시 자료를 쓴 해설 — 간편 발행(2026-10-31 PO 결정): 세무 감수 없이 발행 200, 빠진 감수는 경고(REG1-07 이유)·작성자 책임 기록, 감수 상태는 그대로", async () => {
   const a = await draftExplainer("notice", "시험용 가상구 고시로 보는 감면 신청");
   const notice = await api("POST", `/articles/${a.id}/sources`, u.reporter, {
     kind: "official_doc",
@@ -471,18 +471,17 @@ test("e) 고시 자료를 쓴 해설 — 세무 감수 없이 발행 422(대상 
   const saved = await writeBody(a);
   assert.equal(saved.status, 200, show(saved));
   assert.equal(saved.body.article.taxReviewStatus, "pending", "세무 감수 대상");
+  const check = await api("GET", `/articles/${a.id}/check`, u.reporter);
+  assert.equal(check.status, 200, show(check));
+  assert.deepEqual(check.body.failed, [], show(check));
+  assert.match(check.body.findings.find((f) => f.id === "nav03.tax-review-required").message, /고시·조례 자료를 쓴 해설 \(REG1-07\)/, "대상 이유는 경고 문장에 그대로");
   await approve(a, { tax: false });
-  const r = await publish(a);
-  assert.equal(r.status, 422, show(r));
-  assert.deepEqual(r.body.failed, ["nav03.tax-review-required"], show(r));
-  assert.match(r.body.findings.find((f) => f.id === "nav03.tax-review-required").message, /고시·조례 자료를 쓴 해설 \(REG1-07\)/);
-  // 발행 서비스를 건너뛴 DB 직접 발행도 거부 (한쪽만 우회한 발행도 실패)
-  await assert.rejects(db.query("update public.articles set status = 'published', first_published_at = now() where id = $1", [a.id]), /세무 감수 승인 뒤에만/);
-  // 감수 승인 뒤 발행
-  const tax = await api("POST", `/articles/${a.id}/reviews`, u.reviewer, { kind: "tax_review", decision: "approve" });
-  assert.equal(tax.status, 201, show(tax));
   const ok = await publish(a);
   assert.equal(ok.status, 200, show(ok));
+  const row = await one("select status, tax_review_status, check_log -> 'publish' as pub from public.articles where id = $1", [a.id]);
+  assert.equal(row.status, "published");
+  assert.equal(row.tax_review_status, "pending", "감수 기록이 없으니 감수 상태는 approved가 아니다");
+  assert.equal(row.pub.authorResponsibility, true, "작성자 책임 발행(세무 감수 대체) 기록");
 });
 
 test("f) 편집 화면 — 공식 자료 칸 오류 · 자료 종류 목록 = 허용 목록(차단 4종 0) · 원자료 고치기 폼 사유 칸 오류 → 새 버전", async () => {
@@ -504,6 +503,8 @@ test("f) 편집 화면 — 공식 자료 칸 오류 · 자료 종류 목록 = �
     await page.getByRole("button", { name: "로그인" }).click();
     await page.waitForURL((url) => url.pathname !== "/admin/login");
     await page.goto(`${base}/admin/articles/${id}`);
+    // 출처 칸은 접힌 '그 밖의 칸' 안에 있다 (간편 발행 2026-10-31) — 눌러서 편다
+    await page.locator("details#more-sections > summary").click();
     const form = page.getByRole("form", { name: "출처 더하기" });
     await form.getByRole("button", { name: "출처 더하기" }).waitFor();
     await page.waitForFunction(() => [...document.querySelectorAll("form[aria-label='출처 더하기'] button")].some((b) => !b.disabled));

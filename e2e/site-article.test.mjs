@@ -542,25 +542,25 @@ test("f) 삭제된 기사 410 + 삭제 안내 · 초안 404 · 예약 목록 경
   }
 });
 
-test("g) 카드뉴스 — 4장·8장·대체 텍스트 없는 장은 발행 422, 7장은 발행, 5장·7장 모두 HTML 글자 장 · 키보드 ←/→", async () => {
-  let r = await api("POST", `/articles/${fx.cards.id}/publish`, u.editor);
-  assert.equal(r.status, 422, show(r));
-  assert.ok(r.body.failed.includes("art03.slide-count"), show(r));
+test("g) 카드뉴스 — 4장·8장·대체 텍스트 없는 장은 간편 발행에서 경고(발행 기록)로만 남고, 7장은 발행, 5장·7장 모두 HTML 글자 장 · 키보드 ←/→", async () => {
+  // 간편 발행 (2026-10-31 PO 결정) — 카드뉴스 장 수·대체 텍스트는 발행을 막지 않고 점검 결과의 경고로 보인다
+  const checked = async () => {
+    const c = await api("GET", `/articles/${fx.cards.id}/check`, u.editor);
+    assert.equal(c.status, 200, show(c));
+    return { failed: c.body.failed.filter((id) => id.startsWith("art03.")), warnings: c.body.warnings.filter((id) => id.startsWith("art03.")) };
+  };
+  assert.deepEqual(await checked(), { failed: [], warnings: ["art03.slide-count"] }, "4장");
   const save = async (blocks) => {
     const s = await api("PATCH", `/articles/${fx.cards.id}`, u.reporter, { body: { blocks, claims: [] } });
     assert.equal(s.status, 200, show(s));
     assert.equal((await api("POST", `/articles/${fx.cards.id}/reviews`, u.editor, { kind: "desk_edit", decision: "approve" })).status, 201);
   };
   await save(slides(8));
-  r = await api("POST", `/articles/${fx.cards.id}/publish`, u.editor);
-  assert.equal(r.status, 422);
-  assert.ok(r.body.failed.includes("art03.slide-count"), show(r));
+  assert.deepEqual(await checked(), { failed: [], warnings: ["art03.slide-count"] }, "8장");
   const noAlt = slides(7);
   noAlt[3] = slide(4, { alt: "" });
   await save(noAlt);
-  r = await api("POST", `/articles/${fx.cards.id}/publish`, u.editor);
-  assert.equal(r.status, 422);
-  assert.deepEqual(r.body.failed.filter((id) => id.startsWith("art03.")), ["art03.slide-alt"], show(r));
+  assert.deepEqual(await checked(), { failed: [], warnings: ["art03.slide-alt"] }, "대체 텍스트 없는 장");
   await save(slides(7));
   await publish(fx.cards.id);
 

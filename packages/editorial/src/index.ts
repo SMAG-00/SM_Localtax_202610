@@ -3,8 +3,8 @@
 export * from "./model";
 export { RULES, compareFindings, finding, sortFindings, toSaveValidation } from "./findings";
 export type { Finding, FindingLevel, FindingLocation, RuleDef, RuleId, SaveValidation } from "./findings";
-export { BUILT_IN_CHECKS, evaluatePublish } from "./evaluate";
-export type { PublishCheck, PublishEvaluation, PublishOptions } from "./evaluate";
+export { BUILT_IN_CHECKS, SIMPLE_PUBLISH_BLOCKERS, evaluatePublish } from "./evaluate";
+export type { PublishCheck, PublishEvaluation, PublishOptions, PublishPolicy } from "./evaluate";
 
 // 저장 검사
 export { isTaxLensTarget, hasTaxLensContent, pointLineProblems, validateTaxLensForSave } from "./checks/tax-lens";

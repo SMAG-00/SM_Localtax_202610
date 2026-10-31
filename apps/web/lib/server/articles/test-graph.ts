@@ -164,4 +164,6 @@ export const SETTINGS: GateSettings = {
   similarity: INTERNAL_SIMILARITY_RULES,
 };
 
-export const GATE_OPTIONS = { now: "2026-10-17T03:00:00.000Z", siteUrl: "https://e2e.example.test", publisherName: "견본 매체", peers: [] };
+/** 규칙 대응 시험은 strict(규칙 목록 등급 그대로) — 간편 발행 정책은 SIMPLE_GATE_OPTIONS로 따로 본다 */
+export const GATE_OPTIONS = { now: "2026-10-17T03:00:00.000Z", siteUrl: "https://e2e.example.test", publisherName: "견본 매체", peers: [], policy: "strict" as const };
+export const SIMPLE_GATE_OPTIONS = { ...GATE_OPTIONS, policy: "simple" as const };

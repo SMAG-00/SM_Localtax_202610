@@ -559,7 +559,7 @@ test("5) TX-03 링크 점검 — 2xx ok·404 broken·같은 실행 키 한 벌·
 });
 
 // ── 6) 해석 해설 ─────────────────────────────────────────
-test("6) TX-09 해석 해설 발행 — 원문 0이면 거부 · 세무 감수 서명 없으면 거부 · 갖추면 발행, 목록 필터·원문 블록", async () => {
+test("6) TX-09 해석 해설 발행 — 원문 0이면 거부 · 세무 감수 서명 없이도 발행(작성자 책임, 간편 발행) · 서명은 발행 뒤에, 목록 필터·원문 블록", async () => {
   fx.docNo = `시험번호수용${staff.run}`;
   const doc = await expectStatus(
     legalDocs({ op: "create", docType: "ruling", issuer: "시험용수용기관", docNo: fx.docNo, decidedOn: "2026-02-03", taxKinds: ["시험세목"], provisions: ["시험법 제3조"], sourceUrl: "https://example.test/e2e-w3acc-doc", rightsStatus: "confirmed", snapshotPayload: `시험용 가짜 원문 ${staff.run}` }),
@@ -575,12 +575,12 @@ test("6) TX-09 해석 해설 발행 — 원문 0이면 거부 · 세무 감수 �
   assert.match(JSON.stringify(noDoc.body), /원문/, "거부 사유 = 원문");
   await notPublished(fx.explainer, "원문 0");
   await expectStatus(legalDocs({ op: "link", articleId: fx.explainer.id, legalDocId: fx.doc, role: "subject" }), 201, "원문 연결");
-  const unsigned = await publish(fx.explainer);
-  assert.ok(unsigned.status === 409 || unsigned.status === 422, `감수 서명 없는 발행 거부 ${show(unsigned)}`);
-  assert.match(JSON.stringify(unsigned.body), /세무 감수/, "거부 사유 = 세무 감수");
-  await notPublished(fx.explainer, "감수 서명 없음");
+  // 간편 발행 (2026-10-31 PO 결정) — 세무 감수 서명이 없어도 발행된다(작성자 책임 발행 기록). 서명은 발행 뒤에도 남길 수 있다
+  await expectStatus(publish(fx.explainer), 200, "감수 서명 없이 발행 (작성자 책임)");
+  const pub = await one("select status, tax_review_status from public.articles where id = $1", [fx.explainer.id]);
+  assert.equal(pub.status, "published");
+  assert.notEqual(pub.tax_review_status, "approved", "서명 전에는 감수 완료가 아니다");
   await taxApprove(fx.explainer);
-  await expectStatus(publish(fx.explainer), 200, "서명 뒤 발행");
 
   await setFlags({ interpretations: true });
   const list = await page("/tax/interpretations?type=ruling");

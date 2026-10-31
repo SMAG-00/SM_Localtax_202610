@@ -338,7 +338,7 @@ test("editor 없는 관리자의 발행은 403 — 편집 신뢰 규칙은 관�
   assert.equal(await auditCount(u.admin.id, "article.publish.denied", `articles:${ids.quant}`), 1);
 });
 
-test("다른 편집자의 편집 승인 → 불완전한 정량형 원고는 422, 빠진 NAV-10 묶음이 실패 항목에 있다", async () => {
+test("다른 편집자의 편집 승인 → 불완전한 정량형 원고도 간편 발행에선 막히지 않고, 빠진 NAV-10 묶음·「지방세로 읽기」는 경고로 남는다 (2026-10-31 PO 결정)", async () => {
   const review = await api("POST", `/articles/${ids.quant}/reviews`, u.editorA, { kind: "desk_edit", decision: "approve", checklist: { noCausalClaim: true, ...REGIONAL_CHECKS } });
   assert.equal(review.status, 201, show(review));
   assert.equal(review.body.article.editorialStatus, "approved");
@@ -346,25 +346,19 @@ test("다른 편집자의 편집 승인 → 불완전한 정량형 원고는 422
 
   const check = await api("GET", `/articles/${ids.quant}/check`, u.reporter);
   assert.equal(check.status, 200, show(check));
-  assert.equal(check.body.canPublish, false);
-
-  const r = await api("POST", `/articles/${ids.quant}/publish`, u.editorA);
-  assert.equal(r.status, 422, show(r));
-  assert.ok(r.body.failed.includes("nav10.related-party-check"), show(r));
-  assert.ok(r.body.failed.includes("core01.box-or-reason"), show(r));
-  assert.ok(!r.body.failed.includes("nav10.source-data"), "채운 묶음은 실패 항목에 없다");
-  assert.ok(!r.body.failed.includes("nav03.desk-edit-required"));
-  assert.deepEqual([...r.body.failed].sort(), [...check.body.failed].sort(), "점검 패널과 발행 API가 같은 판정");
-  assert.equal(r.body.similarity.status, "pass", "보도자료 원문과 비교해 통과");
-  const seo = await one("select blocking_failures, checked_by, published_with_warnings from public.seo_checks where id = $1", [r.body.seoCheckId]);
-  assert.ok(seo.blocking_failures.includes("nav10.related-party-check"));
-  assert.equal(seo.published_with_warnings, false);
+  assert.equal(check.body.canPublish, true, "간편 발행 — 취재 기록이 비어도 발행을 막지 않는다");
+  assert.deepEqual(check.body.failed, [], show(check));
+  const warned = new Set(check.body.warnings);
+  assert.ok(warned.has("nav10.related-party-check"), "빠진 묶음은 경고로 남는다");
+  assert.ok(warned.has("core01.box-or-reason"));
+  assert.ok(!warned.has("nav10.source-data"), "채운 묶음은 경고에도 없다");
+  assert.equal(check.body.similarity.status, "pass", "보도자료 원문과 비교해 통과");
   const row = await one("select status, first_published_at from public.articles where id = $1", [ids.quant]);
   assert.equal(row.status, "approved");
-  assert.equal(row.first_published_at, null);
+  assert.equal(row.first_published_at, null, "점검은 발행하지 않는다");
 });
 
-test("빠진 칸을 채우면 편집 승인을 다시 받아야 하고, 승인 뒤 발행 200", async () => {
+test("빠진 칸을 채우면 새 버전 — 지역 기사는 이 버전의 편집 확인 3항목 없이 발행 409(DB REG1-17), 승인 뒤 발행 200", async () => {
   const skipByReporter = await api("PATCH", `/articles/${ids.quant}`, u.reporter, { taxLens: { topics: [], points: [], links: [], omissionReason: "세금 영향은 후속 기사에서 다룬다" } });
   assert.equal(skipByReporter.status, 403, "「지방세로 읽기」 생략 사유는 편집 책임자만");
 
@@ -382,10 +376,11 @@ test("빠진 칸을 채우면 편집 승인을 다시 받아야 하고, 승인 �
   const skipAudit = await one("select after from public.audit_logs where actor = $1 and action = 'article.edit' and target = $2 order by id desc limit 1", [`user:${u.editorA.id}`, `articles:${ids.quant}`]);
   assert.equal(skipAudit.after.tax_lens.skip_reason, "세금 영향은 후속 기사에서 다룬다", "생략 사유·편집자·시각이 감사 로그에 남는다 (CORE-01)");
 
+  // 이전 버전의 승인은 세지 않는다 — 발행 API가 발행자 이름으로 편집 승인을 남기려 하지만, 지역 기사는 근거·관계·광고 독립성 확인이 필요해 DB가 거부한다
   const stale = await api("POST", `/articles/${ids.quant}/publish`, u.editorA);
-  assert.equal(stale.status, 422, show(stale));
-  assert.ok(stale.body.failed.includes("nav03.desk-edit-required"), "이전 버전의 승인은 세지 않는다");
-  assert.ok(!stale.body.failed.includes("nav10.related-party-check"));
+  assert.equal(stale.status, 409, show(stale));
+  assert.match(stale.body.error, /편집 책임자의 확인 항목이 필요합니다 — 지역 기사 편집 승인에는 근거·관계·광고 독립성/);
+  assert.equal((await one("select status from public.articles where id = $1", [ids.quant])).status, "in_review", "거부되면 게재 상태 그대로");
 
   const again = await api("POST", `/articles/${ids.quant}/reviews`, u.editorA, { kind: "desk_edit", decision: "approve", checklist: { noCausalClaim: true, ...REGIONAL_CHECKS } });
   assert.equal(again.status, 201, show(again));
@@ -410,7 +405,7 @@ test("빠진 칸을 채우면 편집 승인을 다시 받아야 하고, 승인 �
 
 // ── 세법 해설: 편집 승인과 세무 감수는 다른 상태 (NAV-03 · ART-01) ─────────
 
-test("세법 해설 — 편집 승인만 있으면 422(세무 감수 없음), 세무 감수위원이 서명하면 발행 200", async () => {
+test("세법 해설 — 간편 발행: 작성 기자가 바로 발행 200, 세무 감수는 작성자 책임으로 대체(기록·감사 로그), 감수 상태는 그대로 (2026-10-31 PO 결정)", async () => {
   const created = await api("POST", "/articles", u.reporter, {
     slug: slug("explainer"),
     title: `주택 취득세 신고, 취득일부터 60일 안에 ${staff.run}`,
@@ -440,30 +435,29 @@ test("세법 해설 — 편집 승인만 있으면 422(세무 감수 없음), �
   assert.equal(withClaims.status, 200, show(withClaims));
   assert.equal(withClaims.body.article.taxReviewStatus, "pending", "세무 감수 대상");
 
-  const desk = await api("POST", `/articles/${ids.explainer}/reviews`, u.editorA, { kind: "desk_edit", decision: "approve" });
-  assert.equal(desk.status, 201, show(desk));
-  const r = await api("POST", `/articles/${ids.explainer}/publish`, u.editorA);
-  assert.equal(r.status, 422, show(r));
-  assert.deepEqual(r.body.failed, ["nav03.tax-review-required"], show(r));
-  assert.ok(r.body.taxReviewReasons.length >= 2);
-
   const byEditor = await api("POST", `/articles/${ids.explainer}/reviews`, u.editorA, { kind: "tax_review", decision: "approve" });
-  assert.equal(byEditor.status, 403, "세무 감수 서명은 reviewer만");
-  const tax = await api("POST", `/articles/${ids.explainer}/reviews`, u.reviewer, { kind: "tax_review", decision: "approve" });
-  assert.equal(tax.status, 201, show(tax));
-  const states = await one("select editorial_status, tax_review_status from public.articles where id = $1", [ids.explainer]);
-  assert.deepEqual(states, { editorial_status: "approved", tax_review_status: "approved" }, "두 상태가 따로 있다");
+  assert.equal(byEditor.status, 403, "세무 감수 서명은 여전히 reviewer만");
 
-  const ok = await api("POST", `/articles/${ids.explainer}/publish`, u.editorA);
-  assert.equal(ok.status, 200, show(ok));
-  assert.equal(ok.body.article.status, "published");
+  const r = await api("POST", `/articles/${ids.explainer}/publish`, u.reporter);
+  assert.equal(r.status, 200, show(r));
+  assert.equal(r.body.article.status, "published");
+  assert.ok(r.body.warnings.includes("nav03.tax-review-required"), "빠진 세무 감수는 경고로 발행 기록에 남는다");
+  const row = await one("select editorial_status, tax_review_status, check_log -> 'publish' as pub from public.articles where id = $1", [ids.explainer]);
+  assert.deepEqual({ editorial: row.editorial_status, tax: row.tax_review_status }, { editorial: "approved", tax: "pending" }, "감수 기록이 없으니 감수 상태는 approved가 아니다");
+  assert.equal(row.pub.authorPublish, true);
+  assert.equal(row.pub.authorResponsibility, true);
+  assert.equal(row.pub.by, `user:${u.reporter.id}`);
+  const desk = await one("select reviewer_id, checklist from public.editorial_reviews where article_id = $1 and kind = 'desk_edit' order by id desc limit 1", [ids.explainer]);
+  assert.deepEqual(desk.checklist, { publishApproval: true, authorPublish: true, authorResponsibility: true });
+  const audit = await one("select reason from public.audit_logs where actor = $1 and action = 'article.publish' and target = $2", [`user:${u.reporter.id}`, `articles:${ids.explainer}`]);
+  assert.match(audit.reason, /^작성자 책임 발행 \(세무 감수 대체\)/);
 });
 
 // ── 발행 뒤 수정 (ART-05 · OPT-07) ─────────────────────────
 
 const editedBlocks = (text) => [QUANT_BLOCKS[0], { type: "paragraph", text }, QUANT_BLOCKS[2], QUANT_BLOCKS[3]];
 
-test("발행 뒤 수정 — 기자는 403, 수정 종류·사유 없이 저장하면 422", async () => {
+test("발행 뒤 수정 — 기자는 403, 수정 종류·사유 없이 저장하면 422, 공포 표현은 저장 검사 문장으로만 알린다", async () => {
   const byReporter = await api("PATCH", `/articles/${ids.quant}`, u.reporter, { body: { blocks: editedBlocks("기자가 고친 문장이다."), claims: [] }, updateKind: "typo", reason: "오탈자" });
   assert.equal(byReporter.status, 403, show(byReporter));
   const r = await api("PATCH", `/articles/${ids.quant}`, u.editorA, { body: { blocks: editedBlocks("사유 없이 고친 문장이다."), claims: [] } });
@@ -474,9 +468,10 @@ test("발행 뒤 수정 — 기자는 403, 수정 종류·사유 없이 저장�
   assert.deepEqual(noReason.body.failed, ["art05.reason-required"]);
   const slugChange = await api("PATCH", `/articles/${ids.quant}`, u.editorA, { slug: slug("moved"), updateKind: "substantive", reason: "주소 변경" });
   assert.equal(slugChange.status, 409, show(slugChange));
-  const fear = await api("PATCH", `/articles/${ids.quant}`, u.editorA, { body: { blocks: editedBlocks("놓치면 끝이라는 말은 사실이 아니다."), claims: [] }, updateKind: "substantive", reason: "문장 보강" });
-  assert.equal(fear.status, 422, show(fear));
-  assert.ok(fear.body.failed.includes("ux03.fear-phrase") || fear.body.failed.includes("ux01.forbidden-phrase"), show(fear));
+  // 간편 발행 (2026-10-31) — 발행 뒤 수정에서 공포·금지 표현은 막지 않고 저장 검사 문장(checks)으로 알린다 (막는 것은 개인정보 형식뿐)
+  const fear = await api("PATCH", `/articles/${ids.quant}`, u.editorA, { body: { blocks: editedBlocks("놓치면 끝이라는 말은 사실이 아니다."), claims: [] }, updateKind: "typo", reason: "문장 보강" });
+  assert.equal(fear.status, 200, show(fear));
+  assert.ok(fear.body.checks.some((c) => c.id === "ux03.fear-phrase" || c.id === "ux01.forbidden-phrase"), show(fear));
 });
 
 test("오탈자 수정은 실질 수정일을 바꾸지 않고, 실질 수정은 바꾼다 (OPT-07)", async () => {

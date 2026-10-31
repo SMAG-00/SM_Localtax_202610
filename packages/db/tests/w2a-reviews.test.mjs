@@ -157,6 +157,44 @@ test("본인 발행 — 저장된 본인 승인 기록에서 selfPublish를 지�
     assert.equal((await attempt("update public.editorial_reviews set checklist = '{}'::jsonb where id = $1", [row.id], "service_role")).ok, false);
   }));
 
+// ── 간편 발행 — 작성자 발행 (2026-10-31 PO 결정, 마이그레이션 235) ──
+const AUTHOR = JSON.stringify({ publishApproval: true, authorPublish: true });
+
+test("작성자 발행 — 기자 계정의 작성자가 authorPublish로 승인하면 저장되고 편집 승인 상태가 approved (세무 감수 대상 글도, 감수 상태는 그대로)", () =>
+  tx(async () => {
+    const reporter = await staffPerson(["reporter"], ["reporter"]);
+    const plain = await article(reporter);
+    const r = await attempt(REVIEW_WITH_CHECKLIST, [plain.id, reporter, "approve", null, AUTHOR], "service_role");
+    assert.ok(r.ok, r.message);
+    assert.equal(r.rows[0].checklist.authorPublish, true);
+    assert.equal((await statusOf(plain.id)).editorial_status, "approved");
+
+    const tax = await article(reporter, { content_type: "explainer", tax_review_status: "pending" });
+    const t = await attempt(REVIEW_WITH_CHECKLIST, [tax.id, reporter, "approve", null, JSON.stringify({ publishApproval: true, authorPublish: true, authorResponsibility: true })], "service_role");
+    assert.ok(t.ok, t.message);
+    assert.deepEqual(await statusOf(tax.id), { editorial_status: "approved", tax_review_status: "pending" }, "세무 감수 기록 없이 감수 상태는 approved가 되지 않는다");
+  }));
+
+test("작성자 발행 — 칼럼(opinion)·반려·보류·편집국 계정 없는 인물·authorPublish가 JSON 참값이 아님은 거부", () =>
+  tx(async () => {
+    const reporter = await staffPerson(["reporter"], ["reporter"]);
+    const column = await article(reporter, { content_type: "opinion" });
+    const c = await attempt(REVIEW_WITH_CHECKLIST, [column.id, reporter, "approve", null, AUTHOR], "service_role");
+    assert.equal(c.ok, false);
+    assert.match(c.message, /BR-08/);
+
+    const a = await article(reporter);
+    for (const decision of ["reject", "hold"]) assert.equal((await attempt(REVIEW_WITH_CHECKLIST, [a.id, reporter, decision, "사유", AUTHOR], "service_role")).ok, false, decision);
+    assert.equal((await attempt(REVIEW_WITH_CHECKLIST, [a.id, reporter, "approve", null, JSON.stringify({ authorPublish: "true" })], "service_role")).ok, false, "문자열 true");
+
+    const unlinked = await person(["reporter"]);
+    const b = await article(unlinked);
+    const u = await attempt(REVIEW_WITH_CHECKLIST, [b.id, unlinked, "approve", null, AUTHOR], "service_role");
+    assert.equal(u.ok, false);
+    assert.match(u.message, /작성자 발행은 기자/);
+    assert.equal((await statusOf(a.id)).editorial_status, "pending");
+  }));
+
 test("다른 편집자의 desk_edit 승인은 저장되고 기사의 편집 승인 상태가 approved가 된다", () =>
   tx(async () => {
     const a = await article(await person());

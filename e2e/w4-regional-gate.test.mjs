@@ -314,6 +314,8 @@ test("g) 편집 화면 — 지역 칸·판정 줄(보류 이유)·판정 폼 →
     await page.getByRole("button", { name: "로그인" }).click();
     await page.waitForURL((url) => url.pathname !== "/admin/login");
     await page.goto(`${base}/admin/articles/${g.id}`);
+    // 지역 기사 판정 칸은 접힌 '그 밖의 칸' 안에 있다 (간편 발행 2026-10-31) — 눌러서 편다
+    await page.locator("details#more-sections > summary").click();
     const panel = page.locator('[data-part="regional-judge"]');
     await panel.waitFor();
     assert.equal(await panel.getAttribute("data-state"), "held");

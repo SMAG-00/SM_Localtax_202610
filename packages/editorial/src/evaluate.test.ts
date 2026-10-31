@@ -6,7 +6,7 @@ import { FAILING_SAMPLES } from "../fixtures/failing";
 import { uniqueIds } from "../fixtures/helpers";
 import { QUALITATIVE_NEWS } from "../fixtures/qualitative";
 import { QUANTITATIVE_NEWS } from "../fixtures/quantitative";
-import { evaluatePublish } from "./evaluate";
+import { SIMPLE_PUBLISH_BLOCKERS, evaluatePublish } from "./evaluate";
 import { RULES, type Finding } from "./findings";
 import type { ArticleForPublish } from "./model";
 
@@ -110,5 +110,41 @@ describe("확장 자리 — 지역 기사 편집 분야 게이트(REG1-17)는 �
 
   it("해당 없는 기사에는 영향이 없다", () => {
     expect(evaluatePublish(TAX_EXPLAINER, BASE_CONTEXT, { extraChecks: [regionalGate] }).canPublish).toBe(true);
+  });
+});
+
+describe("간편 발행 정책(simple — 2026-10-31 PO 결정) — 남길 차단만 막고 나머지 차단은 경고로", () => {
+  it.each(FAILING_SAMPLES.map((s) => [s.id, s] as const))("%s — 차단은 남길 차단만, 낮춘 항목은 경고로 그대로 남는다", (_id, s) => {
+    const result = evaluatePublish(s.article, s.context, { policy: "simple" });
+    const kept = s.expectedBlockers.filter((id) => SIMPLE_PUBLISH_BLOCKERS.has(id));
+    const lowered = s.expectedBlockers.filter((id) => !SIMPLE_PUBLISH_BLOCKERS.has(id));
+    expect(uniqueIds(result.blockers)).toEqual(kept);
+    expect(result.canPublish).toBe(kept.length === 0);
+    // 낮춘 항목은 사라지지 않고 경고(발행 기록)로 남는다 — 같은 ID·문장
+    const warningIds = new Set(uniqueIds(result.warnings));
+    for (const id of [...lowered, ...s.expectedWarnings]) expect(warningIds.has(id)).toBe(true);
+  });
+
+  it("편집 승인·세무 감수 없음(NAV-03)은 막지 않고 경고로 남는다", () => {
+    const article: ArticleForPublish = { ...TAX_EXPLAINER, reviews: [] };
+    const strict = evaluatePublish(article, BASE_CONTEXT);
+    expect(uniqueIds(strict.blockers)).toEqual(["nav03.desk-edit-required", "nav03.tax-review-required"]);
+    const simple = evaluatePublish(article, BASE_CONTEXT, { policy: "simple" });
+    expect(simple.canPublish).toBe(true);
+    expect(simple.blockers).toEqual([]);
+    expect(simple.warnings.filter((f) => f.ruleRef === "NAV-03").map((f) => [f.id, f.level])).toEqual([
+      ["nav03.desk-edit-required", "warn"],
+      ["nav03.tax-review-required", "warn"],
+    ]);
+  });
+
+  it("남길 차단은 모두 규칙 목록에 있는 차단 규칙이다 (경고 규칙을 넣어도 뜻이 없다)", () => {
+    const blockRules = new Set<string>(RULES.filter((r) => r.level === "block").map((r) => r.id));
+    for (const id of SIMPLE_PUBLISH_BLOCKERS) expect(blockRules.has(id)).toBe(true);
+  });
+
+  it("정책을 주지 않으면 strict — 규칙 목록 등급 그대로", () => {
+    const s = FAILING_SAMPLES[0]!;
+    expect(uniqueIds(evaluatePublish(s.article, s.context).blockers)).toEqual(s.expectedBlockers);
   });
 });

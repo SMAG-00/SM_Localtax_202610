@@ -344,6 +344,12 @@ async function draftExplainer(label, { title, format }) {
 }
 const writeBody = (a, extra) => api("PATCH", `/articles/${a.id}`, u.reporter, { body: { blocks: [...baseBlocks(a.srcRef), ...extra], claims: claims(a.srcRef) } });
 const versionOf = async (a) => Number((await one("select version from public.articles where id = $1", [a.id])).version);
+/** 저장 → 점검(GET check) — 간편 발행(2026-10-31 PO 결정)에서 형식 규칙은 막지 않고 경고로 남는다 */
+async function saveAndCheck(a, extra) {
+  await expectStatus(writeBody(a, extra), 200, `저장 ${a.slug}`);
+  const c = await expectStatus(api("GET", `/articles/${a.id}/check`, u.editor), 200, "점검");
+  return { failed: c.body.failed, warnings: c.body.warnings, findings: c.body.findings };
+}
 async function saveAndPublish(a, extra) {
   await expectStatus(writeBody(a, extra), 200, `저장 ${a.slug}`);
   await expectStatus(api("POST", `/articles/${a.id}/reviews`, u.editor, { kind: "desk_edit", decision: "approve" }), 201, "편집 승인");
@@ -742,11 +748,11 @@ test("1) FND-06 — analytics_events 칸 = PRD 14칸, 개인정보·IP·User-Age
 
 // ── 2~4) ART-07·08·09 ───────────────────────────────────
 
-test("2) ART-07 인포그래픽 — 대체 텍스트·같은 내용의 표가 없으면 저장 422(칸 경로·새 버전 0), 블록 없는 형식 인포그래픽은 발행 422 → 다 갖추면 발행 · 화면: 표 기본 접힘·Enter로 펼침·대체 텍스트·원본 비율 · 카드 '인포그래픽' 배지", async () => {
+test("2) ART-07 인포그래픽 — 대체 텍스트·같은 내용의 표가 없으면 저장 422(칸 경로·새 버전 0), 블록 없는 형식 인포그래픽은 경고(간편 발행) → 다 갖추면 발행 · 화면: 표 기본 접힘·Enter로 펼침·대체 텍스트·원본 비율 · 카드 '인포그래픽' 배지", async () => {
   const a = await draftExplainer("infographic", { title: "그림으로 보는 취득세 신고", format: "infographic" });
-  let r = await saveAndPublish(a, []);
-  assert.equal(r.status, 422, show(r));
-  assert.ok(r.body.failed.includes("art07.infographic-required"), show(r));
+  const c = await saveAndCheck(a, []);
+  assert.ok(!c.failed.includes("art07.infographic-required") && c.warnings.includes("art07.infographic-required"), JSON.stringify(c.warnings));
+  let r;
   const version = await versionOf(a);
   const noAlt = await writeBody(a, [infographic(fx.chart, { alt: "  " })]);
   assert.equal(noAlt.status, 422, show(noAlt));
@@ -774,7 +780,7 @@ test("2) ART-07 인포그래픽 — 대체 텍스트·같은 내용의 표가 �
   await list.context.close();
 });
 
-test("3) ART-08 동영상 저장·발행 — youtube-nocookie 임베드가 아닌 주소는 저장 422, 요약 없음·'자막 있음' 미확인·4:3 썸네일은 발행 422 → 다 갖추면 발행(정리한 nocookie 주소로 저장)", async () => {
+test("3) ART-08 동영상 저장·발행 — youtube-nocookie 임베드가 아닌 주소는 저장 422, 요약 없음·'자막 있음' 미확인·4:3 썸네일은 경고(간편 발행) → 다 갖추면 발행(정리한 nocookie 주소로 저장)", async () => {
   const a = await draftExplainer("video", { title: "동영상으로 보는 취득세 신고", format: "video" });
   for (const embedUrl of [`https://www.youtube.com/embed/${VIDEO_ID}`, `http://www.youtube-nocookie.com/embed/${VIDEO_ID}`, `https://www.youtube-nocookie.com.evil.example/embed/${VIDEO_ID}`, `https://youtu.be/${VIDEO_ID}`, `${NOCOOKIE}?autoplay=1`]) {
     const r = await writeBody(a, [video(fx.thumb169, { embedUrl })]);
@@ -782,14 +788,11 @@ test("3) ART-08 동영상 저장·발행 — youtube-nocookie 임베드가 아�
     assert.deepEqual(r.body.errors.map((e) => e.split(":")[0]), [`body.blocks[${EXTRA_AT}].embedUrl`], embedUrl);
   }
   assert.equal(await versionOf(a), 1, "거부된 저장은 새 버전을 만들지 않는다");
-  let r = await saveAndPublish(a, [video(fx.thumb169, { summary: "", captions: false })]);
-  assert.equal(r.status, 422, show(r));
-  assert.deepEqual(r.body.failed.filter((id) => id.startsWith("art08")).sort(), ["art08.captions-unconfirmed", "art08.summary-required"]);
-  r = await saveAndPublish(a, [video(fx.thumb169, { captions: false })]);
-  assert.deepEqual([r.status, r.body.failed?.filter((id) => id.startsWith("art08"))], [422, ["art08.captions-unconfirmed"]], "요약을 쓰면 '자막 있음'만 남는다");
-  r = await saveAndPublish(a, [video(fx.thumb43)]);
-  assert.deepEqual([r.status, r.body.failed?.filter((id) => id.startsWith("art08"))], [422, ["art08.thumbnail-ratio"]], "4:3 썸네일");
-  r = await saveAndPublish(a, [video(fx.thumb169, { embedUrl: ` HTTPS://WWW.YOUTUBE-NOCOOKIE.COM/embed/${VIDEO_ID}?cc_load_policy=1 ` })]);
+  const art08 = (c) => [c.failed.filter((id) => id.startsWith("art08")), c.warnings.filter((id) => id.startsWith("art08")).sort()];
+  assert.deepEqual(art08(await saveAndCheck(a, [video(fx.thumb169, { summary: "", captions: false })])), [[], ["art08.captions-unconfirmed", "art08.summary-required"]]);
+  assert.deepEqual(art08(await saveAndCheck(a, [video(fx.thumb169, { captions: false })])), [[], ["art08.captions-unconfirmed"]], "요약을 쓰면 '자막 있음'만 남는다");
+  assert.deepEqual(art08(await saveAndCheck(a, [video(fx.thumb43)])), [[], ["art08.thumbnail-ratio"]], "4:3 썸네일");
+  const r = await saveAndPublish(a, [video(fx.thumb169, { embedUrl: ` HTTPS://WWW.YOUTUBE-NOCOOKIE.COM/embed/${VIDEO_ID}?cc_load_policy=1 ` })]);
   assert.equal(r.status, 200, show(r));
   assert.equal((await one("select body from public.articles where id = $1", [a.id])).body.blocks[EXTRA_AT].embedUrl, `${NOCOOKIE}?cc_load_policy=1`);
 });
@@ -833,21 +836,23 @@ test("3b) ART-08 동영상 화면 — 재생을 누르기 전 유튜브·구글 
   assert.equal((await fetch(`${base}/news/video`)).status, 404, "다시 끄면 404");
 });
 
-test("4) ART-09 포토 — 사진 출처·이용 조건·대체 텍스트 중 하나라도 없으면 발행 422(그 사진 위치), 다 갖추면 발행 · 사진마다 표기 줄 · 원본 비율(가로·세로) · /news/photo는 형식 포토만", async () => {
+test("4) ART-09 포토 — 사진 출처·이용 조건이 없으면 발행 422(그 사진 위치 — 저작권, 간편 발행에서도), 사진 없음·대체 텍스트 없음은 경고, 다 갖추면 발행 · 사진마다 표기 줄 · 원본 비율(가로·세로) · /news/photo는 형식 포토만", async () => {
   const a = await draftExplainer("photo", { title: "사진으로 보는 신고 창구", format: "photo" });
-  let r = await saveAndPublish(a, []);
-  assert.equal(r.status, 422, show(r));
-  assert.ok(r.body.failed.includes("art09.photos-required"));
-  for (const [media, id, over] of [
-    [fx.photoNoCredit, "art09.photo-credit", {}],
-    [fx.photoNoLicense, "art09.photo-license", {}],
-    [fx.photoNoAlt, "art09.photo-alt", { alt: "" }],
+  const none = await saveAndCheck(a, []);
+  assert.ok(!none.failed.includes("art09.photos-required") && none.warnings.includes("art09.photos-required"), "사진 없음은 경고");
+  let r;
+  for (const [media, id] of [
+    [fx.photoNoCredit, "art09.photo-credit"],
+    [fx.photoNoLicense, "art09.photo-license"],
   ]) {
-    r = await saveAndPublish(a, [photo(fx.photoWide, 1), photo(media, 2, over)]);
+    r = await saveAndPublish(a, [photo(fx.photoWide, 1), photo(media, 2)]);
     assert.equal(r.status, 422, show(r));
     assert.deepEqual(r.body.failed.filter((f) => f.startsWith("art09")), [id]);
     assert.deepEqual(r.body.findings.find((f) => f.id === id).location, { field: "blocks", blockIndex: EXTRA_AT + 1, phrase: media.mediaId });
   }
+  const noAlt = await saveAndCheck(a, [photo(fx.photoWide, 1), photo(fx.photoNoAlt, 2, { alt: "" })]);
+  assert.deepEqual(noAlt.failed.filter((f) => f.startsWith("art09")), [], "대체 텍스트 없음은 막지 않는다");
+  assert.deepEqual(noAlt.findings.find((f) => f.id === "art09.photo-alt").location, { field: "blocks", blockIndex: EXTRA_AT + 1, phrase: fx.photoNoAlt.mediaId });
   r = await saveAndPublish(a, [photo(fx.photoWide, 1), { type: "paragraph", text: "두 번째 사진은 세로로 찍었다." }, photo(fx.photoTall, 2)]);
   assert.equal(r.status, 200, show(r));
   const { page, context } = await openSite(a.href);

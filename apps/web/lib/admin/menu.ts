@@ -142,10 +142,11 @@ export const OPERATIONS_MENU_IDS = ["sponsored", "partners", "store", "brand", "
 export const ADMIN_MENU_IDS = ["metrics", "settings", "members"] as const;
 
 /**
- * 날마다 쓰는 메뉴 (PO 단순화 2026-10-31) — 메뉴 줄에 처음부터 보이는 항목. 첫 화면 · 기사 · 사진 보관함 · 검토·발행(검토 대기) · 브리핑 · 측정 지표(통계 대시보드).
+ * 날마다 쓰는 메뉴 (PO 단순화 2026-10-31) — 메뉴 줄에 처음부터 보이는 항목. 첫 화면 · 기사 · 사진 보관함 · 브리핑 · 측정 지표(통계 대시보드).
+ * 검토·발행은 간편 발행(작성자가 기사 화면에서 바로 발행) 뒤로 '더 보기 → 기사 만들기·발행'으로 옮겼다.
  * 보이는 조건은 RULES 그대로(허용 작업에서만)이고, 이 항목들은 아래 '더 보기' 묶음에 다시 나오지 않는다.
  */
-export const DAILY_MENU_IDS = ["dashboard", "articles", "media", "reviews", "brief", "metrics"] as const;
+export const DAILY_MENU_IDS = ["dashboard", "articles", "media", "brief", "metrics"] as const;
 
 /**
  * '더 보기' 안의 메뉴 묶음 (F4) — 날마다 쓰는 메뉴를 뺀 나머지 항목을 기존 분류 그대로 7개 그룹으로 둔다. 그룹을 누르면 안의 항목이 펼쳐진다.
@@ -153,7 +154,7 @@ export const DAILY_MENU_IDS = ["dashboard", "articles", "media", "reviews", "bri
  * 항목의 보이는 조건(when)은 위 RULES 그대로이고, 보이는 항목이 0개인 그룹은 숨긴다.
  */
 export const MENU_GROUPS = [
-  { id: "make", label: "기사 만들기·발행", itemIds: ["assignments", "people", "guides", "ai-desk"] },
+  { id: "make", label: "기사 만들기·발행", itemIds: ["assignments", "reviews", "people", "guides", "ai-desk"] },
   { id: "place", label: "배치·노출", itemIds: ["placement", "home", "campaigns", "hub-points", "realestate-weekly", "situations", "channels", "seo"] },
   {
     id: "data",

@@ -4,6 +4,7 @@
 //  · 편집 행위(편집 승인·발행·정렬·HOT·홈 배치·발행 뒤 수정·정정 결정)는 editor 역할이 있어야 한다 — 관리자도 같다 (PO 결정 2026-10-17).
 //  · 작성 기자와 편집 승인자는 다른 사람이어야 한다 (NAV-12 — DB 트리거도 막는다).
 //    예외 (2026-10-31 PO 결정 '본인 발행'): 편집 책임자는 세무 감수가 필요 없는 자기 글을 본인 발행할 수 있다 — 칼럼 제외, checklist.selfPublish 기록.
+//  · 간편 발행 (2026-10-31 PO 결정): 기자는 자기 기사를 바로 발행한다(article.publish) — 발행 API가 편집 승인을 authorPublish로 함께 남긴다. 칼럼 제외(BR-08).
 //  · 세무 감수 서명은 reviewer만 한다 (기사와 상황 카드의 '먼저 확인할 것' 모두 — review.tax_review).
 //  · 상황 카드(UX-05)는 기자·편집 책임자·관리자가 쓰고, 공개·허브 배치는 편집 책임자만 한다 (PRD-00 6장 'CMS 작성·상황 카드' 행 · 발행 승인·홈 배치는 editor).
 //  · 편집국 외 역할(ad_ops·store_ops·brand_ops·expert_ops)은 기사 작성·승인·정렬 권한이 없다. ad_ops는 sponsored 콘텐츠만 등록한다.
@@ -349,12 +350,16 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     case "review.tax_review":
       return has(viewer, "reviewer") ? ALLOW : deny("세무 감수 서명은 세무 감수위원(reviewer)만 할 수 있습니다");
 
-    // 발행 — 편집 책임자만. 칼럼(opinion)은 필자 본인이 자기 칼럼을 발행하지 못한다 (BR-08 — DB 트리거도 발행 기록으로 막는다)
+    // 발행 — 간편 발행 (2026-10-31 PO 결정): 편집 책임자는 모든 기사, 기자는 자기 기사를 바로 발행한다.
+    // 칼럼(opinion)은 필자 본인이 자기 칼럼을 발행하지 못한다 (BR-08 — DB 트리거도 발행 기록으로 막는다)
     case "article.publish": {
-      if (!has(viewer, "editor")) return deny(EDITOR_ONLY);
-      if (resource && resource.contentType === "opinion" && resource.authorUserId !== null && resource.authorUserId === viewer.userId) {
+      if (!has(viewer, "editor", "reporter")) return deny("기사 발행은 자기 기사를 쓴 기자(reporter)와 편집 책임자(editor)만 합니다 — 편집 신뢰 규칙은 관리자에게도 같습니다");
+      if (!resource) return ALLOW;
+      const isAuthor = resource.authorUserId !== null && resource.authorUserId === viewer.userId;
+      if (resource.contentType === "opinion" && isAuthor) {
         return deny("칼럼 필자 본인은 자기 칼럼을 발행할 수 없습니다 — 다른 편집 책임자가 발행합니다 (BR-08)");
       }
+      if (!has(viewer, "editor") && !isAuthor) return deny("기자는 자기 기사만 발행합니다 — 다른 사람의 기사는 편집 책임자가 발행합니다");
       return ALLOW;
     }
 

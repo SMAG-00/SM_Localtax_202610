@@ -55,7 +55,7 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "review.desk_edit":       [X, O, X, X, X, X, X, X, X],
   "review.tax_review":      [X, X, O, X, X, X, X, X, X],
   "review.sponsor_check":   [X, O, X, X, X, X, X, X, X],
-  "article.publish":        [X, O, X, X, X, X, X, X, X],
+  "article.publish":        [O, O, X, X, X, X, X, X, X], // 간편 발행(2026-10-31) — 기자는 자기 기사만 (대상 판정에서 다시 본다)
   "article.sort":           [X, O, X, X, X, X, X, X, X],
   "article.hot":            [X, O, X, X, X, X, X, X, X],
   "article.home":           [X, O, X, X, X, X, X, X, X],
@@ -461,7 +461,28 @@ describe("역할 값", () => {
     const both = viewer(["reporter", "reviewer"]);
     expect(can(both, "article.create", article())).toBe(true);
     expect(can(both, "review.tax_review", article())).toBe(true);
-    expect(can(both, "article.publish", article())).toBe(false);
+    expect(can(both, "article.publish", article()), "남의 기사는 기자가 발행하지 못한다").toBe(false);
+    expect(can(both, "article.publish", article({ authorUserId: "u-self" }))).toBe(true);
+  });
+});
+
+describe("간편 발행 (2026-10-31 PO 결정) — 기자는 자기 기사를 바로 발행, 편집 책임자는 모든 기사", () => {
+  test("기자는 자기 기사(보도·해설)를 발행할 수 있다", () => {
+    for (const contentType of ["reported_news", "explainer"]) {
+      expect(check(viewer(["reporter"], false, "u-author"), "article.publish", article({ authorUserId: "u-author", contentType }))).toEqual({ allowed: true });
+    }
+  });
+  test("기자는 남의 기사·작성자를 모르는 기사를 발행할 수 없다 — 사유에 편집 책임자", () => {
+    for (const authorUserId of ["u-other", null]) {
+      const decision = check(viewer(["reporter"], false, "u-author"), "article.publish", article({ authorUserId }));
+      expect(decision).toEqual({ allowed: false, reason: expect.stringContaining("편집 책임자") });
+    }
+  });
+  test("기자도 자기 칼럼은 발행할 수 없다 (BR-08)", () => {
+    expect(check(viewer(["reporter"], false, "u-author"), "article.publish", article({ authorUserId: "u-author", contentType: "opinion" }))).toEqual({ allowed: false, reason: expect.stringContaining("BR-08") });
+  });
+  test("편집 책임자는 남의 기사도 발행한다", () => {
+    expect(can(viewer(["editor"], false, "u-other"), "article.publish", article({ authorUserId: "u-author" }))).toBe(true);
   });
 });
 

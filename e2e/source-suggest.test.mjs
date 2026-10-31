@@ -1,8 +1,9 @@
 // 출처 자동 채우기 E2E (F5) — docs/dev/F5_설계.md
 // standalone 빌드를 로컬 Supabase에 붙인다. 외부 사이트는 부르지 않는다.
+//  출처 칸은 기사 편집 화면의 접힌 '그 밖의 칸' 안에 있다(간편 발행 2026-10-31) — 화면에서 펼친 뒤 쓴다
 //  a) 본문에 링크 둘(시험용 로컬 링크 = 기타 종류 · 8443 포트 .go.kr = 공식 문서 → 서버 SSRF 규칙이 요청 전에 거부) → [본문에서 출처 자동 채우기] → 후보 카드 2장
 //  b) 공식 문서 후보는 확인일·이용 조건·공공누리 유형이 비어 [이대로 추가]가 꺼지고 이유 문장이 보인다
-//  c) 기타 후보 [이대로 추가] → 출처가 저장되고(기존 POST) 단계표 출처 ✓
+//  c) 기타 후보 [이대로 추가] → 출처가 저장된다(기존 POST)
 //  d) 공식 문서 후보 [고쳐서 추가] → 출처 더하기 폼에 값이 채워진다
 //  e) 360px 가로 스크롤 0
 // 프로덕션 코드에 시험 전용 허용 분기는 없다 — 로컬 주소가 막히는 규칙 그대로를 시험한다.
@@ -64,22 +65,23 @@ async function loginAt(page, user, next) {
   await page.getByRole("button", { name: "로그인" }).click();
   await page.waitForURL((url) => url.pathname === next);
 }
+/** '그 밖의 칸'을 눌러 펼친다 — 출처 칸이 그 안에 있다 */
+async function openMore(page) {
+  await page.locator("details#more-sections > summary").click();
+  await page.locator("#source-suggest-button").waitFor();
+}
 const noHScroll = async (page) => {
   const { scrollWidth, clientWidth } = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }));
   assert.ok(scrollWidth <= clientWidth, `가로 스크롤 ${scrollWidth} > ${clientWidth}`);
 };
 
-test("a~d) 자동 채우기 → 후보 카드 → 막힘 문장 → 이대로 추가 → 단계표 ✓ → 고쳐서 추가", async () => {
+test("a~d) 그 밖의 칸 펼치기 → 자동 채우기 → 후보 카드 → 막힘 문장 → 이대로 추가 → 고쳐서 추가", async () => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   try {
     const page = await context.newPage();
     await loginAt(page, u.reporter, `/admin/articles/${fx.article.id}`);
-    await page.getByTestId("publish-steps").waitFor();
-    assert.equal(await page.getByTestId("step-status-sources").innerText(), "할 일");
-    assert.match(await page.locator('[data-check="sources"]').innerText(), /본문 링크에서 자동으로 채워 드립니다 — 확인 후 추가/);
-
-    await page.getByTestId("step-go-sources").click();
-    assert.equal(await page.evaluate(() => document.activeElement?.id), "source-suggest-button");
+    assert.equal(await page.locator("#source-suggest-button").isVisible(), false, "출처 칸은 처음에 접혀 있다");
+    await openMore(page);
     await page.click("#source-suggest-button");
     const cards = page.getByTestId("suggest-card");
     await cards.first().waitFor();
@@ -98,9 +100,10 @@ test("a~d) 자동 채우기 → 후보 카드 → 막힘 문장 → 이대로 �
     assert.equal(await gov.getByTestId("suggest-add").isDisabled(), true);
     assert.match(await gov.innerText(), /기본 포트\(443\)가 아닌 주소는 확인하지 않습니다/);
 
-    // c) 기타 후보 이대로 추가 → 출처 저장 → 단계표 ✓
+    // c) 기타 후보 이대로 추가 → 출처 저장
+    const added = page.waitForResponse((res) => res.request().method() === "POST" && new URL(res.url()).pathname === `/api/admin/articles/${fx.article.id}/sources`);
     await local.getByTestId("suggest-add").click();
-    await page.waitForFunction(() => document.querySelector('[data-testid="step-status-sources"]')?.textContent === "끝남 ✓");
+    assert.equal((await added).status(), 201);
     const row = await one("select kind, title, source_url from public.article_sources where article_id = $1", [fx.article.id]);
     assert.equal(row.kind, "other");
     assert.equal(row.title, "시험 기관 · 2026.10.1");
@@ -127,6 +130,7 @@ test("e) 360px — 후보 카드가 있어도 가로 스크롤 0", async () => {
   try {
     const page = await context.newPage();
     await loginAt(page, u.reporter, `/admin/articles/${fx.article.id}`);
+    await openMore(page);
     await page.click("#source-suggest-button");
     await page.getByTestId("suggest-card").first().waitFor();
     await noHScroll(page);

@@ -34,7 +34,8 @@ export default async function NewArticlePage({ searchParams }: Props) {
   const fromMethod = assignment ? templateForMethod(assignment.method) : null;
   const requested = queryValue(sp.template);
   const wanted = isTemplateId(requested) ? requested : fromMethod?.templateId;
-  const templateId = templates.find((t) => t.id === wanted)?.id ?? templates[0]!.id;
+  // 기본은 세법 해설 — 전문기자·회계사·세무사가 쓰는 글이 대부분이다 (간편 발행 2026-10-31). 기획·주소로 고른 템플릿이 있으면 그것
+  const templateId = templates.find((t) => t.id === wanted)?.id ?? templates.find((t) => t.id === "explainer")?.id ?? templates[0]!.id;
   const template = templateById(templateId);
   const [categories, partners] = await Promise.all([listCategories(db), listPartners(db)]);
 

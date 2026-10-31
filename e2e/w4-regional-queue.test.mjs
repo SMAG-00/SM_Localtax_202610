@@ -246,8 +246,10 @@ test("d) 단계 순서 — DB 초안 → 발행 거부 · 승인 단계를 되�
   const desk = await api("POST", `/articles/${s.id}/reviews`, u.editor, { kind: "desk_edit", decision: "approve", checklist: REGIONAL });
   assert.equal(desk.status, 201, show(desk));
   assert.notEqual(await statusOf(s), "approved", "세무 감수 반려 상태 — 승인 단계 0");
+  // 간편 발행 (2026-10-31) — 빠진 감수는 막지 않지만, 감수위원이 반려한 원고는 발행하지 않는다
   const early = await publish(s);
-  assert.equal(early.status, 422, show(early));
+  assert.equal(early.status, 409, show(early));
+  assert.match(early.body.error, /세무 감수위원이 반려·보류한 원고입니다/);
   // 감수 승인 → 승인 단계 → 발행
   const tax = await api("POST", `/articles/${s.id}/reviews`, u.reviewer, { kind: "tax_review", decision: "approve" });
   assert.equal(tax.status, 201, show(tax));
@@ -331,6 +333,8 @@ test("f) 화면 — 점검 패널 편집 경고 묶음 · 판정 줄 큐 링크 
     await login(page, u.editor);
     // 점검 패널 — 편집 경고 묶음 (근거 없는 지역 수치·오래된 통계)
     await page.goto(`${base}/admin/articles/${w.id}`);
+    // 점검 결과는 '점검 결과 보기'에 접혀 있다 (간편 발행 2026-10-31) — 눌러서 편다
+    await page.locator("details#check-fold > summary").click();
     const group = page.locator('[data-testid="check-editorial-warnings"]');
     await group.waitFor();
     const rules = await group.locator("li").evaluateAll((els) => els.map((e) => e.getAttribute("data-rule")));
@@ -339,6 +343,7 @@ test("f) 화면 — 점검 패널 편집 경고 묶음 · 판정 줄 큐 링크 
     assert.equal(await page.locator('[data-testid="check-warnings"] li[data-rule^="reg1_14."]').count(), 0, "일반 경고 목록엔 0");
     // 판정 줄 — 별도 상품 상태 + 큐 링크
     await page.goto(`${base}/admin/articles/${shot.id}`);
+    await page.locator("details#more-sections > summary").click();
     const judgePanel = page.locator('[data-part="regional-judge"][data-state="separate_product"]');
     await judgePanel.waitFor();
     assert.equal(await judgePanel.locator('[data-part="separate-product-link"] a').getAttribute("href"), "/admin/regions#separate-product-open");

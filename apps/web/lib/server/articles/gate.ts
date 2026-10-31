@@ -15,6 +15,7 @@ import {
   type Finding,
   type KoglUsage,
   type PublishEvaluation,
+  type PublishPolicy,
 } from "@ltr/editorial";
 import { parseKoglUsage, parseOfficialSourceTypes } from "@/lib/admin/official-source-rules";
 import { parseRegionalJudgeFields } from "@/lib/admin/regional-rules";
@@ -56,6 +57,8 @@ export interface GateOptions {
   publisherName: string;
   /** 같은 제목의 다른 공개 기사 (고유 제목·canonical 중복 점검) */
   peers: readonly TitlePeer[];
+  /** 판정 정책 — 기본 simple(간편 발행 2026-10-31 PO 결정). strict는 규칙 목록 등급 그대로(규칙 대응 시험용) */
+  policy?: PublishPolicy;
 }
 
 export interface GateResult {
@@ -137,7 +140,7 @@ export function runGate(graph: ArticleGraph, settings: GateSettings, opts: GateO
     officialSourceTypes: settings.officialSourceTypes ?? OFFICIAL_SOURCE_TYPES,
     regionalJudgeFields: settings.regionalJudgeFields ?? REGIONAL_JUDGE_FIELDS_DEFAULT,
     staleStatisticsDays: settings.staleStatisticsDays ?? STALE_STATISTICS_DAYS_DEFAULT,
-  });
+  }, { policy: opts.policy ?? "simple" }); // 간편 발행 (2026-10-31 PO 결정) — 남길 차단(법적 의무·기술·DB 같은 조건)만 막고 나머지는 경고
 
   return {
     article,
@@ -157,14 +160,8 @@ export function saveChecks(article: ArticleForPublish, dictionaries: Dictionarie
   return findings.filter((f) => f.ruleRef === "UX-01" || f.ruleRef === "UX-03" || f.ruleRef === "CAT-05");
 }
 
-/** 발행 뒤 수정에서 막는 내용 항목 — 금지·공포 표현, 개인정보 형식, 박스 세액·감면 단정 (승인 기록은 발행 때 이미 확인했다) */
-export const POST_PUBLISH_BLOCKERS: ReadonlySet<string> = new Set([
-  "ux01.forbidden-phrase",
-  "ux03.fear-phrase",
-  "cat05.pii",
-  "core01.tax-amount",
-  "core01.forbidden-phrase",
-]);
+/** 발행 뒤 수정에서 막는 내용 항목 — 개인정보 형식만 (간편 발행 2026-10-31: 금지·공포 표현·박스 세액은 발행 때처럼 경고로만 남긴다) */
+export const POST_PUBLISH_BLOCKERS: ReadonlySet<string> = new Set(["cat05.pii"]);
 
 /** settings 행 → 판정 설정. 사전이 없으면 문제 목록에 적는다(닫힌 쪽으로 실패 — 빈 사전으로 발행하지 않는다) */
 export function parseGateSettings(

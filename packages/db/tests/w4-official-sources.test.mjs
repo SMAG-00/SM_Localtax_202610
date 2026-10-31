@@ -206,30 +206,26 @@ test("발행 검사 — 공식 자료의 발표일·기준일·지역 단위·�
     assert.ok((await attempt("update public.articles set summary = '시험용 요약' where id = $1", [ok.id])).ok);
   }));
 
-test("고시·조례 해설 — 고시·조례 자료를 쓴 해설(explainer·guide)은 세무 감수 승인 없이 발행 거부, 보도는 감수 없이 발행, 감수 승인 뒤 발행", () =>
+test("고시·조례 해설 — 간편 발행(2026-10-31 PO 결정): 세무 감수 승인 없이도 발행되고(작성자 책임), 세무 감수 상태는 approved가 되지 않는다 · 공식 자료 칸 검사는 그대로", () =>
   tx(async () => {
-    const reviewer = (await client.query("insert into public.people (slug, name, roles) values ($1, '시험용 세무 감수위원', '{reviewer}') returning id", [uniq("rv")])).rows[0].id;
     for (const sourceType of ["notice", "ordinance"]) {
-      for (const contentType of ["explainer", "guide"]) {
+      for (const contentType of ["explainer", "guide", "reported_news"]) {
         const a = await article({ content_type: contentType });
         assert.ok((await source(a.id, "official_doc", { ...FULL, source_type: sourceType })).ok);
         const r = await publish(a.id);
-        assert.equal(r.ok, false, `${contentType} + ${sourceType} 감수 없이 발행됐다`);
-        assert.match(r.message, /고시·조례 자료를 쓴 해설은 세무 감수 승인 뒤에만/);
-        await client.query("insert into public.editorial_reviews (article_id, version, kind, reviewer_id, decision) values ($1, 1, 'tax_review', $2, 'approve')", [a.id, reviewer]);
-        assert.ok((await publish(a.id)).ok, `${contentType} + ${sourceType} 감수 승인 뒤 발행`);
+        assert.ok(r.ok, `${contentType} + ${sourceType} 감수 없이 발행: ${r.message ?? ""}`);
+        const row = (await client.query("select status, tax_review_status from public.articles where id = $1", [a.id])).rows[0];
+        assert.equal(row.status, "published");
+        assert.notEqual(row.tax_review_status, "approved", "감수 기록 없이 감수 완료 상태가 되지 않는다");
       }
-      const news = await article({ content_type: "reported_news" });
-      assert.ok((await source(news.id, "official_doc", { ...FULL, source_type: sourceType })).ok);
-      assert.ok((await publish(news.id)).ok, `보도 + ${sourceType} — 감수 불필요`);
     }
+    // 발행된 해설에 고시 자료를 더해도 된다 — 공식 자료 칸이 빠진 출처는 여전히 거부(REG1-09)
     const plain = await article({ content_type: "explainer" });
     assert.ok((await source(plain.id, "dataset", { ...FULL, source_type: "budget_settlement" })).ok);
-    assert.ok((await publish(plain.id)).ok, "고시·조례 밖 자료의 해설은 이 규칙 밖");
-    // 감수 안 된 발행 해설에 고시 자료를 더하는 우회도 실패
-    const r = await source(plain.id, "official_doc", { ...FULL, source_type: "notice" }, "service_role");
-    assert.equal(r.ok, false);
-    assert.match(r.message, /세무 감수 승인 뒤에만/);
+    assert.ok((await publish(plain.id)).ok);
+    assert.ok((await source(plain.id, "official_doc", { ...FULL, source_type: "notice" }, "service_role")).ok, "감수 없는 발행 해설에 고시 자료 추가");
+    const missing = await source(plain.id, "official_doc", { ...FULL, source_type: "notice", reference_date: null }, "service_role");
+    assert.equal(missing.ok, false, "공식 자료 칸이 빈 출처는 발행 기사에 넣을 수 없다");
   }));
 
 test("원자료 새 버전 — 값이 있던 칸은 덮어쓰기 거부, 확인일 갱신·빈 칸 채우기는 됨, 새 버전은 사유 필수·한 번만·같은 기사만, 스냅샷 그대로", () =>

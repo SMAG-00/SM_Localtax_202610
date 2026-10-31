@@ -76,6 +76,8 @@ after(async () => {
 
 async function interactive(page) {
   await page.waitForFunction(() => [...document.querySelectorAll("button")].some((b) => /^(로그아웃|로그인)$/.test(b.textContent.trim()) && !b.disabled));
+  // 기사 편집 화면의 점검 결과는 접혀 있다(간편 발행 2026-10-31) — 이 시험은 점검 패널을 읽으므로 편다
+  await page.evaluate(() => document.querySelectorAll("details#check-fold").forEach((d) => (d.open = true)));
 }
 
 async function open(page, path) {
@@ -104,11 +106,11 @@ const menuLabels = (page) => page.locator('nav[aria-label="편집국 메뉴"] a'
 // 그룹 버튼의 이름 칸만 읽는다 — 그룹은 '더 보기' 안에 접혀 있어 innerText가 숨은 펼침 표시(+)까지 읽는다
 const menuGroupLabels = (page) => page.locator('nav[aria-label="편집국 메뉴"] button[data-group] > span:first-child').allTextContents();
 
-/** 점검 패널의 차단 규칙 ID — 다시 점검을 마칠 때까지 기다린다 */
-async function blockerRules(page) {
+/** 점검 패널의 경고 규칙 ID — 다시 점검을 마칠 때까지 기다린다 (간편 발행에서 금지 표현은 발행을 막지 않고 경고로 남는다) */
+async function warningRules(page) {
   const panel = page.getByTestId("check-panel");
-  await panel.getByTestId("blocker-count").waitFor();
-  return panel.locator('[data-testid="check-blockers"] li').evaluateAll((els) => els.map((e) => e.getAttribute("data-rule")));
+  await panel.getByTestId("warning-count").waitFor();
+  return panel.locator('[data-testid="check-warnings"] li').evaluateAll((els) => els.map((e) => e.getAttribute("data-rule")));
 }
 
 // ── a) 역할별 메뉴 ─────────────────────────────────────
@@ -199,7 +201,7 @@ test("b) 회원·역할 — 편집 책임자 + 광고 담당은 화면이 막고
 
 // ── c) 사전 → 점검 패널 ───────────────────────────────
 
-test("c) 사전 화면에서 금지 표현을 더하면 기사 편집 화면 점검 패널이 차단하고, 빼면 사라진다 (배포 없음)", async () => {
+test("c) 사전 화면에서 금지 표현을 더하면 기사 편집 화면 점검 패널에 경고로 나오고(간편 발행 — 발행은 막지 않음), 빼면 사라진다 (배포 없음)", async () => {
   const phrase = `화면금지${staff.run}`;
   const created = await api("POST", "/articles", u.reporter, {
     slug: `e2e-ui-dict-${staff.run}`,
@@ -214,7 +216,7 @@ test("c) 사전 화면에서 금지 표현을 더하면 기사 편집 화면 점
 
   const page = await login(u.editor);
   await open(page, `/admin/articles/${articleId}`);
-  assert.ok(!(await blockerRules(page)).includes("ux01.forbidden-phrase"));
+  assert.ok(!(await warningRules(page)).includes("ux01.forbidden-phrase"));
 
   await open(page, "/admin/dictionaries?tab=forbidden");
   await page.fill("#dict-forbidden-phrase", phrase);
@@ -224,7 +226,8 @@ test("c) 사전 화면에서 금지 표현을 더하면 기사 편집 화면 점
   assert.ok((await one("select value from public.settings where key = 'forbidden_phrases'")).value.phrases.includes(phrase));
 
   await open(page, `/admin/articles/${articleId}`);
-  await page.getByTestId("check-panel").locator('[data-testid="check-blockers"] li[data-rule="ux01.forbidden-phrase"]').waitFor();
+  await page.getByTestId("check-panel").locator('[data-testid="check-warnings"] li[data-rule="ux01.forbidden-phrase"]').waitFor();
+  assert.equal(await page.getByTestId("check-panel").locator('[data-testid="check-blockers"] li[data-rule="ux01.forbidden-phrase"]').count(), 0, "발행을 막는 항목은 아니다");
   await page.getByTestId("check-panel").getByText(phrase).first().waitFor();
 
   await open(page, "/admin/dictionaries?tab=forbidden");
@@ -233,7 +236,7 @@ test("c) 사전 화면에서 금지 표현을 더하면 기사 편집 화면 점
   assert.ok(!(await one("select value from public.settings where key = 'forbidden_phrases'")).value.phrases.includes(phrase));
 
   await open(page, `/admin/articles/${articleId}`);
-  assert.ok(!(await blockerRules(page)).includes("ux01.forbidden-phrase"), "사전에서 빼면 다음 점검부터 막히지 않는다");
+  assert.ok(!(await warningRules(page)).includes("ux01.forbidden-phrase"), "사전에서 빼면 다음 점검부터 경고도 없다");
 });
 
 // ── c2) 쉬운 말 사전 — 저장 경고·공개 상태 (W2-d 3단계 — GLO-01) ─────────────
