@@ -199,7 +199,7 @@ export const NEXT_ACTION_LABELS: Readonly<Record<NextActionKey, string>> = {
 export const HOME_BRIEFING_TITLE_PREFIX = "부동산·지방세 브리핑";
 
 /** 홈 섹션 — 순서 고정 (HOME-01 · PRD_최종 §4.1) */
-export const HOME_SECTION_KEYS = ["hero", "shortcuts", "fields", "briefing", "latest_reports", "weekly_hot", "amendments", "column", "product", "experts"] as const;
+export const HOME_SECTION_KEYS = ["hero", "popular", "fields", "briefing", "latest_reports", "weekly_hot", "amendments", "column", "product", "experts"] as const;
 export type HomeSectionKey = (typeof HOME_SECTION_KEYS)[number];
 
 /** 기사 하단 정책 링크 7종 (ART-02 · PRD_최종 §4.1) — 정책 페이지가 공개 승인되면(기능 키) 나온다 (HELP-05) */
@@ -220,6 +220,8 @@ export const CONTENT_TYPE_NAMES: Readonly<Record<string, string>> = ARTICLE_TYPE
 export const LIMITS = {
   /** HOME-04 최신 자체 취재 */
   homeLatestReports: 5,
+  /** 홈 최신 인기글 (PO 2026-11-01 — 바로가기 블록 자리) — 많이 본 기사 순위 위에서 5건 */
+  homePopular: 5,
   /** HOME-03 트래커 하이라이트 1~3 · 스토리 3~6 (DB 트리거와 같은 상한) */
   trackers: 3,
   storiesMin: 3,
@@ -293,6 +295,8 @@ const UNBUILT_PREFIXES = ["/local/events"] as const;
 export const GLOSSARY_HREF = "/glossary";
 /** 형식별 목록 (W2-c 4단계 — ART-08 · ART-09). 기사 slug로 쓸 수 없는 예약 이름(ART-01) */
 export const VIDEO_LIST_HREF = "/news/video";
+/** 많이 본 기사 목록 (ART-11) — 홈 최신 인기글의 [더 보기] */
+export const POPULAR_HREF = "/news/popular";
 export const PHOTO_LIST_HREF = "/news/photo";
 /** 정책 페이지 묶음(W2-e) — 공개 승인된 정책 페이지(POLICY_LINKS 주소 그대로)만 열린다 (HELP-05) */
 /** 고객센터 폼 화면 (W2-e 5단계 — 기사 제보 /help/report는 POLICY_LINKS가 먼저 판정한다) */

@@ -12,9 +12,9 @@ describe("히어로 강조 낱말", () => {
 });
 
 describe("섹션 바탕 — 보이는 순서대로 ivory ↔ ivory-dark", () => {
-  test("모든 섹션이 보이면 바로가기부터 ivory, 다음 ivory-dark … (히어로는 세지 않는다)", () => {
+  test("모든 섹션이 보이면 최신 인기글부터 ivory, 다음 ivory-dark … (히어로는 세지 않는다)", () => {
     expect(sectionTones(HOME_SECTION_KEYS).map((t) => `${t.key}:${t.tone}`)).toEqual([
-      "shortcuts:ivory",
+      "popular:ivory",
       "fields:ivory-dark",
       "briefing:ivory",
       "latest_reports:ivory-dark",
@@ -56,7 +56,7 @@ describe("섹션 머리 글자", () => {
     expect(Object.keys(SECTION_HEADINGS)).toEqual(HOME_SECTION_KEYS.filter((k) => k !== "hero"));
     expect(SECTION_HEADINGS.briefing).toEqual({ eyebrow: "BRIEFING", title: "이번 주 브리핑" });
     expect(SECTION_HEADINGS.latest_reports.title).toBe("최신 자체 취재");
-    expect(SECTION_HEADINGS.shortcuts).toEqual({ title: "바로가기" }); // 영문 아이브로 없음 (PO 2026-10-26)
+    expect(SECTION_HEADINGS.popular).toEqual({ eyebrow: "POPULAR", title: "최신 인기글" }); // 바로가기 블록 자리 (PO 2026-11-01)
     expect(SECTION_HEADINGS.amendments.title).toBe("개정 트래커 하이라이트");
   });
 });

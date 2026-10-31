@@ -64,6 +64,11 @@ export async function getPopularList(): Promise<PopularList> {
   return readPopular(settings.popular.listSize);
 }
 
+/** 홈 최신 인기글 (PO 2026-11-01) — 같은 순위 위에서 LIMITS.homePopular건 */
+export async function readHomePopular(): Promise<ArticleListItem[]> {
+  return (await readPopular(LIMITS.homePopular)).items;
+}
+
 /** 기사 사이드바 — 지금 보는 기사를 빼고 sidebar_size건 */
 export async function readPopularSidebar(currentId: number): Promise<ArticleListItem[]> {
   const settings = await readPublicSettings();

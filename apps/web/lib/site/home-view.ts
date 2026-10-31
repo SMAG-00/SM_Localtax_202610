@@ -17,7 +17,7 @@ type BodySectionKey = Exclude<HomeSectionKey, "hero">;
 
 /** 섹션 머리 — 아이브로(영문, 없을 수 있음)와 제목. 제목은 PRD 화면 표의 섹션 이름 그대로 */
 export const SECTION_HEADINGS: Readonly<Record<BodySectionKey, { eyebrow?: string; title: string }>> = {
-  shortcuts: { title: "바로가기" },
+  popular: { eyebrow: "POPULAR", title: "최신 인기글" },
   fields: { eyebrow: "FIELDS", title: "4대 분야" },
   briefing: { eyebrow: "BRIEFING", title: "이번 주 브리핑" },
   latest_reports: { eyebrow: "NEWS", title: "최신 자체 취재" },

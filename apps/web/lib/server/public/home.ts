@@ -1,13 +1,11 @@
 import "server-only";
-import { buildShortcuts, parseShortcutCopy } from "./shortcuts-logic";
-import { readMemberInterests } from "./member-interests";
-import { readShortcutInputs } from "./shortcuts";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import { latestChangedTracker, trackerState, type ArticleListItem, type TrackerSource } from "./cards";
 import { HOME_BRIEFING_TITLE_PREFIX, LIMITS } from "./constants";
 import { publicDb, rowsOf } from "./db";
 import { activeCurations, closedHomeSections, homeSections, latestReports, pickBriefing, pickStories, pickTrackers, type AmendmentsSection, type HomeSection } from "./home-logic";
+import { readHomePopular } from "./rankings";
 import { getSignatureHome } from "./signature";
 import { getHomeProduct } from "./store";
 import { readHubTaxPoints } from "./hub-points";
@@ -78,7 +76,7 @@ export async function getHomeAmendments(now: Date = new Date()): Promise<{ today
 export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
   const db = publicDb();
   const settings = await readPublicSettings();
-  const [latest, briefings, amendments, signature, hubPoints, homeProduct] = await Promise.all([
+  const [latest, briefings, amendments, signature, hubPoints, homeProduct, popular] = await Promise.all([
     readArticleList(db, { contentType: "reported_news", reportedApproved: true, limit: LIMITS.homeLatestReports }),
     // 이번 주 브리핑 — 제목 머리말이 맞는 해설 중 최신 1건 (최신 소식 목록과 별도 칸)
     readArticleList(db, { contentType: "explainer", titlePrefix: HOME_BRIEFING_TITLE_PREFIX, limit: 1 }),
@@ -88,11 +86,11 @@ export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
     // 4대 분야 카드의 '이 분야의 지방세 포인트' 한 줄 (CORE-02 — W3 9단계): 감수 서명이 있는 분야만
     readHubTaxPoints(),
     getHomeProduct(settings.features),
+    // 최신 인기글 (PO 2026-11-01 — 바로가기 블록 자리): 많이 본 기사 순위 위에서 5건, 순위가 없으면 섹션째 숨김
+    readHomePopular(),
   ]);
-  const shortcutLinks = buildShortcuts(settings.features, await readShortcutInputs(settings.features), settings.shortcutOrder, settings.features.shortcuts ? await readMemberInterests() : []);
-  const shortcutCopy = parseShortcutCopy(settings.shortcutCopy);
   const sections = homeSections({
-    shortcuts: shortcutLinks.map((s) => ({ key: s.key, label: s.label, href: s.href, note: shortcutCopy[s.key] ?? null })),
+    popular,
     coreMessage: settings.coreMessage,
     coreHighlights: settings.coreHighlights,
     fieldPoints: fieldCardPoints(hubPoints),

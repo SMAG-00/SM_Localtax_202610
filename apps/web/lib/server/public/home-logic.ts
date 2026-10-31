@@ -3,7 +3,7 @@
 //  · 트래커 하이라이트: 오늘 노출 중인 지정(순서) → 지정이 0건이면 현재 단계가 가장 최근에 바뀐 공개 트래커 1건 → 공개 트래커가 없으면 섹션 숨김
 //  · 해설 스토리: 지정(순서, 6장까지) → 3장 미만이면 최신 해설(explainer)로 3장까지 (지정과 겹침 0)
 //  · 노출 기간이 끝난 카드는 DB(RLS)가 0행으로 주지만 여기서도 한국 날짜로 다시 거른다
-import { amendmentHref, HOME_BRIEFING_TITLE_PREFIX, HOME_SECTION_KEYS, LIMITS, SECTION_INFO, SECTION_KEYS, type Features, type HomeSectionKey, type SectionKey } from "./constants";
+import { amendmentHref, HOME_BRIEFING_TITLE_PREFIX, HOME_SECTION_KEYS, LIMITS, POPULAR_HREF, SECTION_INFO, SECTION_KEYS, type Features, type HomeSectionKey, type SectionKey } from "./constants";
 import type { SignatureHomeItem } from "./signature-logic";
 import type { ArticleListItem, TrackerSource, TrackerState } from "./cards";
 import type { CurationRow } from "./rows";
@@ -182,23 +182,21 @@ export interface ExpertsSection {
   items: { name: string; href: string; field: string }[];
 }
 
-export type HomeSection = HeroSection | ShortcutsSection | FieldsSection | BriefingSection | LatestReportsSection | WeeklyHotSection | AmendmentsSection | ColumnSection | ProductSection | ExpertsSection;
+export type HomeSection = HeroSection | PopularSection | FieldsSection | BriefingSection | LatestReportsSection | WeeklyHotSection | AmendmentsSection | ColumnSection | ProductSection | ExpertsSection;
 
-/** 바로가기 카드 (HOME-13) - 열린 바로가기만, 설명은 설정 home_shortcut_copy의 30자 이하 한 줄(없으면 null) */
-export interface ShortcutCard {
-  key: "calc" | "expert_request" | "brief_weekly" | "realestate_weekly";
-  label: string;
-  href: string;
-  note: string | null;
-}
-export interface ShortcutsSection {
-  key: "shortcuts";
-  cards: ShortcutCard[];
+/**
+ * 최신 인기글 (PO 2026-11-01) — 히어로 바로 뒤. 많이 본 기사 순위(article_rankings popular, /news/popular와 같은 순위) 위에서 5건.
+ * 이전의 바로가기 카드 블록(HOME-13)은 헤더 바로 메뉴가 대신해 홈에서 뺐다. 순위가 아직 없으면 섹션째 없다
+ */
+export interface PopularSection {
+  key: "popular";
+  items: ArticleListItem[];
+  moreHref: string;
 }
 
 export interface HomeInput {
-  /** 열린 바로가기 카드 - 없거나 0장이면 블록째 뺀다 (키 shortcuts가 꺼지면 주는 쪽이 넘기지 않는다) */
-  shortcuts?: readonly ShortcutCard[];
+  /** 최신 인기글 — 순위 순서. 없거나 0건이면 섹션째 뺀다 */
+  popular?: readonly ArticleListItem[];
   coreMessage: string | null;
   /** 핵심 메시지 강조 낱말 — 안 주면 빈 목록 */
   coreHighlights?: readonly string[];
@@ -242,7 +240,7 @@ export function homeSections(input: HomeInput): HomeSection[] {
       input.coreMessage || input.searchEnabled
         ? { key: "hero", coreMessage: input.coreMessage, coreHighlights: [...(input.coreHighlights ?? [])], search: input.searchEnabled ? { action: "/search", chips: input.searchChips } : null }
         : null,
-    shortcuts: input.shortcuts && input.shortcuts.length ? { key: "shortcuts", cards: input.shortcuts.map((c) => ({ ...c, note: c.note && c.note.length <= 30 ? c.note : null })) } : null,
+    popular: input.popular && input.popular.length ? { key: "popular", items: input.popular.slice(0, LIMITS.homePopular), moreHref: POPULAR_HREF } : null,
     fields: { key: "fields", cards: SECTION_KEYS.map((s) => ({ section: s, name: SECTION_INFO[s].name, href: SECTION_INFO[s].href })), points: { ...(input.fieldPoints ?? {}) } },
     briefing: input.briefing ? { key: "briefing", item: input.briefing } : null,
     latest_reports: input.latestReports.length ? { key: "latest_reports", items: input.latestReports.slice(0, LIMITS.homeLatestReports) } : null,

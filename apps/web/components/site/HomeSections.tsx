@@ -6,7 +6,6 @@ import type { ResolvedHeroMedia } from "@/lib/site/hero-media";
 import { ArticleItem } from "./ArticleItem";
 import { ClaimBasisLink } from "./ClaimBasisLink";
 import { MeasureHomeEntry } from "./Measure";
-import { TrackedLink } from "./MeasureShortcut";
 import { OwnProductBlock } from "./StoreViews";
 import { UnavailableNotice } from "./Unavailable";
 
@@ -120,18 +119,21 @@ function ColumnBody({ section }: { section: ColumnSection }) {
 /** 섹션 안 내용 — 아직 화면이 없는 섹션은 null (섹션째 그리지 않는다 — 빈 섹션 0) */
 function sectionBody(section: Exclude<HomeSection, { key: "hero" }>, today: string, cardImages: ComponentProps<typeof FieldCards>["images"]): ReactNode | null {
   switch (section.key) {
-    case "shortcuts":
+    case "popular":
+      // 최신 인기글 (PO 2026-11-01 — 바로가기 블록 자리): 많이 본 기사 순위 순서 그대로, 끝에 [많이 본 기사 더 보기]
       return (
-        <ul data-part="shortcut-cards" className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {section.cards.map((c) => (
-            <li key={c.key}>
-              <TrackedLink href={c.href} name="shortcut_clicked" props={{ placement: "home", shortcut: c.key }} className="flex min-h-11 h-full flex-col justify-center rounded-lg border border-navy-100 bg-white p-4 transition hover:border-hermes-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400">
-                <span className="text-[15px] font-bold text-navy-800">{c.label}</span>
-                {c.note && <span className="mt-1 text-[13px] text-navy-500">{c.note}</span>}
-              </TrackedLink>
-            </li>
-          ))}
-        </ul>
+        <>
+          <CardGrid part="popular-articles">
+            {section.items.map((a) => (
+              <li key={a.id} data-article-id={a.id} className="flex">
+                <ArticleItem item={a} />
+              </li>
+            ))}
+          </CardGrid>
+          <UiLink href={section.moreHref} className="mt-6 inline-flex min-h-11 items-center font-bold text-navy-900 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
+            많이 본 기사 더 보기
+          </UiLink>
+        </>
       );
     case "fields":
       // 분야마다 '이 분야의 지방세 포인트' 한 줄 (CORE-02 — 세무 감수 서명이 있는 분야의 첫 줄만, W3 9단계)
