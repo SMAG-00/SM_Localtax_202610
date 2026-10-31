@@ -38,6 +38,23 @@ describe("차단·경고 묶기", () => {
     expect(v.warnings.map((w) => w.id)).toEqual(["ux01.jargon-unexplained", "seo.internal-links"]);
   });
 
+  test("간편 발행으로 경고가 된 '편집 승인 없음'·'세무 감수 서명 없음'은 경고 목록에서 빠진다 — 차단 등급이면 차단 목록에 그대로", () => {
+    const base = report();
+    const lowered = panelView(
+      report({
+        findings: [
+          ...base.findings,
+          { id: "nav03.desk-edit-required", level: "warn", ruleRef: "NAV-03", message: "독립 편집자의 편집 승인(현재 버전 5)이 없습니다" },
+          { id: "nav03.tax-review-required", level: "warn", ruleRef: "NAV-03", message: "세무 감수 서명이 없습니다" },
+        ],
+      }),
+      [],
+    );
+    expect(lowered.warnings.map((w) => w.id)).toEqual(["ux01.jargon-unexplained", "seo.internal-links"]);
+    const strict = panelView(report({ findings: [{ id: "nav03.desk-edit-required", level: "block", ruleRef: "NAV-03", message: "편집 승인이 없습니다" }] }), []);
+    expect(strict.blockers.map((b) => b.id)).toEqual(["nav03.desk-edit-required"]);
+  });
+
   test("지역 기사 편집 경고(REG1-14)는 경고와 따로 묶는다 — 규칙 이름·위치, 다른 경고 목록엔 0 (W4 8단계)", () => {
     const base = report();
     const v = panelView(

@@ -64,6 +64,9 @@ const AXES: readonly [string, string][] = [
 const LINT_FINDINGS = new Set(["opt03.seo-lint-blocker", "opt03.seo-lint-warning"]);
 /** 지역 기사 편집 경고의 근거 PRD ID — 점검 패널에서 따로 묶는다 (W4 8단계) */
 export const EDITORIAL_WARNING_REF = "REG1-14";
+/** 간편 발행(2026-10-31 PO 결정)으로 경고로 낮아진 '편집 승인 없음'·'세무 감수 서명 없음' — 작성자가 고칠 일이 아니라 화면 경고에서 뺀다.
+ *  발행 기록(warnings)에는 그대로 남고, 차단 등급(검토 화면의 strict 판정)이면 차단 목록에 그대로 보인다 */
+export const RECORD_ONLY_WARNINGS: ReadonlySet<string> = new Set(["nav03.desk-edit-required", "nav03.tax-review-required"]);
 
 const PERSPECTIVE_NAMES: Record<string, string> = { local_gov: "지자체", residents_taxpayers: "주민·납세자", experts: "전문가" };
 const SOLVED_CASE_CELLS: Record<string, string> = { situation: "상황", issue: "쟁점", result: "결과", lesson: "교훈", resultEvidence: "결과 근거" };
@@ -141,7 +144,7 @@ export function panelView(report: CheckReport, blockTypes: readonly string[]): P
   const items = report.findings.map((f, i) => ({ f, item: itemOf(f, i, report, blockTypes) }));
   return {
     blockers: items.filter((x) => x.f.level === "block").map((x) => x.item),
-    warnings: items.filter((x) => x.f.level === "warn" && x.f.ruleRef !== EDITORIAL_WARNING_REF).map((x) => x.item),
+    warnings: items.filter((x) => x.f.level === "warn" && x.f.ruleRef !== EDITORIAL_WARNING_REF && !RECORD_ONLY_WARNINGS.has(x.f.id)).map((x) => x.item),
     editorialWarnings: items.filter((x) => x.f.level === "warn" && x.f.ruleRef === EDITORIAL_WARNING_REF).map((x) => x.item),
     scores: AXES.map(([axis, label]) => {
       const v = report.seoLint.scores[axis];

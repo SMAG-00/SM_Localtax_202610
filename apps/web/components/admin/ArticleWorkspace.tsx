@@ -248,21 +248,8 @@ export function ArticleWorkspace({
             )}
           </div>
         )}
-        {saved && (
-          <div className="space-y-2">
-            <StatusNote>{saved.message}</StatusNote>
-            {saved.checks.length > 0 && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-800">
-                <p className="font-bold">저장 검사 — 확인할 문장 {saved.checks.length}개 (저장은 되었습니다)</p>
-                <ul className="mt-1 list-disc pl-5">
-                  {saved.checks.map((c, i) => (
-                    <li key={`${c.id}-${i}`}>{c.message}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
+        {/* 저장 뒤 경고 문장은 오른쪽 '점검 결과 보기'에 이미 있어 여기서 다시 늘어놓지 않는다 (PO 2026-11-01 "무슨 소리인지 모르겠다") */}
+        {saved && <StatusNote>{saved.message}</StatusNote>}
         {canPublishNow && publishConfirms.length > 0 && (
           <fieldset data-testid="publish-confirms" className="rounded-xl border border-navy-100 bg-ivory px-4 py-3 text-[15px]">
             <legend className="px-1 font-bold text-navy-900">발행 전 확인 (작성자 책임)</legend>

@@ -458,7 +458,9 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   // 간편 발행 (2026-10-31) — 빠진 취재 기록·편집 승인·「지방세로 읽기」는 발행을 막지 않고 경고로 보인다
   assert.deepEqual(await blockers(editor, { expectCount: 0 }), []);
   const before = await warnings(editor);
-  for (const rule of ["nav10.related-party-check", "nav10.no-causal-claim", "nav03.desk-edit-required", "core01.box-or-reason"]) assert.ok(before.includes(rule), `경고 ${rule}: ${before}`);
+  for (const rule of ["nav10.related-party-check", "nav10.no-causal-claim", "core01.box-or-reason"]) assert.ok(before.includes(rule), `경고 ${rule}: ${before}`);
+  // '편집 승인 없음'은 고칠 일이 아니라 화면 경고에서 뺀다 (PO 2026-11-01 — 발행 기록에는 남는다)
+  assert.ok(!before.includes("nav03.desk-edit-required"), `편집 승인 없음은 화면 경고 0: ${before}`);
   assert.ok(!before.includes("nav10.source-data") && !before.includes("nav10.calculation"), "채운 묶음은 경고에도 없다");
   const panel = editor.getByTestId("check-panel");
   await panel.locator('[data-rule="nav10.related-party-check"]').getByText("관계자 확인 묶음이 비었습니다").waitFor();
@@ -476,7 +478,7 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   await open(editor, `/admin/reviews/${id}`);
   assert.deepEqual(await blockers(editor, { expectCount: 0 }), []);
   const left = await warnings(editor);
-  assert.ok(left.includes("nav03.desk-edit-required") && left.includes("nav10.no-causal-claim") && !left.includes("nav10.related-party-check"), `채운 뒤 남은 경고: ${left}`);
+  assert.ok(left.includes("nav10.no-causal-claim") && !left.includes("nav10.related-party-check") && !left.includes("nav03.desk-edit-required"), `채운 뒤 남은 경고: ${left}`);
   await approveDesk(editor);
   await publishFromPanel(editor, id);
   const review = await one("select checklist, version from public.editorial_reviews where article_id = $1 and kind = 'desk_edit' order by id desc limit 1", [id]);
@@ -560,7 +562,7 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
   await open(editor, `/admin/reviews/${id}`);
   assert.deepEqual(await blockers(editor, { expectCount: 0 }), [], "간편 발행 — 남은 항목은 경고");
   const before = await warnings(editor);
-  assert.ok(before.includes("core01.box-or-reason") && before.includes("nav03.desk-edit-required"), `${before}`);
+  assert.ok(before.includes("core01.box-or-reason") && !before.includes("nav03.desk-edit-required"), `${before}`);
   assert.ok(!before.some((r) => r.startsWith("nav11.")), `정성형 필수 기록은 모두 채웠다: ${before}`);
   await open(editor, `/admin/articles/${id}`);
   await editor.locator("#taxlens").getByLabel("생략 사유 쓰기").check();
@@ -568,7 +570,7 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
   assert.equal(await save(editor), 3);
   await open(editor, `/admin/reviews/${id}`);
   assert.deepEqual(await blockers(editor, { expectCount: 0 }), []);
-  assert.ok((await warnings(editor)).includes("nav03.desk-edit-required"));
+  assert.ok(!(await warnings(editor)).includes("nav03.desk-edit-required"), "편집 승인 없음은 화면 경고 0");
   const deskForm = editor.getByRole("form", { name: "편집 승인 결정" });
   assert.equal(await deskForm.getByLabel(/인과 단정 없음/).count(), 0, "정성형 승인에는 '인과 단정 없음' 항목이 없다");
   // 지역 기사면 W4 7단계 지역 확인 3항목(근거·관계·광고 독립성)이 더 붙는다 — 그것을 뺀 기본 항목은 4개
