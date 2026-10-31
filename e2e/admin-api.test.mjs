@@ -376,10 +376,11 @@ test("빠진 칸을 채우면 새 버전 — 지역 기사는 이 버전의 편�
   const skipAudit = await one("select after from public.audit_logs where actor = $1 and action = 'article.edit' and target = $2 order by id desc limit 1", [`user:${u.editorA.id}`, `articles:${ids.quant}`]);
   assert.equal(skipAudit.after.tax_lens.skip_reason, "세금 영향은 후속 기사에서 다룬다", "생략 사유·편집자·시각이 감사 로그에 남는다 (CORE-01)");
 
-  // 이전 버전의 승인은 세지 않는다 — 발행 API가 발행자 이름으로 편집 승인을 남기려 하지만, 지역 기사는 근거·관계·광고 독립성 확인이 필요해 DB가 거부한다
+  // 이전 버전의 승인은 세지 않는다 — 발행 API가 발행자 이름으로 편집 승인을 남기는데, 지역 기사는 발행하는 사람이 근거·관계·광고 독립성을 직접 체크해야 한다 (체크 없으면 422)
   const stale = await api("POST", `/articles/${ids.quant}/publish`, u.editorA);
-  assert.equal(stale.status, 409, show(stale));
-  assert.match(stale.body.error, /편집 책임자의 확인 항목이 필요합니다 — 지역 기사 편집 승인에는 근거·관계·광고 독립성/);
+  assert.equal(stale.status, 422, show(stale));
+  assert.deepEqual(stale.body.failed, ["publish.author-confirm"]);
+  assert.deepEqual(stale.body.unchecked, ["evidence", "relation", "ad_independence"]);
   assert.equal((await one("select status from public.articles where id = $1", [ids.quant])).status, "in_review", "거부되면 게재 상태 그대로");
 
   const again = await api("POST", `/articles/${ids.quant}/reviews`, u.editorA, { kind: "desk_edit", decision: "approve", checklist: { noCausalClaim: true, ...REGIONAL_CHECKS } });

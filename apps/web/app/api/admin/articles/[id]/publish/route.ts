@@ -1,20 +1,23 @@
 import { stageSkipProblem, taxReviewReasons } from "@ltr/editorial";
+import { confirmedChecklist, publishConfirmItems, uncheckedConfirmSentence, uncheckedConfirms } from "@/lib/admin/publish-confirm";
 import { isRegionalRow } from "@/lib/admin/review-form";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { withPublishRecord } from "@/lib/server/articles/content";
 import { gateReport, seoCheckRow } from "@/lib/server/articles/report";
 import { isSelfPublished } from "@/lib/server/articles/mapping";
-import { articleResource, loadArticle, loadArticleGraph, requirePersonForUser } from "@/lib/server/articles/repository";
+import { articleResource, isFinanceCase, loadArticle, loadArticleGraph, requirePersonForUser } from "@/lib/server/articles/repository";
 import { gateFor, nowIso, serviceDb } from "@/lib/server/articles/service";
 import { signaturePublishErrors } from "@/lib/server/articles/signature";
 import { articleSummary, updateArticle } from "@/lib/server/articles/writes";
 import { authorize, requireViewer } from "@/lib/server/dal";
-import { dbError, errorJson, handle, json, parseId } from "@/lib/server/http";
+import { dbError, errorJson, handle, json, parseId, readJson } from "@/lib/server/http";
 import { scheduleAiBox } from "@/lib/server/ops-ai/editorial";
 
 // 기사 발행 (ART-01 · OPT-03) — 간편 발행(2026-10-31 PO 결정): 작성자(기자·편집 책임자)가 자기 기사를 바로 발행하고, 편집 책임자는 모든 기사를 발행한다.
 //  · 이 버전의 편집 승인이 없으면 발행자 이름으로 편집 승인(desk_edit approve, checklist.publishApproval)을 함께 남긴다 — 작성자 본인이면 authorPublish.
-//    편집 책임자·세무 감수위원이 반려·보류한 버전은 발행하지 않는다(409). 지역 기사·금융 사례처럼 DB가 편집 승인 확인 항목을 요구하는 기사는 DB 문장 그대로 409
+//    편집 책임자·세무 감수위원이 반려·보류한 버전은 발행하지 않는다(409).
+//  · 지역 기사(REG1-17 근거·관계·광고 독립성)·금융 사례(DF-03 공개 자료 범위)는 발행하는 사람이 본문 { confirms: { 키: true } }로 직접 체크한다 (2026-11-01 PO 결정)
+//    빠지면 422 { failed: ["publish.author-confirm"], unchecked }, 체크한 값만 편집 승인 checklist에 넣는다. 그 밖에 DB가 승인을 거부하면 DB 문장 그대로 409
 //  · 세무 감수 대상 이유가 있는데 감수 기록이 없으면 작성자 책임 발행 — 발행 기록 authorResponsibility, 감사 로그 '작성자 책임 발행 (세무 감수 대체)'
 //  · 판정은 간편 발행 정책(@ltr/editorial SIMPLE_PUBLISH_BLOCKERS) — 최적화 점검(seo-lint) + 편집 판정(editorial)을 돌려 점검 이력(seo_checks)을 남기고,
 //  · 차단 항목이 있으면 422 { failed: 차단 ID[], findings } — 기사는 그대로
@@ -36,6 +39,7 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   const denied = await authorize(viewer, "article.publish", target);
   if (denied) return denied;
 
+  const raw = await readJson(request);
   const db = serviceDb();
   const before = await loadArticle(db, id);
   const authorDenied = await authorize(viewer, "article.publish", target, await articleResource(db, before));
@@ -69,9 +73,20 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   const authorResponsibility = taxReviewReasons(gate.article).length > 0 && before.tax_review_status !== "approved";
   let current = before;
   if (before.editorial_status !== "approved") {
+    // 지역 기사·금융 사례의 확인 항목은 발행하는 사람이 직접 체크한다 (2026-11-01 PO 결정) — 체크 안 한 항목이 있으면 422, 체크한 값만 편집 승인에 넣는다
+    const confirmItems = publishConfirmItems({ regional: isRegionalRow(before), financeCase: await isFinanceCase(db, graph) });
+    const unchecked = uncheckedConfirms(confirmItems, raw.confirms);
+    if (unchecked.length > 0) {
+      return errorJson(422, uncheckedConfirmSentence(unchecked), { seoCheckId, failed: ["publish.author-confirm"], unchecked: unchecked.map((c) => c.id) });
+    }
     // 이 버전의 편집 승인을 발행자 이름으로 함께 남긴다 — 보도기사 목록(reported_approved)·지역 기사 단계 순서가 이 기록을 본다
     const reviewer = await requirePersonForUser(db, viewer.userId);
-    const checklist = { publishApproval: true, ...(isAuthor ? { authorPublish: true } : {}), ...(authorResponsibility ? { authorResponsibility: true } : {}) };
+    const checklist = {
+      publishApproval: true,
+      ...confirmedChecklist(confirmItems, raw.confirms),
+      ...(isAuthor ? { authorPublish: true } : {}),
+      ...(authorResponsibility ? { authorResponsibility: true } : {}),
+    };
     const { data: review, error: reviewError } = await db
       .from("editorial_reviews")
       .insert({ article_id: id, version: before.version, kind: "desk_edit", reviewer_id: reviewer.id, decision: "approve", checklist })
@@ -80,7 +95,7 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
     if (reviewError || !review) {
       const mapped = dbError(reviewError ?? {}, "editorial_reviews 발행 승인");
       if (mapped.status >= 500) throw mapped;
-      return errorJson(409, `이 기사는 편집 책임자의 확인 항목이 필요합니다 — ${mapped.message}`, { seoCheckId });
+      return errorJson(409, `발행과 함께 남기는 편집 승인을 DB가 거부했습니다 — ${mapped.message}`, { seoCheckId });
     }
     await writeAudit(db, {
       actor: actorOf(viewer),

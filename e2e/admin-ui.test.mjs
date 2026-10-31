@@ -1,5 +1,5 @@
 // 백오피스(편집국) 화면 E2E (W2-a 4-1단계 — PRD-01A 9장 W2-a 끝났다는 증거) — ADM-01 · ART-01 · ART-05 · NAV-03 · NAV-06 · NAV-09~12 · OPT-03
-//  a) 정량형 1건(지역 기사): 로그인 화면 → 기획 등록·상태 진행 → 정량형 템플릿 → 출처·근거·재현 정보·확인 목록 → 검토 요청 → 편집자 점검 패널(간편 발행 — 빠진 기록은 경고) → 채움 →
+//  a) 정량형 1건(지역 기사): 로그인 화면 → 기획 등록·상태 진행 → 정량형 템플릿 → 출처·근거·재현 정보·확인 목록 → 기자 화면 [발행]·확인 3항목 → 검토 요청 → 편집자 점검 패널(간편 발행 — 빠진 기록은 경고) → 채움 →
 //     편집 승인 → 발행 → 공개 REST(anon)로 읽힘 → 기획 발행
 //  b) 정성형 1건: 인터뷰 기록·인용·관점별 기록·원문 대조 → 승인 → 발행 → 공개
 //  c) 정정: 이유 없이 저장하면 칸 오류·저장 0, 이유가 있으면 전후 버전과 함께 기록
@@ -83,6 +83,10 @@ async function assertNoLauncher(page, where) {
 }
 
 /** 로그인 화면으로 로그인 — 새 브라우저 문맥(쿠키 따로) */
+/** 검토 요청 — 로그인한 화면의 세션으로 POST /submit (같은 사이트 요청). 응답 상태를 돌려준다 */
+const submitAsPage = (page, articleId) =>
+  page.evaluate(async (aid) => (await fetch(`/api/admin/articles/${aid}/submit`, { method: "POST", headers: { accept: "application/json" } })).status, articleId);
+
 async function login(user, { width = 1280, height = 900, next } = {}) {
   const context = await browser.newContext({ viewport: { width, height } });
   contexts.push(context);
@@ -437,12 +441,12 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   assert.deepEqual(stored.body.blocks[2].chart, { axis: "구", unit: "억 원", source: "가온시 세목별 징수 실적(편집국 집계)" });
   assert.equal(stored.check_log.checklists.quantitative.relatedPartyCheck, null);
 
-  // 기자 — 발행 버튼은 꺼져 있다(역할), 검토 요청
-  const reporterPanel = reporter.getByTestId("check-panel");
-  await reporterPanel.getByTestId("publish-reason").filter({ hasText: "발행은 편집 책임자(editor)만 합니다" }).waitFor();
-  assert.equal(await reporterPanel.getByRole("button", { name: "발행", exact: true }).isDisabled(), true);
-  await reporter.getByRole("button", { name: "검토 요청" }).click();
-  await reporter.getByRole("status").filter({ hasText: "검토를 요청했습니다" }).waitFor();
+  // 기자 — 지역 기사도 자기 기사는 [발행]과 확인 3항목이 보인다 (간편 발행, 2026-11-01 PO 결정 — simple-publish f)가 발행까지 본다).
+  // 이 시험은 편집자 검토 흐름을 보므로 검토 요청은 기자 세션으로 API에 보낸다
+  await reporter.locator("#publish-now").waitFor();
+  assert.deepEqual(await reporter.locator("[data-confirm]").evaluateAll((els) => els.map((e) => e.getAttribute("data-confirm"))), ["evidence", "relation", "ad_independence"]);
+  assert.equal(await reporter.getByRole("button", { name: "검토 요청" }).count(), 0);
+  assert.equal(await submitAsPage(reporter, id), 200);
   assert.equal((await one("select status from public.articles where id = $1", [id])).status, "in_review");
 
   // 편집자 — 검토 대기 → 점검 패널: 차단 항목이 남아 발행 버튼이 꺼져 있다
@@ -550,8 +554,7 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
   const log = (await one("select check_log, body from public.articles where id = $1", [id])).check_log.checklists;
   assert.deepEqual(log.perspectives.residents_taxpayers, { status: "interviewed", evidenceId: resident, contactedAt: "2026-10-13" });
   assert.deepEqual(log.originalTextChecks, [{ sourceId: ordinance, checkedAt: "2026-10-14" }]);
-  await reporter.getByRole("button", { name: "검토 요청" }).click();
-  await reporter.getByRole("status").filter({ hasText: "검토를 요청했습니다" }).waitFor();
+  assert.equal(await submitAsPage(reporter, id), 200, "검토 요청 (지역 기사도 기자 화면은 [발행] — 이 시험은 편집자 검토 흐름)");
 
   const editor = await login(u.editor);
   await open(editor, `/admin/reviews/${id}`);

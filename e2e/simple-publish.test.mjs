@@ -8,6 +8,9 @@
 //  c) 편집 책임자가 기자의 기사를 [발행] → publishApproval만(authorPublish 없음) · 감사 로그 '발행'
 //  d) 기자는 남의 기사를 발행할 수 없다 — API 403 + 감사 로그, 화면에 [발행] 없음 · 저작권 막힘(사진 권리 미확인)은 '발행 전에 고칠 것'에 보이고 발행 422
 //  e) 발행 기사 빠른 수정 — 칸 바로 가기·접힘·요약만 고친 뒤 수정 종류만 고르면 사유 '요약 수정'이 자동으로 남는다
+//  f) 지역 기사(2026-11-01 PO 결정 — 예외 없앰): 기자 화면에 [발행]과 확인 3항목(근거·관계·광고 독립성). 체크 없이 발행하면 422·편집 승인 0행,
+//     체크하고 [발행] → 승인 단계를 거쳐 게재 · 편집 승인 checklist에 체크한 3항목 + authorPublish · 공개 200
+//  g) 금융 사례: 공개 자료 범위 체크 없이 422 → 체크하면 게재 · checklist public_scope
 // 만든 계정·기사·감사 로그는 끝나면 지운다.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -17,6 +20,8 @@ import { StaffFixture } from "./lib/staff.mjs";
 
 // W4 5단계 (REG1-09 · PR-07) — 공식 자료 출처의 공공누리 유형·발표일·기준일·지역 단위·수집일 (시험용 값, site-article.test.mjs와 같다)
 const OFFICIAL_W4 = { licenseType: "kogl_1", publishedOn: "2026-10-01", referenceDate: "2026-10-01", regionUnit: "전국", collectedAt: "2026-10-10T09:00:00+09:00" };
+// 지역 기사 칸 (REG1-17 — 시험용 값, w4-regional-gate.test.mjs와 같은 지역 코드)
+const REGIONAL_FIELDS = { regionCodes: ["1100000000"], editorialField: "local_tax", publicQuestion: "취득세 신고 기한을 놓친 주민은 무엇을 해야 하는가" };
 
 let sb, server, staff, db, base, browser;
 const u = {};
@@ -101,6 +106,12 @@ before(async () => {
   );
   fx.photoId = Number(photo.id);
   fx.photo = await createExplainer(u.reporter, "photo", { leadMediaId: fx.photoId });
+  // f) 기자의 지역 기사 · g) 기자의 금융 사례 기사(사례 기록 + 공개 자료 근거 — DF-03 내용 조건은 채운다)
+  fx.regional = await createExplainer(u.reporter, "regional", REGIONAL_FIELDS);
+  const cases = await one("select id from public.categories where section = 'finance' and slug = 'cases'");
+  fx.financeCase = await createExplainer(u.reporter, "finance-case", { section: "finance", categoryId: Number(cases.id) });
+  await db.query("insert into public.finance_cases (article_id, structure_type, issues, named_company, updated_by) values ($1, 'trust', '{시험 쟁점}', false, 'e2e')", [fx.financeCase.id]);
+  await db.query("insert into public.article_evidence (article_id, evidence_type, location) values ($1, 'document', '시험용 공시 보관함')", [fx.financeCase.id]);
   browser = await chromium.launch();
 });
 
@@ -123,7 +134,7 @@ async function loginAt(page, user, next) {
 }
 
 /** 기사 편집 화면을 열고(필요하면 요약을 고친 뒤) [발행]을 누른다 — 브라우저가 보낸 기사 요청(메서드·경로)과 발행 응답 본문을 돌려준다 */
-async function clickPublish(user, article, { summary } = {}) {
+async function clickPublish(user, article, { summary, confirms = [] } = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   try {
     const page = await context.newPage();
@@ -133,6 +144,7 @@ async function clickPublish(user, article, { summary } = {}) {
     await button.waitFor();
     assert.equal(await button.innerText(), "발행");
     if (summary !== undefined) await page.fill("#meta-summary", summary);
+    for (const key of confirms) await page.locator(`[data-confirm="${key}"]`).check();
     const sent = [];
     page.on("request", (req) => {
       const p = new URL(req.url()).pathname;
@@ -326,4 +338,63 @@ test("e) 발행 기사 빠른 수정 — 고칠 칸만 보이고, 요약만 고�
   assert.equal(after.summary, "요약 문구를 다듬었습니다. 본문은 그대로입니다.");
   const rev = await one("select reason, update_kind from public.article_revisions where article_id = $1 and version = $2", [fx.byEditor.id, after.version]);
   assert.deepEqual({ reason: rev.reason, kind: rev.update_kind }, { reason: "요약 수정", kind: "typo" });
+});
+
+test("f) 지역 기사도 기자가 [발행] — 확인 3항목을 직접 체크해야 발행, 체크한 값만 편집 승인에 남고 승인 단계를 거쳐 게재", async () => {
+  // 체크 없이 API 발행 → 422, 편집 승인·게재 변화 0
+  const none = await api("POST", `/articles/${fx.regional.id}/publish`, u.reporter);
+  assert.equal(none.status, 422, show(none));
+  assert.deepEqual(none.body.failed, ["publish.author-confirm"]);
+  assert.deepEqual(none.body.unchecked, ["evidence", "relation", "ad_independence"]);
+  assert.equal(none.body.error, "발행 전 확인 항목에 체크해 주세요 — 근거·관계·광고 독립성 (작성자 책임 확인)");
+  // 'true' 글자는 체크가 아니다 — 하나만 체크하면 나머지 둘이 남는다
+  const partial = await api("POST", `/articles/${fx.regional.id}/publish`, u.reporter, { confirms: { evidence: true, relation: "true" } });
+  assert.equal(partial.status, 422, show(partial));
+  assert.deepEqual(partial.body.unchecked, ["relation", "ad_independence"]);
+  assert.deepEqual(await deskOf(fx.regional.id), [], "거부되면 편집 승인 0행");
+  assert.equal((await one("select status from public.articles where id = $1", [fx.regional.id])).status, "draft");
+
+  // 화면 — 검토 요청 대신 [발행]과 확인 3항목, 체크 전에는 '발행 전에 고칠 것'에 한 문장
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  try {
+    const page = await context.newPage();
+    await loginAt(page, u.reporter, `/admin/articles/${fx.regional.id}`);
+    await page.locator("#publish-now").waitFor();
+    assert.equal(await page.getByRole("button", { name: "검토 요청" }).count(), 0, "지역 기사도 검토 요청 없음");
+    assert.deepEqual(await page.locator("[data-confirm]").evaluateAll((els) => els.map((e) => e.getAttribute("data-confirm"))), ["evidence", "relation", "ad_independence"]);
+    const blockers = page.getByTestId("publish-blockers");
+    assert.match(await blockers.innerText(), /발행 전 확인 항목에 체크해 주세요 — 근거·관계·광고 독립성/);
+    await page.locator('[data-confirm="evidence"]').check();
+    assert.match(await blockers.innerText(), /체크해 주세요 — 관계·광고 독립성 \(작성자 책임 확인\)/, "체크하면 남은 항목만");
+  } finally {
+    await context.close();
+  }
+
+  const { body, context: ctx } = await clickPublish(u.reporter, fx.regional, { confirms: ["evidence", "relation", "ad_independence"] });
+  await ctx.close();
+  const row = await one("select status, editorial_status, check_log -> 'publish' as pub from public.articles where id = $1", [fx.regional.id]);
+  assert.equal(row.status, "published");
+  assert.equal(row.editorial_status, "approved");
+  assert.equal(row.pub.authorPublish, true);
+  assert.deepEqual(
+    (await deskOf(fx.regional.id)).map((d) => [Number(d.reviewer_id), d.decision, d.checklist]),
+    [[u.reporter.personId, "approve", { publishApproval: true, evidence: true, relation: true, ad_independence: true, authorPublish: true }]],
+  );
+  assert.deepEqual(
+    (await auditOf(fx.regional.id)).map((x) => x.reason),
+    ["작성자 발행 — 발행과 함께 편집 승인", publishReason("작성자 발행", body.warnings)],
+  );
+  await publicHtml(fx.regional);
+});
+
+test("g) 금융 사례 — '공개 자료 범위' 체크 없이 422, 체크하면 기자가 바로 게재하고 편집 승인에 public_scope가 남는다", async () => {
+  const none = await api("POST", `/articles/${fx.financeCase.id}/publish`, u.reporter, { confirms: {} });
+  assert.equal(none.status, 422, show(none));
+  assert.deepEqual(none.body.unchecked, ["public_scope"]);
+  assert.deepEqual(await deskOf(fx.financeCase.id), []);
+
+  const r = await api("POST", `/articles/${fx.financeCase.id}/publish`, u.reporter, { confirms: { public_scope: true } });
+  assert.equal(r.status, 200, show(r));
+  assert.equal(r.body.article.status, "published");
+  assert.deepEqual((await deskOf(fx.financeCase.id)).map((d) => d.checklist), [{ publishApproval: true, public_scope: true, authorPublish: true }]);
 });

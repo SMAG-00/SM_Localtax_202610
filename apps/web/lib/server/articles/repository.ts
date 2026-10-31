@@ -157,6 +157,14 @@ export async function loadArticleGraph(db: Db, idOrRow: number | ArticleRow): Pr
   return { article, author, category, partner, media, sources, snapshots, evidence, datasets, interviews, reviews, coveredPartners, columnInterest };
 }
 
+/** 금융 사례 기사 — 금융 분야이고 사례 기록(finance_cases)이 있거나 분류가 금융 사례(cases)다. DB editorial_reviews_finance_guard와 같은 조건 (DF-03) */
+export async function isFinanceCase(db: Db, graph: ArticleGraph): Promise<boolean> {
+  if (graph.article.section !== "finance") return false;
+  if (graph.category?.section === "finance" && graph.category.slug === "cases") return true;
+  const found = await rows<{ article_id: number }>(db.from("finance_cases").select("article_id").eq("article_id", graph.article.id).limit(1), "finance_cases 읽기");
+  return found.length > 0;
+}
+
 /** 판정 설정 — 금지·공포 표현 사전·유사도 기준(settings)과 쉬운 말 사전(glossary_terms). 사전이 없으면 503 */
 export async function loadGateSettings(db: Db): Promise<GateSettings> {
   const [settingRows, glossary] = await Promise.all([

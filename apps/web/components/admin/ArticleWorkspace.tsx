@@ -19,10 +19,12 @@ import {
 } from "@/lib/admin/editor-state";
 import type { FieldErrors } from "@/lib/admin/form-utils";
 import { focusField } from "@/lib/admin/meta-more";
+import { uncheckedConfirmSentence, uncheckedConfirms } from "@/lib/admin/publish-confirm";
 import { suggestedFixReason } from "@/lib/admin/quick-fix";
 import { UPDATE_KIND_LABELS, optionsOf } from "@/lib/admin/labels";
 import type { EditorMedia } from "@/lib/admin/media-blocks";
 import type { EvidenceRowView } from "@/lib/admin/records-form";
+import type { CheckItem } from "@/lib/admin/review-form";
 import { CheckPanel } from "./CheckPanel";
 import { EvidencePanel } from "./EvidencePanel";
 import { ErrorSummary, StatusNote, TextAreaField } from "./fields";
@@ -71,6 +73,7 @@ export function ArticleWorkspace({
   perms,
   today,
   publishBlockers = [],
+  publishConfirms = [],
 }: {
   view: EditorView;
   categories: readonly Category[];
@@ -81,6 +84,8 @@ export function ArticleWorkspace({
   today: string;
   /** 발행 전에 고칠 것 — 서버 판정(간편 발행 정책)의 남은 차단 문장. 저장본 기준 */
   publishBlockers?: readonly string[];
+  /** 발행 전 확인 항목 — 지역 기사 3항목·금융 사례 공개 자료 범위. 발행하는 사람이 직접 체크한다 (2026-11-01 PO 결정) */
+  publishConfirms?: readonly CheckItem[];
 }) {
   const hydrated = useHydrated();
   const router = useRouter();
@@ -100,6 +105,7 @@ export function ArticleWorkspace({
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishFailure, setPublishFailure] = useState<{ title: string; details: string[] } | null>(null);
+  const [confirms, setConfirms] = useState<Record<string, boolean>>({});
   // 저장 전 입력 점검 (OPT-03) — 저장 요청과 같은 본문에서 버전·수정 사유 칸을 뺀 값이 저장해 둔 값과 다르면 패널이 이 입력으로 다시 점검한다
   const draftBody = (() => {
     const { expectedVersion: _version, ...body } = editorPayload(state, { published: false, version: 0 });
@@ -166,7 +172,7 @@ export function ArticleWorkspace({
     setPublishFailure(null);
     if (draftJson !== savedJson && !(await persist())) return;
     setPublishing(true);
-    const r = await adminApi("POST", `/api/admin/articles/${view.article.id}/publish`);
+    const r = await adminApi("POST", `/api/admin/articles/${view.article.id}/publish`, { confirms });
     setPublishing(false);
     if (r.status === 200) {
       setSaved({ message: "발행했습니다 — 공개 화면에 올라갔습니다", checks: [] });
@@ -193,6 +199,9 @@ export function ArticleWorkspace({
     </Panel>
   );
   const canPublishNow = !published && perms.canPublish && view.article.status !== "deleted";
+  // 체크하지 않은 확인 항목은 '발행 전에 고칠 것'에 한 문장으로 더한다
+  const unchecked = uncheckedConfirms(publishConfirms, confirms);
+  const blockers = unchecked.length > 0 ? [...publishBlockers, uncheckedConfirmSentence(unchecked)] : publishBlockers;
   const savePanel = !readOnly && (
     <Panel
       id="save"
@@ -254,11 +263,32 @@ export function ArticleWorkspace({
             )}
           </div>
         )}
-        {canPublishNow && publishBlockers.length > 0 && (
+        {canPublishNow && publishConfirms.length > 0 && (
+          <fieldset data-testid="publish-confirms" className="rounded-xl border border-navy-100 bg-ivory px-4 py-3 text-[15px]">
+            <legend className="px-1 font-bold text-navy-900">발행 전 확인 (작성자 책임)</legend>
+            <ul className="mt-1 space-y-2">
+              {publishConfirms.map((c) => (
+                <li key={c.id}>
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="mt-1 size-5"
+                      data-confirm={c.id}
+                      checked={confirms[c.id] === true}
+                      onChange={(e) => setConfirms((m) => ({ ...m, [c.id]: e.target.checked }))}
+                    />
+                    <span>{c.label}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </fieldset>
+        )}
+        {canPublishNow && blockers.length > 0 && (
           <div data-testid="publish-blockers" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[15px] text-rose-800">
-            <p className="font-bold">발행 전에 고칠 것 {publishBlockers.length}개</p>
+            <p className="font-bold">발행 전에 고칠 것 {blockers.length}개</p>
             <ul className="mt-1 list-disc pl-5">
-              {publishBlockers.map((m, i) => (
+              {blockers.map((m, i) => (
                 <li key={i}>{m}</li>
               ))}
             </ul>
