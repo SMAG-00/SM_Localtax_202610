@@ -1,8 +1,8 @@
 // 공개 화면 틀 — 헤더 상단 메뉴·하위 메뉴·유틸 메뉴·정책 링크 (HOME-02 · HELP-05) — 순수 함수 (시험 chrome-logic.test.ts)
 //  · 상단 메뉴는 4대 분야 정확히 4개, 이 순서. 하위 메뉴는 분야 데이터(CAT-01)에서 — 공개 분야 중 목록 기사가 1건 이상인 것 + 공통 `뉴스 전체`
 //    지자체뉴스는 하위 경로(/local/[sido] · /local/events)가 01B 몫이라 하위 분야 대신 기사 있는 편집 분야(/local?topic=…)를 둔다 (설계 9장)
-//  · 유틸 메뉴·정책 링크는 기능 키가 켜진 것만 (꺼지면 링크 요소 0 — 빈 링크 0)
-import { brand, type LocalTopic } from "@ltr/ui";
+//  · 바로 메뉴(PO 2026-11-01)·유틸 메뉴·정책 링크는 기능 키가 켜진 것만 (꺼지면 링크 요소 0 — 빈 링크 0)
+import { brand, HEADER_MENU, type LocalTopic } from "@ltr/ui";
 import { companyFooter, type CompanyFooter } from "@/lib/policy/docs";
 import { LOCAL_TOPICS, POLICY_LINKS, SECTION_INFO, SECTION_KEYS, UTILITY_LINKS, categoryHref, isBlockedPath, localTopicHref, type Features, type SectionKey } from "./constants";
 import type { PublicCategoryRow } from "./rows";
@@ -21,6 +21,8 @@ export interface SectionMenu extends NavLink {
 
 export interface SiteChrome {
   sections: SectionMenu[];
+  /** 바로 메뉴 (PO 2026-11-01) — 홈 바로가기와 같은 기능 키 shortcuts가 켜지면 4개, 꺼지면 0 */
+  menu: NavLink[];
   utilities: NavLink[];
   policyLinks: NavLink[];
   /** 바닥글 링크 — 정책 · 약관 · 측정 거부 · 계정 (W2-e 6.4). 기능 키(실제로 열린 것)가 닫으면 0, 측정 거부만 항상 있다 */
@@ -87,6 +89,7 @@ export function buildChrome(
   });
   return {
     sections,
+    menu: features.shortcuts ? HEADER_MENU.map((m) => ({ key: m.key, label: m.label, href: m.href })) : [],
     utilities: UTILITY_LINKS.filter((u) => features[u.key]).map((u) => ({ key: u.key, label: u.label, href: u.href })),
     policyLinks: POLICY_LINKS.filter((p) => features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
     footerLinks: buildFooterLinks(features),

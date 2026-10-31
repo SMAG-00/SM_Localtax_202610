@@ -67,6 +67,19 @@ describe("헤더 메뉴 (HOME-02)", () => {
     expect(all.utilities.map((u) => u.href)).toEqual(["/calc", "/experts", "/store", "/edu", "/search"]);
   });
 
+  test("바로 메뉴 (PO 2026-11-01) — 기능 키 shortcuts가 꺼지면 0, 켜지면 4개를 이 순서·주소로", () => {
+    expect(buildChrome(CATEGORIES, new Map(), CLOSED_FEATURES).menu).toEqual([]);
+    expect(closedChrome().menu).toEqual([]);
+    const on = buildChrome(CATEGORIES, new Map(), { ...CLOSED_FEATURES, shortcuts: true });
+    expect(on.menu.map((m) => [m.label, m.href])).toEqual([
+      ["최신법령·유권해석", "/brief"],
+      ["전문가칼럼", "/columns"],
+      ["전문가상담", "/experts/request"],
+      ["세금계산기", "/calc"],
+    ]);
+    for (const m of on.menu) expect(isBlockedPath(m.href)).toBe(false);
+  });
+
   test("정책 링크 — 공개 승인(기능 키) 전 0, 켜진 것만 7종 순서로", () => {
     expect(buildChrome(CATEGORIES, new Map(), CLOSED_FEATURES).policyLinks).toEqual([]);
     const opened = buildChrome(CATEGORIES, new Map(), { ...CLOSED_FEATURES, page_privacy: true, page_about: true });

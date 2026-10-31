@@ -26,6 +26,20 @@ export const HEADER_UTILITIES: ReadonlyArray<{ key: HeaderUtilityKey; label: str
   { key: "search", label: "검색", href: "/search" },
 ];
 
+/** 바로 메뉴 항목 키 — 분야 메뉴 오른쪽, 펼침 없는 링크 4개 (PO 2026-11-01) */
+export type HeaderMenuKey = "brief" | "columns" | "expert_request" | "calc";
+
+/**
+ * 바로 메뉴 — 분야 메뉴(4대 분야, 펼침 있음) 오른쪽에 펼침 없는 링크 4개, 이 순서 (PO 2026-11-01 — 기존 「지방세연구」 사이트 머리글처럼 자주 찾는 곳을 한 줄에).
+ * 홈 바로가기와 같은 기능 키(shortcuts)로 켜진다. 도착 화면이 아직 닫혀 있으면 404가 아니라 '준비 중' 안내를 보여 준다(각 도착 page).
+ */
+export const HEADER_MENU: ReadonlyArray<{ key: HeaderMenuKey; label: string; href: string }> = [
+  { key: "brief", label: "최신법령·유권해석", href: "/brief" },
+  { key: "columns", label: "전문가칼럼", href: "/columns" },
+  { key: "expert_request", label: "전문가상담", href: "/experts/request" },
+  { key: "calc", label: "세금계산기", href: "/calc" },
+];
+
 /**
  * 바로가기 — 키·글자·기본 주소 표 하나 (HOME-13·14). 이름 글자는 여기에만 있고 다른 파일에 다시 쓰지 않는다. 계산기는 "AI 계산기"라 부르지 않는다.
  * 화면은 홈의 바로가기 블록 하나뿐입니다 (헤더 줄 없음 - PO 2026-10-26). 제품 이름은 brand.productName에서 만들어 이 파일에 다시 쓰지 않는다.
@@ -43,6 +57,8 @@ export type HeaderShortcut = { key: HeaderShortcutKey; label: string; href: stri
 export type HeaderProps = {
   /** 유틸 메뉴 자리 — 기능 플래그가 켜진(공개 승인된) 항목. 넘긴 순서와 상관없이 HOME-02 순서로 보이고, 없으면 유틸 메뉴 요소 0 */
   utilities?: readonly HeaderUtilityKey[];
+  /** 바로 메뉴 — 켜진 항목 키. 넘긴 순서와 상관없이 HEADER_MENU 순서로 보이고, 없으면 바로 메뉴 요소 0 */
+  menu?: readonly HeaderMenuKey[];
   /** 지금 보고 있는 분야 — aria-current="page" */
   currentSection?: HeaderSectionKey;
   /**
@@ -57,15 +73,17 @@ export type HeaderProps = {
 /**
  * 헤더 — SM 헤더 그대로 (PRD-00 8.6): bg-navy-800 · 텍스트 워드마크(17px 800 흰 글자 + 오렌지 가운뎃점) · 링크 14px 600 navy-100 ·
  * 버튼 rounded-lg hermes-500 + navy-900 굵은 글자. 유틸 메뉴 자리를 더했다 (DS-02). 회사·정책 링크와 AI 도우미는 헤더에 두지 않는다 (HELP-05·HOME-02).
- * 화면 순서: 워드마크 → 분야 메뉴 → 유틸 메뉴 → 계정 버튼 (모바일은 워드마크 · 계정 버튼 · [메뉴] 한 줄, 그 아래 펼친 메뉴).
+ * 화면 순서: 워드마크 → 분야 메뉴 → 바로 메뉴 → 유틸 메뉴 → 계정 버튼 (모바일은 워드마크 · 계정 버튼 · [메뉴] 한 줄, 그 아래 펼친 메뉴).
  */
-export function Header({ utilities = [], currentSection, account, submenus = {} }: HeaderProps) {
+export function Header({ utilities = [], menu = [], currentSection, account, submenus = {} }: HeaderProps) {
   const enabled = new Set(utilities);
   const utilityLinks = HEADER_UTILITIES.filter((u) => enabled.has(u.key));
+  const menuOn = new Set(menu);
+  const menuLinks = HEADER_MENU.filter((m) => menuOn.has(m.key));
   const sections = HEADER_SECTIONS.map((s) => ({ ...s, children: submenus[s.key] ?? [] }));
   return (
     <header data-ui="header" className="bg-navy-800">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 px-4 py-2">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 px-4 py-2">
         <UiLink
           href="/"
           className="order-1 mr-auto inline-flex min-h-11 items-center text-[17px] font-extrabold tracking-tight text-white transition hover:text-hermes-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:mr-4"
@@ -73,7 +91,7 @@ export function Header({ utilities = [], currentSection, account, submenus = {} 
           {/* 워드마크 — 사이트 이름 글자 그대로 (가운뎃점 없음) */}
           {brand.productName}
         </UiLink>
-        <HeaderNav sections={sections} utilities={utilityLinks} currentSection={currentSection} />
+        <HeaderNav sections={sections} menu={menuLinks} utilities={utilityLinks} currentSection={currentSection} />
         {account && (
           <UiLink
             href={account.href}

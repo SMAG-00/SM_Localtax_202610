@@ -3,7 +3,7 @@ import "server-only";
 // 공개 데이터 함수 (docs/dev/W2-b_설계.md 5장) — 공개 화면(2~4단계)은 여기 함수만 부른다. 모두 anon 키로 읽는다(RLS가 경계).
 export { getSiteChrome } from "./chrome";
 export { closedHomeData, getHomeData, getHomeAmendments, type HomeData } from "./home";
-export { getHubData, getCategoryList, getNewsList, type HubData, type HubTab, type CategoryListData, type NewsListData } from "./hub";
+export { getAllColumns, getHubData, getCategoryList, getNewsList, type AllColumnsData, type HubData, type HubTab, type CategoryListData, type NewsListData } from "./hub";
 export { closedHubData } from "./hub-logic";
 export { getSituationPage, type SituationPage } from "./situations";
 export { getRegionPage, type RegionPage } from "./region";

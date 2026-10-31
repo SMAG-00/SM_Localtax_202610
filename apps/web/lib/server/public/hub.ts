@@ -181,3 +181,35 @@ export async function getNewsList({ section = null, page = 1 }: { section?: Sect
     policyLinks: POLICY_LINKS.filter((p) => NEWS_POLICY_KEYS.has(p.key) && settings.features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
   };
 }
+
+export interface AllColumnsData {
+  /** [전체] + 허브 탭 4개 — 고른 탭은 currentTab */
+  tabs: HubTab[];
+  currentTab: string;
+  section: SectionKey | null;
+  items: ArticleListItem[];
+  page: number;
+  total: number;
+  hasMore: boolean;
+}
+
+/** 전문가칼럼 (/columns — 헤더 바로 메뉴, PO 2026-11-01) — 네 분야의 공개 칼럼(opinion)을 한데 모아 최신 발행 순 (분야별 연재 묶음은 /tax/columns 등 — columns.ts). 분야 탭은 뉴스 전체와 같은 [전체] + 허브 4개 */
+export async function getAllColumns({ section = null, page = 1 }: { section?: SectionKey | null; page?: number } = {}): Promise<AllColumnsData> {
+  const current = pageNumber(page);
+  const { items, total } = await readArticleList(publicDb(), {
+    ...(section ? { section } : {}),
+    contentType: "opinion",
+    limit: LIMITS.pageSize,
+    offset: (current - 1) * LIMITS.pageSize,
+    count: true,
+  });
+  return {
+    tabs: newsTabs("/columns"),
+    currentTab: section ?? ALL_TAB,
+    section,
+    items: items.filter((a) => a.contentType === "opinion"),
+    page: current,
+    total,
+    hasMore: current * LIMITS.pageSize < total,
+  };
+}

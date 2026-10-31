@@ -26,6 +26,7 @@ export function staticTrail(pathname: string): TrailItem[] | null {
     "/news/popular": [item("뉴스", "/news"), item("많이 본 기사", "/news/popular")],
     "/news/video": [item("뉴스", "/news"), item("동영상 기사", "/news/video")],
     "/news/photo": [item("뉴스", "/news"), item("포토 기사", "/news/photo")],
+    "/columns": [item("전문가칼럼", "/columns")],
     "/tax/amendments": [section("tax"), item("개정 트래커", "/tax/amendments")],
     "/tax/interpretations": [section("tax"), item("해석·해설", "/tax/interpretations")],
     "/realestate/inheritance-gift": [section("realestate"), inheritance],

@@ -38,9 +38,9 @@ export function hubTabs(
   return items.length ? [{ id: ALL_TAB, label: "전체", href: SECTION_INFO[section].href }, ...items] : [];
 }
 
-/** 뉴스 전체의 탭 — [전체] + 허브 탭 4개 (CAT-02 '같은 골격에 허브 탭 4개') */
-export function newsTabs(): HubTab[] {
-  return [{ id: ALL_TAB, label: "전체", href: "/news" }, ...SECTION_KEYS.map((key) => ({ id: key, label: NEWS_TAB_LABELS[key], href: `/news?section=${key}` }))];
+/** 뉴스 전체·전문가칼럼(/columns)의 탭 — [전체] + 허브 탭 4개 (CAT-02 '같은 골격에 허브 탭 4개') */
+export function newsTabs(base: "/news" | "/columns" = "/news"): HubTab[] {
+  return [{ id: ALL_TAB, label: "전체", href: base }, ...SECTION_KEYS.map((key) => ({ id: key, label: NEWS_TAB_LABELS[key], href: `${base}?section=${key}` }))];
 }
 
 export { localBlocks, type LocalBlocks } from "./region-hub-logic";

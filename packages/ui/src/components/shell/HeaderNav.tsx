@@ -36,7 +36,18 @@ function ChevronIcon({ open }: { open: boolean }) {
  * 분야마다 하위 메뉴가 있으면 분야 링크 옆에 펼침 단추(공개 단추 — 링크는 그대로 허브로 간다). 하위 메뉴는 한 번에 하나만 열린다.
  * Esc로 닫으면 포커스가 그 단추로 돌아온다 (8.9). 메뉴 바깥을 누르거나 포커스가 그 분야 밖으로 나가면 하위 메뉴가 닫힌다.
  */
-export function HeaderNav({ sections, utilities, currentSection }: { sections: readonly HeaderNavSection[]; utilities: readonly HeaderNavLink[]; currentSection?: string }) {
+export function HeaderNav({
+  sections,
+  menu = [],
+  utilities,
+  currentSection,
+}: {
+  sections: readonly HeaderNavSection[];
+  /** 바로 메뉴 — 분야 메뉴 오른쪽, 펼침 없는 링크 (PO 2026-11-01) */
+  menu?: readonly HeaderNavLink[];
+  utilities: readonly HeaderNavLink[];
+  currentSection?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [openSub, setOpenSub] = useState<string | null>(null);
   const panelId = useId();
@@ -100,7 +111,7 @@ export function HeaderNav({ sections, utilities, currentSection }: { sections: r
         id={panelId}
         onKeyDown={onKeyDown}
         className={cx(
-          "order-4 basis-full flex-col gap-1 border-t border-navy-700 py-2 lg:order-2 lg:flex lg:flex-1 lg:basis-auto lg:flex-row lg:items-center lg:border-t-0 lg:py-0",
+          "order-4 basis-full flex-col gap-1 border-t border-navy-700 py-2 lg:order-2 lg:flex lg:flex-1 lg:basis-auto lg:flex-row lg:flex-wrap lg:items-center lg:border-t-0 lg:py-0",
           open ? "flex" : "hidden",
         )}
       >
@@ -160,6 +171,20 @@ export function HeaderNav({ sections, utilities, currentSection }: { sections: r
             })}
           </ul>
         </nav>
+        {menu.length > 0 && (
+          // 화면이 좁은 데스크톱(1024~1279px)에서는 분야 메뉴 아래 줄로 내려간다(flex-wrap) — 가로 넘침 0
+          <nav aria-label="바로 메뉴" className="border-t border-navy-700 pt-2 lg:ml-auto lg:border-t-0 lg:border-l lg:border-navy-600 lg:pt-0 lg:pl-2">
+            <ul className="flex flex-col lg:flex-row lg:items-center">
+              {menu.map((m) => (
+                <li key={m.key}>
+                  <UiLink href={m.href} onClick={close} data-part="menu-link" className={LINK}>
+                    {m.label}
+                  </UiLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
         {utilities.length > 0 && (
           <nav aria-label="유틸 메뉴" className="border-t border-navy-700 pt-2 lg:ml-auto lg:border-t-0 lg:pt-0">
             <ul className="flex flex-col lg:flex-row lg:items-center">

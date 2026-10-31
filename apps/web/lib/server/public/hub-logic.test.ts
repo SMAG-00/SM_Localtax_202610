@@ -70,6 +70,16 @@ describe("허브 탭 (CAT-02 — 기사 0건 하위 분야는 탭·메뉴에서 
 });
 
 describe("뉴스 전체 탭 (CAT-02 '허브 탭 4개')", () => {
+  test("전문가칼럼(/columns)은 같은 탭을 자기 주소로 — 탭을 눌러도 칼럼 목록에 머문다", () => {
+    expect(newsTabs("/columns").map((t) => [t.label, t.href])).toEqual([
+      ["전체", "/columns"],
+      ["지방세·부동산세금", "/columns?section=tax"],
+      ["부동산재테크", "/columns?section=realestate"],
+      ["부동산금융", "/columns?section=finance"],
+      ["지자체", "/columns?section=local"],
+    ]);
+  });
+
   test("[전체] + 4대 분야 탭 — 글자는 PRD-01A 3장 화면 표(지방세·부동산·개발금융·지자체)", () => {
     expect(newsTabs().map((t) => [t.label, t.href])).toEqual([
       ["전체", "/news"],

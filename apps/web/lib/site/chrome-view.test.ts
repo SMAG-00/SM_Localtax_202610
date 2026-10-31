@@ -3,9 +3,17 @@ import { describe, expect, test } from "vitest";
 import { buildChrome } from "@/lib/server/public/chrome-logic";
 import { FEATURE_KEYS } from "@/lib/server/public/constants";
 import { CLOSED_FEATURES } from "@/lib/server/public/settings";
-import { FOOTER_DISCLAIMER, footerLinks, headerSubmenus, headerUtilityKeys, sectionOfPath } from "./chrome-view";
+import { FOOTER_DISCLAIMER, footerLinks, headerMenuKeys, headerSubmenus, headerUtilityKeys, sectionOfPath } from "./chrome-view";
 
 const allOpen = Object.fromEntries(FEATURE_KEYS.map((k) => [k, true])) as unknown as typeof CLOSED_FEATURES;
+
+describe("헤더 바로 메뉴 (PO 2026-11-01)", () => {
+  test("화면 틀의 바로 메뉴를 헤더 키로 — 꺼지면 빈 목록, 모르는 키는 버린다", () => {
+    expect(headerMenuKeys(buildChrome([], new Map(), CLOSED_FEATURES).menu)).toEqual([]);
+    expect(headerMenuKeys(buildChrome([], new Map(), allOpen).menu)).toEqual(["brief", "columns", "expert_request", "calc"]);
+    expect(headerMenuKeys([{ key: "unknown", label: "x", href: "/x" }, { key: "calc", label: "세금계산기", href: "/calc" }])).toEqual(["calc"]);
+  });
+});
 
 describe("헤더 유틸 메뉴 (HOME-02)", () => {
   test("기능 키가 모두 꺼져 있으면 유틸 메뉴 0", () => {
