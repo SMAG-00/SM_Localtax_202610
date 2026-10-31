@@ -162,7 +162,7 @@ test("d) 원문 해시 변경 — 연결된 해설마다 검수 큐 1건 · 같�
   assert.equal((await post(u.editor, { op: "resolve", queueId })).status, 404, "이미 끝난 항목");
 });
 
-test("e) 화면 — 키 켜짐: 유형 필터·원문 블록 / 꺼짐: 원문 블록 0", async () => {
+test("e) 화면 — 키 켜짐: 유형 필터·원문 블록·감수 서명 따라 해설 표시 / 꺼짐: 원문 블록 0", async () => {
   await setInterpretations(true);
   const list = await page("/tax/interpretations?type=interpretation");
   assert.equal(list.status, 200);
@@ -173,6 +173,19 @@ test("e) 화면 — 키 켜짐: 유형 필터·원문 블록 / 꺼짐: 원문 �
   assert.equal(detail.status, 200);
   assert.ok(detail.html.includes('data-part="legal-docs"') && detail.html.includes(`data-legal-doc="${fx.docs.main}"`), "원문 블록");
   assert.ok(detail.html.includes("시험용 해석 해설"), "해설 블록(기사 본문)은 따로 그려짐");
+  // 해설 표시 (간편 발행 2026-10-31) — b)에서 서명한 해설은 '세무 감수를 거친 해설', 서명이 없으면(최근 감수 기록이 보류) 작성자 책임 해설
+  const reviewMark = (html) => html.match(/data-part="interpretation-review" data-reviewed="(yes|no)"[^>]*>([^<]*)</)?.slice(1, 3);
+  assert.equal((await one("select state from public.article_review_marks where article_id = $1", [fx.article.id])).state, "shown", "b)의 서명이 살아 있음");
+  assert.deepEqual(reviewMark(detail.html), ["yes", "세무 감수를 거친 해설"], "서명 있는 해설 — 상세");
+  const listItem = list.html.slice(list.html.indexOf(`data-article="${fx.article.slug}"`));
+  assert.deepEqual(reviewMark(listItem), ["yes", "세무 감수를 거친 해설"], "서명 있는 해설 — 목록");
+  await db.query("insert into public.editorial_reviews (article_id, version, kind, reviewer_id, decision, reason) values ($1, 1, 'tax_review', $2, 'hold', 'e2e 보류')", [fx.article.id, u.editor.personId]);
+  const unsigned = await page(`/news/${fx.article.slug}`);
+  assert.deepEqual(reviewMark(unsigned.html), ["no", "세무사·회계사 등 작성자 책임 해설"], "서명 없는 해설 — 상세");
+  assert.ok(!unsigned.html.includes("세무 감수를 거친 해설"), "서명 없으면 '감수를 거친' 문구 0");
+  const unsignedList = await page("/tax/interpretations?type=interpretation");
+  assert.deepEqual(reviewMark(unsignedList.html.slice(unsignedList.html.indexOf(`data-article="${fx.article.slug}"`))), ["no", "세무사·회계사 등 작성자 책임 해설"], "서명 없는 해설 — 목록");
+  await db.query("insert into public.editorial_reviews (article_id, version, kind, reviewer_id, decision) values ($1, 1, 'tax_review', $2, 'approve')", [fx.article.id, u.editor.personId]);
   await setInterpretations(false);
   const off = await page(`/news/${fx.article.slug}`);
   assert.ok(!off.html.includes('data-part="legal-docs"'), "키 꺼짐이면 원문 블록 0");

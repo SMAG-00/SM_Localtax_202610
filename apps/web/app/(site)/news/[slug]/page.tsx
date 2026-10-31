@@ -97,7 +97,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
     );
   }
   // 해석 해설이면 원문 블록을 해설 본문과 따로 앞에 둔다 (W3 5단계 — 공개 가능한 원문만, 기능 키 꺼짐이면 없음)
-  const docs = await readPublic("기사 원문 연결", () => getArticleLegalDocs(a.id), () => ({ subject: [], related: [] }));
+  const docs = await readPublic("기사 원문 연결", () => getArticleLegalDocs(a.id), () => ({ subject: [], related: [], reviewed: false }));
   // 칼럼이면 머리 위에 이해관계 줄 + 의견 고지 (W3 6단계 — 기능 키 tax_columns 켜짐·고지 문구 있음일 때만)
   const disclosure = a.contentType === "opinion" ? await readPublic("칼럼 이해관계", () => getColumnDisclosure(a.id), () => null) : null;
   // 개발금융 사례 구조 블록 (W5 DF-03) - 기능 키 finance 켜짐 + 사례 기록이 있는 공개 기사일 때만
@@ -137,7 +137,7 @@ export default async function ArticlePage({ params, searchParams }: Props) {
       )}
       <ColumnDisclosureBlock disclosure={disclosure} />
       <CaseBlock view={financeCase} />
-      <LegalDocBlock subject={docs.subject} related={docs.related} />
+      <LegalDocBlock subject={docs.subject} related={docs.related} reviewed={docs.reviewed} />
       {/* 원문 블록이 있는 해석 해설 열람 → interpretation_viewed(기사 번호·첫 해설 대상 원문 유형) 1건 (W3 10단계). 그리는 것 0 */}
       {docs.subject[0] && <MeasureView name="interpretation_viewed" section={a.section} props={{ article_id: a.id, doc_type: docs.subject[0].doc_type }} />}
       <ThenNowBlock items={signature?.thenNow ?? []} />

@@ -5,6 +5,17 @@ import type { InterpretationListView, LegalDocRow } from "@/lib/server/public";
 // 해석 해설 화면 (TX-09 — docs/dev/W3_설계.md 5장). 필터는 URL 쿼리(GET 폼) — JS가 꺼져도 동작한다.
 // 원문 블록(발행 기관이 낸 글)과 해설 블록(우리가 쓴 글)은 따로 그린다. 원문 글자는 원문 주소로 연결할 뿐 여기서 옮겨 쓰지 않는다.
 
+// 해설 표시 (간편 발행 2026-10-31 PO 결정) — 세무 감수 서명이 살아 있는 해설만 '세무 감수를 거친 해설', 나머지는 작성자 책임 해설
+export const INTERPRETATION_REVIEW_LABEL = { reviewed: "세무 감수를 거친 해설", author: "세무사·회계사 등 작성자 책임 해설" } as const;
+
+function ReviewLabel({ reviewed }: { reviewed: boolean }) {
+  return (
+    <p data-part="interpretation-review" data-reviewed={reviewed ? "yes" : "no"} className="mt-1 text-[13px] font-bold text-hermes-800">
+      {reviewed ? INTERPRETATION_REVIEW_LABEL.reviewed : INTERPRETATION_REVIEW_LABEL.author}
+    </p>
+  );
+}
+
 export function LegalDocMeta({ doc }: { doc: LegalDocRow }) {
   return (
     <p data-part="legal-doc-meta" className="text-[14px] text-navy-700">
@@ -15,7 +26,7 @@ export function LegalDocMeta({ doc }: { doc: LegalDocRow }) {
 }
 
 /** 기사 상세의 원문 블록 — 해설 본문과 분리된 구역 */
-export function LegalDocBlock({ subject, related }: { subject: readonly LegalDocRow[]; related: readonly LegalDocRow[] }) {
+export function LegalDocBlock({ subject, related, reviewed }: { subject: readonly LegalDocRow[]; related: readonly LegalDocRow[]; reviewed: boolean }) {
   if (subject.length === 0 && related.length === 0) return null;
   const group = (title: string, part: string, docs: readonly LegalDocRow[]) =>
     docs.length === 0 ? null : (
@@ -36,6 +47,7 @@ export function LegalDocBlock({ subject, related }: { subject: readonly LegalDoc
   return (
     <aside data-part="legal-docs" aria-label="해석 원문" className="mx-auto mt-6 w-full max-w-[860px] rounded-2xl border border-navy-100 bg-white px-6 py-4">
       <p className="text-[13px] font-bold text-hermes-800">해석 원문 (아래 해설의 대상)</p>
+      <ReviewLabel reviewed={reviewed} />
       {group("해설 대상 원문", "legal-doc-subject", subject)}
       {group("관련 원문", "legal-doc-related", related)}
     </aside>
@@ -47,7 +59,7 @@ export function InterpretationList({ view }: { view: InterpretationListView }) {
   return (
     <main id="main" className="mx-auto w-full max-w-[1100px] px-4 py-10">
       <h1 className="text-[28px] font-black text-navy-900">해석 해설</h1>
-      <p className="mt-2 text-[15px] text-navy-700">예규·유권해석·심판·판례 원문을 확인하고, 세무 감수를 거친 해설을 함께 봅니다.</p>
+      <p className="mt-2 text-[15px] text-navy-700">예규·유권해석·심판·판례 원문을 확인하고, 세무사·회계사 등이 쓴 해설을 함께 봅니다. 세무 감수 서명이 있는 해설에는 '세무 감수를 거친 해설'이라고 표시합니다.</p>
       <form method="get" action="/tax/interpretations" data-part="filters" className="mt-6 flex flex-wrap items-end gap-3 text-[14px]">
         <label className="flex flex-col gap-1">
           유형
@@ -85,6 +97,7 @@ export function InterpretationList({ view }: { view: InterpretationListView }) {
                   {c.article.title}
                 </UiLink>
               </h2>
+              <ReviewLabel reviewed={c.reviewed} />
               {c.docs.map((d) => (
                 <div key={d.id} className="mt-2">
                   <LegalDocMeta doc={d} />

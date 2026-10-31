@@ -28,10 +28,19 @@ export interface InterpretationFilter {
 export interface InterpretationCard {
   article: ArticleListItem;
   docs: LegalDocRow[];
+  /** 세무 감수 서명이 살아 있는 해설인가 (뷰 article_review_marks state='shown' — 서명 기록에서만, 손입력 없음). 아니면 작성자 책임 해설 */
+  reviewed: boolean;
 }
 export interface InterpretationListView {
   filter: InterpretationFilter;
   items: InterpretationCard[];
+}
+
+/** 세무 감수 서명이 살아 있는 기사 번호 (간편 발행 2026-10-31 — 서명 없는 해설은 '작성자 책임 해설'로 표시, 사실과 다른 '감수' 표시 0) */
+async function reviewedArticleIds(db: ReturnType<typeof publicDb>, ids: number[]): Promise<Set<number>> {
+  if (ids.length === 0) return new Set();
+  const marks = await rowsOf<{ article_id: number }>(db.from("article_review_marks").select("article_id").eq("state", "shown").in("article_id", ids), "감수 표시");
+  return new Set(marks.map((m) => num(m.article_id)));
 }
 
 /** URL 쿼리 → 필터 (모르는 값은 무시) */
@@ -59,20 +68,21 @@ export async function getInterpretationList(filter: InterpretationFilter): Promi
   if (articleIds.length === 0) return { filter, items: [] };
   const marked = await rowsOf<{ article_id: number }>(db.from("interpretation_articles").select("article_id").in("article_id", articleIds), "해석 해설 지정");
   const markedIds = marked.map((m) => num(m.article_id));
-  const { items } = await readArticleList(db, { ids: markedIds, limit: 50 });
+  const [{ items }, reviewed] = await Promise.all([readArticleList(db, { ids: markedIds, limit: 50 }), reviewedArticleIds(db, markedIds)]);
   const byDoc = new Map(docs.map((d) => [num(d.id), d]));
   return {
     filter,
     items: items.map((article) => ({
       article,
       docs: links.filter((l) => num(l.article_id) === article.id).flatMap((l) => byDoc.get(num(l.legal_doc_id)) ?? []),
+      reviewed: reviewed.has(article.id),
     })),
   };
 }
 
 /** 기사 상세의 원문 블록 — 해석 해설로 지정된 공개 기사의 공개 가능한 원문(subject·related). 기능 키가 꺼져 있거나 해당 없으면 빈 목록 */
-export async function getArticleLegalDocs(articleId: number): Promise<{ subject: LegalDocRow[]; related: LegalDocRow[] }> {
-  const empty = { subject: [], related: [] };
+export async function getArticleLegalDocs(articleId: number): Promise<{ subject: LegalDocRow[]; related: LegalDocRow[]; reviewed: boolean }> {
+  const empty = { subject: [], related: [], reviewed: false };
   const settings = await readPublicSettings();
   if (!settings.features.interpretations) return empty;
   const db = publicDb();
@@ -80,7 +90,10 @@ export async function getArticleLegalDocs(articleId: number): Promise<{ subject:
   if (marked.length === 0) return empty;
   const links = await rowsOf<{ legal_doc_id: number; role: string }>(db.from("article_legal_docs").select("legal_doc_id, role").eq("article_id", articleId), "원문 연결");
   if (links.length === 0) return empty;
-  const docs = await rowsOf<LegalDocRow>(db.from("legal_docs").select(DOC_COLUMNS).in("id", links.map((l) => num(l.legal_doc_id))), "해석 원문");
+  const [docs, reviewed] = await Promise.all([
+    rowsOf<LegalDocRow>(db.from("legal_docs").select(DOC_COLUMNS).in("id", links.map((l) => num(l.legal_doc_id))), "해석 원문"),
+    reviewedArticleIds(db, [articleId]),
+  ]);
   const pick = (role: string) => links.filter((l) => l.role === role).flatMap((l) => docs.filter((d) => num(d.id) === num(l.legal_doc_id)));
-  return { subject: pick("subject"), related: pick("related") };
+  return { subject: pick("subject"), related: pick("related"), reviewed: reviewed.has(articleId) };
 }
