@@ -103,16 +103,20 @@ export function CheckPanel({
       )}
       {view && (
         <>
-          <dl className="mt-3 grid grid-cols-4 gap-2" aria-label="축별 점수">
-            {view.scores.map((s) => (
-              <div key={s.label} className="rounded-xl border border-navy-100 bg-ivory px-1 py-2 text-center">
-                <dt className="text-[13px] font-bold text-navy-600">{s.label}</dt>
-                <dd className="mt-1 font-mono text-[17px] font-bold text-navy-900">{s.value}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="mt-2 text-[13px] text-navy-600">{view.disclaimer}</p>
-          <p className={`mt-1 text-navy-600 ${MONO}`}>규칙 {view.ruleVersion}</p>
+          {/* 점수·규칙 버전은 내부 품질 지표 — 매일 볼 필요가 없어 접어 둔다 */}
+          <details className="mt-3">
+            <summary className="cursor-pointer text-[14px] font-bold text-navy-700">품질 점수 보기</summary>
+            <dl className="mt-2 grid grid-cols-4 gap-2" aria-label="축별 점수">
+              {view.scores.map((s) => (
+                <div key={s.label} className="rounded-xl border border-navy-100 bg-ivory px-1 py-2 text-center">
+                  <dt className="text-[13px] font-bold text-navy-600">{s.label}</dt>
+                  <dd className="mt-1 font-mono text-[17px] font-bold text-navy-900">{s.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-2 text-[13px] text-navy-600">{view.disclaimer}</p>
+            <p className={`mt-1 text-navy-600 ${MONO}`}>규칙 {view.ruleVersion}</p>
+          </details>
 
           <h3 className="mt-4 text-[15px] font-black text-navy-900">
             {PANEL_COPY.blockers} <span data-testid="blocker-count">{view.blockers.length}</span>개
@@ -174,15 +178,12 @@ function Items({ items, tone, label, testId }: { items: readonly PanelItem[]; to
   return (
     <ul data-testid={testId} className="mt-2 space-y-2">
       {items.map((it) => (
-        <li key={it.key} data-rule={it.id} className="flex items-start gap-2 text-[14px] text-navy-800">
+        <li key={it.key} data-rule={it.id} title={`${it.ruleRef} · ${it.id}`} className="flex items-start gap-2 text-[14px] text-navy-800">
           <ToneChip tone={tone}>{label}</ToneChip>
           <span className="min-w-0 [overflow-wrap:anywhere]">
             <span className="block font-bold text-navy-900">{it.title}</span>
             <span className="block">{it.message}</span>
             {it.where && <span className="block text-navy-600">위치: {it.where}</span>}
-            <span className={`block text-navy-600 ${MONO}`}>
-              {it.ruleRef} · {it.id}
-            </span>
           </span>
         </li>
       ))}

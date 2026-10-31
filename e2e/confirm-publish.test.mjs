@@ -6,6 +6,9 @@
 //     → desk_edit 승인 1행 checklist.selfPublish = true · check_log.publish.selfPublish = true · 감사 로그 사유 '본인 발행'(편집 승인·발행 둘 다)
 //  c) [감수하고 발행] — 감수위원+편집 책임자 계정이 법률 주장이 있는 기자 기사(세무 감수 대상)를 연다 → 감수 2항목 + 편집 4항목 → 누름
 //     → 요청 순서 reviews(tax_review) → reviews(desk_edit) → publish · tax_review·desk_edit 승인 행 · 세무 감수 상태 approved · published
+//  d) 발행 기사 빠른 수정 (2026-10-31 PO "대폭 간소하게") — a)에서 발행한 기사를 편집 책임자가 연다
+//     → 칸 바로 가기는 기본 정보·본문·저장·그 밖의 칸만 · 핵심 주장 등은 접힌 '그 밖의 칸' 안(안 보임) · 점검 결과도 접힘
+//     → 요약만 고치고 수정 종류 '오탈자'만 고른 뒤 사유는 비워 저장 → 새 버전 · 게재 유지 · 수정 기록(article_revisions) 사유 '요약 수정'·종류 typo
 // 만든 계정·기사·감사 로그는 끝나면 지운다.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -289,4 +292,42 @@ test("c) [감수하고 발행] — 감수위원+편집 책임자가 법률 주�
     ],
   );
   await assertPublic(fx.tax);
+});
+
+test("d) 발행 기사 빠른 수정 — 고칠 칸만 보이고, 요약만 고친 뒤 수정 종류만 고르면 사유 '요약 수정'이 자동으로 남는다", async () => {
+  const before = await one("select version, status from public.articles where id = $1", [fx.plain.id]);
+  assert.equal(before.status, "published", "a)에서 발행된 기사");
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  try {
+    const page = await context.newPage();
+    const path = `/admin/articles/${fx.plain.id}`;
+    await loginAt(page, u.editor, path);
+    const nav = page.locator('nav[aria-label="편집 화면 칸"] a');
+    await nav.first().waitFor();
+    assert.deepEqual(await nav.allInnerTexts(), ["기본 정보", "본문", "저장", "그 밖의 칸"]);
+    // 핵심 주장·「지방세로 읽기」는 접힌 '그 밖의 칸' 안 — 화면에 없다가 펼치면 보인다
+    const more = page.locator("details#more-sections");
+    assert.equal(await more.evaluate((d) => d.open), false);
+    assert.equal(await page.locator("#claims").isVisible(), false);
+    assert.equal(await page.getByTestId("check-panel").isVisible(), false, "발행 점검 결과는 접혀 있다");
+    // 저장 칸은 본문 바로 다음 (그 밖의 칸보다 앞)
+    assert.equal(await page.evaluate(() => document.querySelector("#save").compareDocumentPosition(document.querySelector("#more-sections")) & Node.DOCUMENT_POSITION_FOLLOWING), 4);
+
+    const summary = "요약 문구를 다듬었습니다. 본문은 그대로입니다.";
+    await page.fill("#meta-summary", summary);
+    await page.selectOption("#save-update-kind", "typo");
+    await page.getByText('비워 두면 "요약 수정"(으)로 남깁니다').waitFor();
+    const saved = page.waitForResponse((res) => res.request().method() === "PATCH" && new URL(res.url()).pathname === `/api/admin/articles/${fx.plain.id}`);
+    await page.locator("#save").getByRole("button", { name: "저장" }).click();
+    const res = await saved;
+    assert.equal(res.status(), 200, `저장 응답: ${(await res.text()).slice(0, 1500)}`);
+  } finally {
+    await context.close();
+  }
+  const after = await one("select version, status, summary from public.articles where id = $1", [fx.plain.id]);
+  assert.equal(after.status, "published", "발행 기사는 고쳐도 게재 유지");
+  assert.equal(after.version, before.version + 1);
+  assert.equal(after.summary, "요약 문구를 다듬었습니다. 본문은 그대로입니다.");
+  const rev = await one("select reason, update_kind from public.article_revisions where article_id = $1 and version = $2", [fx.plain.id, after.version]);
+  assert.deepEqual({ reason: rev.reason, kind: rev.update_kind }, { reason: "요약 수정", kind: "typo" });
 });
