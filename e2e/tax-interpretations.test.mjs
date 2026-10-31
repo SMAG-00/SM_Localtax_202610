@@ -113,7 +113,7 @@ test("a) 권한·입력 — 기자 403 · 잘못된 유형·주소 422 · 원문
   assert.equal(row.payload, `시험용 가짜 원문 ${staff.run}`);
 });
 
-test("b) 발행 검사 — 원문 연결 0건·필수 칸 빈 원문·세무 감수 없음은 거부, 모두 갖추면 발행", async () => {
+test("b) 발행 검사 — 원문 연결 0건·필수 칸 빈 원문은 거부, 세무 감수 없이도 발행(간편 발행), 서명은 발행 뒤에", async () => {
   const id = fx.article.id;
   assert.equal((await post(u.editor, { op: "mark", articleId: id })).status, 201);
   await assert.rejects(publish(id), /원문.*1건 이상/, "원문 연결 0건");
@@ -125,11 +125,11 @@ test("b) 발행 검사 — 원문 연결 0건·필수 칸 빈 원문·세무 감
   assert.equal(await anonRows(fx.docs.empty), 0, "필수 칸 빈 원문 공개 0");
   assert.equal((await post(u.editor, { op: "link", articleId: id, legalDocId: fx.docs.main, role: "subject" })).status, 201);
   assert.equal((await post(u.editor, { op: "link", articleId: id, legalDocId: fx.docs.main, role: "subject" })).status, 409, "같은 연결 두 번");
-  await assert.rejects(publish(id), /세무 감수/, "세무 감수 승인 없음");
-  await db.query("insert into public.editorial_reviews (article_id, version, kind, reviewer_id, decision) values ($1, 1, 'tax_review', $2, 'approve')", [id, u.editor.personId]);
-  assert.equal((await one("select tax_review_status from public.articles where id = $1", [id])).tax_review_status, "approved");
+  // 간편 발행 (2026-10-31 PO 결정 — DB 235) — 세무 감수 승인 없이도 발행된다(작성자 책임). 감수 상태는 서명 기록에서만 approved
   await publish(id);
-  assert.equal((await one("select status from public.articles where id = $1", [id])).status, "published");
+  assert.deepEqual(await one("select status, tax_review_status <> 'approved' as unsigned from public.articles where id = $1", [id]), { status: "published", unsigned: true });
+  await db.query("insert into public.editorial_reviews (article_id, version, kind, reviewer_id, decision) values ($1, 1, 'tax_review', $2, 'approve')", [id, u.editor.personId]);
+  assert.equal((await one("select tax_review_status from public.articles where id = $1", [id])).tax_review_status, "approved", "서명은 발행 뒤에도 남는다");
   assert.equal(await anonRows(fx.docs.main), 1, "필수 칸 갖춘 확인 원문 공개 1");
 });
 

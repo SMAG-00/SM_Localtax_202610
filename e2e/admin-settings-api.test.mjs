@@ -177,9 +177,10 @@ test("금지 표현·공포 표현 — 사전에 더하면 점검 API가 바로 
   assert.deepEqual(stored.phrases, [...beforeValue.phrases, banned]);
   assert.notEqual(stored.version, beforeValue.version);
   assert.equal(await auditCount(u.editor.id, "dictionary.add", "settings:forbidden_phrases"), 1);
-  assert.deepEqual(await phraseHits("ux01.forbidden-phrase"), [banned], "배포 없이 다음 점검부터 막힌다");
-  const blocked = await api("GET", `/articles/${articleId}/check`, u.reporter);
-  assert.ok(blocked.body.failed.includes("ux01.forbidden-phrase"));
+  assert.deepEqual(await phraseHits("ux01.forbidden-phrase"), [banned], "배포 없이 다음 점검부터 잡힌다");
+  // 간편 발행 (2026-10-31 PO 결정) — 금지 표현은 발행을 막지 않고 경고(발행 기록)로 남는다
+  const warned = await api("GET", `/articles/${articleId}/check`, u.reporter);
+  assert.ok(warned.body.warnings.includes("ux01.forbidden-phrase") && !warned.body.failed.includes("ux01.forbidden-phrase"), show(warned));
 
   assert.equal((await api("POST", "/dictionaries/forbidden", u.editor, { op: "add", phrase: ` ${banned} ` })).status, 409, "이미 있는 표현");
   assert.equal((await api("POST", "/dictionaries/forbidden", u.reporter, { op: "add", phrase: "기자 표현" })).status, 403);
@@ -189,7 +190,7 @@ test("금지 표현·공포 표현 — 사전에 더하면 점검 API가 바로 
   const remove = await api("POST", "/dictionaries/forbidden", u.editor, { op: "remove", phrase: banned });
   assert.equal(remove.status, 200, show(remove));
   assert.deepEqual((await setting("forbidden_phrases")).phrases, beforeValue.phrases);
-  assert.deepEqual(await phraseHits("ux01.forbidden-phrase"), [], "사전에서 지우면 다음 점검부터 막히지 않는다");
+  assert.deepEqual(await phraseHits("ux01.forbidden-phrase"), [], "사전에서 지우면 다음 점검부터 잡히지 않는다");
   assert.equal((await api("POST", "/dictionaries/forbidden", u.editor, { op: "remove", phrase: banned })).status, 404);
   const removedAudit = await lastAudit(u.editor.id, "dictionary.remove", "settings:forbidden_phrases");
   assert.ok(removedAudit.before.phrases.includes(banned) && !removedAudit.after.phrases.includes(banned), "감사 로그에 전후 목록");
