@@ -17,9 +17,8 @@ describe("헤더 — 워드마크", () => {
     expect(root.getAttribute("data-ui")).toBe("header");
     expect(tokens(root)).toContain("bg-navy-800");
 
-    const home = screen.getByRole("link", { name: `${brand.wordmark.lead} ${brand.wordmark.tail}` });
+    const home = screen.getByRole("link", { name: brand.productName });
     expect(home.getAttribute("href")).toBe("/");
-    expect(home.textContent).toBe(`${brand.wordmark.lead} ${brand.wordmark.tail}`);
     expect(home.textContent).toBe(brand.productName);
     expect(home.textContent).not.toContain("·");
     expect(tokens(home)).toEqual(expect.arrayContaining(["text-[17px]", "font-extrabold", "text-white"]));

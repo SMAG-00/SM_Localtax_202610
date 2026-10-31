@@ -115,7 +115,7 @@ test("a) 홈 - 키 shortcuts 꺼짐이면 카드 0, 켜짐이면 헤더 줄 없�
   assert.ok(block.includes(">바로가기</h2>") && !block.includes("SHORTCUTS"), "블록 제목 '바로가기', 영문 아이브로 0");
   const cardsHtml = block.split('data-part="shortcut-cards"')[1].split("</ul>")[0];
   const names = [...cardsHtml.matchAll(/<span class="text-\[15px\][^>]*>([^<]+)<\/span>/g)].map((m) => m[1].replace(/&amp;/g, "&"));
-  assert.deepEqual(names, ["부동산 세금 계산기", "금주 부동산 재테크", "금주 지방세 최신법령·유권해석", "(가칭)김의효 지방세연구 전문가 상담요청"], "홈 카드 4장 새 이름·순서");
+  assert.deepEqual(names, ["부동산 세금 계산기", "금주 부동산 재테크", "금주 지방세 최신법령·유권해석", "(가칭)지방세연구 전문가 상담요청"], "홈 카드 4장 새 이름·순서");
   assert.ok(!cardsHtml.includes("bg-hermes-500"), "상담 요청 강조(오렌지 면) 0");
   for (const m of cardsHtml.matchAll(/href="([^"]+)"/g)) assert.ok(!/[?#]/.test(m[1]), `바로가기 주소에 쿼리·해시 0: ${m[1]}`);
   const heroAt = on.text.indexOf('data-part="shortcut-cards"');

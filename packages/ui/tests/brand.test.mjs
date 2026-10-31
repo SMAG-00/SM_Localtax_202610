@@ -15,14 +15,12 @@ const files = execFileSync("git", ["-C", ROOT, "ls-files", "-z", "--cached", "--
   .filter((f) => fs.existsSync(path.join(ROOT, f)));
 const read = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");
 
-test("제품명·워드마크 값이 비어 있지 않다", () => {
+test("제품명 값이 비어 있지 않다", () => {
   assert.ok(brand.productName.length > 0);
-  assert.ok(brand.wordmark.lead.length > 0 && brand.wordmark.tail.length > 0);
 });
 
-test("사이트 이름은 「김의효 지방세연구」, 워드마크는 앞뒤 낱말을 띄어쓰기로 이은 같은 글자, 운영 주체는 따로 SM(선명) (PO 결정 2026-10-24)", () => {
-  assert.equal(brand.productName, "김의효 지방세연구");
-  assert.equal(`${brand.wordmark.lead} ${brand.wordmark.tail}`, brand.productName);
+test("사이트 이름은 「지방세연구」, 운영 주체는 따로 SM(선명) (PO 결정 2026-11-01)", () => {
+  assert.equal(brand.productName, "지방세연구");
   assert.ok(!/[·]/.test(brand.productName));
   assert.equal(brand.operatorName, "SM(선명)");
   assert.notEqual(brand.operatorName, brand.productName);
@@ -30,11 +28,12 @@ test("사이트 이름은 「김의효 지방세연구」, 워드마크는 앞�
 
 test("제호는 제품명에 「(가칭)」을 붙인 값이고, 제품명이 바뀌면 함께 바뀐다 (바닥글 매체 정보·저작권 문구·Copyright 줄이 이 값을 쓴다)", () => {
   assert.equal(brand.mastheadName, `${brand.productName}(가칭)`);
-  assert.equal(brand.mastheadName, "김의효 지방세연구(가칭)");
+  assert.equal(brand.mastheadName, "지방세연구(가칭)");
 });
 
-test("제품명 문자열이 brand.ts 한 곳에만 있다", () => {
-  const hits = files.filter((f) => read(f).includes(brand.productName));
+test("제품명 문자열이 brand.ts 한 곳에만 있다 ('월간지방세연구'·'한국지방세연구회'처럼 다른 이름 속 글자는 빼고 낱말로만 센다)", () => {
+  const word = new RegExp(`(?<![가-힣])${brand.productName}(?![가-힣])`);
+  const hits = files.filter((f) => word.test(read(f)));
   assert.deepEqual(hits, ["packages/ui/src/brand.ts"]);
 });
 
@@ -45,5 +44,4 @@ test("화면 코드에 'SM 플랫폼'처럼 두 이름을 섞은 표현이 없�
 
 test("기존 계산기 사이트 이름은 'SM 부동산 세금 플랫폼'으로 따로 둔다", () => {
   assert.equal(brand.smCalculatorSiteName, "SM 부동산 세금 플랫폼");
-  assert.notEqual(brand.wordmark.tail, "부동산 세금");
 });

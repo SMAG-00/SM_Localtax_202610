@@ -70,8 +70,8 @@ export function Header({ utilities = [], currentSection, account, submenus = {} 
           href="/"
           className="order-1 mr-auto inline-flex min-h-11 items-center text-[17px] font-extrabold tracking-tight text-white transition hover:text-hermes-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:mr-4"
         >
-          {/* 워드마크 — 앞 낱말과 뒤 낱말을 띄어쓰기 하나로 잇는다 (가운뎃점 없음) */}
-          {brand.wordmark.lead} {brand.wordmark.tail}
+          {/* 워드마크 — 사이트 이름 글자 그대로 (가운뎃점 없음) */}
+          {brand.productName}
         </UiLink>
         <HeaderNav sections={sections} utilities={utilityLinks} currentSection={currentSection} />
         {account && (
