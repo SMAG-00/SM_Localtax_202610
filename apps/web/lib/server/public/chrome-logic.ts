@@ -21,7 +21,7 @@ export interface SectionMenu extends NavLink {
 
 export interface SiteChrome {
   sections: SectionMenu[];
-  /** 바로 메뉴 (PO 2026-11-01) — 홈 바로가기와 같은 기능 키 shortcuts가 켜지면 4개, 꺼지면 0 */
+  /** 바로 메뉴 (PO 2026-11-01) — 기능 키 shortcuts가 켜지면 5개, 꺼지면 0 */
   menu: NavLink[];
   utilities: NavLink[];
   policyLinks: NavLink[];

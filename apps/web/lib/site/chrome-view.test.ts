@@ -10,7 +10,7 @@ const allOpen = Object.fromEntries(FEATURE_KEYS.map((k) => [k, true])) as unknow
 describe("헤더 바로 메뉴 (PO 2026-11-01)", () => {
   test("화면 틀의 바로 메뉴를 헤더 키로 — 꺼지면 빈 목록, 모르는 키는 버린다", () => {
     expect(headerMenuKeys(buildChrome([], new Map(), CLOSED_FEATURES).menu)).toEqual([]);
-    expect(headerMenuKeys(buildChrome([], new Map(), allOpen).menu)).toEqual(["brief", "columns", "expert_request", "calc"]);
+    expect(headerMenuKeys(buildChrome([], new Map(), allOpen).menu)).toEqual(["popular", "brief", "columns", "expert_request", "calc"]);
     expect(headerMenuKeys([{ key: "unknown", label: "x", href: "/x" }, { key: "calc", label: "세금계산기", href: "/calc" }])).toEqual(["calc"]);
   });
 });

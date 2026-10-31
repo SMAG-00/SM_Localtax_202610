@@ -62,10 +62,11 @@ describe("헤더 — 상단 메뉴 (4대 분야)", () => {
 });
 
 describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
-  it("켜진 항목을 최신법령·유권해석 → 전문가칼럼 → 전문가상담 → 세금계산기 순서로, 펼침 단추 없이 분야 메뉴 뒤에 둔다", () => {
-    render(<Header menu={["calc", "expert_request", "columns", "brief"]} />);
+  it("켜진 항목을 최신인기글 → 최신법령·유권해석 → 전문가칼럼 → 전문가상담 → 세금계산기 순서로, 펼침 단추 없이 분야 메뉴 뒤에 둔다", () => {
+    render(<Header menu={["calc", "expert_request", "columns", "brief", "popular"]} />);
     const nav = screen.getByRole("navigation", { name: "바로 메뉴" });
     expect(pairs(within(nav).getAllByRole("link"))).toEqual([
+      ["최신인기글", "/news/popular"],
       ["최신법령·유권해석", "/brief"],
       ["전문가칼럼", "/columns"],
       ["전문가상담", "/experts/request"],
@@ -75,7 +76,7 @@ describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
     // 분야 메뉴는 그대로 정확히 4개 — 바로 메뉴 링크는 분야 링크(section-link)로 세지 않는다
     expect(document.querySelectorAll('[data-part="section-link"]')).toHaveLength(4);
     const all = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
-    expect(all.indexOf("/brief")).toBeGreaterThan(all.indexOf("/local"));
+    expect(all.indexOf("/news/popular")).toBeGreaterThan(all.indexOf("/local"));
   });
 
   it("바로 메뉴가 꺼져 있으면(빈 목록) 바로 메뉴 요소 자체가 없다 (빈 링크 0)", () => {

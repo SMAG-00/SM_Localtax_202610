@@ -118,12 +118,13 @@ test("a) 키 shortcuts 꺼짐이면 헤더 바로 메뉴 0, 켜짐이면 헤더 
   assert.deepEqual(
     menuLinks(on.text),
     [
+      ["최신인기글", "/news/popular"],
       ["최신법령·유권해석", "/brief"],
       ["전문가칼럼", "/columns"],
       ["전문가상담", "/experts/request"],
       ["세금계산기", "/calc"],
     ],
-    "헤더 바로 메뉴 4개 이름·순서·주소",
+    "헤더 바로 메뉴 5개 이름·순서·주소",
   );
   assert.ok(!/AI\s*(세금\s*)?계산/.test(on.text.replace(/AI 도우미|AI 세금 도우미/g, "")), "AI 계산기 글자 0");
   for (const [, href] of menuLinks(on.text)) assert.ok(!/[?#]/.test(href), `바로 메뉴 주소에 쿼리·해시 0: ${href}`);
@@ -136,7 +137,7 @@ test("a2) 바로 메뉴 - 키 shortcuts만 켜면 도착 키·공개 호가 없�
   const home = await page("/");
   assert.equal(home.status, 200);
   const hrefs = menuLinks(home.text).map(([, h]) => h);
-  assert.deepEqual(hrefs, ["/brief", "/columns", "/experts/request", "/calc"], `헤더 바로 메뉴 4개: ${hrefs.join(",")}`);
+  assert.deepEqual(hrefs, ["/news/popular", "/brief", "/columns", "/experts/request", "/calc"], `헤더 바로 메뉴 5개: ${hrefs.join(",")}`);
   for (const h of [...hrefs, "/realestate/weekly"]) {
     const res = await page(h);
     assert.equal(res.status, 200, `${h} 200 (404 아님)`);
