@@ -99,7 +99,8 @@ async function menuLabels(page) {
   return page.locator('nav[aria-label="편집국 메뉴"] a').allInnerTexts();
 }
 // 묶음 메뉴(F4) — 상단 그룹 버튼 글자. 항목 링크는 닫힌 그룹에서도 문서에 남아 menuLabels가 전체 목록을 읽는다
-const menuGroupLabels = (page) => page.locator('nav[aria-label="편집국 메뉴"] button[data-group]').allInnerTexts();
+// 그룹 버튼의 이름 칸만 읽는다 — 그룹은 '더 보기' 안에 접혀 있어 innerText가 숨은 펼침 표시(+)까지 읽는다
+const menuGroupLabels = (page) => page.locator('nav[aria-label="편집국 메뉴"] button[data-group] > span:first-child').allTextContents();
 
 async function createAssignment(page, { hypothesis, method }) {
   await open(page, "/admin/stories");
