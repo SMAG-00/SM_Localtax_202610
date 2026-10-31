@@ -59,7 +59,7 @@ export function InterpretationList({ view }: { view: InterpretationListView }) {
   return (
     <main id="main" className="mx-auto w-full max-w-[1100px] px-4 py-10">
       <h1 className="text-[28px] font-black text-navy-900">해석 해설</h1>
-      <p className="mt-2 text-[15px] text-navy-700">예규·유권해석·심판·판례 원문을 확인하고, 세무사·회계사 등이 쓴 해설을 함께 봅니다. 세무 감수 서명이 있는 해설에는 '세무 감수를 거친 해설'이라고 표시합니다.</p>
+      <p className="mt-2 text-[15px] text-navy-700">예규·유권해석·심판·판례 원문을 확인하고, 세무사·회계사 등이 쓴 해설을 함께 봅니다. 세무 감수 서명이 있는 해설에는 「세무 감수를 거친 해설」이라고 표시합니다.</p>
       <form method="get" action="/tax/interpretations" data-part="filters" className="mt-6 flex flex-wrap items-end gap-3 text-[14px]">
         <label className="flex flex-col gap-1">
           유형
