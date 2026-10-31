@@ -1,5 +1,7 @@
 // 편집 승인·세무 감수 기록(editorial_reviews) — NAV-03 · NAV-12 · ART-01.
 // ① 작성 기자 본인의 편집 승인(desk_edit)은 거부 — 관리자(PO)도 예외 없음 (PRD-00 6장)
+//    예외 하나 (2026-10-31 PO 결정 — '본인 발행'): 편집 책임자(staff_roles editor)가 세무 감수가 필요 없는(not_required) 자기 글을
+//    checklist.selfPublish = true로 승인하는 경우만 저장된다. 칼럼(opinion)은 제외 (BR-08)
 // ② desk_edit와 tax_review는 서로를 대신하지 않는다 — 기사의 편집 승인 상태(editorial_status)와 세무 감수 상태(tax_review_status)는
 //    각각 자기 종류의 기록으로만 '승인'이 된다
 import { test, before, after } from "node:test";
@@ -64,6 +66,96 @@ for (const decision of ["approve", "reject", "hold"]) {
       }));
   }
 }
+
+// ── 본인 발행 (2026-10-31 PO 결정) ──
+// 편집국 계정(auth.users) + 서비스 역할(staff_roles) + 인물(people.staff_user_id)을 함께 만든다
+const staffPerson = async (staffRoles, personRoles = ["reporter", "editor"]) => {
+  const user = (await client.query("insert into auth.users (id) values (gen_random_uuid()) returning id")).rows[0].id;
+  for (const role of staffRoles) await client.query("insert into public.staff_roles (user_id, role, granted_by) values ($1, $2, 'admin:test@example.test')", [user, role]);
+  const id = (await client.query("insert into public.people (slug, name, roles, staff_user_id) values ($1, '시험', $2, $3) returning id", [uniq("p"), personRoles, user])).rows[0].id;
+  return id;
+};
+const REVIEW_WITH_CHECKLIST =
+  "insert into public.editorial_reviews (article_id, kind, reviewer_id, decision, reason, checklist) values ($1, 'desk_edit', $2, $3, $4, $5::jsonb) returning *";
+const SELF = JSON.stringify({ selfPublish: true });
+
+test("본인 발행 — 편집 책임자가 세무 감수 대상이 아닌 자기 글을 selfPublish로 승인하면 저장되고 편집 승인 상태가 approved", () =>
+  tx(async () => {
+    const editor = await staffPerson(["editor"]);
+    const a = await article(editor);
+    const r = await attempt(REVIEW_WITH_CHECKLIST, [a.id, editor, "approve", null, SELF], "service_role");
+    assert.ok(r.ok, r.message);
+    assert.equal(r.rows[0].checklist.selfPublish, true, "본인 발행 표시가 기록에 남는다");
+    assert.equal((await statusOf(a.id)).editorial_status, "approved");
+  }));
+
+test("본인 발행 — selfPublish 표시가 없거나 true가 아니면 작성 기자 본인의 승인은 여전히 거부 (NAV-12)", () =>
+  tx(async () => {
+    const editor = await staffPerson(["editor"]);
+    const a = await article(editor);
+    for (const checklist of ["{}", JSON.stringify({ selfPublish: false }), JSON.stringify({ selfPublish: "true" })]) {
+      const r = await attempt(REVIEW_WITH_CHECKLIST, [a.id, editor, "approve", null, checklist], "service_role");
+      assert.equal(r.ok, false, checklist);
+      assert.match(r.message, /NAV-12/);
+    }
+    assert.equal((await statusOf(a.id)).editorial_status, "pending");
+  }));
+
+test("본인 발행 — 세무 감수 상태가 not_required가 아니면(pending·approved 등) 거부", () =>
+  tx(async () => {
+    const editor = await staffPerson(["editor"]);
+    const pending = await article(editor, { content_type: "explainer", tax_review_status: "pending" });
+    const r = await attempt(REVIEW_WITH_CHECKLIST, [pending.id, editor, "approve", null, SELF], "service_role");
+    assert.equal(r.ok, false);
+    assert.match(r.message, /세금 내용이 있는 글은 본인 발행할 수 없습니다/);
+    assert.equal((await statusOf(pending.id)).editorial_status, "pending");
+
+    // 세무 감수가 끝난(approved) 글도 세금 내용이 있는 글이다 — 다른 편집자의 승인이 필요하다
+    const signed = await article(editor, { content_type: "explainer", tax_review_status: "pending" });
+    await client.query(REVIEW, [signed.id, "tax_review", await person(["reviewer"]), "approve", null]);
+    assert.equal((await statusOf(signed.id)).tax_review_status, "approved");
+    assert.equal((await attempt(REVIEW_WITH_CHECKLIST, [signed.id, editor, "approve", null, SELF], "service_role")).ok, false);
+  }));
+
+test("본인 발행 — 칼럼(opinion)은 거부 (BR-08)", () =>
+  tx(async () => {
+    const editor = await staffPerson(["editor"]);
+    const a = await article(editor, { content_type: "opinion" });
+    const r = await attempt(REVIEW_WITH_CHECKLIST, [a.id, editor, "approve", null, SELF], "service_role");
+    assert.equal(r.ok, false);
+    assert.match(r.message, /칼럼|BR-08/);
+  }));
+
+test("본인 발행 — 편집 책임자(editor) 역할이 없는 작성자(기자·인물 표 roles만 editor·계정 연결 없음)는 거부", () =>
+  tx(async () => {
+    // 기자 계정: staff_roles reporter만
+    const reporter = await staffPerson(["reporter"]);
+    const a = await article(reporter);
+    const r = await attempt(REVIEW_WITH_CHECKLIST, [a.id, reporter, "approve", null, SELF], "service_role");
+    assert.equal(r.ok, false);
+    assert.match(r.message, /편집 책임자/);
+    // 인물 표 roles에 editor가 있어도 계정(staff_user_id)이 없으면 역할을 확인할 수 없다 — 거부
+    const unlinked = await person(["reporter", "editor"]);
+    const b = await article(unlinked);
+    assert.equal((await attempt(REVIEW_WITH_CHECKLIST, [b.id, unlinked, "approve", null, SELF], "service_role")).ok, false);
+  }));
+
+test("본인 발행 — 승인(approve)에만 쓴다: 본인의 반려·보류는 selfPublish가 있어도 거부", () =>
+  tx(async () => {
+    const editor = await staffPerson(["editor"]);
+    const a = await article(editor);
+    for (const decision of ["reject", "hold"]) {
+      assert.equal((await attempt(REVIEW_WITH_CHECKLIST, [a.id, editor, decision, "사유", SELF], "service_role")).ok, false, decision);
+    }
+  }));
+
+test("본인 발행 — 저장된 본인 승인 기록에서 selfPublish를 지우는 UPDATE는 거부", () =>
+  tx(async () => {
+    const editor = await staffPerson(["editor"]);
+    const a = await article(editor);
+    const row = (await client.query(REVIEW_WITH_CHECKLIST, [a.id, editor, "approve", null, SELF])).rows[0];
+    assert.equal((await attempt("update public.editorial_reviews set checklist = '{}'::jsonb where id = $1", [row.id], "service_role")).ok, false);
+  }));
 
 test("다른 편집자의 desk_edit 승인은 저장되고 기사의 편집 승인 상태가 approved가 된다", () =>
   tx(async () => {

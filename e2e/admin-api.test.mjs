@@ -290,6 +290,28 @@ test("기자는 자기 기사를 편집 승인할 수 없다 — 기자 역할 4
   assert.equal((await one("select count(*)::int n from public.editorial_reviews where article_id = $1", [own.body.article.id])).n, 0);
 });
 
+test("본인 발행 (2026-10-31 PO 결정) — 작성자인 편집 책임자가 selfPublish로 승인하면 201·기록·감사 '본인 발행', 세무 감수 대상이면 403", async () => {
+  const own = await api("POST", "/articles", u.editorB, { slug: slug("selfpub"), title: `본인 발행 ${staff.run}`, section: "tax", contentType: "explainer" });
+  assert.equal(own.status, 201, show(own));
+  staff.trackArticle(own.body.article.id);
+  const id = own.body.article.id;
+  const ok = await api("POST", `/articles/${id}/reviews`, u.editorB, { kind: "desk_edit", decision: "approve", checklist: { selfPublish: true } });
+  assert.equal(ok.status, 201, show(ok));
+  assert.equal((await one("select checklist from public.editorial_reviews where article_id = $1", [id])).checklist.selfPublish, true);
+  assert.equal((await one("select editorial_status from public.articles where id = $1", [id])).editorial_status, "approved");
+  const audit = await one("select reason from public.audit_logs where actor = $1 and action = 'review.desk_edit' and target = $2 order by id desc limit 1", [`user:${u.editorB.id}`, `articles:${id}`]);
+  assert.match(audit.reason, /본인 발행/);
+
+  const taxed = await api("POST", "/articles", u.editorB, { slug: slug("selfpub-tax"), title: `본인 발행 세무 ${staff.run}`, section: "tax", contentType: "explainer" });
+  assert.equal(taxed.status, 201, show(taxed));
+  staff.trackArticle(taxed.body.article.id);
+  await db.query("update public.articles set tax_review_status = 'pending' where id = $1", [taxed.body.article.id]);
+  const refused = await api("POST", `/articles/${taxed.body.article.id}/reviews`, u.editorB, { kind: "desk_edit", decision: "approve", checklist: { selfPublish: true } });
+  assert.equal(refused.status, 403, show(refused));
+  assert.match(refused.body.error, /세금 내용이 있는 글은 본인 발행할 수 없습니다/);
+  assert.equal(await auditCount(u.editorB.id, "review.desk_edit.denied", `articles:${taxed.body.article.id}`), 1);
+});
+
 test("편집국 외 역할 4종 — 기사 승인·정렬·발행 API는 각각 403이고 감사 로그에 남는다 (ACC-04 · NAV-06)", async () => {
   const target = `articles:${ids.quant}`;
   for (const role of NON_NEWSROOM) {

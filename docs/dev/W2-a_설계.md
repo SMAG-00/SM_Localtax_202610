@@ -49,6 +49,7 @@ PRD-01A 9장 W2-a를 구현할 때 DB(packages/db)·발행 판정(packages/edito
   - 관리자도 예외가 없다(PO 결정 2026-10-17).
 - `editorial_reviews`
   - 작성 기자와 같은 사람의 `desk_edit` 승인은 거부한다(NAV-12).
+  - 2026-10-31 PO 결정: 편집 책임자는 세무 감수가 필요 없는 자기 글을 본인 발행할 수 있습니다(칼럼 제외, '본인 발행' 기록). DB 트리거(`20261031000234_self_publish.sql`)는 작성자 본인의 `desk_edit`를 `checklist.selfPublish = true`·승인(approve)·칼럼(`opinion`) 아님·`tax_review_status = 'not_required'`·승인자 계정에 `staff_roles` `editor`가 모두 맞을 때만 저장합니다.
   - `desk_edit`와 `tax_review`는 서로를 대신하지 않는다.
 - `article_sources`: kind가 `official_doc`·`dataset`인 행은 `source_url`·`source_name`(발표기관)·`last_verified_at`·`license_status`가 비면 거부한다(FND-04).
 - 추가만 되는 표: `article_revisions`·`article_corrections`·`seo_checks`. 수정·삭제는 거부한다.
@@ -84,6 +85,7 @@ PRD-01A 9장 W2-a를 구현할 때 DB(packages/db)·발행 판정(packages/edito
 - 관리자(`ADMIN_EMAILS` — 환경변수 화이트리스트)는 데이터·설정 전권이다: 역할 부여, 분야·사전·설정 편집, 모든 기록 조회, 감사 기록 PO 전용 수정·삭제.
 - 편집 행위(기사 발행 승인·발행·정렬·HOT·홈 배치)는 `editor` 역할이 있어야 한다. 관리자도 같다 — 편집 신뢰 규칙은 관리자에게도 적용한다 (PO 결정 2026-10-17).
 - 작성자와 승인자는 다른 사람이어야 한다. DB 트리거가 막고, 서버도 먼저 막는다.
+  - 예외(2026-10-31 PO 결정 '본인 발행'): 작성자인 편집 책임자가 `checklist.selfPublish: true`로 승인을 보내면, 서버가 내용(`@ltr/editorial` `selfPublishProblem` — 세금 내용·칼럼)과 DB 세무 감수 상태(`not_required`)를 보고 맞을 때만 허용합니다. 아니면 403과 이유("세금 내용이 있는 글은 본인 발행할 수 없습니다 — 세무 감수와 다른 편집자의 승인이 필요합니다" 등)를 돌려줍니다. 발행 판정은 이 승인을 편집 승인으로 세고, 승인·발행 감사 로그 사유에 '본인 발행'을 남깁니다.
 - 세무 감수 서명은 `reviewer` 역할만 할 수 있다.
 - 편집국 외 역할(`ad_ops`·`store_ops`·`brand_ops`·`expert_ops`)은 기사 승인·정렬 API를 부르면 403이고, 그 시도는 감사 로그에 남는다.
 - 서버 쓰기는 권한 판정을 통과한 뒤 service_role로 한다. 브라우저 역할(anon·authenticated)에는 쓰기 정책이 없다.

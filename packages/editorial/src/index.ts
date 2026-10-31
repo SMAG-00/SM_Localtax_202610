@@ -30,7 +30,7 @@ export { REGIONAL_FIGURE_UNITS, daysBetween, isStatisticsSource, regionalFigures
 export type { StageTransition } from "./checks/regional-warnings";
 
 // 판정 보조 — 편집 화면이 상태 표시에 쓴다
-export { isApproved, taxReviewReasons } from "./checks/reviews";
+export { isApproved, isSelfPublishReview, selfPublishProblem, taxReviewReasons } from "./checks/reviews";
 export { AMENDMENT_CATEGORY_SLUG, isAmendmentBriefing } from "./checks/amendment";
 export { sponsorBadge } from "./checks/partnership";
 export { RESERVED_SLUGS } from "./checks/article-basics";

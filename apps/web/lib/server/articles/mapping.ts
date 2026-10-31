@@ -72,12 +72,25 @@ export function latestReview(reviews: readonly ReviewRow[], kind: string, versio
   return best;
 }
 
-/** '인과 단정 없음'(NAV-10)은 편집자 확인 항목 — 현재 버전의 최근 편집 승인(approve, 작성자 아님) checklist에서 읽는다 */
+/**
+ * '인과 단정 없음'(NAV-10)은 편집자 확인 항목 — 현재 버전의 최근 편집 승인(approve, 작성자 아님) checklist에서 읽는다.
+ * 작성자 본인의 승인은 본인 발행 표시(checklist.selfPublish = true, 2026-10-31 PO 결정)가 있을 때만 읽는다 — 본인 발행으로 인정되는지는 판정(isApproved)이 따로 본다
+ */
 function noCausalClaimConfirmed(graph: ArticleGraph): boolean {
   const latest = latestReview(graph.reviews, "desk_edit", graph.article.version);
-  if (!latest || latest.decision !== "approve" || latest.reviewer_id === graph.article.author_id) return false;
+  if (!latest || latest.decision !== "approve") return false;
   const checklist = latest.checklist as Record<string, unknown> | null;
-  return typeof checklist === "object" && checklist !== null && checklist.noCausalClaim === true;
+  if (typeof checklist !== "object" || checklist === null) return false;
+  if (latest.reviewer_id === graph.article.author_id && checklist.selfPublish !== true) return false;
+  return checklist.noCausalClaim === true;
+}
+
+/** 현재 버전의 최근 편집 승인이 작성자 본인의 본인 발행 승인인가 (발행 기록·감사 로그의 '본인 발행' 표시) */
+export function isSelfPublished(graph: ArticleGraph): boolean {
+  const latest = latestReview(graph.reviews, "desk_edit", graph.article.version);
+  if (!latest || latest.decision !== "approve" || latest.reviewer_id !== graph.article.author_id) return false;
+  const checklist = latest.checklist as Record<string, unknown> | null;
+  return typeof checklist === "object" && checklist !== null && checklist.selfPublish === true;
 }
 
 export function toTaxLens(json: unknown): TaxLens | null {

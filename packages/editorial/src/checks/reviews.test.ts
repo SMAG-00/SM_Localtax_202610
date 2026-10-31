@@ -6,7 +6,7 @@ import { uniqueIds } from "../../fixtures/helpers";
 import { QUANTITATIVE_NEWS } from "../../fixtures/quantitative";
 import { evaluatePublish } from "../evaluate";
 import type { ArticleForPublish, EditorialReview } from "../model";
-import { taxReviewReasons } from "./reviews";
+import { isApproved, selfPublishProblem, taxReviewReasons } from "./reviews";
 
 const q = QUANTITATIVE_NEWS;
 const ex = TAX_EXPLAINER;
@@ -78,6 +78,63 @@ describe("NAV-12 작성 기자와 같은 계정의 편집 승인은 거부", () 
   it("작성 기자의 세무 감수 서명은 이 규칙 대상이 아니다 (DB 규칙도 desk_edit만)", () => {
     const selfTax: EditorialReview = { ...exTax, reviewerUserId: ex.authorUserId! };
     expect(blockers({ ...ex, reviews: [exDesk, selfTax] })).toEqual([]);
+  });
+});
+
+describe("본인 발행 (2026-10-31 PO 결정) — 세무 감수가 필요 없는 자기 글, 칼럼 제외, checklist.selfPublish 기록", () => {
+  // 견본(지역 기사)의 승인 확인 항목은 그대로 두고 본인 발행 표시만 더한다
+  const selfFlagged: EditorialReview = { ...desk, reviewerUserId: q.authorUserId!, checklist: { ...desk.checklist, selfPublish: true } };
+
+  it("세금 주장도 면책 분야도 아닌 보도기사는 본인 발행할 수 있다 (내용 기준 문제 없음 = null)", () => {
+    expect(selfPublishProblem(q)).toBeNull();
+  });
+
+  it("세금 내용이 있는 글은 대상 이유와 함께 거부 문장을 돌려준다", () => {
+    expect(selfPublishProblem({ ...q, hasTaxOrLegalClaims: true })).toBe(
+      "세금 내용이 있는 글은 본인 발행할 수 없습니다 — 세무 감수와 다른 편집자의 승인이 필요합니다 (대상 이유: 세금 계산·법률 주장 (NAV-12))",
+    );
+    expect(selfPublishProblem(ex)).toMatch(/^세금 내용이 있는 글은 본인 발행할 수 없습니다/);
+  });
+
+  it("칼럼(opinion)은 세금 내용이 없어도 거부 (BR-08)", () => {
+    expect(selfPublishProblem({ ...q, contentType: "opinion" })).toBe("칼럼(opinion)은 본인 발행할 수 없습니다 — 다른 편집 책임자가 승인·발행합니다 (BR-08)");
+  });
+
+  it("selfPublish로 남긴 본인 승인만 있어도 편집 승인으로 센다 — 차단 항목 0 (nav12 없음)", () => {
+    const article = { ...q, reviews: [selfFlagged] };
+    expect(isApproved(article, "desk_edit")).toBe(true);
+    expect(blockers(article)).toEqual([]);
+  });
+
+  it("selfPublish 표시가 없거나 true가 아니면(글자 'true' 포함) 지금처럼 본인 승인은 세지 않는다", () => {
+    for (const checklist of [desk.checklist ?? null, { ...desk.checklist, selfPublish: false }, { ...desk.checklist, selfPublish: "true" }]) {
+      expect(blockers({ ...q, reviews: [{ ...selfFlagged, checklist }] })).toEqual(["nav03.desk-edit-required", "nav12.self-desk-edit"]);
+    }
+  });
+
+  it("세금 내용이 생긴 글의 본인 발행 승인은 세지 않고, 본인 승인 항목에 거부 이유를 적는다", () => {
+    const result = run({ ...q, hasTaxOrLegalClaims: true, reviews: [selfFlagged] });
+    expect(uniqueIds(result.blockers)).toEqual(["nav03.desk-edit-required", "nav03.tax-review-required", "nav12.self-desk-edit"]);
+    expect(result.blockers.find((f) => f.id === "nav12.self-desk-edit")!.message).toMatch(/^세금 내용이 있는 글은 본인 발행할 수 없습니다/);
+  });
+
+  it("칼럼의 본인 발행 승인은 세지 않는다", () => {
+    const opinion = { ...q, contentType: "opinion" as const, reviews: [selfFlagged] };
+    expect(isApproved(opinion, "desk_edit")).toBe(false);
+    expect(uniqueIds(run(opinion).blockers)).toEqual(expect.arrayContaining(["nav03.desk-edit-required", "nav12.self-desk-edit"]));
+  });
+
+  it("원고를 고쳐 버전이 오르면(3 → 4) 이전 버전의 본인 발행 승인은 무효 — 다시 승인해야 한다", () => {
+    const edited = { ...q, version: 4, reviews: [selfFlagged] };
+    expect(isApproved(edited, "desk_edit")).toBe(false);
+    const ids = blockers(edited);
+    expect(ids).toContain("nav03.desk-edit-required");
+    expect(ids).not.toContain("nav12.self-desk-edit"); // 이전 버전 기록이라 본인 승인 항목 대상도 아니다
+  });
+
+  it("본인 발행 승인 뒤 다른 편집자가 같은 버전을 반려하면 승인 아님", () => {
+    const later: EditorialReview = { ...desk, decision: "reject", reviewerUserId: "user-editor-02", signedAt: "2026-10-12T17:00:00+09:00" };
+    expect(blockers({ ...q, reviews: [selfFlagged, later] })).toEqual(["nav03.desk-edit-required"]);
   });
 });
 

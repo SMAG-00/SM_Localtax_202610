@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { sponsorBadge } from "@ltr/editorial";
 import { sponsorLabelText } from "@ltr/structured-data";
 import { runGate, kstDate, parseGateSettings, saveChecks } from "./gate";
-import { renderedFacts, similarityDraft, similaritySources, toArticleForPublish, toArticleView, toLintArticle } from "./mapping";
+import { isSelfPublished, renderedFacts, similarityDraft, similaritySources, toArticleForPublish, toArticleView, toLintArticle } from "./mapping";
 import { AUTHOR_PERSON, EDITOR_PERSON, GATE_OPTIONS, SETTINGS, articleRow, graph, mediaRow } from "./test-graph";
 
 const failedOf = (g: ReturnType<typeof graph>) => runGate(g, SETTINGS, GATE_OPTIONS).failed;
@@ -65,6 +65,26 @@ describe("편집 승인 — 버전과 사람 (NAV-03 · NAV-12)", () => {
     const base = graph();
     const failed = failedOf({ ...base, reviews: [{ ...base.reviews[0]!, reviewer_id: AUTHOR_PERSON }] });
     expect(failed).toEqual(expect.arrayContaining(["nav12.self-desk-edit", "nav03.desk-edit-required"]));
+  });
+  test("본인 발행 (2026-10-31 PO 결정) — 작성자 본인의 승인에 checklist.selfPublish가 있으면 편집 승인·인과 단정 없음 확인으로 센다 (차단 0)", () => {
+    const base = graph();
+    const self = { ...base.reviews[0]!, reviewer_id: AUTHOR_PERSON, checklist: { ...(base.reviews[0]!.checklist as object), selfPublish: true } };
+    const result = runGate({ ...base, reviews: [self] }, SETTINGS, GATE_OPTIONS);
+    expect(result.failed).toEqual([]);
+    expect(result.canPublish).toBe(true);
+    expect(isSelfPublished({ ...base, reviews: [self] })).toBe(true);
+    expect(isSelfPublished(base)).toBe(false); // 다른 편집자의 승인은 본인 발행이 아니다
+  });
+  test("본인 발행 표시 없는 작성자 본인 승인은 인과 단정 없음 확인으로도 읽지 않는다", () => {
+    const base = graph();
+    const failed = failedOf({ ...base, reviews: [{ ...base.reviews[0]!, reviewer_id: AUTHOR_PERSON }] });
+    expect(failed).toContain("nav10.no-causal-claim");
+  });
+  test("본인 발행 — 세금 계산·법률 주장이 있는 글이면 본인 승인은 세지 않는다 (nav12 + 편집 승인 없음 + 세무 감수 없음)", () => {
+    const log = articleRow().check_log as { checklists: Record<string, unknown> };
+    const base = graph({}, { check_log: { ...log, checklists: { ...log.checklists, hasTaxOrLegalClaims: true } } });
+    const self = { ...base.reviews[0]!, reviewer_id: AUTHOR_PERSON, checklist: { ...(base.reviews[0]!.checklist as object), selfPublish: true } };
+    expect(failedOf({ ...base, reviews: [self] })).toEqual(expect.arrayContaining(["nav12.self-desk-edit", "nav03.desk-edit-required", "nav03.tax-review-required"]));
   });
   test("세법 해설은 편집 승인만으로 발행되지 않는다 — 세무 감수 승인을 더하면 통과", () => {
     const explainer = graph(

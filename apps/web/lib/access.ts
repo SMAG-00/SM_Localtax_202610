@@ -3,6 +3,7 @@
 //  · 관리자(ADMIN_EMAILS)는 데이터·설정 전권(역할 부여, 분야·사전·설정 편집, 모든 기록 조회)이다.
 //  · 편집 행위(편집 승인·발행·정렬·HOT·홈 배치·발행 뒤 수정·정정 결정)는 editor 역할이 있어야 한다 — 관리자도 같다 (PO 결정 2026-10-17).
 //  · 작성 기자와 편집 승인자는 다른 사람이어야 한다 (NAV-12 — DB 트리거도 막는다).
+//    예외 (2026-10-31 PO 결정 '본인 발행'): 편집 책임자는 세무 감수가 필요 없는 자기 글을 본인 발행할 수 있다 — 칼럼 제외, checklist.selfPublish 기록.
 //  · 세무 감수 서명은 reviewer만 한다 (기사와 상황 카드의 '먼저 확인할 것' 모두 — review.tax_review).
 //  · 상황 카드(UX-05)는 기자·편집 책임자·관리자가 쓰고, 공개·허브 배치는 편집 책임자만 한다 (PRD-00 6장 'CMS 작성·상황 카드' 행 · 발행 승인·홈 배치는 editor).
 //  · 편집국 외 역할(ad_ops·store_ops·brand_ops·expert_ops)은 기사 작성·승인·정렬 권한이 없다. ad_ops는 sponsored 콘텐츠만 등록한다.
@@ -242,6 +243,11 @@ export interface ArticleResource {
   contentType: string | null;
   /** 한 번이라도 발행됨 (first_published_at 있음) — 발행 뒤 수정은 편집 행위다 */
   published: boolean;
+  /**
+   * 본인 발행 요청 (2026-10-31 PO 결정 — 편집 승인 checklist.selfPublish = true). 요청이 없으면 비운다.
+   * problem은 서버가 채운 거부 이유 — 내용(@ltr/editorial selfPublishProblem)과 DB 세무 감수 상태(not_required)를 본 결과이고, null이면 대상이다
+   */
+  selfPublish?: { problem: string | null };
 }
 
 /** 문의 종류 7개 (inquiries.kind — DB check와 같은 값) */
@@ -332,7 +338,10 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     case "review.desk_edit": {
       if (!has(viewer, "editor")) return deny(`편집 승인은 ${EDITOR_ONLY}`);
       if (resource && resource.authorUserId !== null && resource.authorUserId === viewer.userId) {
-        return deny("작성 기자 본인은 자기 기사를 편집 승인할 수 없습니다 — 다른 편집자가 승인해야 합니다 (NAV-12)");
+        // 본인 발행 (2026-10-31 PO 결정) — 편집 책임자가 세무 감수가 필요 없는 자기 글을 본인 발행으로 승인하는 경우만 (칼럼 제외)
+        if (!resource.selfPublish) return deny("작성 기자 본인은 자기 기사를 편집 승인할 수 없습니다 — 다른 편집자가 승인해야 합니다 (NAV-12)");
+        if (resource.contentType === "opinion") return deny("칼럼(opinion)은 본인 발행할 수 없습니다 — 다른 편집 책임자가 승인·발행합니다 (BR-08)");
+        if (resource.selfPublish.problem !== null) return deny(resource.selfPublish.problem);
       }
       return ALLOW;
     }

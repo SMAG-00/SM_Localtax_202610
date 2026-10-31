@@ -23,6 +23,7 @@ import {
   type RegionalFacts,
 } from "../model";
 import { isBlank } from "../text";
+import { countsAsDeskReview } from "./reviews";
 
 /** 3항목 짧은 이름 — 문장 안에 쓴다 (긴 글자는 REGIONAL_DESK_CHECKLIST_LABELS) */
 const REGIONAL_CHECK_NAMES: Readonly<Record<RegionalDeskCheck, string>> = { evidence: "근거", relation: "관계", ad_independence: "광고 독립성" };
@@ -62,14 +63,14 @@ const HELD_IDS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * 편집 승인 기록 중 현재 버전의 가장 늦은 desk_edit(작성 기자 본인 제외, 서명된 것) — isApproved와 같은 기준.
+ * 편집 승인 기록 중 현재 버전의 가장 늦은 desk_edit(작성 기자 본인 제외 — 인정되는 본인 발행 승인은 넣는다, 서명된 것) — isApproved와 같은 기준.
  * 승인 3항목 판정에 쓴다
  */
 function latestDeskReview(a: ArticleForPublish): EditorialReview | null {
   let best: EditorialReview | null = null;
   let bestTime = Number.NEGATIVE_INFINITY;
   for (const r of a.reviews) {
-    if (r.kind !== "desk_edit" || r.forVersion !== a.version || r.reviewerUserId === a.authorUserId || r.signedAt === null) continue;
+    if (r.kind !== "desk_edit" || r.forVersion !== a.version || !countsAsDeskReview(a, r) || r.signedAt === null) continue;
     const t = Date.parse(r.signedAt);
     if (Number.isNaN(t) || t < bestTime) continue;
     bestTime = t;

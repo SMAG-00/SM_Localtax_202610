@@ -3,6 +3,7 @@ import { isRegionalRow } from "@/lib/admin/review-form";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { withPublishRecord } from "@/lib/server/articles/content";
 import { gateReport, seoCheckRow } from "@/lib/server/articles/report";
+import { isSelfPublished } from "@/lib/server/articles/mapping";
 import { articleResource, loadArticle, loadArticleGraph } from "@/lib/server/articles/repository";
 import { gateFor, nowIso, serviceDb } from "@/lib/server/articles/service";
 import { signaturePublishErrors } from "@/lib/server/articles/signature";
@@ -14,6 +15,7 @@ import { dbError, errorJson, handle, json, parseId } from "@/lib/server/http";
 //  · 차단 항목이 있으면 422 { failed: 차단 ID[], findings } — 기사는 그대로
 //  · 없으면 게재 상태 published, 최초 발행일 기록(한 번 정해지면 바뀌지 않는다), 경고는 발행 기록(check_log.publish)·감사 로그에 남긴다
 //  · 편집국 외 역할의 발행 시도는 403 + 감사 로그 (NAV-06) · 칼럼(opinion) 필자 본인의 발행도 403 + 감사 로그 (BR-08 — DB 트리거가 발행 기록으로 다시 막는다)
+//  · 본인 발행 (2026-10-31 PO 결정) — 작성자 본인의 본인 발행 승인으로 통과한 기사는 발행 기록(check_log.publish.selfPublish)·감사 로그 사유에 '본인 발행'을 남긴다
 //  · 시그니처 연재 회차는 경력 연수 표기 0·「그때와 지금」 비교 항목 1개 이상이어야 한다 — 422 { errors } (W3 8단계)
 //  · 지역 기사는 승인(approved) 단계를 거쳐야 처음 공개한다 — 판정을 통과해도 단계를 건너뛰면 409 { failed: ["reg1_14.stage-skip"] } (REG1-14 · W4 8단계, DB articles_stage_order도 막는다)
 //  · 별도 상품 검토 큐에 열린 항목이 있는 원고는 DB가 공개를 거부한다 — 409 (DB 문장 그대로)
@@ -39,7 +41,10 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   if (signatureErrors.length) return errorJson(422, "시그니처 연재 회차를 발행할 수 없습니다", { errors: signatureErrors });
 
   const now = nowIso();
-  const gate = await gateFor(db, await loadArticleGraph(db, before), now);
+  const graph = await loadArticleGraph(db, before);
+  const gate = await gateFor(db, graph, now);
+  // 본인 발행 (2026-10-31 PO 결정) — 이 버전의 편집 승인이 작성자 본인의 본인 발행 승인이면 발행 기록·감사 로그에 표시한다
+  const selfPublished = isSelfPublished(graph);
 
   const { data: check, error: checkError } = await db.from("seo_checks").insert(seoCheckRow(gate, gate.canPublish)).select("id").single();
   if (checkError || !check) throw dbError(checkError ?? {}, "seo_checks 추가");
@@ -58,7 +63,7 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   });
   if (stage) return errorJson(409, stage, { seoCheckId, failed: ["reg1_14.stage-skip"] });
 
-  const record = { at: now, version: before.version, by: actorOf(viewer), seoCheckId, warnings: gate.warnings };
+  const record = { at: now, version: before.version, by: actorOf(viewer), seoCheckId, warnings: gate.warnings, ...(selfPublished ? { selfPublish: true } : {}) };
   const article = await updateArticle(
     db,
     before,
@@ -70,8 +75,8 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
     action: "article.publish",
     target,
     before: { status: before.status, version: before.version, firstPublishedAt: before.first_published_at },
-    after: { status: article.status, version: article.version, firstPublishedAt: article.first_published_at, seoCheckId, warnings: gate.warnings },
-    reason: gate.warnings.length ? `발행 — 경고 ${gate.warnings.length}개 기록` : "발행",
+    after: { status: article.status, version: article.version, firstPublishedAt: article.first_published_at, seoCheckId, warnings: gate.warnings, ...(selfPublished ? { selfPublish: true } : {}) },
+    reason: `${selfPublished ? "본인 발행" : "발행"}${gate.warnings.length ? ` — 경고 ${gate.warnings.length}개 기록` : ""}`,
   });
   return json({ article: articleSummary(article), seoCheckId, warnings: gate.warnings });
 }, { revalidatesPublic: true });

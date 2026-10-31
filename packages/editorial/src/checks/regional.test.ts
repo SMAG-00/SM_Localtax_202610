@@ -188,6 +188,14 @@ describe("편집 승인 3항목 · 이해관계 표시 (REG1-17 · NAV-06)", () 
     }
     expect(checkRegional(withDeskChecklist(q, {}), BASE_CONTEXT)[0]!.message).toContain("근거·관계·광고 독립성");
   });
+  it("본인 발행 승인(작성 기자 본인 + checklist.selfPublish)도 3항목을 본다 — 빠지면 desk-checklist, 다 있으면 차단 0 (2026-10-31 PO 결정)", () => {
+    const self = (checklist: Record<string, unknown>): ArticleForPublish => ({
+      ...q,
+      reviews: [{ ...q.reviews[0]!, reviewerUserId: q.authorUserId!, checklist: { ...checklist, selfPublish: true } }],
+    });
+    expect(regionalIds(self({ evidence: true, relation: true }))).toEqual(["reg1_17.desk-checklist"]);
+    expect(blockers(self({ evidence: true, relation: true, ad_independence: true }))).toEqual([]);
+  });
   it("승인 기록이 없으면 이 항목은 내지 않는다(편집 승인 없음은 nav03.desk-edit-required)", () => {
     const ids = blockers({ ...q, reviews: [] });
     expect(ids).toContain("nav03.desk-edit-required");

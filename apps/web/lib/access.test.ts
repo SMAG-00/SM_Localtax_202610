@@ -325,6 +325,27 @@ describe("작성자와 승인자는 다른 사람 (NAV-12)", () => {
   test("관리자이자 편집자라도 자기 기사 승인은 거부", () => {
     expect(can(viewer(["editor"], true, "u-author"), "review.desk_edit", article({ authorUserId: "u-author" }))).toBe(false);
   });
+  test("본인 발행 (2026-10-31 PO 결정) — 편집 책임자가 내용상 문제 없는(problem null) 자기 글을 본인 발행으로 승인하면 허용", () => {
+    const own = article({ authorUserId: "u-author", selfPublish: { problem: null } });
+    expect(check(viewer(["editor"], false, "u-author"), "review.desk_edit", own)).toEqual({ allowed: true });
+    expect(check(viewer(["editor", "reporter"], true, "u-author"), "review.desk_edit", own)).toEqual({ allowed: true });
+  });
+  test("본인 발행 — 세금 내용이 있으면(problem 문장) 그 문장으로 거부", () => {
+    const problem = "세금 내용이 있는 글은 본인 발행할 수 없습니다 — 세무 감수와 다른 편집자의 승인이 필요합니다";
+    expect(check(viewer(["editor"], false, "u-author"), "review.desk_edit", article({ selfPublish: { problem } }))).toEqual({ allowed: false, reason: problem });
+  });
+  test("본인 발행 — 칼럼(opinion)은 problem이 비어 있어도 거부 (BR-08)", () => {
+    const decision = check(viewer(["editor"], false, "u-author"), "review.desk_edit", article({ contentType: "opinion", selfPublish: { problem: null } }));
+    expect(decision).toEqual({ allowed: false, reason: expect.stringContaining("BR-08") });
+  });
+  test("본인 발행 — editor 역할이 없는 작성 기자는 본인 발행 요청이 있어도 거부", () => {
+    const decision = check(viewer(["reporter"], false, "u-author"), "review.desk_edit", article({ selfPublish: { problem: null } }));
+    expect(decision).toEqual({ allowed: false, reason: expect.stringContaining("편집 책임자(editor)") });
+  });
+  test("본인 발행 요청이 없는 작성자 본인은 지금처럼 NAV-12로 거부", () => {
+    const decision = check(viewer(["editor"], false, "u-author"), "review.desk_edit", article({ selfPublish: undefined }));
+    expect(decision).toEqual({ allowed: false, reason: "작성 기자 본인은 자기 기사를 편집 승인할 수 없습니다 — 다른 편집자가 승인해야 합니다 (NAV-12)" });
+  });
   test("세무 감수는 본인 여부를 보지 않는다 (DB 규칙과 같음)", () => {
     expect(can(viewer(["reviewer"], false, "u-author"), "review.tax_review", article({ authorUserId: "u-author" }))).toBe(true);
   });
