@@ -45,6 +45,9 @@ export function buildWeb() {
     execFileSync("docker", ["build", "-f", "deploy/Dockerfile", "-t", IMAGE, "."], { cwd: ROOT, stdio: "inherit" });
     return;
   }
+  // 개발 서버 산출물(.next/dev)은 빌드에 쓰지 않는다 — 포트 시험이 next dev를 도중에 끄면 반쯤 쓴 .next/dev/types/validator.ts가 남고,
+  // tsconfig include(.next/dev/types)로 빌드 타입 검사가 그 파일을 읽어 실패한다 (CI 2026-10-31 cf8d7a8)
+  fs.rmSync(path.join(WEB, ".next", "dev"), { recursive: true, force: true });
   execFileSync("pnpm", ["--filter", "@ltr/web", "build"], { cwd: ROOT, stdio: "inherit", shell });
   if (!fs.existsSync(STANDALONE_SERVER)) throw new Error(`standalone 서버가 없습니다: ${STANDALONE_SERVER}`);
   // standalone 산출물에는 정적 자산(CSS·JS·글꼴)과 public이 들어 있지 않다 — Docker 이미지(deploy/Dockerfile)와 같게 옆에 복사한다
