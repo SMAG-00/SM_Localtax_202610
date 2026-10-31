@@ -6,10 +6,12 @@ import type { StaffRole, Viewer } from "@/lib/access";
 import {
   ADMIN_MENU_IDS,
   ALL_MENU_IDS,
+  DAILY_MENU_IDS,
   APPROVE_SORT_PUBLISH_MENU_IDS,
   MENU_GROUPS,
   OPERATIONS_MENU_IDS,
   activeMenuId,
+  adminDailyMenu,
   adminMenu,
   adminMenuGroups,
   groupOfMenuId,
@@ -80,38 +82,44 @@ describe("메뉴 묶음 (F4)", () => {
     expect(MENU_GROUPS.map((g) => g.label)).toEqual(["기사 만들기·발행", "배치·노출", "지방세 자료·연결", "검수·품질", "분야 콘텐츠", "수익·제휴", "운영·설정"]);
   });
 
-  test("모든 메뉴 항목이 정확히 한 그룹에 속하고, 그룹이 모르는 항목 id는 없다", () => {
-    const listed = MENU_GROUPS.flatMap((g) => [...g.itemIds]);
+  test("날마다 쓰는 메뉴 + 더 보기 그룹 항목이 모든 메뉴 항목을 정확히 한 번씩 나눠 갖고, 모르는 항목 id는 없다", () => {
+    const listed = [...DAILY_MENU_IDS, ...MENU_GROUPS.flatMap((g) => [...g.itemIds])];
     expect(new Set(listed).size).toBe(listed.length);
     expect([...listed].sort()).toEqual([...ALL_MENU_IDS].sort());
   });
 
   test.each(EXPECTED)("%s — 묶음 메뉴가 보이는 항목 집합을 바꾸지 않는다", (_name, v, expected) => {
     const groups = adminMenuGroups(v);
-    expect(groups.flatMap((g) => g.items.map((i) => i.id)).sort()).toEqual([...expected].sort());
+    const shown = [...adminDailyMenu(v), ...groups.flatMap((g) => g.items)].map((i) => i.id);
+    expect(shown.sort()).toEqual([...expected].sort());
     for (const g of groups) expect(g.items.length).toBeGreaterThan(0);
   });
 
-  test("기자 — 보이는 그룹 3개와 그 안의 항목", () => {
+  test("기자 — 날마다 쓰는 메뉴와 더 보기 안의 그룹 3개", () => {
+    expect(adminDailyMenu(viewer(["reporter"])).map((i) => i.label)).toEqual(["첫 화면", "기사", "사진 보관함"]);
     expect(adminMenuGroups(viewer(["reporter"])).map((g) => [g.label, g.items.map((i) => i.label)])).toEqual([
-      ["기사 만들기·발행", ["첫 화면", "기사 기획", "기사", "사진 보관함"]],
+      ["기사 만들기·발행", ["기사 기획"]],
       ["배치·노출", ["금주 부동산 재테크", "상황 카드"]],
       ["운영·설정", ["문의함"]],
     ]);
   });
 
-  test("항목이 없는 그룹은 숨긴다 — 역할 없음은 그룹 하나, 브랜드 담당은 두 개", () => {
-    expect(adminMenuGroups(viewer([])).map((g) => g.id)).toEqual(["make"]);
-    expect(adminMenuGroups(viewer(["brand_ops"])).map((g) => [g.id, g.items.map((i) => i.id)])).toEqual([
-      ["make", ["dashboard"]],
-      ["ops", ["brand"]],
-    ]);
+  test("항목이 없는 그룹은 숨긴다 — 역할 없음은 더 보기 그룹 0개(첫 화면만), 브랜드 담당은 하나", () => {
+    expect(adminMenuGroups(viewer([]))).toEqual([]);
+    expect(adminDailyMenu(viewer([])).map((i) => i.id)).toEqual(["dashboard"]);
+    expect(adminMenuGroups(viewer(["brand_ops"])).map((g) => [g.id, g.items.map((i) => i.id)])).toEqual([["ops", ["brand"]]]);
+  });
+
+  test("날마다 쓰는 메뉴 — 편집 책임자는 첫 화면·기사·사진·검토·브리핑, 관리자는 + 측정 지표(순서 고정), 광고 담당은 첫 화면만", () => {
+    expect(adminDailyMenu(viewer(["editor"])).map((i) => i.id)).toEqual(["dashboard", "articles", "media", "reviews", "brief"]);
+    expect(adminDailyMenu(viewer([], true)).map((i) => i.id)).toEqual(["dashboard", "articles", "media", "brief", "metrics"]);
+    expect(adminDailyMenu(viewer(["ad_ops"])).map((i) => i.id)).toEqual(["dashboard"]);
   });
 
   test("관리자 — 7개 그룹이 모두 보이고 항목은 그룹 목록 순서", () => {
     const groups = adminMenuGroups(viewer([], true));
     expect(groups.map((g) => g.id)).toEqual(MENU_GROUPS.map((g) => g.id));
-    expect(groups[0]!.items.map((i) => i.id)).toEqual(["dashboard", "assignments", "articles", "media", "people", "guides", "ai-desk"]);
+    expect(groups[0]!.items.map((i) => i.id)).toEqual(["assignments", "people", "guides", "ai-desk"]);
   });
 
   test("groupOfMenuId — 항목이 속한 그룹, 모르는 id는 빈 문자열", () => {

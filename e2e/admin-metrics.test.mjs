@@ -339,7 +339,7 @@ test("e) 관리자만 — 편집 책임자·기자·광고 담당은 403과 메�
   }
   const admin = await login(u.admin);
   assert.ok((await menuLabels(admin)).includes("측정 지표"));
-  await admin.locator('nav[aria-label="편집국 메뉴"] button[data-group]', { hasText: "운영·설정" }).click();
+  // 측정 지표는 날마다 쓰는 메뉴(처음부터 보임) — '더 보기'를 열지 않고 바로 누른다 (2026-10-31)
   await admin.locator('nav[aria-label="편집국 메뉴"] a', { hasText: "측정 지표" }).click();
   await admin.waitForURL(`${base}/admin/metrics`);
   assert.equal(await admin.locator('nav[aria-label="편집국 메뉴"] a[aria-current="page"]').innerText(), "측정 지표");

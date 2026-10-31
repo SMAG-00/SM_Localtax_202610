@@ -18,6 +18,7 @@ import {
   type EditorState,
 } from "@/lib/admin/editor-state";
 import type { FieldErrors } from "@/lib/admin/form-utils";
+import { focusField } from "@/lib/admin/meta-more";
 import { UPDATE_KIND_LABELS, optionsOf } from "@/lib/admin/labels";
 import type { EditorMedia } from "@/lib/admin/media-blocks";
 import type { EvidenceRowView } from "@/lib/admin/records-form";
@@ -112,7 +113,7 @@ export function ArticleWorkspace({
     setErrors(v);
     if (Object.keys(v).length > 0) {
       setFailure({ title: `고칠 칸이 ${Object.keys(v).length}개 있습니다`, details: Object.values(v), conflict: false });
-      document.getElementById(Object.keys(v)[0]!)?.focus();
+      focusField(Object.keys(v)[0]!);
       return;
     }
     setSaving(true);
@@ -143,7 +144,7 @@ export function ArticleWorkspace({
   const interviewIds = view.evidence.filter((e) => e.interview !== null).map((e) => e.id);
 
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-8">
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-8" data-unsaved={!readOnly && draftJson !== savedJson ? "true" : undefined}>
       <div className="min-w-0 space-y-6">
         <nav aria-label="편집 화면 칸" className="rounded-2xl border border-navy-100 bg-white px-4 py-2">
           <ul className="flex flex-wrap gap-x-4">

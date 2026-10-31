@@ -9,6 +9,7 @@ import { Panel, TEXT_LINK } from "@/components/admin/ui";
 import type { EditorPermissions } from "@/components/admin/editor/types";
 import { can } from "@/lib/access";
 import { publishSteps } from "@/lib/admin/publish-steps";
+import { isRegionalRow } from "@/lib/admin/review-form";
 import { orNotFound, pageId, pageViewer, requirePage } from "@/lib/server/admin/pages";
 import { listCategories, listMedia, listPartners, peopleNames, pendingCorrectionRequests } from "@/lib/server/admin/queries";
 import { loadEditorView } from "@/lib/server/articles/editor-view";
@@ -61,6 +62,9 @@ export default async function ArticleEditorPage({ params }: Props) {
       failed: report.failed,
       findings: report.findings,
       taxReviewReasons: report.taxReviewReasons,
+      contentType: row.content_type,
+      reportingMethod: row.reporting_method,
+      regional: isRegionalRow(row),
       viewer: {
         canEdit: perms.canEdit,
         canSubmit: perms.canSubmit,

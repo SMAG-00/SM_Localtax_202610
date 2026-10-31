@@ -12,26 +12,31 @@ const LINK =
   "inline-flex min-h-11 items-center border-b-[3px] px-3 py-2 text-[15px] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500";
 
 /**
- * 역할별 묶음 메뉴 (ADM-01 · F4) — 그룹 7개 이하만 한 줄에 보이고, 그룹 버튼(aria-expanded)을 누르면 안의 항목이 두 번째 줄에 펼쳐진다.
- * 지금 보는 화면이 속한 그룹은 처음부터 펼쳐져 있고, 지금 보는 항목은 aria-current="page". Esc는 펼친 그룹을 닫고 그 그룹 버튼으로 포커스를 돌려 준다.
+ * 역할별 묶음 메뉴 (ADM-01 · F4 · 2026-10-31 단순화) — 날마다 쓰는 메뉴(첫 화면·기사·사진·검토·브리핑·통계)가 처음부터 한 줄에 보이고,
+ * 나머지는 '더 보기' 버튼(aria-expanded) 안에 기존 분류 그룹 그대로 들어 있다. '더 보기'를 열면 그룹 7개 이하가 한 줄에 보이고,
+ * 그룹 버튼(aria-expanded)을 누르면 안의 항목이 다음 줄에 펼쳐진다.
+ * 지금 보는 화면이 '더 보기' 안의 그룹에 속하면 '더 보기'와 그 그룹이 처음부터 펼쳐져 있고, 지금 보는 항목은 aria-current="page". Esc는 펼친 그룹을 닫고 그 그룹 버튼으로 포커스를 돌려 준다.
  * 아래 방향키는 펼친 그룹의 첫 항목으로 포커스를 옮긴다. 360px에서는 '메뉴' 버튼 하나로 접히고, 열면 그룹이 세로로 쌓여 가로 스크롤이 없다.
  * 항목 링크는 닫힌 그룹에서도 문서에 남는다(보이지 않을 뿐) — 화면 읽기 프로그램·시험이 전체 목록을 같은 방식으로 읽는다.
  */
-export function AdminNav({ groups }: { groups: readonly MenuGroup[] }) {
+export function AdminNav({ daily, groups }: { daily: readonly MenuItem[]; groups: readonly MenuGroup[] }) {
   const pathname = usePathname() ?? "/admin";
-  const flat: MenuItem[] = groups.flatMap((g) => g.items);
+  const flat: MenuItem[] = [...daily, ...groups.flatMap((g) => g.items)];
   const currentId = activeMenuId(flat, pathname);
   const activeGroup = groups.find((g) => g.items.some((i) => i.id === currentId))?.id ?? (groupOfMenuId(currentId) || null);
   const [open, setOpen] = useState<string | null>(activeGroup);
+  const [moreOpen, setMoreOpen] = useState(activeGroup !== null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const buttons = useRef<Record<string, HTMLButtonElement | null>>({});
   const toggle = useRef<HTMLButtonElement | null>(null);
+  const moreButton = useRef<HTMLButtonElement | null>(null);
 
   // 다른 화면으로 가면 그 화면이 속한 그룹을 펼치고, 접는 메뉴는 닫는다 (렌더 중 상태 맞춤 — effect 없이)
   const [seenPath, setSeenPath] = useState(pathname);
   if (seenPath !== pathname) {
     setSeenPath(pathname);
     setOpen(activeGroup);
+    setMoreOpen(activeGroup !== null);
     setMobileOpen(false);
   }
 
@@ -41,6 +46,9 @@ export function AdminNav({ groups }: { groups: readonly MenuGroup[] }) {
       const id = open;
       setOpen(null);
       buttons.current[id]?.focus();
+    } else if (moreOpen && groups.length > 0) {
+      setMoreOpen(false);
+      moreButton.current?.focus();
     } else if (mobileOpen) {
       setMobileOpen(false);
       toggle.current?.focus();
@@ -71,53 +79,83 @@ export function AdminNav({ groups }: { groups: readonly MenuGroup[] }) {
           <span>메뉴{openLabel ? ` · ${openLabel}` : ""}</span>
           <span aria-hidden="true">{mobileOpen ? "−" : "+"}</span>
         </button>
-        <ul id="admin-menu-groups" className={cx("flex-col md:flex md:flex-row md:flex-wrap md:gap-x-1", mobileOpen ? "flex" : "hidden")}>
-          {groups.map((g) => {
-            const isOpen = open === g.id;
-            const isActive = activeGroup === g.id;
-            return (
-              <li key={g.id} className="md:contents">
-                <button
-                  ref={(el) => {
-                    buttons.current[g.id] = el;
-                  }}
-                  type="button"
-                  className={cx(BUTTON, isActive ? "border-hermes-500 font-bold text-navy-900" : "border-transparent font-semibold text-navy-500 hover:text-navy-800")}
-                  aria-expanded={isOpen}
-                  aria-controls={`menu-group-${g.id}`}
-                  data-group={g.id}
-                  onClick={() => setOpen(isOpen ? null : g.id)}
-                  onKeyDown={(e) => onGroupKeyDown(e, g)}
+        <div id="admin-menu-groups" className={cx("md:block", mobileOpen ? "block" : "hidden")}>
+          <ul className="flex flex-col md:flex-row md:flex-wrap md:gap-x-1" aria-label="날마다 쓰는 메뉴">
+            {daily.map((m) => (
+              <li key={m.id}>
+                <Link
+                  href={m.href}
+                  aria-current={m.id === currentId ? "page" : undefined}
+                  className={cx(LINK, "w-full md:w-auto", m.id === currentId ? "border-hermes-500 font-bold text-navy-900" : "border-transparent font-semibold text-navy-600 hover:text-navy-900")}
                 >
-                  <span>{g.label}</span>
-                  <span aria-hidden="true" className="md:hidden">
-                    {isOpen ? "−" : "+"}
-                  </span>
-                </button>
-                <ul
-                  id={`menu-group-${g.id}`}
-                  aria-label={g.label}
-                  className={cx(
-                    "flex-wrap gap-x-1 rounded-xl bg-ivory px-2 py-1 md:order-last md:basis-full",
-                    isOpen ? "flex" : "hidden",
-                  )}
-                >
-                  {g.items.map((m) => (
-                    <li key={m.id}>
-                      <Link
-                        href={m.href}
-                        aria-current={m.id === currentId ? "page" : undefined}
-                        className={cx(LINK, m.id === currentId ? "border-hermes-500 font-bold text-navy-900" : "border-transparent font-semibold text-navy-600 hover:text-navy-900")}
-                      >
-                        {m.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                  {m.label}
+                </Link>
               </li>
-            );
-          })}
-        </ul>
+            ))}
+            {groups.length > 0 && (
+              <li>
+                <button
+                  ref={moreButton}
+                  type="button"
+                  className={cx(BUTTON, activeGroup ? "border-hermes-500 font-bold text-navy-900" : "border-transparent font-semibold text-navy-500 hover:text-navy-800")}
+                  aria-expanded={moreOpen}
+                  aria-controls="admin-more"
+                  data-more="true"
+                  onClick={() => setMoreOpen((v) => !v)}
+                >
+                  <span>더 보기</span>
+                  <span aria-hidden="true">{moreOpen ? "−" : "+"}</span>
+                </button>
+              </li>
+            )}
+          </ul>
+          <div id="admin-more" className={moreOpen || groups.length === 0 ? "block" : "hidden"}>
+            <ul className="flex flex-col md:flex md:flex-row md:flex-wrap md:gap-x-1">
+              {groups.map((g) => {
+                const isOpen = open === g.id;
+                const isActive = activeGroup === g.id;
+                return (
+                  <li key={g.id} className="md:contents">
+                    <button
+                      ref={(el) => {
+                        buttons.current[g.id] = el;
+                      }}
+                      type="button"
+                      className={cx(BUTTON, isActive ? "border-hermes-500 font-bold text-navy-900" : "border-transparent font-semibold text-navy-500 hover:text-navy-800")}
+                      aria-expanded={isOpen}
+                      aria-controls={`menu-group-${g.id}`}
+                      data-group={g.id}
+                      onClick={() => setOpen(isOpen ? null : g.id)}
+                      onKeyDown={(e) => onGroupKeyDown(e, g)}
+                    >
+                      <span>{g.label}</span>
+                      <span aria-hidden="true" className="md:hidden">
+                        {isOpen ? "−" : "+"}
+                      </span>
+                    </button>
+                    <ul
+                      id={`menu-group-${g.id}`}
+                      aria-label={g.label}
+                      className={cx("flex-wrap gap-x-1 rounded-xl bg-ivory px-2 py-1 md:order-last md:basis-full", isOpen ? "flex" : "hidden")}
+                    >
+                      {g.items.map((m) => (
+                        <li key={m.id}>
+                          <Link
+                            href={m.href}
+                            aria-current={m.id === currentId ? "page" : undefined}
+                            className={cx(LINK, m.id === currentId ? "border-hermes-500 font-bold text-navy-900" : "border-transparent font-semibold text-navy-600 hover:text-navy-900")}
+                          >
+                            {m.label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
       </nav>
     </div>
   );

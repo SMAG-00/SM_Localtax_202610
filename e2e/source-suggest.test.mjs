@@ -76,7 +76,7 @@ test("a~d) 자동 채우기 → 후보 카드 → 막힘 문장 → 이대로 �
     await loginAt(page, u.reporter, `/admin/articles/${fx.article.id}`);
     await page.getByTestId("publish-steps").waitFor();
     assert.equal(await page.getByTestId("step-status-sources").innerText(), "할 일");
-    assert.match(await page.locator('[data-step="sources"]').innerText(), /본문 링크에서 자동으로 채워 드립니다 — 확인 후 추가/);
+    assert.match(await page.locator('[data-check="sources"]').innerText(), /본문 링크에서 자동으로 채워 드립니다 — 확인 후 추가/);
 
     await page.getByTestId("step-go-sources").click();
     assert.equal(await page.evaluate(() => document.activeElement?.id), "source-suggest-button");
