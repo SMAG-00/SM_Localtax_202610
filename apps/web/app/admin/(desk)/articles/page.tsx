@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SelectField } from "@ltr/ui";
 import { DataTable, EmptyNote, OUTLINE_BUTTON, PageTitle, TD, TEXT_LINK, ToneChip } from "@/components/admin/ui";
+import { WeeklyCardNewsButton } from "@/components/admin/WeeklyCardNewsButton";
 import { can } from "@/lib/access";
 import { isoToKstDateTime } from "@/lib/admin/form-utils";
 import {
@@ -42,6 +43,8 @@ export default async function ArticlesPage({ searchParams }: Props) {
   const person = mine ? await personForUser(db, viewer.userId) : null;
   const rows = mine && !person ? [] : await listArticles(db, { status, section, type, ...(person ? { authorId: person.id } : {}) });
   const canWrite = templatesFor(viewer).length > 0;
+  // 이번 주 카드뉴스 초안 — 편집국 기사(해설) 작성 권한과 같다. 광고·협찬 담당 화면에는 두지 않는다
+  const canWeeklyCardNews = !onlySponsored && can(viewer, "article.create", { kind: "article", authorUserId: viewer.userId, contentType: "explainer", published: false });
 
   return (
     <>
@@ -51,6 +54,7 @@ export default async function ArticlesPage({ searchParams }: Props) {
             새 기사 쓰기
           </Link>
         )}
+        {canWeeklyCardNews && <WeeklyCardNewsButton />}
       </PageTitle>
 
       <form method="get" className="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-navy-100 bg-white p-4" aria-label="기사 거르기">
