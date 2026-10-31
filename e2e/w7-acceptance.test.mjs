@@ -189,7 +189,7 @@ test("c) 핵심 질문 50개와 AI 표본 - 49·51문항 422, 50문항 저장·�
   assert.equal(saved.status, 201, show(saved));
   const version = saved.body.version;
   created.questionVersions.push(version);
-  const month = "2026-09";
+  const month = lastClosedMonth(); // 화면 기본 달(지난달, KST)과 같은 달 — e) 화면이 이 달의 표본을 본다 (고정 "2026-09"는 11월 1일 KST부터 어긋남)
   assert.equal((await seo("samples_init", { month: "2026-09-15", version, engines: "엔진A" })).status, 422, "달 모양");
   const init = await seo("samples_init", { month, version, engines: "시험엔진A, 시험엔진B" });
   assert.equal(init.status, 201, show(init));
