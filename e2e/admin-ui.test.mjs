@@ -449,7 +449,8 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   assert.equal(await panel.getByRole("button", { name: "발행", exact: true }).isDisabled(), true, "차단 항목이 남으면 발행 버튼이 꺼진다");
   assert.match(await panel.getByTestId("publish-reason").innerText(), new RegExp(`차단 항목 ${before.length}개`));
   await panel.locator('[data-rule="nav10.related-party-check"]').getByText("관계자 확인 묶음이 비었습니다").waitFor();
-  assert.match(await panel.innerText(), /내부 품질 지표 — 검색 순위 예측이 아닙니다/);
+  // 점수 안내 문구는 접힌 '품질 점수 보기' 안에 있다 — 숨은 글자까지 읽는다
+  assert.match(await panel.textContent(), /내부 품질 지표 — 검색 순위 예측이 아닙니다/);
 
   // 편집자 — 관계자 확인을 채우고 「지방세로 읽기」 생략 사유(편집 책임자만)를 적어 저장
   await open(editor, `/admin/articles/${id}`);
