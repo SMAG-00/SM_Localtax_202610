@@ -180,6 +180,7 @@ test("e) 화면 — 키 켜짐: 유형 필터·원문 블록·감수 서명 따�
   const listItem = list.html.slice(list.html.indexOf(`data-article="${fx.article.slug}"`));
   assert.deepEqual(reviewMark(listItem), ["yes", "세무 감수를 거친 해설"], "서명 있는 해설 — 목록");
   await db.query("insert into public.editorial_reviews (article_id, version, kind, reviewer_id, decision, reason) values ($1, 1, 'tax_review', $2, 'hold', 'e2e 보류')", [fx.article.id, u.editor.personId]);
+  await setInterpretations(true); // DB 직접 쓰기는 공개 데이터 캐시(30초)를 비우지 않는다 — 편집국 설정 쓰기로 비운다
   const unsigned = await page(`/news/${fx.article.slug}`);
   assert.deepEqual(reviewMark(unsigned.html), ["no", "세무사·회계사 등 작성자 책임 해설"], "서명 없는 해설 — 상세");
   assert.ok(!unsigned.html.includes("세무 감수를 거친 해설"), "서명 없으면 '감수를 거친' 문구 0");
