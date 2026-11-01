@@ -294,6 +294,25 @@ test("칼럼 필자 = 발행 승인자 거부 — 발행 기록 계정이 필자
     assert.ok((await attempt("update public.articles set status = 'published', first_published_at = now(), check_log = $2 where id = $1", [news, by(authorUser)])).ok);
   }));
 
+test("관리자(PO) 본인 칼럼 발행 (237, PO 2026-11-01) — 작성자 발행 + adminColumnPublish 표시가 둘 다 있을 때만 필자 본인의 편집 승인·발행을 받는다", () =>
+  tx(async () => {
+    const authorUser = await authUser();
+    await client.query("insert into public.staff_roles (user_id, role, granted_by) values ($1, 'editor', 'test:237')", [authorUser]);
+    const writer = await person({ user: authorUser });
+    const col = await article({ authorId: writer });
+    const review = (checklist) => attempt("insert into public.editorial_reviews (article_id, kind, reviewer_id, decision, checklist) values ($1, 'desk_edit', $2, 'approve', $3)", [col, writer, JSON.stringify(checklist)]);
+    for (const only of [{ publishApproval: true, authorPublish: true }, { publishApproval: true, adminColumnPublish: true }, { publishApproval: true, authorPublish: true, adminColumnPublish: "true" }]) {
+      const r = await review(only);
+      assert.equal(r.code, "23514", `표시 하나만·글자 'true'면 거부: ${JSON.stringify(only)}`);
+      assert.match(r.message, /BR-08|NAV-12/, "칼럼 규칙(BR-08) 또는 그 앞의 작성자 승인 규칙(NAV-12)이 막는다");
+    }
+    assert.ok((await review({ publishApproval: true, authorPublish: true, adminColumnPublish: true })).ok, "두 표시가 다 있으면 받는다");
+    const rec = (extra) => JSON.stringify({ publish: { at: new Date().toISOString(), by: `user:${authorUser}`, version: 1, ...extra } });
+    const plain = await attempt("update public.articles set status = 'published', first_published_at = now(), check_log = $2 where id = $1", [col, rec({ authorPublish: true })]);
+    assert.equal(plain.code, "23514", "발행 기록에 표시가 없으면 필자 본인 발행 거부");
+    assert.ok((await attempt("update public.articles set status = 'published', first_published_at = now(), check_log = $2 where id = $1", [col, rec({ authorPublish: true, adminColumnPublish: true })])).ok, "표시가 있으면 발행");
+  }));
+
 // ── 권한 ─────────────────────────────────────────────────────
 
 for (const role of ["anon", "authenticated"]) {

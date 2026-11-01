@@ -23,6 +23,7 @@ import { scheduleAiBox } from "@/lib/server/ops-ai/editorial";
 //  · 차단 항목이 있으면 422 { failed: 차단 ID[], findings } — 기사는 그대로
 //  · 없으면 게재 상태 published, 최초 발행일 기록(한 번 정해지면 바뀌지 않는다), 경고는 발행 기록(check_log.publish)·감사 로그에 남긴다
 //  · 편집국 외 역할의 발행 시도는 403 + 감사 로그 (NAV-06) · 칼럼(opinion) 필자 본인의 발행도 403 + 감사 로그 (BR-08 — DB 트리거가 발행 기록으로 다시 막는다)
+//    단 관리자(PO) 본인 칼럼은 발행한다 (2026-11-01 PO 결정) — 편집 승인·발행 기록에 adminColumnPublish, 감사 로그 사유에 관리자 본인 칼럼 발행
 //  · 본인 발행 (2026-10-31 PO 결정) — 작성자 본인의 본인 발행 승인으로 통과한 기사는 발행 기록(check_log.publish.selfPublish)·감사 로그 사유에 '본인 발행'을 남긴다
 //  · 시그니처 연재 회차는 경력 연수 표기 0·「그때와 지금」 비교 항목 1개 이상이어야 한다 — 422 { errors } (W3 8단계)
 //  · 지역 기사는 승인(approved) 단계를 거쳐야 처음 공개한다 — 판정을 통과해도 단계를 건너뛰면 409 { failed: ["reg1_14.stage-skip"] } (REG1-14 · W4 8단계, DB articles_stage_order도 막는다)
@@ -71,6 +72,8 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   const isAuthor = graph.author?.staff_user_id != null && graph.author.staff_user_id === viewer.userId;
   // 세무 감수 대상인데 감수 기록이 없으면 작성자 책임 발행 (세무 감수 대체 — 2026-10-31 PO 결정)
   const authorResponsibility = taxReviewReasons(gate.article).length > 0 && before.tax_review_status !== "approved";
+  // 관리자(PO) 본인 칼럼 발행 (2026-11-01 PO 결정) — 접근 판정이 관리자에게만 열어 준다. DB 검사(…237)가 이 표시로 BR-08 예외를 둔다
+  const adminColumnPublish = isAuthor && before.content_type === "opinion" && viewer.isAdmin;
   let current = before;
   if (before.editorial_status !== "approved") {
     // 지역 기사·금융 사례의 확인 항목은 발행하는 사람이 직접 체크한다 (2026-11-01 PO 결정) — 체크 안 한 항목이 있으면 422, 체크한 값만 편집 승인에 넣는다
@@ -86,6 +89,7 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
       ...confirmedChecklist(confirmItems, raw.confirms),
       ...(isAuthor ? { authorPublish: true } : {}),
       ...(authorResponsibility ? { authorResponsibility: true } : {}),
+      ...(adminColumnPublish ? { adminColumnPublish: true } : {}),
     };
     const { data: review, error: reviewError } = await db
       .from("editorial_reviews")
@@ -123,7 +127,7 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   });
   if (stage) return errorJson(409, stage, { seoCheckId, failed: ["reg1_14.stage-skip"] });
 
-  const marks = { ...(selfPublished ? { selfPublish: true } : {}), ...(isAuthor ? { authorPublish: true } : {}), ...(authorResponsibility ? { authorResponsibility: true } : {}) };
+  const marks = { ...(selfPublished ? { selfPublish: true } : {}), ...(isAuthor ? { authorPublish: true } : {}), ...(authorResponsibility ? { authorResponsibility: true } : {}), ...(adminColumnPublish ? { adminColumnPublish: true } : {}) };
   const record = { at: now, version: current.version, by: actorOf(viewer), seoCheckId, warnings: gate.warnings, ...marks };
   const article = await updateArticle(
     db,
@@ -137,7 +141,7 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
     target,
     before: { status: before.status, version: before.version, firstPublishedAt: before.first_published_at },
     after: { status: article.status, version: article.version, firstPublishedAt: article.first_published_at, seoCheckId, warnings: gate.warnings, ...marks },
-    reason: `${authorResponsibility ? "작성자 책임 발행 (세무 감수 대체)" : selfPublished ? "본인 발행" : isAuthor ? "작성자 발행" : "발행"}${gate.warnings.length ? ` — 경고 ${gate.warnings.length}개 기록` : ""}`,
+    reason: `${[adminColumnPublish ? "관리자 본인 칼럼 발행" : "", authorResponsibility ? "작성자 책임 발행 (세무 감수 대체)" : adminColumnPublish ? "" : selfPublished ? "본인 발행" : isAuthor ? "작성자 발행" : "발행"].filter(Boolean).join(" · ")}${gate.warnings.length ? ` — 경고 ${gate.warnings.length}개 기록` : ""}`,
   });
   // 편집 승인되면 AI 요약 상자 초안을 응답 뒤에 만든다 (W12-f O3 — 편집 승인 기록과 같은 자리, 꺼져 있으면 호출 0)
   if (before.editorial_status !== "approved") await scheduleAiBox(db, id);

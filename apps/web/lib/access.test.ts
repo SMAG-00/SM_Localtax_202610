@@ -237,6 +237,11 @@ describe("칼럼 필자 = 발행 승인자 거부 · 브랜드 관리 담당의 
     expect(can(viewer(["editor"], false, "u-author"), "article.publish", article({ authorUserId: "u-author", contentType: "reported_news" }))).toBe(true);
     expect(can(viewer(["editor"], false, "u-author"), "article.publish", article({ authorUserId: null, contentType: "opinion" }))).toBe(true);
   });
+  test("관리자(PO) 본인 칼럼은 발행할 수 있다 — 기자·편집 책임자 역할이 있을 때만 (2026-11-01 PO 결정)", () => {
+    expect(can(viewer(["editor"], true, "u-author"), "article.publish", article({ authorUserId: "u-author", contentType: "opinion" }))).toBe(true);
+    expect(can(viewer(["reporter"], true, "u-author"), "article.publish", article({ authorUserId: "u-author", contentType: "opinion" }))).toBe(true);
+    expect(can(viewer([], true, "u-author"), "article.publish", article({ authorUserId: "u-author", contentType: "opinion" }))).toBe(false);
+  });
   test("관리자여도 editor 없이는 발행 거부", () => {
     expect(can(viewer([], true, "u-other"), "article.publish", article({ contentType: "opinion" }))).toBe(false);
   });

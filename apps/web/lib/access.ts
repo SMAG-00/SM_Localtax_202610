@@ -351,12 +351,12 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
       return has(viewer, "reviewer") ? ALLOW : deny("세무 감수 서명은 세무 감수위원(reviewer)만 할 수 있습니다");
 
     // 발행 — 간편 발행 (2026-10-31 PO 결정): 편집 책임자는 모든 기사, 기자는 자기 기사를 바로 발행한다.
-    // 칼럼(opinion)은 필자 본인이 자기 칼럼을 발행하지 못한다 (BR-08 — DB 트리거도 발행 기록으로 막는다)
+    // 칼럼(opinion)은 필자 본인이 자기 칼럼을 발행하지 못한다 (BR-08 — DB 트리거도 발행 기록으로 막는다). 관리자(PO) 본인 칼럼만 예외 (2026-11-01 PO 결정 — 발행 기록 adminColumnPublish)
     case "article.publish": {
       if (!has(viewer, "editor", "reporter")) return deny("기사 발행은 자기 기사를 쓴 기자(reporter)와 편집 책임자(editor)만 합니다 — 편집 신뢰 규칙은 관리자에게도 같습니다");
       if (!resource) return ALLOW;
       const isAuthor = resource.authorUserId !== null && resource.authorUserId === viewer.userId;
-      if (resource.contentType === "opinion" && isAuthor) {
+      if (resource.contentType === "opinion" && isAuthor && !viewer.isAdmin) {
         return deny("칼럼 필자 본인은 자기 칼럼을 발행할 수 없습니다 — 다른 편집 책임자가 발행합니다 (BR-08)");
       }
       if (!has(viewer, "editor") && !isAuthor) return deny("기자는 자기 기사만 발행합니다 — 다른 사람의 기사는 편집 책임자가 발행합니다");
