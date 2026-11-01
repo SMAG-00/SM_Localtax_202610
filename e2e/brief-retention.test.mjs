@@ -54,6 +54,8 @@ const post = async (path, token, { form = false } = {}) => {
 };
 const setFlag = (patch) => db.query("update public.settings set value = value || $1::jsonb where key = 'feature_flags'", [JSON.stringify(patch)]);
 const consentOf = async (email) => (await db.query("select * from public.consents where kind = 'amendment_alert' and email = $1 order by id", [email])).rows;
+/** f) 보존 기한 — 예전 사전 알림 동의(brief_prereg) 행은 DB에 직접 넣어 본다 (신청 API는 지웠다) */
+const preregOf = async (email) => (await db.query("select * from public.consents where kind = 'brief_prereg' and email = $1 order by id", [email])).rows;
 const tokensIn = (mail) => ({
   confirm: /\/brief\/confirm\?token=([A-Za-z0-9_-]+)/.exec(mail.Text)?.[1],
   revoke: /\/brief\/unsubscribe\?token=([A-Za-z0-9_-]+)/.exec(mail.Text)?.[1],
@@ -349,11 +351,11 @@ test("f) privacy-retention: 인증 없이 401, 경계 하루 전은 남고 당�
   assert.equal(await userExists(userKeep), true, "미확인 가입 7일 하루 전: 남음");
   assert.equal(await userExists(userDrop), false, "미확인 가입 7일 당일: 지움");
 
-  assert.equal((await consentOf(preKeep)).length, 1, "미확인 사전 알림 기한 전: 남음");
-  assert.equal((await consentOf(preDrop)).length, 0, "미확인 사전 알림 7일: 지움");
-  assert.equal((await consentOf(preOldConfirmed)).length, 1, "확정된 신청은 오래돼도 남음");
-  assert.equal((await consentOf(revKeep)).length, 1, "철회 30일 하루 전: 남음");
-  assert.equal((await consentOf(revDrop)).length, 0, "철회 30일 당일: 지움");
+  assert.equal((await preregOf(preKeep)).length, 1, "미확인 사전 알림 기한 전: 남음");
+  assert.equal((await preregOf(preDrop)).length, 0, "미확인 사전 알림 7일: 지움");
+  assert.equal((await preregOf(preOldConfirmed)).length, 1, "확정된 신청은 오래돼도 남음");
+  assert.equal((await preregOf(revKeep)).length, 1, "철회 30일 하루 전: 남음");
+  assert.equal((await preregOf(revDrop)).length, 0, "철회 30일 당일: 지움");
 
   const keep = await inquiryRow(inqKeep.id);
   assert.equal(keep.contact_email, `brief-e2e-${process.pid}-inq-keep@example.test`);
