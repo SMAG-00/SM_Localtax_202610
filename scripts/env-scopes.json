@@ -63,7 +63,9 @@
     "NEXT_PUBLIC_PG_CLIENT_KEY": "public",
     "DATA_API_KEY": "server-secret",
     "DATA_API_DART_KEY": "server-secret",
-    "SCHEDULE_FILE": "server"
+    "SCHEDULE_FILE": "server",
+    "OPENAI_IMAGE_MODEL": "server",
+    "OPENAI_API_KEY": "server-secret"
   },
   "tooling": [
     "E2E_TARGET",
