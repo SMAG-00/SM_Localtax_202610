@@ -27,7 +27,7 @@ export const HEADER_UTILITIES: ReadonlyArray<{ key: HeaderUtilityKey; label: str
 ];
 
 /** 바로 메뉴 항목 키 — 분야 메뉴 오른쪽, 펼침 없는 링크 5개 (PO 2026-11-01) */
-export type HeaderMenuKey = "popular" | "brief" | "columns" | "expert_request" | "calc";
+export type HeaderMenuKey = "popular" | "law_updates" | "columns" | "expert_request" | "calc";
 
 /**
  * 바로 메뉴 — 분야 메뉴(4대 분야, 펼침 있음) 오른쪽에 링크 5개, 이 순서 (PO 2026-11-01 — 기존 매체 사이트 머리글처럼 자주 찾는 곳을 한 줄에).
@@ -38,7 +38,8 @@ export const HEADER_MENU: ReadonlyArray<{ key: HeaderMenuKey; label: string; hre
   { key: "columns", label: "전문가칼럼", href: "/columns", lead: true },
   // 최신인기글 = 많이 본 기사 목록 (홈 최신 인기글과 같은 순위)
   { key: "popular", label: "최신인기글", href: "/news/popular" },
-  { key: "brief", label: "최신법령·유권해석", href: "/brief" },
+  // 최신법령·유권해석 = 지방세 하위 분야 목록 (PO 2026-11-01 — 주간 브리핑 호 대신 일반 기사로 올리고 이 하위 분야를 고른다)
+  { key: "law_updates", label: "최신법령·유권해석", href: "/tax/law-updates" },
   { key: "expert_request", label: "전문가상담", href: "/experts/request" },
   { key: "calc", label: "세금계산기", href: "/calc" },
 ];

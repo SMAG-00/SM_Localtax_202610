@@ -63,12 +63,12 @@ describe("헤더 — 상단 메뉴 (4대 분야)", () => {
 
 describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
   it("켜진 항목을 전문가칼럼 → 최신인기글 → 최신법령·유권해석 → 전문가상담 → 세금계산기 순서로 분야 메뉴 뒤에 두고, 전문가칼럼만 구분선 앞(지자체뉴스 바로 옆)", () => {
-    render(<Header menu={["calc", "expert_request", "columns", "brief", "popular"]} />);
+    render(<Header menu={["calc", "expert_request", "columns", "law_updates", "popular"]} />);
     const nav = screen.getByRole("navigation", { name: "바로 메뉴" });
     expect(pairs(within(nav).getAllByRole("link"))).toEqual([
       ["전문가칼럼", "/columns"],
       ["최신인기글", "/news/popular"],
-      ["최신법령·유권해석", "/brief"],
+      ["최신법령·유권해석", "/tax/law-updates"],
       ["전문가상담", "/experts/request"],
       ["세금계산기", "/calc"],
     ]);
