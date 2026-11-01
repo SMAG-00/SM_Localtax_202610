@@ -1,11 +1,12 @@
-// 브리핑 사전 알림 · 보존 기한 배치 E2E (W2-e 6단계 — docs/dev/W2-e_설계.md 1장 6단계 · 7.5 · 9.3)
-//  a) brief 기능 키 꺼짐이면 /brief·/brief/confirm·/brief/unsubscribe 와 API가 404, 켜지면 폼(동의 체크 칸·숨은 칸·열림 토큰)이 열리고 홈에는 신청 폼이 없다
+// 알림 구독 · 보존 기한 배치 E2E (W2-e 6단계 · W10-e — docs/dev/W2-e_설계.md 1장 6단계 · 7.5 · 9.3)
+// 브리핑 사전 알림 신청(/brief · /api/brief)은 주간 브리핑 호와 함께 지웠다(PO 2026-11-01). 같은 동의·확인·철회 길을 쓰는 알림 구독(/brief/subscribe)으로 본다.
+//  a) brief·brief_regular 기능 키 꺼짐이면 /brief/subscribe·/brief/confirm·/brief/unsubscribe 와 API가 404, 켜지면 구독 폼(알림 동의 칸·숨은 칸·열림 토큰)이 열리고 홈에는 신청 폼이 없다
 //  b) 동의 없이 제출 불가 · 형식 오류 · 숨은 칸(봇) 거부 — 거부된 제출은 consents 행 0 · 메일 0
 //  c) 정상 신청 → 확인 메일 → 확인 전 미확정(링크를 열어도 확정 안 됨) → 버튼(POST)으로 확정 · 토큰은 해시로만 저장 · subscribers 자동 편입 0 · 측정 이벤트에 이메일 0
-//  d) 같은 이메일: 확정된 신청은 "이미 신청하셨습니다"(행 1개 · 메일 추가 0) · 확인 전 신청은 확인 메일을 다시 보내고 이전 링크는 못 쓴다
+//  d) 같은 이메일: 확정된 신청은 "이미 구독 중입니다"(행 1개 · 메일 추가 0) · 확인 전 신청은 확인 메일을 다시 보내고 이전 링크는 못 쓴다
 //  e) 철회 링크: 열기만 하면 철회 안 됨 · 버튼으로 철회 · 다시 눌러도 성공 · 모르는 토큰 410 · 철회 뒤 같은 이메일로 다시 신청 가능
 //  f) 보존 기한 배치(POST /api/jobs/privacy-retention, CRON_SECRET): 인증 없이 401 · 경계(하루 전·당일) —
-//     미확인 가입 7일 · 미확인 사전 알림 7일 · 철회 동의 30일 · 문의 연락처 365일(완료만) · 문의 첨부 365일(저장소 파일까지) · 시도 기록 24시간 · 결과는 지운 수뿐
+//     미확인 가입 7일 · 미확인 사전 알림 7일(예전 행) · 철회 동의 30일 · 문의 연락처 365일(완료만) · 문의 첨부 365일(저장소 파일까지) · 시도 기록 24시간 · 결과는 지운 수뿐
 // 시험 자료(동의·문의·첨부 파일·계정·시도 기록·정책 게시본)는 끝나면 지운다 (staff.cleanup() 앞에서 지운다 — cleanup은 DB 연결을 닫는다).
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -33,11 +34,12 @@ const fillToken = (ageMs = 10_000) => {
   const opened = Date.now() - ageMs;
   return `${opened}.${crypto.createHmac("sha256", SECRET).update(`signup_fill:${opened}`).digest("hex").slice(0, 32)}`;
 };
-async function apply(fields, { ip = nextIp(), fill = fillToken() } = {}) {
-  const res = await fetch(`${base}/api/brief`, {
+/** 알림 구독 신청 — fields.agree는 알림 동의 칸(agree_alert)으로 보낸다 */
+async function apply({ agree, ...fields }, { ip = nextIp(), fill = fillToken() } = {}) {
+  const res = await fetch(`${base}/api/brief/subscribe`, {
     method: "POST",
     headers: { "content-type": "application/json", origin: base, "x-forwarded-for": ip },
-    body: JSON.stringify({ fill, website: "", ...fields }),
+    body: JSON.stringify({ fill, website: "", ...fields, ...(agree === undefined ? {} : { agree_alert: agree }) }),
   });
   return { status: res.status, body: await res.json().catch(() => ({})) };
 }
@@ -51,7 +53,7 @@ const post = async (path, token, { form = false } = {}) => {
   return { status: res.status, location: res.headers.get("location") ?? "" };
 };
 const setFlag = (patch) => db.query("update public.settings set value = value || $1::jsonb where key = 'feature_flags'", [JSON.stringify(patch)]);
-const consentOf = async (email) => (await db.query("select * from public.consents where kind = 'brief_prereg' and email = $1 order by id", [email])).rows;
+const consentOf = async (email) => (await db.query("select * from public.consents where kind = 'amendment_alert' and email = $1 order by id", [email])).rows;
 const tokensIn = (mail) => ({
   confirm: /\/brief\/confirm\?token=([A-Za-z0-9_-]+)/.exec(mail.Text)?.[1],
   revoke: /\/brief\/unsubscribe\?token=([A-Za-z0-9_-]+)/.exec(mail.Text)?.[1],
@@ -91,7 +93,7 @@ before(async () => {
   runMark = Number((await db.query("select coalesce(max(id), 0) m from public.agent_runs")).rows[0].m);
   idMark = Number((await db.query("select coalesce(max(id), 0) m from public.inquiries")).rows[0].m);
   removePolicies = await publishPolicies(db, run, ["privacy"]);
-  await setFlag({ brief: false });
+  await setFlag({ brief: false, brief_regular: false });
   // 신청 횟수 제한이 이 시험의 연속 제출을 막지 않도록 넉넉히 둔다(제한 자체는 5단계 폼과 같은 함수 — 3단계 시험)
   await db.query("update public.settings set value = value || jsonb_build_object('brief_ip', jsonb_build_object('window', 3600, 'limit', 1000), 'brief_email', jsonb_build_object('window', 3600, 'limit', 1000)) where key = 'auth_limits'");
 });
@@ -105,6 +107,8 @@ after(async () => {
         body: JSON.stringify({ prefixes: storedPaths }),
       }).catch(() => {});
     }
+    await db.query("delete from public.subscriber_prefs where consent_id in (select id from public.consents where email like $1)", [`brief-e2e-${process.pid}-%`]);
+    await db.query("delete from public.alert_deliveries where consent_id in (select id from public.consents where email like $1)", [`brief-e2e-${process.pid}-%`]);
     await db.query("delete from public.consents where email like $1", [`brief-e2e-${process.pid}-%`]);
     await db.query("delete from public.request_throttles where key_hash like 'e2eb%'");
     await db.query("delete from public.agent_runs where id > $1 and job = 'privacy-retention'", [runMark]);
@@ -122,8 +126,8 @@ after(async () => {
   }
 });
 
-test("a) brief 꺼짐이면 화면 3개와 API 3개가 404, 켜지면 폼이 열리고 홈에는 신청 폼이 없다", async () => {
-  for (const p of ["/brief", "/brief/confirm?token=" + "a".repeat(43), "/brief/unsubscribe?token=" + "a".repeat(43)]) {
+test("a) brief 꺼짐이면 화면 3개와 API 3개가 404, 켜지면 구독 폼이 열리고 홈에는 신청 폼이 없다", async () => {
+  for (const p of ["/brief/subscribe", "/brief/confirm?token=" + "a".repeat(43), "/brief/unsubscribe?token=" + "a".repeat(43)]) {
     assert.equal((await fetch(`${base}${p}`)).status, 404, p);
   }
   assert.equal((await apply({ email: mailTo("off"), agree: "on" })).status, 404);
@@ -131,19 +135,18 @@ test("a) brief 꺼짐이면 화면 3개와 API 3개가 404, 켜지면 폼이 열
   assert.equal((await post("/api/brief/unsubscribe", "a".repeat(43))).status, 404);
   assert.equal((await consentOf(mailTo("off"))).length, 0);
 
-  await setFlag({ brief: true });
-  const page = await fetch(`${base}/brief`);
+  await setFlag({ brief: true, brief_regular: true, amendment_alerts: true });
+  const page = await fetch(`${base}/brief/subscribe`);
   assert.equal(page.status, 200);
   const html = await page.text();
-  assert.match(html, /action="\/api\/brief"/);
-  // 동의 칸 — React가 속성 순서를 바꿔 그리므로(type·required·class·name) 순서와 상관없이 본다
-  const agree = html.match(/<input[^>]*\bname="agree"[^>]*>/)?.[0] ?? "";
+  assert.match(html, /action="\/api\/brief\/subscribe"/);
+  // 알림 동의 칸 — React가 속성 순서를 바꿔 그리므로(type·class·name) 순서와 상관없이 본다. 체크 없이 제출하면 서버가 consent로 거부한다(b)
+  const agree = html.match(/<input[^>]*\bname="agree_alert"[^>]*>/)?.[0] ?? "";
   assert.match(agree, /\btype="checkbox"/, "동의 칸은 체크박스");
-  assert.match(agree, /\brequired\b/, "동의 칸은 필수 — 체크 없이 제출 불가");
   assert.match(html, /name="website"/);
   assert.match(html, /name="fill"/);
   const home = await (await fetch(`${base}/`)).text();
-  assert.doesNotMatch(home, /api\/brief|name="agree"/, "홈에는 사전 알림 폼이 없다");
+  assert.doesNotMatch(home, /api\/brief|name="agree/, "홈에는 신청 폼이 없다");
 });
 
 test("b) 동의 없음·형식 오류·숨은 칸은 422이고 행 0·메일 0", async () => {
@@ -210,24 +213,24 @@ test("c) 신청 → 확인 메일 → 링크를 열기만 하면 미확정 → �
   assert.equal(leaked, 0, "측정 이벤트에 이메일 0");
 });
 
-test("d) 확정된 신청은 '이미 신청하셨습니다'(행·메일 그대로), 확인 전 재신청은 메일을 다시 보내고 이전 링크는 못 쓴다", async () => {
+test("d) 확정된 신청은 '이미 구독 중입니다'(행·메일 그대로), 확인 전 재신청은 메일을 다시 보내고 이전 링크는 못 쓴다", async () => {
   const done = mailTo("d1");
   const t1 = await newSignedUp(done, 1);
   assert.equal((await post("/api/brief/confirm", t1.confirm)).status, 200);
   const again = await apply({ email: done, agree: "on" });
   assert.equal(again.status, 200);
   assert.equal(again.body.code, "already");
-  assert.equal(again.body.message, "이미 신청하셨습니다");
+  assert.equal(again.body.message, "이미 구독 중입니다");
   assert.equal((await consentOf(done)).length, 1);
   assert.equal((await inboxFor(done)).length, 1, "이미 신청한 이메일에는 메일을 더 보내지 않는다");
-  const formRes = await fetch(`${base}/api/brief`, {
+  const formRes = await fetch(`${base}/api/brief/subscribe`, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded", origin: base, "x-forwarded-for": nextIp() },
-    body: new URLSearchParams({ email: done, agree: "on", website: "", fill: fillToken() }).toString(),
+    body: new URLSearchParams({ email: done, agree_alert: "on", website: "", fill: fillToken() }).toString(),
     redirect: "manual",
   });
   assert.equal(formRes.status, 303);
-  assert.equal(formRes.headers.get("location"), "/brief?done=already");
+  assert.equal(formRes.headers.get("location"), "/brief/subscribe?done=already");
 
   const pending = mailTo("d2");
   const first = await newSignedUp(pending, 1);

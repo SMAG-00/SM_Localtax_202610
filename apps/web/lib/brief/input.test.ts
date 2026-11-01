@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { BRIEF_MESSAGES, TOKEN_SHAPE, hashToken, isBriefCode, newToken, parseBriefInput } from "./input";
+import { TOKEN_SHAPE, hashToken, newToken, parseBriefInput } from "./input";
 
 describe("parseBriefInput", () => {
   test("동의 체크 없이는 거부한다", () => {
@@ -36,10 +36,4 @@ describe("토큰", () => {
   test("모양이 틀린 토큰은 TOKEN_SHAPE에 걸린다", () => {
     for (const bad of ["", "short", "a b".padEnd(40, "x"), "x".repeat(65), "한글".repeat(20)]) expect(TOKEN_SHAPE.test(bad)).toBe(false);
   });
-});
-
-test("거부 문장 표: 신청 중복 안내 문장과 코드 판별", () => {
-  expect(BRIEF_MESSAGES.already).toBe("이미 신청하셨습니다");
-  expect(isBriefCode("consent")).toBe(true);
-  expect(isBriefCode("toString")).toBe(false);
 });

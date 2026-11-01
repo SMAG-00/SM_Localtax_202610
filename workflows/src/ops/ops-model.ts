@@ -1,8 +1,6 @@
-// 운영 AI (W10-e - O4 브리핑 편집 AIOPS-02 · O1 룰셋 영향 제안 AIOPS-03). AI SDK 없이 HTTP로 호출한다(새 패키지 0) - AI 호출은 workflows 안에서만 (AIOPS-05).
+// 운영 AI (W10-e - O1 룰셋 영향 제안 AIOPS-03. O4 브리핑 편집은 주간 브리핑 호와 함께 지웠다 - PO 2026-11-01). AI SDK 없이 HTTP로 호출한다(새 패키지 0) - AI 호출은 workflows 안에서만 (AIOPS-05).
 // 키가 없으면 createOpsModel이 null이라 호출 0이고, 모델은 주입 가능한 인터페이스라서 시험은 가짜 모델로 돈다.
 // 이 파일은 DB를 열지 않는다. 결과(초안)는 호출한 쪽이 review_items(ai_draft)에만 쓴다.
-import { unsupportedTokens } from "./brief-checkers.ts";
-import { buildBriefSystemPrompt } from "./brief-prompt.ts";
 import { canSuggestRulesetImpact } from "./stage.ts";
 import type { TokenUsage } from "./budget.ts";
 
@@ -57,77 +55,6 @@ function parseJson(text: string): unknown {
   } catch {
     return undefined;
   }
-}
-
-// ── O4 브리핑 편집 ──────────────────────────────────────────
-
-export const FALLBACK_NOTE = "요약 실패 — 검수자 작성";
-
-export interface BriefDraftInput {
-  itemId: string;
-  /** 코드가 원문에서 넣은 사실 값 - 번호·일자·주소는 AI가 만들지 않는다 */
-  facts: { title: string; stageLabel?: string; sourceNo?: string; sourceDate?: string; sourceUrl?: string };
-  excerpt: string;
-  /** 설정의 금지어 목록 - 지시문에 "금지 표현"으로 들어간다 */
-  forbiddenWords?: readonly string[];
-}
-
-export interface BriefDraft {
-  title: string;
-  summary: string;
-  implication: string;
-  editorLines: [string, string, string];
-}
-
-export type BriefDraftResult =
-  | { ok: true; draft: BriefDraft; usage: TokenUsage; attempts: number }
-  | { ok: false; reason: "format" | "api_error"; note: typeof FALLBACK_NOTE; usage: TokenUsage; attempts: number };
-
-const LIMITS = { title: 60, summary: 200, implication: 200, line: 100 } as const;
-
-/** 형식 검사 - 문제 목록 (비어 있으면 통과). 원문에 없는 번호·일자·주소가 있어도 형식 위반으로 본다 */
-export function validateBriefDraft(value: unknown, ground: string): { draft: BriefDraft | null; problems: string[] } {
-  const problems: string[] = [];
-  if (!value || typeof value !== "object") return { draft: null, problems: ["JSON 객체가 아닙니다"] };
-  const o = value as Record<string, unknown>;
-  const str = (k: string, max: number): string => {
-    const v = typeof o[k] === "string" ? (o[k] as string).trim() : "";
-    if (v === "") problems.push(`${k}가 비어 있습니다`);
-    else if (v.length > max) problems.push(`${k}가 ${max}자를 넘습니다`);
-    return v;
-  };
-  const title = str("title", LIMITS.title);
-  const summary = str("summary", LIMITS.summary);
-  const implication = str("implication", LIMITS.implication);
-  const lines = Array.isArray(o.editorLines) ? (o.editorLines as unknown[]) : [];
-  if (lines.length !== 3 || !lines.every((l) => typeof l === "string" && l.trim() !== "" && l.trim().length <= LIMITS.line)) problems.push(`editorLines는 ${LIMITS.line}자 이내 문장 3개여야 합니다`);
-  for (const text of [title, summary, implication, ...lines.filter((l): l is string => typeof l === "string")]) {
-    for (const m of unsupportedTokens(text, ground)) problems.push(m);
-  }
-  if (problems.length) return { draft: null, problems };
-  return { draft: { title, summary, implication, editorLines: lines.map((l) => (l as string).trim()) as [string, string, string] }, problems };
-}
-
-/** 형식을 어기면 1회 재시도, 다시 실패하면 "요약 실패 — 검수자 작성" (AIOPS-02). 모델이 던지면 api_error(재시도 없음 - 다음 실행이 다시 시도) */
-export async function draftBriefItem(model: OpsModel, input: BriefDraftInput): Promise<BriefDraftResult> {
-  const ground = [input.excerpt, input.facts.sourceNo ?? "", input.facts.sourceDate ?? "", input.facts.sourceUrl ?? ""].join("\n");
-  const user = `사실 값: ${JSON.stringify(input.facts)}\n원문 발췌:\n${input.excerpt.slice(0, 6000)}`;
-  const system = buildBriefSystemPrompt(input.forbiddenWords ?? []);
-  let usage = ZERO;
-  let hint = "";
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    let done;
-    try {
-      done = await model.complete(system, user + hint);
-    } catch {
-      return { ok: false, reason: "api_error", note: FALLBACK_NOTE, usage, attempts: attempt };
-    }
-    usage = addUsage(usage, done.usage);
-    const v = validateBriefDraft(parseJson(done.text), ground);
-    if (v.draft) return { ok: true, draft: v.draft, usage, attempts: attempt };
-    hint = `\n\n이전 답이 형식을 어겼습니다: ${v.problems.slice(0, 5).join("; ")}. 형식을 지켜 JSON만 다시 답하세요.`;
-  }
-  return { ok: false, reason: "format", note: FALLBACK_NOTE, usage, attempts: 2 };
 }
 
 // ── O1 룰셋 영향 제안 (P1) ─────────────────────────────────

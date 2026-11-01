@@ -1,18 +1,16 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { budgetLevel, costOf, createOpsModel, draftBriefItem, kstDate, parseBudget, suggestRulesetImpact, type OpsBudget, type OpsModel, type TokenUsage } from "@ltr/workflows/ops";
+import { budgetLevel, costOf, createOpsModel, kstDate, parseBudget, suggestRulesetImpact, type OpsBudget, type OpsModel, type TokenUsage } from "@ltr/workflows/ops";
 import { opsAiEnv } from "../env";
-import { assembleDraft } from "../brief/issues";
-import { ACTION_TRIGGER_WORDS } from "@ltr/editorial";
-import { featureOn, readBriefPolicy, readSetting } from "../brief/policy";
+import { featureOn, readSetting } from "../brief/policy";
 
-// 운영 AI 작업 (W10-e - AIOPS-01·02·03·04). AI는 켜져 있을 때만 쓰고, 꺼진 상태(키·모델·예산 설정 없음, 기능 키 꺼짐, 예산 초과)에서도 감지·초안 틀·발행은 그대로 돈다.
+// 운영 AI 작업 (W10-e - AIOPS-01·03·04). AI는 켜져 있을 때만 쓰고, 꺼진 상태(키·모델·예산 설정 없음, 기능 키 꺼짐, 예산 초과)에서도 감지는 그대로 돈다.
+//  · O4 브리핑 편집(AIOPS-02)은 주간 브리핑 호와 함께 지웠다 (PO 2026-11-01 - 최신법령·유권해석은 일반 기사로 올린다)
 //  · AI 결과는 review_items(kind ai_draft)에만 쓴다 - 공개 표에는 쓰지 않고, 승인 전 공개 0
 //  · 실행마다 모델·토큰·비용을 detail._usage로 돌려주면 작업 경로가 agent_runs 비용 칸에 적는다
 //  · 월 예산 80% 이상이면 검수 큐에 경보 항목(달마다 1건), 100% 이상이면 AI 호출 0
 
 type Db = SupabaseClient;
-const DRAFT_CORNER_KEYS: readonly string[] = ["laws", "amendments", "admrul", "interpretations", "tribunal"];
 const fail = (what: string, e: { code?: string; message: string }) => new Error(`${what}: ${e.code ?? ""} ${e.message}`.trim());
 
 export interface OpsGate {
@@ -107,62 +105,4 @@ export async function detectAmendments(db: Db, now: Date): Promise<Record<string
     }
   }
   return { ...out, impact: { proposed, none }, _usage: usageOf(gate, used) };
-}
-
-/** O4 브리핑 편집 작업 (일 23:00) - 초안 호 틀은 AI 없이 만들고, AI가 켜져 있으면 개정 항목마다 쉬운 요약 초안을 검수 큐에 올린다 */
-export async function draftBrief(db: Db, now: Date): Promise<Record<string, unknown>> {
-  if (!(await featureOn(db, "brief_regular"))) return { skipped: "flag_off" };
-  const issue = await assembleDraft(db, now, "job:brief-draft");
-  const out: Record<string, unknown> = { issueId: issue.id, created: issue.created };
-  if (issue.id < 0) return out;
-  const gate = await opsGate(db, now);
-  if (!gate.run) return { ...out, ai: { skipped: gate.reason } };
-  const row = await db.from("brief_issues").select("issue_no, status, corners, source_excerpts").eq("id", issue.id).limit(1);
-  const iss = row.data?.[0] as { issue_no: number; status: string; corners: { key: string; items: { id: string; text: string; sourceNo?: string; sourceDate?: string; sourceUrl?: string }[] }[]; source_excerpts: Record<string, string> } | undefined;
-  if (!iss || iss.status !== "draft") return { ...out, ai: { skipped: "not_draft" } };
-  let used: TokenUsage = { inputTokens: 0, outputTokens: 0 };
-  let drafted = 0;
-  let failedCount = 0;
-  // 설정의 금지어(+ 행동 유도어)를 지시문에 넣는다 - 검사기 3번과 같은 목록
-  const forbiddenWords = [...ACTION_TRIGGER_WORDS, ...(await readBriefPolicy(db)).forbiddenWords];
-  // 원문이 있는 코너(개정·법령·행정규칙·해석·결정례)의 항목마다 쉬운 요약 초안을 올린다
-  const draftItems = iss.corners.filter((c) => DRAFT_CORNER_KEYS.includes(c.key)).flatMap((c) => c.items);
-  for (const it of draftItems) {
-    const key = `brief:${iss.issue_no}:${it.id}`;
-    const have = await db.from("review_items").select("id").eq("kind", "ai_draft").eq("source_key", key).limit(1);
-    if (have.error) throw fail("review_items 조회", have.error);
-    if (have.data?.length) continue;
-    const r = await draftBriefItem(gate.model!, { itemId: it.id, facts: { title: it.text, sourceNo: it.sourceNo, sourceDate: it.sourceDate, sourceUrl: it.sourceUrl }, excerpt: iss.source_excerpts[it.id] ?? "", forbiddenWords });
-    used = sum(used, r.usage);
-    const payload = r.ok ? { issueId: issue.id, itemId: it.id, draft: r.draft, model: gate.model!.name } : { issueId: issue.id, itemId: it.id, failed: true, note: r.note, reason: r.reason };
-    const ins = await db.from("review_items").insert({ kind: "ai_draft", source_key: key, title: r.ok ? `브리핑 ${iss.issue_no}호 쉬운 요약 초안` : `브리핑 ${iss.issue_no}호 요약 실패 - 검수자 작성`, payload, created_by: "job:brief-draft" });
-    if (ins.error && ins.error.code !== "23505") throw fail("review_items 저장", ins.error);
-    if (r.ok) drafted += 1;
-    else failedCount += 1;
-  }
-  return { ...out, ai: { drafted, failed: failedCount }, _usage: usageOf(gate, used) };
-}
-
-/** 승인된 AI 초안만 초안 호에 넣는다(승인 전 공개 0) - 쉬운 요약·편집자 3줄 코너에 origin ai, 검수 완료로 추가하고 검수 항목을 처리 완료로 */
-export async function applyAiDraft(db: Db, itemId: number, actor: string): Promise<{ added: number }> {
-  const it = await db.from("review_items").select("id, kind, status, payload").eq("id", itemId).limit(1);
-  const item = it.data?.[0] as { kind: string; status: string; payload: { issueId?: number; itemId?: string; failed?: boolean; draft?: { title: string; summary: string; implication: string; editorLines: string[] } } } | undefined;
-  if (!item || item.kind !== "ai_draft" || !item.payload.draft || item.payload.failed) throw new Error("반영할 수 있는 AI 초안이 아닙니다");
-  if (item.status !== "approved") throw new Error("승인된 초안만 호에 넣을 수 있습니다");
-  const issue = await db.from("brief_issues").select("status, corners").eq("id", item.payload.issueId).limit(1);
-  const row = issue.data?.[0] as { status: string; corners: { key: string; items: unknown[] }[] } | undefined;
-  if (!row || row.status !== "draft") throw new Error("초안 상태의 호에만 넣을 수 있습니다");
-  const d = item.payload.draft;
-  const base = `ai-${itemId}`;
-  const mk = (suffix: string, text: string) => ({ id: `${base}-${suffix}`, text, origin: "ai", reviewed: true });
-  const corners = row.corners.map((c) => {
-    if (c.key === "summary") return { ...c, items: [...c.items, mk("s", `${d.title} - ${d.summary} ${d.implication}`)] };
-    if (c.key === "editor_notes") return { ...c, items: [...c.items, ...d.editorLines.map((l, i) => mk(`l${i}`, l))] };
-    return c;
-  });
-  const upd = await db.from("brief_issues").update({ corners }).eq("id", item.payload.issueId);
-  if (upd.error) throw fail("brief_issues 갱신", upd.error);
-  const tr = await db.rpc("review_item_transition", { p_id: itemId, p_to: "published", p_actor: actor });
-  if (tr.error) throw fail("review_item_transition", tr.error);
-  return { added: 1 + d.editorLines.length };
 }

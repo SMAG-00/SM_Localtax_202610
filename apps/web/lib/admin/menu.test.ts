@@ -25,9 +25,9 @@ const EXPECTED: [string, Viewer, string[]][] = [
   [
     "편집 책임자 — 분야·사전 편집 메뉴·제휴 준비, 제휴사는 편집 메뉴 아님(목록 화면만 읽기)",
     viewer(["editor"]),
-    ["dashboard", "assignments", "articles", "reviews", "placement", "home", "amendments", "links", "calc-links", "campaigns", "realestate-weekly", "hub-points", "source-review", "review", "brief", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "stats", "channels", "library", "reports", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "media", "categories", "dictionaries", "query-terms", "qna", "solved-cases", "readiness", "seo", "inquiries", "pages"],
+    ["dashboard", "assignments", "articles", "reviews", "placement", "home", "amendments", "links", "calc-links", "campaigns", "realestate-weekly", "hub-points", "source-review", "review", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "stats", "channels", "library", "reports", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "media", "categories", "dictionaries", "query-terms", "qna", "solved-cases", "readiness", "seo", "inquiries", "pages"],
   ],
-  ["편집 책임자 + 기자", viewer(["editor", "reporter"]), ["dashboard", "assignments", "articles", "reviews", "placement", "home", "amendments", "links", "calc-links", "campaigns", "realestate-weekly", "hub-points", "source-review", "review", "brief", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "stats", "channels", "library", "reports", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "media", "categories", "dictionaries", "query-terms", "qna", "solved-cases", "readiness", "seo", "inquiries", "pages"]],
+  ["편집 책임자 + 기자", viewer(["editor", "reporter"]), ["dashboard", "assignments", "articles", "reviews", "placement", "home", "amendments", "links", "calc-links", "campaigns", "realestate-weekly", "hub-points", "source-review", "review", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "stats", "channels", "library", "reports", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "media", "categories", "dictionaries", "query-terms", "qna", "solved-cases", "readiness", "seo", "inquiries", "pages"]],
   ["세무 감수위원 — 상황 카드·허브 지방세 포인트·단계 「지방세로 읽기」는 감수 서명만", viewer(["reviewer"]), ["dashboard", "articles", "reviews", "hub-points", "guides", "ordinances", "issues", "rulesets", "national-calc", "accuracy", "eval", "quality", "project-lenses", "dev-methods", "finance", "situations"]],
   ["광고·협찬 담당 — 제휴사 관리", viewer(["ad_ops"]), ["dashboard", "campaigns", "sponsored", "partners", "inquiries", "pages"]],
   ["스토어·구독 담당", viewer(["store_ops"]), ["dashboard", "orgs", "store", "inquiries"]],
@@ -36,7 +36,7 @@ const EXPECTED: [string, Viewer, string[]][] = [
   [
     "관리자(역할 없음) — 편집 행위 메뉴 없음, 원문 검수·측정 지표·제휴 준비·설정·회원·역할",
     viewer([], true),
-    ["dashboard", "assignments", "articles", "campaigns", "realestate-weekly", "source-review", "review", "brief", "pipelines", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "stats", "channels", "library", "security", "feeds", "licenses", "orgs", "reports", "rulesets", "national-calc", "accuracy", "eval", "quality", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "media", "people", "categories", "dictionaries", "query-terms", "sponsored", "partners", "store", "brand", "experts", "qna", "solved-cases", "metrics", "readiness", "seo", "inquiries", "pages", "settings", "members"],
+    ["dashboard", "assignments", "articles", "campaigns", "realestate-weekly", "source-review", "review", "pipelines", "guides", "ordinances", "issues", "issue-tags", "ai-desk", "stats", "channels", "library", "security", "feeds", "licenses", "orgs", "reports", "rulesets", "national-calc", "accuracy", "eval", "quality", "regions", "projects", "supply", "dev-methods", "finance", "local-news", "situations", "media", "people", "categories", "dictionaries", "query-terms", "sponsored", "partners", "store", "brand", "experts", "qna", "solved-cases", "metrics", "readiness", "seo", "inquiries", "pages", "settings", "members"],
   ],
   ["역할 없음", viewer([]), ["dashboard"]],
 ];
@@ -110,10 +110,10 @@ describe("메뉴 묶음 (F4)", () => {
     expect(adminMenuGroups(viewer(["brand_ops"])).map((g) => [g.id, g.items.map((i) => i.id)])).toEqual([["ops", ["brand"]]]);
   });
 
-  test("날마다 쓰는 메뉴 — 편집 책임자는 첫 화면·기사·사진(검토·발행·브리핑은 더 보기로), 관리자는 + 측정 지표(순서 고정), 광고 담당은 첫 화면만", () => {
+  test("날마다 쓰는 메뉴 — 편집 책임자는 첫 화면·기사·사진(검토·발행은 더 보기로, 브리핑 메뉴는 없음), 관리자는 + 측정 지표(순서 고정), 광고 담당은 첫 화면만", () => {
     expect(adminDailyMenu(viewer(["editor"])).map((i) => i.id)).toEqual(["dashboard", "articles", "media"]);
     expect(adminMenuGroups(viewer(["editor"])).find((g) => g.id === "make")!.items.map((i) => i.id)).toContain("reviews");
-    expect(adminMenuGroups(viewer(["editor"])).find((g) => g.id === "place")!.items.map((i) => i.id)).toContain("brief");
+    expect(adminMenu(viewer(["editor"])).map((i) => i.id)).not.toContain("brief");
     expect(adminDailyMenu(viewer([], true)).map((i) => i.id)).toEqual(["dashboard", "articles", "media", "metrics"]);
     expect(adminDailyMenu(viewer(["ad_ops"])).map((i) => i.id)).toEqual(["dashboard"]);
   });

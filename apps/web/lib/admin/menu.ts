@@ -42,8 +42,6 @@ const RULES: readonly MenuRule[] = [
   { id: "source-review", label: "원문 검수", href: "/admin/source-review", when: (a) => a.has("source_review.resolve"), paths: ["/admin/source-review"] },
   // 공통 검수 큐 (REV-01~03 — W10-c) — 편집 책임자·관리자. 수집 파이프라인 원천·실행 (PIPE — W10-c) — 관리자만
   { id: "review", label: "공통 검수", href: "/admin/review", when: (a) => a.has("review_item.decide"), paths: ["/admin/review"] },
-  // 주간 브리핑 호 (BRIEF-01~04 — W10-e) — 편집 책임자·관리자
-  { id: "brief", label: "브리핑", href: "/admin/brief", when: (a) => a.has("review_item.decide"), paths: ["/admin/brief"] },
   { id: "pipelines", label: "수집 파이프라인", href: "/admin/pipelines", when: (a) => a.has("pipeline.manage"), paths: ["/admin/pipelines"] },
   // 감수 가이드 (W11-a) — 가이드 작성·서명·공개
   { id: "guides", label: "감수 가이드", href: "/admin/guides", when: (a) => a.has("guide.edit") || a.has("guide.sign") || a.has("guide.publish"), paths: ["/admin/guides"] },
@@ -144,7 +142,7 @@ export const ADMIN_MENU_IDS = ["metrics", "settings", "members"] as const;
 /**
  * 날마다 쓰는 메뉴 (PO 단순화 2026-10-31) — 메뉴 줄에 처음부터 보이는 항목. 첫 화면 · 기사 · 사진 보관함 · 측정 지표(통계 대시보드).
  * 검토·발행은 간편 발행(작성자가 기사 화면에서 바로 발행) 뒤로 '더 보기 → 기사 만들기·발행'으로 옮겼다.
- * 브리핑(주간 소식지, 선택 기능)은 PO 2026-11-01 "너무 복잡해"로 '더 보기 → 배치·노출'로 옮겼다.
+ * 브리핑(주간 소식지) 메뉴는 PO 2026-11-01 결정으로 호 시스템과 함께 지웠다 — 최신법령·유권해석은 일반 기사(하위 분야)로 올린다.
  * 보이는 조건은 RULES 그대로(허용 작업에서만)이고, 이 항목들은 아래 '더 보기' 묶음에 다시 나오지 않는다.
  */
 export const DAILY_MENU_IDS = ["dashboard", "articles", "media", "metrics"] as const;
@@ -156,7 +154,7 @@ export const DAILY_MENU_IDS = ["dashboard", "articles", "media", "metrics"] as c
  */
 export const MENU_GROUPS = [
   { id: "make", label: "기사 만들기·발행", itemIds: ["assignments", "reviews", "people", "guides", "ai-desk"] },
-  { id: "place", label: "배치·노출", itemIds: ["placement", "home", "campaigns", "hub-points", "realestate-weekly", "situations", "brief", "channels", "seo"] },
+  { id: "place", label: "배치·노출", itemIds: ["placement", "home", "campaigns", "hub-points", "realestate-weekly", "situations", "channels", "seo"] },
   {
     id: "data",
     label: "지방세 자료·연결",

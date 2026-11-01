@@ -1,9 +1,8 @@
-// W10-e 수용 E2E (docs/dev/W10-e_설계.md - AIOPS-01·02·04 · BRIEF-01~04 · HOME-09 · TX-12) - 작성만, 실행은 리드
+// W10-e 수용 E2E (docs/dev/W10-e_설계.md - AIOPS-01·04 · TX-12) - 작성만, 실행은 리드
 // standalone 빌드를 로컬 Supabase에 붙인다. 메일은 로컬 SMTP 수신함(시험용)으로만 나가고, 운영 AI는 끈 상태(키 없음)로 돈다.
 //  a) 감지 -> 후보 1건(재실행해도 1건) -> 승인 전 amendment_events 반영 0 -> 승인 뒤 반영 1건(origin=auto)
 //  b) 작업 URL - Cron 비밀값 없으면 401 / 기능 키 꺼짐 skipped flag_off / 켜면 후보 생성 / AI 끈 상태에서도 detail에 오류 없음
-//  c) 브리핑 발행 - 승인 전 공개 0 / 발행 시각 전 작업 실행해도 발행 0 / 시각 뒤 발행 1회 / 재실행해도 발송 1통 / 아카이브 공개
-//  d) 구독 - 이중 확인 전 발송 0 / 확인 뒤 발송 / 거부 한 번 클릭 뒤 다음 호 발송 0 / 알림과 브리핑 따로 해지
+//  (브리핑 호 발행 c)·호 발송 대상 d)는 주간 브리핑 호와 함께 지웠다 - PO 2026-11-01. 구독·확인·해지는 e2e/brief-retention.test.mjs)
 //  e) 예산 - 설정이 비어 있으면 AI 호출 0 / 80% 경보 항목 1건(재실행해도 1건)
 // 만든 행은 끝나면 되돌린다 (남는 행 0). 값은 모두 시험용이다.
 import { test, before, after } from "node:test";
@@ -32,7 +31,7 @@ async function purge() {
     await db.query("delete from public.brief_issues where created_by = 'e2e:w10e'");
     await db.query("delete from public.review_item_events where item_id in (select id from public.review_items where created_by like 'e2e:w10e%' or created_by = 'job:amendment-detect' or created_by = 'job:ops-ai-budget')");
     await db.query("delete from public.review_items where created_by like 'e2e:w10e%' or created_by = 'job:amendment-detect' or created_by = 'job:ops-ai-budget'");
-    await db.query("delete from public.agent_runs where job in ('amendment-detect','brief-draft','brief-publish','brief-reconfirm','amendment-alert','ops-ai-budget') and started_at >= $1", [since]);
+    await db.query("delete from public.agent_runs where job in ('amendment-detect','brief-reconfirm','amendment-alert','ops-ai-budget') and started_at >= $1", [since]);
     await db.query("update public.settings set value = value || '{\"amendment_auto\": false, \"brief_regular\": false, \"amendment_alerts\": false, \"ai_ops\": false}'::jsonb where key = 'feature_flags'");
     await db.query("update public.settings set value = '{}'::jsonb where key in ('ops_ai_budget', 'brief_publish_policy')");
     await db.query("commit");
@@ -76,16 +75,17 @@ after(async () => {
 });
 
 test("b) 작업 URL - 비밀값 없으면 401과 실행 기록 0, 기능 키가 꺼져 있으면 skipped flag_off", async () => {
-  for (const name of ["amendment-detect", "brief-draft", "brief-publish", "brief-reconfirm", "amendment-alert"]) {
+  for (const name of ["amendment-detect", "brief-reconfirm", "amendment-alert"]) {
     assert.equal((await job(name, null)).status, 401, name);
   }
   assert.equal((await db.query("select count(*)::int n from public.agent_runs where job = 'amendment-detect' and started_at >= $1", [since])).rows[0].n, 0);
   await setFlag("amendment_auto", false);
   assert.equal((await job("amendment-detect")).status, 200);
   assert.deepEqual((await lastDetail("amendment-detect")).detail, { skipped: "flag_off" });
-  await setFlag("brief_regular", false);
-  await job("brief-publish");
-  assert.deepEqual((await lastDetail("brief-publish")).detail, { skipped: "flag_off" });
+  await setFlag("amendment_alerts", false);
+  await job("amendment-alert");
+  assert.deepEqual((await lastDetail("amendment-alert")).detail, { skipped: "flag_off" });
+  assert.equal((await job("brief-publish")).status, 404, "지운 작업(브리핑 발행)은 없는 작업");
 });
 
 test("a) 감지 - 후보 1건(재실행해도 1건), 승인 전 amendment_events 반영 0, 승인 뒤 origin=auto 1건", async () => {
@@ -122,47 +122,6 @@ test("a) 감지 - 후보 1건(재실행해도 1건), 승인 전 amendment_events
     await db.query("commit");
     await setFlag("amendment_auto", false);
   }
-});
-
-test("c) 발행 - 승인 전 공개 0, 발행 시각 전 작업은 발행 0, 시각 뒤 1회 발행, 재실행은 no-op", async () => {
-  const policy = { disclaimer: "시험용 면책", no_harvest_notice: "시험용 무단수집 거부 안내", ad_info_url: "https://example.test/ad" };
-  await db.query("update public.settings set value = $1::jsonb where key = 'brief_publish_policy'", [JSON.stringify(policy)]);
-  await setFlag("brief_regular", true);
-  const future = new Date(Date.now() + 3 * 86_400_000).toISOString();
-  const past = new Date(Date.now() - 60_000).toISOString();
-  const mk = async (publishAt, no) => Number((await db.query("insert into public.brief_issues (issue_no, title, publish_at, created_by) values ($1, '시험용 브리핑', $2, 'e2e:w10e') returning id", [no, publishAt])).rows[0].id);
-  const notYet = await mk(future, 9001);
-  const due = await mk(past, 9002);
-  assert.equal((await db.query("select count(*)::int n from public.public_brief_issues where issue_no in (9001, 9002)")).rows[0].n, 0, "승인 전 공개 0");
-  await job("brief-publish");
-  assert.equal((await db.query("select status from public.brief_issues where id = $1", [due])).rows[0].status, "draft", "승인 전 발행 0");
-  for (const id of [notYet, due]) {
-    await db.query("update public.brief_issues set check_report = '{\"blocking\":0,\"warnings\":0,\"findings\":[]}'::jsonb where id = $1", [id]);
-    await db.query("select public.brief_issue_approve($1, 'e2e:w10e')", [id]);
-  }
-  await job("brief-publish");
-  await job("brief-publish");
-  assert.equal((await db.query("select status from public.brief_issues where id = $1", [notYet])).rows[0].status, "approved", "발행 시각 전 발행 0");
-  assert.equal((await db.query("select status from public.brief_issues where id = $1", [due])).rows[0].status, "published");
-  assert.equal((await db.query("select count(*)::int n from public.public_brief_issues where issue_no = 9002")).rows[0].n, 1);
-  assert.equal((await db.query("select count(*)::int n from public.public_brief_issues where issue_no = 9001")).rows[0].n, 0);
-});
-
-test("d) 구독 - 이중 확인 전 발송 대상 0, 확인 뒤 대상, 거부 뒤 0, 알림 해지는 브리핑에 영향 0", async () => {
-  const issueRow = (await db.query("select id from public.brief_issues where issue_no = 9002")).rows[0];
-  assert.ok(issueRow, "c) 시험이 만든 발행 호가 필요합니다");
-  const em = `w10e-${run}-sub@example.test`;
-  const brief = (await db.query("insert into public.consents (email, kind, channel) values ($1, 'brief', 'web_brief') returning id", [em])).rows[0].id;
-  const alert = (await db.query("insert into public.consents (email, kind, channel) values ($1, 'amendment_alert', 'web_brief') returning id", [em])).rows[0].id;
-  const targets = async () => (await db.query("select consent_id from public.brief_recipients($1, (now() at time zone 'Asia/Seoul')::date)", [issueRow.id])).rows.map((r) => String(r.consent_id));
-  assert.ok(!(await targets()).includes(String(brief)), "이중 확인 전 발송 0");
-  await db.query("update public.consents set confirmed_at = now() where id = any($1::bigint[])", [[brief, alert]]);
-  assert.ok((await targets()).includes(String(brief)));
-  assert.notEqual((await db.query("select reconfirm_due from public.consents where id = $1", [brief])).rows[0].reconfirm_due, null, "확인할 때 재확인 기한이 채워진다");
-  await db.query("update public.consents set revoked_at = now() where id = $1", [alert]);
-  assert.ok((await targets()).includes(String(brief)), "알림 해지는 브리핑에 영향 0");
-  await db.query("update public.consents set revoked_at = now() where id = $1", [brief]);
-  assert.ok(!(await targets()).includes(String(brief)), "거부 직후 발송 대상 0");
 });
 
 test("e) 예산 - 설정이 비어 있으면 AI 호출 0, 80% 경보 항목은 재실행해도 1건", async () => {

@@ -1,20 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { DEFAULT_PUBLISH_POLICY, parsePublishPolicy, parseReconfirmMonths, type PublishPolicy } from "@ltr/workflows/ops";
 
-// 브리핑 설정 읽기 (W10-e) - 문구 칸은 PO가 settings.brief_publish_policy에 넣는다. 이 파일과 코드에 면책·발행인·감수 문구는 없다.
-// 칸이 비어 있으면 빈 문자열이고, 발행 검사기가 막는다.
-
-export interface BriefPolicy {
-  publish: PublishPolicy;
-  reconfirmMonths: number;
-  footer: { disclaimer: string; noHarvestNotice: string; adInfoUrl: string };
-  publisherNotice: string;
-  reviewLabelAllowed: boolean;
-  forbiddenWords: string[];
-  /** 프리미엄 브리핑 수신 권한 키 (W10-f 권한 표) - 비어 있으면 프리미엄 발송 0 */
-  premiumEntitlementKey: string;
-}
+// 설정 읽기 (W10-e) - 기능 키와 settings 값. 주간 브리핑 호(발행 정책·면책 칸·프리미엄 수신)는 PO 2026-11-01 결정으로 지웠고,
+// 운영 AI 지시문이 쓰는 금지어 목록(settings.brief_publish_policy.forbidden_words)만 남는다. 이 파일과 코드에 면책·발행인·감수 문구는 없다.
 
 export async function readSetting(db: SupabaseClient, key: string): Promise<unknown> {
   const r = await db.from("settings").select("value").eq("key", key).limit(1);
@@ -28,20 +16,9 @@ export async function featureOn(db: SupabaseClient, key: string): Promise<boolea
   return !!value && typeof value === "object" && (value as Record<string, unknown>)[key] === true;
 }
 
-const str = (v: unknown): string => (typeof v === "string" ? v : "");
-
-export async function readBriefPolicy(db: SupabaseClient): Promise<BriefPolicy> {
-  const [publish, reconfirm] = await Promise.all([readSetting(db, "brief_publish_policy"), readSetting(db, "brief_reconfirm_policy")]);
+/** 설정의 금지어 목록 - 운영 AI 지시문에 "금지 표현"으로 들어간다. 칸이 없으면 빈 목록 */
+export async function readForbiddenWords(db: SupabaseClient): Promise<string[]> {
+  const publish = await readSetting(db, "brief_publish_policy");
   const o = publish && typeof publish === "object" ? (publish as Record<string, unknown>) : {};
-  return {
-    publish: parsePublishPolicy(o),
-    reconfirmMonths: parseReconfirmMonths(reconfirm),
-    footer: { disclaimer: str(o.disclaimer), noHarvestNotice: str(o.no_harvest_notice), adInfoUrl: str(o.ad_info_url) },
-    publisherNotice: str(o.publisher_notice),
-    reviewLabelAllowed: o.review_label_allowed === true,
-    forbiddenWords: Array.isArray(o.forbidden_words) ? (o.forbidden_words as unknown[]).filter((w): w is string => typeof w === "string") : [],
-    premiumEntitlementKey: str(o.premium_entitlement_key),
-  };
+  return Array.isArray(o.forbidden_words) ? (o.forbidden_words as unknown[]).filter((w): w is string => typeof w === "string") : [];
 }
-
-export { DEFAULT_PUBLISH_POLICY };

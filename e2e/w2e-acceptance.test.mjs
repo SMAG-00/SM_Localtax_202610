@@ -5,7 +5,7 @@
 //  2) 시나리오 1 회원 E2E — 가입(관심 분야·지역) → 수신함 메일 → 확인 → /my 새 글 → 문의(로그인 상태) → 재설정 → 탈퇴 → 프로필·동의·Auth 0
 //  3) 시나리오 7 평문 이메일 0 — 9.2 여섯 면(공개 HTML 전수 크롤링 · 공개 API · DB 전체 칸 · 감시 주소 추적 · 서버 기록 · 측정 이벤트)
 //  4) 시나리오 6 정책 링크 전수 — 바닥글·기사 하단·메뉴 어디서 따라가도 404·5xx 0
-//  5) 시나리오 3·8·10 짧게 — 가입 요청에 역할 값 · 고객센터 폼 5종 → 문의함 · 브리핑 사전 알림(확인 전 미확정·철회) · subscribers 표 없음
+//  5) 시나리오 3·8·10 짧게 — 가입 요청에 역할 값 · 고객센터 폼 5종 → 문의함 · 알림 구독(확인 전 미확정·철회 — 브리핑 사전 알림은 2026-11-01 지움) · subscribers 표 없음
 //  6) 시나리오 11 ADM-02 회원 삭제 · ADM-04 PO 아닌 관리자 403 + 감사 로그 정확히 1건
 //  7) 시나리오 12 기능 키 꺼짐 → 새 경로 404·링크 0, 켜면 배포 없이 열림
 //  8) 시나리오 14 정적 — 정책 본문은 마이그레이션·코드·씨앗에 없다
@@ -34,8 +34,8 @@ const PASSWORD = "Zq7-correct-horse-9";
 const NEW_PASSWORD = "Nw3-battery-staple-8";
 const BODY = "기사 본문에 오류가 있어 알려 드립니다. 확인 부탁드립니다.";
 const POLICY_DOCS = ["about", "editorial-policy", "ethics", "corrections", "ad-policy", "privacy", "terms", "advertise"];
-const NEW_FLAGS = ["page_about", "page_editorial_policy", "page_ethics", "page_corrections", "page_ad_policy", "page_privacy", "page_terms", "page_no_email", "page_advertise", "members", "brief", "page_help"];
-const NEW_PATHS = ["/about", "/about/editorial-policy", "/about/ethics", "/about/corrections", "/about/ad-policy", "/about/privacy", "/about/terms", "/about/advertise", "/signup", "/brief", "/help/report", "/help/subscribe", "/help/ad", "/help/contribute"];
+const NEW_FLAGS = ["page_about", "page_editorial_policy", "page_ethics", "page_corrections", "page_ad_policy", "page_privacy", "page_terms", "page_no_email", "page_advertise", "members", "brief", "brief_regular", "page_help"];
+const NEW_PATHS = ["/about", "/about/editorial-policy", "/about/ethics", "/about/corrections", "/about/ad-policy", "/about/privacy", "/about/terms", "/about/advertise", "/signup", "/brief/subscribe", "/help/report", "/help/subscribe", "/help/ad", "/help/contribute"];
 
 // 9.2 같은 정규식 — 운영 코드의 상수를 그대로 읽는다
 const EMAIL_SOURCE = JSON.parse(`"${/EMAIL_SOURCE = "(.*)";/.exec(fs.readFileSync(path.join(ROOT, "apps", "web", "lib", "policy", "email.ts"), "utf8"))[1]}"`);
@@ -111,7 +111,7 @@ async function signupApi(address, extra = {}) {
 }
 
 // ── 크롤링·스캔 ─────────────────────────────────────────
-const SEEDS = () => ["/", "/signup", "/login", "/forgot-password", "/brief", "/help/report", "/help/subscribe", "/help/ad", "/help/contribute", "/tax", "/news", `/news/${fx.taxSlug}`, `/news/${fx.finSlug}`, "/about/measurement", `/zz-없는-화면-${run}`];
+const SEEDS = () => ["/", "/signup", "/login", "/forgot-password", "/help/report", "/help/subscribe", "/help/ad", "/help/contribute", "/tax", "/news", `/news/${fx.taxSlug}`, `/news/${fx.finSlug}`, "/about/measurement", `/zz-없는-화면-${run}`];
 async function crawl() {
   const seen = new Map();
   const queue = SEEDS();
@@ -195,6 +195,9 @@ async function removeOwnRows() {
   try {
     await db.query("set local session_replication_role = replica");
     await db.query("delete from public.inquiries where id > $1", [inquiryMark]);
+    // replica 모드에서는 외래 키 cascade가 돌지 않는다 — 알림 구독 설정·발송 자리를 먼저 지운다
+    await db.query("delete from public.subscriber_prefs where consent_id in (select id from public.consents where email like $1)", [`%-${run}@example.test`]);
+    await db.query("delete from public.alert_deliveries where consent_id in (select id from public.consents where email like $1)", [`%-${run}@example.test`]);
     await db.query("delete from public.consents where email like $1", [`%-${run}@example.test`]);
     await db.query("delete from public.audit_log_changes where id > $1", [auditChangeMark]);
     await db.query("delete from public.audit_logs where id > $1 and (actor like $2 or action like 'e2e.%' or action like 'audit.amend%')", [auditMark, `e2e-w2e-${run}%`]);
@@ -263,7 +266,7 @@ test("1) 출발점 — 정책 게시본 0행 · 기능 키가 모두 켜져 있�
   await setFlags(Object.fromEntries(NEW_FLAGS.map((k) => [k, true])));
   for (const p of NEW_PATHS) assert.equal((await get(p)).status, 404, `게시본 없음: ${p}`);
   assert.equal((await post("/api/help/report", { body: BODY, agreePrivacy: "on", fill: fillToken("help_fill"), website: "" })).status, 404, "폼 제출 API도 404");
-  assert.equal((await post("/api/brief", { email: `w2e-x-${run}@example.test`, agree: "on", fill: fillToken("signup_fill"), website: "" })).status, 404, "브리핑 API 404");
+  assert.equal((await post("/api/brief/subscribe", { email: `w2e-x-${run}@example.test`, agree_alert: "on", fill: fillToken("signup_fill"), website: "" })).status, 404, "알림 구독 API 404");
   assert.deepEqual(footerHrefs((await get("/")).html), ["/about/measurement"], "측정 거부만 항상 보인다");
 
   // 시험 자료 — 기사 둘(지방세·개발금융), 지역 하나
@@ -328,9 +331,9 @@ test("2) 시나리오 1 회원 E2E — 가입(관심 분야·지역) → 수신�
   const inq = await one("select submitted_by, contact_email from public.inquiries where ref_code = $1", [fx.inquiryRef]);
   assert.deepEqual([inq.submitted_by, inq.contact_email], [fx.userId, fx.watch], "연락처는 허용 칸(inquiries.contact_email)에만");
 
-  // 브리핑 사전 알림은 다른 감시 주소로 (비회원 동의는 consents.email — 허용 칸 ①)
+  // 알림 구독은 다른 감시 주소로 (비회원 동의는 consents.email — 허용 칸 ①). 브리핑 사전 알림 신청은 주간 브리핑 호와 함께 지웠다 (PO 2026-11-01)
   fx.watch2 = `w2e-brief-${run}@example.test`;
-  const brief = await post("/api/brief", { email: fx.watch2, agree: "on", fill: fillToken("signup_fill"), website: "" });
+  const brief = await post("/api/brief/subscribe", { email: fx.watch2, agree_alert: "on", fill: fillToken("signup_fill"), website: "" });
   assert.equal(brief.status, 200);
   await waitForMail(fx.watch2, 1);
 
@@ -376,8 +379,8 @@ test("3) 시나리오 7 평문 이메일 0 — 탈퇴 뒤 여섯 면 전부 0 ·
   assert.deepEqual(after.watch, [], "④ 탈퇴 뒤: 감시 주소 어디에도 0");
   assert.deepEqual(await dbScan({ needle: fx.watch, includeAllowed: true }), [], "허용 칸 포함 전체 DB에 감시 주소 0");
   assert.equal(await count("select count(*) n from public.audit_logs where actor like $1 or target like $1 or coalesce(before::text, '') || coalesce(after::text, '') like $1", [`%${fx.watch}%`]), 0, "감사 로그에 회원 이메일 0");
-  // 허용 칸은 기대한 칸에서만 — 비회원 사전 알림 동의는 consents.email
-  assert.equal(await count("select count(*) n from public.consents where email = $1 and kind = 'brief_prereg'", [fx.watch2]), 1);
+  // 허용 칸은 기대한 칸에서만 — 비회원 알림 구독 동의는 consents.email
+  assert.equal(await count("select count(*) n from public.consents where email = $1 and kind = 'amendment_alert'", [fx.watch2]), 1);
   assert.ok(after.pages.size >= 15, `크롤링 규모 ${after.pages.size}쪽`);
   fx.crawled = after.pages;
   // 이메일 모양이 오가는 공개 입력은 거부 — 측정 수집은 from_path에 이메일 모양이면 400
@@ -406,7 +409,7 @@ test("4) 시나리오 6 정책 페이지 링크 전수 — 바닥글·기사 하
 });
 
 // ── 5) 시나리오 3·8·10 ──────────────────────────────────
-test("5) 시나리오 3 가입 요청에 역할 값을 넣어도 회원 · 시나리오 8 고객센터 5종 → 문의함 종류 · 시나리오 10 브리핑 확인 전 미확정·철회·subscribers 없음", async () => {
+test("5) 시나리오 3 가입 요청에 역할 값을 넣어도 회원 · 시나리오 8 고객센터 5종 → 문의함 종류 · 시나리오 10 알림 구독 확인 전 미확정·철회·subscribers 없음", async () => {
   const email = `w2e-role-${run}@example.test`;
   const res = await post("/api/auth/signup", { email, password: PASSWORD, agreeTerms: true, agreePrivacy: true, fill: fillToken("signup_fill"), role: "admin", roles: ["admin"] });
   const row = await db.query("select id from auth.users where email = $1", [email]);
@@ -433,10 +436,10 @@ test("5) 시나리오 3 가입 요청에 역할 값을 넣어도 회원 · 시�
   assert.equal((await post("/api/help/report", { fill: fillToken("help_fill", 100), website: "", agreePrivacy: "on", body: BODY })).status >= 400, true, "너무 빠른 제출 거부");
   assert.equal((await post("/api/help/expert", { fill: fillToken("help_fill"), website: "", agreePrivacy: "on", body: BODY })).status, 404, "전문가 연락 요청 종류 0");
 
-  // 브리핑 — 동의 없이 제출 불가 · 확인 전 미확정 · 중복 0 · 철회
-  assert.ok((await post("/api/brief", { email: `w2e-b0-${run}@example.test`, fill: fillToken("signup_fill"), website: "" })).status >= 400, "동의 없이 제출 불가");
-  assert.ok((await post("/api/brief", { email: "not-an-email", agree: "on", fill: fillToken("signup_fill"), website: "" })).status >= 400, "형식 오류");
-  const prereg = async () => (await db.query("select confirmed_at, revoked_at from public.consents where kind = 'brief_prereg' and email = $1", [fx.watch2])).rows;
+  // 알림 구독 — 동의 없이 제출 불가 · 확인 전 미확정 · 중복 0 · 철회
+  assert.ok((await post("/api/brief/subscribe", { email: `w2e-b0-${run}@example.test`, fill: fillToken("signup_fill"), website: "" })).status >= 400, "동의 없이 제출 불가");
+  assert.ok((await post("/api/brief/subscribe", { email: "not-an-email", agree_alert: "on", fill: fillToken("signup_fill"), website: "" })).status >= 400, "형식 오류");
+  const prereg = async () => (await db.query("select confirmed_at, revoked_at from public.consents where kind = 'amendment_alert' and email = $1", [fx.watch2])).rows;
   assert.equal((await prereg()).length, 1, "중복 0 — 행 하나");
   assert.equal((await prereg())[0].confirmed_at, null, "확인 전에는 미확정");
   const mails = await waitForMail(fx.watch2, 1);
@@ -491,7 +494,7 @@ test("6) 시나리오 11 ADM-02 회원 삭제(편집자 403 + 거부 로그 → 
 test("7) 시나리오 12 기능 키를 끄면 새 경로 전부 404·링크 0·서버 오류 0, 다시 켜면 배포 없이 열린다", async () => {
   await setFlags(Object.fromEntries(NEW_FLAGS.map((k) => [k, false])));
   await settle(NEW_PATHS, 404);
-  assert.equal((await post("/api/brief", { email: `w2e-off-${run}@example.test`, agree: "on", fill: fillToken("signup_fill"), website: "" })).status, 404);
+  assert.equal((await post("/api/brief/subscribe", { email: `w2e-off-${run}@example.test`, agree_alert: "on", fill: fillToken("signup_fill"), website: "" })).status, 404);
   assert.equal((await post("/api/help/report", { fill: fillToken("help_fill"), website: "", agreePrivacy: "on", body: BODY })).status, 404);
   for (const p of ["/", `/news/${fx.taxSlug}`, "/tax"]) {
     const r = await get(p);
@@ -519,8 +522,8 @@ test("8) 시나리오 14 정적 — 마이그레이션에 policy_versions 씨앗
 });
 
 // ── 9) 시나리오 15 ──────────────────────────────────────
-test("9) 시나리오 15 새 화면 R1~R3(360·640·1024) · 360px 가로 스크롤 0 · 접근성 95 — 가입·로그인·브리핑·고객센터·정책 페이지", async () => {
-  const urls = [`${base}/signup`, `${base}/login`, `${base}/brief`, `${base}/help/report`, `${base}/about/privacy`];
+test("9) 시나리오 15 새 화면 R1~R3(360·640·1024) · 360px 가로 스크롤 0 · 접근성 95 — 가입·로그인·고객센터·정책 페이지", async () => {
+  const urls = [`${base}/signup`, `${base}/login`, `${base}/help/report`, `${base}/about/privacy`];
   for (const url of urls) {
     for (const width of [360, 640, 1024]) {
       const r = await measurePage(browser, url, { width, height: 740 });

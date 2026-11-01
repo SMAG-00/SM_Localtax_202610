@@ -47,12 +47,12 @@ export const HEADER_MENU: ReadonlyArray<{ key: HeaderMenuKey; label: string; hre
 /**
  * 바로가기 — 키·글자·기본 주소 표 하나 (HOME-13·14). 이름 글자는 여기에만 있고 다른 파일에 다시 쓰지 않는다. 계산기는 "AI 계산기"라 부르지 않는다.
  * 화면은 홈의 바로가기 블록 하나뿐입니다 (헤더 줄 없음 - PO 2026-10-26). 제품 이름은 brand.productName에서 만들어 이 파일에 다시 쓰지 않는다.
- * `brief_weekly`의 실제 주소는 최신 브리핑 호(공개 화면 틀이 채움) - 여기 값은 호가 없을 때의 목록 주소.
+ * `brief_weekly`(키 이름은 DB·캠페인 도착 값이라 그대로)는 최신법령·유권해석 하위 분야 목록 — 주간 브리핑 호는 PO 2026-11-01 결정으로 지웠다.
  */
 export const HEADER_SHORTCUTS: ReadonlyArray<{ key: HeaderShortcutKey; label: string; href: string }> = [
   { key: "calc", label: "부동산 세금 계산기", href: "/calc" },
   { key: "realestate_weekly", label: "금주 부동산 재테크", href: "/realestate/weekly" },
-  { key: "brief_weekly", label: "금주 지방세 최신법령·유권해석", href: "/brief" },
+  { key: "brief_weekly", label: "최신법령·유권해석", href: "/tax/law-updates" },
   { key: "expert_request", label: `${brand.productName} 전문가 상담요청`, href: "/experts/request" },
 ];
 

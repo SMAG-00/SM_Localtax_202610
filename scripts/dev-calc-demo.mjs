@@ -9,7 +9,8 @@
 //  - 시험용 룰셋 2090.01 (rules/2026.01.json의 미감수 초안 값) - 기존 W10-a RPC(sign_ruleset -> approve_ruleset)로 서명·승인
 //  - 시험용 환급 판정표 2090.01 (지어낸 문진표) - sign_determination_table -> approve_determination_table
 //  - 시험용 대조 사례(키 demo-calc-*) 취득세 유상·상속 공식 30건씩 + 표본 50건, 재산세 공식 30건 + 표본 50건 -> 대조 실행 -> 게이트 열림
-//  - 홈 바로가기 3개 더: 시험용 기사 3건(부동산재테크) + 금주 부동산 재테크 1호 발행 / 시험용 브리핑 1호 승인·발행 / 시험용 전문가 1명 + 고지문·연락 요청 정책(시험용 승인값)
+//  - 홈 바로가기 2개 더: 시험용 기사 3건(부동산재테크) + 금주 부동산 재테크 1호 발행 / 시험용 전문가 1명 + 고지문·연락 요청 정책(시험용 승인값)
+//    (주간 브리핑 호는 PO 2026-11-01 결정으로 지웠다 - --purge는 예전 시연 호가 남아 있으면 지운다)
 //  - 기능 키 켜기 (settings.feature_flags 일부 키만 건드림)
 // 운영 DB에는 닿지 않습니다: 로컬(127.0.0.1/localhost) 주소가 아니면 바로 멈춥니다. .env 파일은 읽지 않습니다.
 import { execFileSync } from "node:child_process";
@@ -30,15 +31,12 @@ const ENTERED_BY = "시험용:dev-calc-demo";
 const FLAGS = ["calc", "sm_calculator", "self_calculator", "calc_acquisition", "calc_holding", "calc_refund", "calc_compare", "calc_accuracy", "wetax_links", "shortcuts", "realestate_weekly", "brief", "brief_regular", "experts", "expert_requests"];
 const ACTOR = "demo:dev-calc-demo";
 const DEMO_SLUG = "demo-calc-";
-const DEMO_BRIEF_NO = 9090;
 const DEMO_MARK = "demo-dev-calc-demo";
 // 전문가 고지문·연락 요청 정책의 시험용 승인값 (실제 문구 아님) - 이미 승인된 값이 있으면 건드리지 않는다
 const NOTICE_DEMO = { version: DEMO_MARK, text: "시험용 고지문입니다. 실제 문구가 아닙니다.", approved: true, reviewed_by: "시험용 검토자", reviewed_on: "2026-10-25" };
 const NOTICE_SEED = { version: "", text: "", approved: false, reviewed_by: null, reviewed_on: null };
 const POLICY_DEMO = { retention_days: 365, target_business_days: 1, summary_max_chars: 1000, consent_version: DEMO_MARK, intro: ["시험용 안내 문단입니다."], consent_items: ["시험용 동의 항목입니다."], approved: true, reviewed_by: "시험용 검토자", reviewed_on: "2026-10-25", due_diligence_ref: "시험용", legal_review_ref: "시험용" };
 const POLICY_SEED = { retention_days: 365, target_business_days: 1, summary_max_chars: 1000, consent_version: "", intro: [], consent_items: [], approved: false, reviewed_by: null, reviewed_on: null, due_diligence_ref: "", legal_review_ref: "" };
-const DEMO_BRIEF_CORNERS = [{ key: "demo", title: "시험용 코너", items: [{ id: "demo-1", text: "시험용 항목입니다. 실제 법령·해석이 아닙니다.", origin: "human", reviewed: true }], emptyNote: "" }];
-const CLEAN_REPORT = { blocking: 0, warnings: 0, findings: [] };
 const ACQ = { ownerType: "INDIVIDUAL", propertyKind: "LAND", price: 100000000 };
 const HOLD = { ownerType: "INDIVIDUAL", propertyKind: "HOUSE", publishedPrices: [500000000] };
 // [묶음 이름, 세목, 원인, 종류, 개수, 입력]
@@ -299,14 +297,6 @@ if (!(await one("select 1 x from public.realestate_weekly_items where article_id
     if (!r.ok) fail(`재테크 포인트 발행 거부: ${r.code} ${r.message}`);
   }
 }
-let brief = await one("select id, status from public.brief_issues where issue_no = $1", [DEMO_BRIEF_NO]);
-if (!brief) {
-  brief = await one("insert into public.brief_issues (issue_no, title, publish_at, corners, check_report, created_by) values ($1, '시험용 금주 지방세 최신법령·유권해석', now() - interval '1 hour', $2::jsonb, $3::jsonb, $4) returning id, status", [
-    DEMO_BRIEF_NO, JSON.stringify(DEMO_BRIEF_CORNERS), JSON.stringify(CLEAN_REPORT), ACTOR,
-  ]);
-}
-if (brief.status === "draft") await db.query("select public.brief_issue_approve($1, $2)", [brief.id, ACTOR]);
-if (brief.status !== "published") await db.query("select public.brief_issue_publish($1)", [brief.id]);
 const expertPolicy = async (key, field, demo) => {
   const cur = (await one("select value from public.settings where key = $1", [key]))?.value;
   if (cur?.approved === true) return;
@@ -324,6 +314,6 @@ console.log("시험용 바로가기 자료 준비: 재테크 포인트 1호 · �
 await setFlags(true);
 await db.end();
 console.log(`\n준비됐습니다. 최대 30초 뒤(공개 데이터 캐시) ${base}/calc 를 열어 보세요. 값은 모두 시험용이며 실제 세금과 다릅니다.`);
-console.log("  /calc  /calc/acquisition  /calc/holding  /calc/refund  /calc/compare  /calc/accuracy  /realestate/weekly  /experts/request  /brief/날짜  (홈 바로가기)");
+console.log("  /calc  /calc/acquisition  /calc/holding  /calc/refund  /calc/compare  /calc/accuracy  /realestate/weekly  /experts/request  /tax/law-updates  (홈 바로가기)");
 console.log("참고: 바로가기는 메뉴라 shortcuts 키만 켜져 있으면 4개가 늘 보이고, 내용이 없는 도착 화면은 '준비 중'으로 열립니다(브리핑 읽기는 메일 설정 없이도 열림).");
 console.log("끄기: pnpm dev:calc-demo -- --off   지우기: pnpm dev:calc-demo -- --purge");

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { FieldDataControls } from "@/components/admin/FieldDataControls";
-import { AmendmentApplyForm } from "@/components/admin/BriefControls";
+import { AmendmentApplyForm } from "@/components/admin/AmendmentApplyForm";
 import { ReviewItemControls } from "@/components/admin/ReviewControls";
 import { fieldCandidateView } from "@/lib/field-data/review-ui";
 import { EmptyNote, MONO, PageTitle, Panel, ToneChip } from "@/components/admin/ui";

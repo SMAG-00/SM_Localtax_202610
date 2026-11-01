@@ -56,10 +56,6 @@ export interface JobServices {
   runAccuracy(now: Date): Promise<Record<string, unknown>>;
   /** W10-e 개정 감지 - 후보는 검수 큐에만 (AIOPS-01). 기능 키 amendment_auto가 꺼져 있으면 건너뜀. 운영 AI가 켜져 있으면 룰셋 영향 제안 초안도 검수 큐에만 */
   detectAmendments(now: Date): Promise<Record<string, unknown>>;
-  /** W10-e O4 브리핑 편집 - 다음 호 초안 틀과(AI가 켜져 있으면) 쉬운 요약 초안. 공개 표 쓰기 0 */
-  draftBrief(now: Date): Promise<Record<string, unknown>>;
-  /** W10-e 정시 발행·발송 - 승인된 호만, 발행 시각 판정은 DB (BRIEF-01) */
-  publishBrief(now: Date): Promise<Record<string, unknown>>;
   /** W10-e 재확인 안내 - 기한이 오늘인 구독자에게 1회 (BRIEF-02) */
   remindReconfirm(now: Date): Promise<Record<string, unknown>>;
   /** W10-e 개정 알림 발송 - 공개된 단계 변경만, 수신자당 1통 (TX-12) */
@@ -130,10 +126,6 @@ export const jobs: Record<string, Job> = {
   "accuracy-run": async ({ now, services }) => ({ detail: await services.runAccuracy(now), revalidatePublic: false }),
   // W10-e 개정 감지 (하루 한 번, 법령 수집 뒤) - 후보는 검수 큐에만 쌓이고 공개 화면은 바뀌지 않는다
   "amendment-detect": async ({ now, services }) => withUsage(await services.detectAmendments(now)),
-  // W10-e 브리핑 초안 (매주 일 23:00 KST) - 초안은 승인 전 공개 0
-  "brief-draft": async ({ now, services }) => withUsage(await services.draftBrief(now)),
-  // W10-e 브리핑 정시 발행 (매주 월 10:00 KST) - 발행하면 아카이브가 바뀐다
-  "brief-publish": async ({ now, services }) => withUsage(await services.publishBrief(now), true),
   // W10-e 재확인 안내 (하루 한 번)
   "brief-reconfirm": async ({ now, services }) => withUsage(await services.remindReconfirm(now)),
   // W10-e 개정 알림 발송 (1시간마다)

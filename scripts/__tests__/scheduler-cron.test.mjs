@@ -87,16 +87,15 @@ test("일정 파일의 줄마다 하루 한 번만 돈다 (Vercel Hobby 배포 �
   }
 });
 
-test("popular-hourly는 UTC 매시 5분에 한 번씩 — 24개 시간대마다 정확히 1번, 다른 작업은 하루 1번 (기준 일요일 — 일요일 줄 brief-draft 포함, 월요일 줄 brief-publish는 월요일 UTC 01:00)", () => {
+test("popular-hourly는 UTC 매시 5분에 한 번씩 — 24개 시간대마다 정확히 1번, 다른 작업은 하루 1번 (주간 브리핑 초안·발행 작업은 PO 2026-11-01 결정으로 지웠다)", () => {
   const perHour = Array.from({ length: 24 }, () => 0);
   for (const d of DAY_MINUTES) for (const job of dueJobs(SCHEDULE, d)) if (job === "popular-hourly") perHour[d.getUTCHours()] += 1;
   assert.deepEqual(perHour, Array.from({ length: 24 }, () => 1));
   assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T07:05:00Z")), ["popular-hourly"]);
   assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T07:06:00Z")), []);
   const daily = DAY_MINUTES.flatMap((d) => dueJobs(SCHEDULE, d)).filter((j) => j !== "popular-hourly");
-  assert.deepEqual(daily.sort(), ["accuracy-run", "agent-purge", "amendment-alert", "amendment-detect", "analytics-retention", "billing-reconcile", "brief-draft", "brief-reconfirm", "case-summary-draft", "consistency-watch", "expert-badge-expiry", "index-refresh", "indexnow-submit", "institution-inquiry-purge", "issue-graph-stale", "library-index-sync", "link-check", "notify-daily", "ops-ai-budget", "org-contract-close", "pipeline-docs", "pipeline-field-data", "pipeline-law", "privacy-retention", "quality-daily", "readiness-monthly", "renewal-notice", "scheduler-heartbeat", "search-console-daily", "source-expiry", "stats-collect", "zone-refresh"]);
-  assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-19T01:00:00Z")), ["brief-publish"], "월요일 UTC 01:00(한국 10:00)에 브리핑 발행");
-  assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-18T01:00:00Z")), [], "일요일 같은 시각에는 발행 0");
+  assert.deepEqual(daily.sort(), ["accuracy-run", "agent-purge", "amendment-alert", "amendment-detect", "analytics-retention", "billing-reconcile", "brief-reconfirm", "case-summary-draft", "consistency-watch", "expert-badge-expiry", "index-refresh", "indexnow-submit", "institution-inquiry-purge", "issue-graph-stale", "library-index-sync", "link-check", "notify-daily", "ops-ai-budget", "org-contract-close", "pipeline-docs", "pipeline-field-data", "pipeline-law", "privacy-retention", "quality-daily", "readiness-monthly", "renewal-notice", "scheduler-heartbeat", "search-console-daily", "source-expiry", "stats-collect", "zone-refresh"]);
+  assert.deepEqual(dueJobs(SCHEDULE, new Date("2026-10-19T01:00:00Z")), [], "월요일 UTC 01:00에 돌던 브리핑 발행 작업 0");
 });
 
 test("일정 파일의 작업은 모두 작업 목록(workflows)에 있다 — 없는 작업을 부르는 일정 0", async () => {

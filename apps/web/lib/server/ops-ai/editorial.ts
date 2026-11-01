@@ -4,7 +4,7 @@ import {
   CHANNELS, draftArticleBox, draftCaseSummary, draftChannelCopy, isKstMonday, isoWeekKey, judgeImpactSentences, parseChannelLimits, proposalLate,
   type Channel, type TagOption, type TokenUsage,
 } from "@ltr/workflows/ops";
-import { readBriefPolicy, readSetting } from "../brief/policy";
+import { readForbiddenWords, readSetting } from "../brief/policy";
 import { readStoredBody } from "../articles/content";
 import { siteUrl } from "../env";
 import { opsGate, sum, usageOf, type OpsGate } from "./service";
@@ -22,7 +22,7 @@ export const CASE_SUMMARY_PER_RUN = 10;
 const BATCH_ACTOR = "job:case-summary-draft";
 
 async function forbiddenWordsOf(db: Db): Promise<string[]> {
-  return (await readBriefPolicy(db)).forbiddenWords;
+  return readForbiddenWords(db);
 }
 
 async function approvedTags(db: Db): Promise<TagOption[]> {

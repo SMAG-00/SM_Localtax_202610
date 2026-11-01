@@ -71,6 +71,7 @@ export const FEATURE_KEYS = [
   "page_no_email",
   "page_advertise",
   "members",
+  // brief — 알림 구독 화면(/brief/subscribe·confirm·unsubscribe)을 연다. 주간 브리핑 호(사전 알림 신청·아카이브)는 PO 2026-11-01 결정으로 지웠다
   "brief",
   // W3 5단계 — 해석 해설 /tax/interpretations (원문 입력·세무 감수 뒤 공개 해설 1건 이상일 때만 켠다)
   "interpretations",
@@ -116,6 +117,7 @@ export const FEATURE_KEYS = [
   "review_queue",
   "pipelines",
   "amendment_auto",
+  // brief_regular — 주간 브리핑 호 발행 키였다(호 시스템은 PO 2026-11-01 지움). DB 기능 키라 남기고, 지금은 알림 구독 양식(/brief/subscribe)만 이 키를 본다
   "brief_regular",
   "amendment_alerts",
   "ai_ops",

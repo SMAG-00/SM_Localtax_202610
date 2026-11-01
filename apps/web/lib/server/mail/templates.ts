@@ -1,5 +1,5 @@
 // 메일 본문 (W2-e 설계 8.1) — 순수 함수. 링크와 "요청하지 않았다면 무시하세요" 수준의 짧은 안내문만 둔다(약관·동의 문구는 되풀이하지 않는다).
-export const MAIL_TEMPLATES = ["signup_confirm", "signup_exists_notice", "signup_resend", "password_reset", "inquiry_receipt", "brief_confirm", "expert_request_notice", "brief_subscribe_confirm", "brief_reconfirm", "brief_issue", "amendment_alert", "brief_launch_notice"] as const;
+export const MAIL_TEMPLATES = ["signup_confirm", "signup_exists_notice", "signup_resend", "password_reset", "inquiry_receipt", "expert_request_notice", "brief_subscribe_confirm", "brief_reconfirm", "amendment_alert"] as const;
 export type MailTemplate = (typeof MAIL_TEMPLATES)[number];
 export interface MailVars {
   /** 확인 링크 (signup_confirm) */
@@ -11,11 +11,11 @@ export interface MailVars {
   kindLabel?: string;
   /** 담당자 알림 (expert_request_notice) - 접수 번호·분야 이름·보안 화면 주소만. 이름·연락처·요약은 싣지 않는다 (EXPL-16) */
   categoryLabel?: string;
-  /** 사전 알림 철회 링크 (brief_confirm) */
+  /** 신청 철회·수신 거부 링크 (brief_subscribe_confirm · brief_reconfirm) */
   unsubscribeLink?: string;
   /** W10-e - 구독 종류 이름 (brief_subscribe_confirm · brief_reconfirm) */
   kindLabel2?: string;
-  /** W10-e - 브리핑 호/알림 (brief_issue · amendment_alert) - 제목과 본문은 이미 만들어진 글 */
+  /** W10-e - 개정·새 해석 문서 알림 (amendment_alert) - 제목과 본문은 이미 만들어진 글 */
   subjectTitle?: string;
   bodyText?: string;
 }
@@ -50,11 +50,6 @@ export function renderMail(template: MailTemplate, vars: MailVars): { subject: s
         subject: `[${SERVICE}] 문의가 접수되었습니다`,
         text: [`${vars.kindLabel ?? "문의"}가 접수되었습니다.`, `접수 번호: ${vars.refCode ?? ""}`, "", "담당자가 확인한 뒤 회사 메일로 직접 연락드릴 수 있습니다. 이 메일에는 회신하지 않으셔도 됩니다.", "", IGNORE].join("\n"),
       };
-    case "brief_confirm":
-      return {
-        subject: `[${SERVICE}] 브리핑 알림 신청 확인`,
-        text: ["브리핑 사전 알림 신청을 마치려면 아래 링크를 열고 [신청 확정하기] 버튼을 눌러 주세요.", "", url(vars.link, "link"), "", "신청을 철회하려면 아래 링크를 열어 주세요.", url(vars.unsubscribeLink, "unsubscribeLink"), "", IGNORE].join("\n"),
-      };
     case "brief_subscribe_confirm":
       return {
         subject: `[${SERVICE}] ${vars.kindLabel2 ?? "알림"} 신청 확인`,
@@ -65,15 +60,9 @@ export function renderMail(template: MailTemplate, vars: MailVars): { subject: s
         subject: `[${SERVICE}] ${vars.kindLabel2 ?? "알림"} 수신 재확인`,
         text: ["계속 받으시려면 오늘 안에 아래 링크를 열고 [신청 확정하기] 버튼을 눌러 주세요. 확인하지 않으시면 내일부터 보내지 않습니다.", "", url(vars.link, "link"), "", "그만 받으시려면 아래 링크를 열어 주세요.", url(vars.unsubscribeLink, "unsubscribeLink")].join("\n"),
       };
-    case "brief_issue":
     case "amendment_alert":
-      // 제목·본문은 호/알림을 만드는 쪽이 완성한다 - 광고성 호의 제목은 "(광고)"로 시작해야 하므로 서비스 이름을 앞에 붙이지 않는다
+      // 제목·본문은 알림을 만드는 쪽이 완성한다 - 제목에 서비스 이름을 앞에 붙이지 않는다
       return { subject: vars.subjectTitle ?? "", text: vars.bodyText ?? "" };
-    case "brief_launch_notice":
-      return {
-        subject: `[${SERVICE}] 브리핑이 시작되었습니다`,
-        text: ["사전 알림을 신청하신 분께 한 번만 알려 드립니다. 브리핑을 받으시려면 아래에서 구독을 신청하고 확인 메일의 링크를 눌러 주세요. 사전 알림 신청만으로는 브리핑이 발송되지 않습니다.", "", url(vars.link, "link"), "", "사전 알림을 철회하려면 아래 링크를 열어 주세요.", url(vars.unsubscribeLink, "unsubscribeLink")].join("\n"),
-      };
     case "expert_request_notice":
       return {
         subject: `[${SERVICE}] SM 전문가 연락 요청이 접수되었습니다`,

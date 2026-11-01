@@ -40,7 +40,7 @@ step "회원 /my E2E (W2-e 3-A — 가입 화면 분야·지역→/my 새 글 �
 step "백오피스 회원 탭·삭제 E2E (W2-e 3-B — 회원 탭에 역할 없는 계정만·칸 값=DB·검색·정지 표시 / 삭제: 사유 없음 422·편집 책임자 403+감사 로그·역할 계정 409·삭제 후 profiles·consents·Auth 0+감사 로그 1건 이메일 0 / 360px / proxy /my·/account)"; node --test --test-concurrency=1 e2e/admin-members.test.mjs
 step "정책 페이지·바닥글 E2E (W2-e 4단계 — 게시본 없는 키 켜기 거부·게시 전 404+링크 0·승인 기록 없이 게시 거부·권한 밖 403+감사 로그·게시 후 바닥글 링크 전수 404 0·가입은 약관+처리방침 게시돼야 열림·개정 이력/이전 판 noindex·①㈜ 원문 유지+평문 이메일 0·/admin/pages 뼈대·360px)"; node --test --test-concurrency=1 e2e/policy-pages.test.mjs
 step "고객센터·문의함·감사 403 E2E (W2-e 5단계 — 폼 5종·.exe/상한/숨은 칸/최소 시간/IP 빈도 거부·본문 가림·정정 완료 422·연락처 보기 감사·종류별 열람 403·PO 아닌 관리자 감사 수정/삭제 403+로그 1건)"; node --test --test-concurrency=1 e2e/help-inquiries.test.mjs
-step "브리핑 사전 알림·보존 기한 배치 E2E (W2-e 6단계 — 동의 없이 제출 불가·확인 전 미확정·중복·철회·구독자/이벤트 이메일 0 · privacy-retention 경계 하루 전·당일)"; node --test --test-concurrency=1 e2e/brief-retention.test.mjs
+step "알림 구독·보존 기한 배치 E2E (W2-e 6단계 — 동의 없이 제출 불가·확인 전 미확정·중복·철회·구독자/이벤트 이메일 0 · privacy-retention 경계 하루 전·당일)"; node --test --test-concurrency=1 e2e/brief-retention.test.mjs
 step "측정 기반 E2E (W2-c — 수집 API 202·UA·IP 저장 0·세션 29/31분·봇 표시·측정 거부·GPC 204와 전송 0·4xx 저장 0·429·편집국 표시·칸 검사)"; node --test --test-concurrency=1 e2e/analytics-api.test.mjs
 step "1시간 집계·많이 본 기사·상담 사례 HOT E2E (W2-c — 봇 100+사람 3 < 사람 5·30분 안 반복 1회·168/169시간 경계·편집국 제외·비공개 바로 제외·멱등·카드 3+HOT 5·고정 2건·가중치 변경 → 다음 집계·누름 이벤트·보존 기한 정리)"; node --test --test-concurrency=1 e2e/analytics-popular.test.mjs
 step "측정 지표 대시보드 E2E (W2-c — 숫자 = 넣은 자료 손 계산: 유효 방문 29초 0·30초 1·재방문 30일째 포함·31일째 제외·측정 거부 분모 0·봇·편집국 0·깔때기 / 전환일 → 시험 기간·운영 / 새 브라우저 시나리오 깔때기 세 칸 +1 / 수집 전 / 관리자만·403 / 360px)"; node --test --test-concurrency=1 e2e/admin-metrics.test.mjs
@@ -129,7 +129,7 @@ step "W10-g 수용 E2E (교육 - 연결 방식: 결제·수료증 라우트 0 / 
 
 step "W10-a 수용 E2E (룰셋·정확도 대조 - 권한(기자·편집 책임자 403·감수위원 서명·관리자 승인·관리자 서명 403+거부 감사)·서명 없는 승인 409+거부 감사 1행·함수 밖 직접 활성화 거부·입법예고/국회 제출 근거 승인 거부·공포 근거 승인+이전 활성본 retired·사례 개인정보 422·확인은 감수위원만·공식 29건 닫힘/30건 열림/철회 시 닫힘)"; node --test --test-concurrency=1 e2e/w10a-acceptance.test.mjs
 
-step "W10-e 수용 E2E (개정 자동 감지·브리핑·알림·운영 AI - 작업 URL 401·키 꺼짐 건너뜀 / 감지 후보 1건(재실행도 1건)·승인 전 amendment_events 반영 0·승인 뒤 origin=auto 1건 / 발행 승인 전 공개 0·발행 시각 전 0·시각 뒤 1회 / 이중 확인 전 발송 대상 0·거부 뒤 0·브리핑과 알림 따로 해지 / 예산 설정 비면 AI 0·80% 경보 1건)"; node --test --test-concurrency=1 e2e/w10e-acceptance.test.mjs
+step "W10-e 수용 E2E (개정 자동 감지·알림·운영 AI - 작업 URL 401·키 꺼짐 건너뜀·지운 브리핑 발행 작업 404 / 감지 후보 1건(재실행도 1건)·승인 전 amendment_events 반영 0·승인 뒤 origin=auto 1건 / 예산 설정 비면 AI 0·80% 경보 1건)"; node --test --test-concurrency=1 e2e/w10e-acceptance.test.mjs
 step "W12-g 수용 E2E (키워드 맵·보안 정책 - 키 꺼짐 404 / 정책 비면 404·승인 전 태그 0·노드 건수 = 목록 건수·두 노드 AND·URL 상태·SVG 원·선 수 = 표 행 수·노드 상한 / 보안 항목 관리자만·인증 단정 표현 422·7항목 확인일·자가 점검 전 404·AI SDK import 0)"; node --test --test-concurrency=1 e2e/w12g-acceptance.test.mjs
 step "W12-h 수용 E2E (데이터 스토리·채널 배포 키트 - 키 꺼짐 404 / 승인 전 404·직원 아님 403·승인 뒤 /data 200·SVG 점 수 = 표 행 수·출처·기준연도·확인일 / 기사 차트 기준연도 고정·새 기준연도 안내·철회 이유 필수 / 키트 승인 전 원고 0·게시 기록 체크리스트·https·원고당 1건 / 수집·키트 AI·외부 게시 호출 0)"; node --test --test-concurrency=1 e2e/w12h-acceptance.test.mjs
 step "W12-c 수용 E2E (계산·감면·판정 연결 - 도구 목록에 국세 계산 0·상속/증여 엔진 import 0·결과 요약에 입력값 칸 0·기록 함수 service_role 전용·상속·증여 허브 지도/국세 법령 색인 0)"; node --test --test-concurrency=1 e2e/w12c-acceptance.test.mjs

@@ -14,8 +14,8 @@ import { collectSearchConsole, submitIndexNow } from "./seo/jobs";
 import { runAccuracy } from "./accuracy/run";
 import { runNationalAccuracy } from "@/lib/igt/run";
 import { runDocPipelines, runLawPipeline } from "./pipelines/service";
-import { publishDue, remindReconfirm, sendAmendmentAlerts } from "./brief/issues";
-import { checkOpsBudget, detectAmendments, draftBrief } from "./ops-ai/service";
+import { remindReconfirm, sendAmendmentAlerts } from "./alerts/send";
+import { checkOpsBudget, detectAmendments } from "./ops-ai/service";
 import { runFieldPipelines } from "./field-data/service";
 import { detectIssueGraphStale } from "./issue-graph/stale";
 import { refreshZones } from "./zones/service";
@@ -54,8 +54,6 @@ export function jobServices(db: SupabaseClient): JobServices {
     // 지방세 대조 실행 + 국세(상속·증여) 대조 실행 - 둘은 서로 다른 룰셋 표·실행 기록을 쓴다 (W11-g, FAM-12)
     runAccuracy: async (now) => ({ ...(await runAccuracy(db, now)), national: await runNationalAccuracy(db) }),
     detectAmendments: (now) => detectAmendments(db, now),
-    draftBrief: (now) => draftBrief(db, now),
-    publishBrief: (now) => publishDue(db, now),
     remindReconfirm: (now) => remindReconfirm(db, now),
     sendAmendmentAlerts: (now) => sendAmendmentAlerts(db, now),
     checkOpsBudget: (now) => checkOpsBudget(db, now),

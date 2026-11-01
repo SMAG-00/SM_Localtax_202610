@@ -9,7 +9,7 @@ describe("바로가기 이름 표", () => {
     expect(HEADER_SHORTCUTS.map((s) => [s.key, s.label, s.href])).toEqual([
       ["calc", "부동산 세금 계산기", "/calc"],
       ["realestate_weekly", "금주 부동산 재테크", "/realestate/weekly"],
-      ["brief_weekly", "금주 지방세 최신법령·유권해석", "/brief"],
+      ["brief_weekly", "최신법령·유권해석", "/tax/law-updates"],
       ["expert_request", `${brand.productName} 전문가 상담요청`, "/experts/request"],
     ]);
   });
