@@ -10,6 +10,7 @@ import { checkQueryTermsSettings } from "@/lib/analytics/query-terms";
 import { ANALYTICS_SETTING_CHECKS } from "@/lib/analytics/settings";
 import { checkAuthLimitsSetting, checkMemberSetting, checkPrivacyRetentionSetting } from "@/lib/auth/settings";
 import { checkWindowsSetting } from "@/lib/readiness/windows";
+import { directContactErrors } from "@/lib/experts/direct-contact";
 import { hasClaimToken } from "@/lib/brand/claim";
 import { companyInfoErrors } from "@/lib/policy/docs";
 // 공개 설정의 키 목록 — 공개 데이터 함수와 같은 상수 (순수 모듈이라 화면에서도 불러온다)
@@ -318,6 +319,11 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
     label: "캠페인 태그 등록 값 (GROW-05)",
     guide: '{ "source": ["naver"], "medium": ["cpc"], "content": [] } — 소문자·숫자·-·_ 20자 이하, 칸마다 20개까지, other는 쓰지 않습니다. 목록 밖 태그 값은 other로 저장됩니다',
     check: (value) => utmRegistryErrors(value),
+  },
+  expert_direct_contact: {
+    label: "전문가 상담 바로 연락 (상담 요청 양식 위 · 칼럼 끝 상담 상자)",
+    guide: '{ "phone": "010-1234-5678", "kakaoUrl": "https://open.kakao.com/o/…", "freeScope": "첫 상담 30분 전화 무료 …(80자 이하)" } — 칸을 비우면 그 줄을 숨깁니다',
+    check: (value) => directContactErrors(value),
   },
   hero_media: {
     label: "히어로 배경 영상·그림 (홈 전체 화면 · 분야 허브 머리)",

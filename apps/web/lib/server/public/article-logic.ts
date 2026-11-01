@@ -3,7 +3,8 @@ import { infographicSaveProblems, parseYoutubeEmbed } from "@ltr/editorial";
 import type { StoredBlock, StoredTaxLens } from "../articles/content";
 import { isoToKstDate } from "@/lib/admin/form-utils";
 import type { ArticleListItem } from "./cards";
-import { LIMITS, MARKDOWN_LINK, NEXT_ACTION_LABELS, isBlockedPath, isOpenPath, type Features, type NextActionKey, type SectionKey } from "./constants";
+import { EXPERT_REQUEST_HREF, LIMITS, MARKDOWN_LINK, NEXT_ACTION_LABELS, isBlockedPath, isOpenPath, type Features, type NextActionKey, type SectionKey } from "./constants";
+import type { DirectContact } from "@/lib/experts/direct-contact";
 import type { CorrectionRow, RevisionRow } from "./rows";
 
 // ── 비슷한 사례 (ART-06) ─────────────────────────────────
@@ -363,4 +364,13 @@ export function shareDescription(summary: string, slides: readonly SlideView[], 
   const first = slides[0];
   const text = first ? [first.title, ...first.lines].filter(Boolean).join(" ") : summary.trim();
   return badge && text ? `[${badge}] ${text}` : text;
+}
+
+/**
+ * 칼럼 끝 무료상담 상자 (PO 2026-11-01) — 칼럼(opinion)이고 전문가 소개(experts)·연락 요청(expert_requests)이 둘 다 열렸을 때만.
+ * 요청 양식은 출처 article로 연다. 바로 연락(전화·카카오톡·무료 범위)이 설정돼 있으면 함께 보인다
+ */
+export function consultBox(contentType: string | null, features: Pick<Features, "experts" | "expert_requests">, directContact: DirectContact | null): { href: string; directContact: DirectContact | null } | null {
+  if (contentType !== "opinion" || !features.experts || !features.expert_requests) return null;
+  return { href: `${EXPERT_REQUEST_HREF}?source=article`, directContact };
 }

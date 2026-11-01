@@ -6,6 +6,7 @@ import { pageJsonLd, toJsonLdScriptContent } from "@ltr/structured-data";
 import {
   ArticleTypeBadge,
   Chip,
+  DarkButton,
   CorrectionHistory,
   EditorialFieldBadge,
   NextActionBand,
@@ -27,6 +28,7 @@ import { ClaimBasisLink } from "./ClaimBasisLink";
 import { ARTICLE_DISCLAIMER, UPDATE_LABEL, articleParts, dateLines, partnerBadgeFor, reporterPolicyLinks, seriesLine, taxLensBoxLinks, typeBadgeFor, type ArticlePart } from "@/lib/site/article-view";
 import { formatBadge, sectionTones, type SectionTone } from "@/lib/site/home-view";
 import { articleTipPlan, hasTips, type PlannedRun } from "@/lib/site/glossary-tips";
+import { DirectContactBox } from "./ExpertViews";
 import { ArticleBlocks } from "./ArticleBlocks";
 import { GlossaryTips } from "./GlossaryTips";
 import { ArticleGrid } from "./ArticleItem";
@@ -236,6 +238,20 @@ function Body({ a, today, tips }: { a: ArticleDetail; today: string; tips: Reado
         </div>
       )}
       <ArticleBlocks blocks={a.blocks} media={a.media} article={{ id: a.id, section: a.section, title: a.title, format: a.format }} tips={tips} />
+      {a.consult && (
+        <aside data-part="column-consult" aria-label="필자 무료상담" className="mt-10 rounded-2xl border border-navy-100 bg-white p-6">
+          <p className="text-[18px] font-black text-navy-900">이 글을 읽고 궁금한 점이 생기셨나요?</p>
+          <p className="mt-1 text-[15px] text-navy-700">필자와 SM(선명) 소속 전문가에게 무료상담을 신청하세요.</p>
+          <div className="mt-4">
+            <DarkButton href={a.consult.href}>이 글 필자에게 무료상담 신청</DarkButton>
+          </div>
+          {a.consult.directContact && (
+            <div className="mt-4">
+              <DirectContactBox contact={a.consult.directContact} lead="신청서 대신 바로 연락하셔도 됩니다" />
+            </div>
+          )}
+        </aside>
+      )}
       {a.amendment && (
         <aside data-part="amendment" aria-label="이 기사가 다룬 개정안" className="mt-10 rounded-2xl border border-navy-100 bg-white p-6">
           <p className="text-[13px] font-bold text-hermes-800">개정 트래커</p>

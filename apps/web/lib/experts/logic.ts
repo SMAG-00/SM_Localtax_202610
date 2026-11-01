@@ -69,9 +69,44 @@ export const REQUEST_CODES = {
   sensitive: "요약·희망 시간에 주민등록번호·계좌번호 같은 긴 숫자를 적을 수 없습니다 - 지워 주세요",
   consent: "필수 동의 항목에 모두 동의해 주세요",
   time_long: "희망 연락 시간은 100자 이하로 적어 주세요",
+  time: "희망 날짜·시간대·연락 방법을 다시 골라 주세요",
   unavailable: "지금은 접수할 수 없습니다 - 잠시 뒤 다시 시도해 주세요",
 } as const;
 export type RequestCode = keyof typeof REQUEST_CODES;
+
+/** 희망 시간대 (상담 요청 양식 — PO 2026-11-01). 글자에 9자리 넘는 숫자가 이어지지 않게 쓴다(민감 입력 검사 EXPL-20) */
+export const PREFERRED_SLOTS = { morning: "오전(9~12시)", afternoon: "오후(12~18시)", evening: "저녁(18~21시)", any: "시간 무관" } as const;
+/** 희망 연락 방법 — 카카오톡은 고객이 직접 여는 오픈채팅이라 여기 두지 않는다 */
+export const CONTACT_METHODS = { phone: "전화", sms: "문자", email: "이메일" } as const;
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+/**
+ * 희망 날짜(YYYY-MM-DD)·시간대·연락 방법 → "11월 5일(수) 오후(12~18시) · 전화 연락 희망". 셋 다 비면 빈 글자.
+ * 날짜가 실제 날짜가 아니거나 모르는 시간대·방법이면 null (양식을 고치지 않은 요청)
+ */
+export function composePreferredTime(raw: Record<string, unknown>): string | null {
+  const date = str(raw.preferred_date);
+  const slot = str(raw.preferred_slot);
+  const method = str(raw.contact_method);
+  const parts: string[] = [];
+  if (date) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+    if (!m) return null;
+    const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+    if (d.getUTCFullYear() !== Number(m[1]) || d.getUTCMonth() !== Number(m[2]) - 1 || d.getUTCDate() !== Number(m[3])) return null;
+    parts.push(`${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일(${WEEKDAYS[d.getUTCDay()]})`);
+  }
+  if (slot) {
+    if (!Object.hasOwn(PREFERRED_SLOTS, slot)) return null;
+    parts.push(PREFERRED_SLOTS[slot as keyof typeof PREFERRED_SLOTS]);
+  }
+  const when = parts.join(" ");
+  if (method) {
+    if (!Object.hasOwn(CONTACT_METHODS, method)) return null;
+    return [when, `${CONTACT_METHODS[method as keyof typeof CONTACT_METHODS]} 연락 희망`].filter(Boolean).join(" · ");
+  }
+  return when;
+}
 
 export interface RequestInput {
   source: RequestSource;
@@ -103,7 +138,10 @@ export function parseRequestInput(raw: Record<string, unknown>, ctx: RequestCont
   const summary = str(raw.summary);
   if (summary === "") return fail("summary", "summary");
   if (summary.length > ctx.summaryMaxChars) return fail("summary_long", "summary");
-  const preferred = str(raw.preferred_time);
+  // 희망 일·시간대·연락 방법을 고르는 양식(PO 2026-11-01)은 한 줄로 묶어 preferred_time에 넣는다. 글자 칸으로 직접 보낸 값이 있으면 그것을 쓴다
+  const composed = composePreferredTime(raw);
+  if (composed === null) return fail("time", "preferred_date");
+  const preferred = str(raw.preferred_time) || composed;
   if (preferred.length > 100) return fail("time_long", "preferred_time");
   if (sensitiveInput(summary) || sensitiveInput(preferred)) return fail("sensitive", "summary");
   const name = str(raw.name);

@@ -2,7 +2,8 @@ import { JsonLd } from "./JsonLd";
 import { pageJsonLd, toJsonLdScriptContent } from "@ltr/structured-data";
 import { Chip, DarkButton, UiLink } from "@ltr/ui";
 import { NEXT_STEPS } from "@/lib/site/next-step";
-import { REQUEST_CODES, type RequestCode } from "@/lib/experts/logic";
+import { CONTACT_METHODS, PREFERRED_SLOTS, REQUEST_CODES, type RequestCode } from "@/lib/experts/logic";
+import type { DirectContact } from "@/lib/experts/direct-contact";
 import type { ExpertCardView, ExpertListView, ExpertProfileView, ExpertRequestFormView } from "@/lib/server/public/experts";
 import { SiteSection, TEXT_LINK } from "./SiteSection";
 
@@ -15,6 +16,37 @@ const INPUT = "mt-1 block w-full rounded-xl border border-navy-200 bg-white px-3
 const LABEL = "block text-[15px] font-bold text-navy-900";
 
 export const SM_BADGE = "SM(선명) 소속";
+
+/**
+ * 바로 연락 상자 (설정 expert_direct_contact — PO 2026-11-01): 양식을 쓰기 불편한 고객은 바로 전화·카카오톡으로. 무료 범위 한 줄.
+ * 상담 요청 양식 위와 칼럼 끝 상담 상자에서 같이 쓴다. 카카오톡은 새 창(식별 쿼리 0)
+ */
+export function DirectContactBox({ contact, lead = "작성이 불편하시면 바로 연락하세요" }: { contact: DirectContact; lead?: string }) {
+  return (
+    <div data-part="direct-contact" className="rounded-2xl border border-navy-100 bg-white p-5">
+      {(contact.telHref || contact.kakaoUrl) && <p className="text-[15px] font-bold text-navy-900">{lead}</p>}
+      {(contact.telHref || contact.kakaoUrl) && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {contact.telHref && (
+            <a href={contact.telHref} data-part="direct-phone" className="inline-flex min-h-11 items-center rounded-xl bg-navy-900 px-5 text-[16px] font-bold text-white hover:bg-navy-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
+              전화 {contact.phone}
+            </a>
+          )}
+          {contact.kakaoUrl && (
+            <a href={contact.kakaoUrl} target="_blank" rel="noopener noreferrer" data-part="direct-kakao" className="inline-flex min-h-11 items-center rounded-xl border border-navy-200 bg-white px-5 text-[16px] font-bold text-navy-900 hover:border-navy-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-500">
+              카카오톡 상담 (새 창)
+            </a>
+          )}
+        </div>
+      )}
+      {contact.freeScope && (
+        <p data-part="free-scope" className="mt-3 text-[15px] text-navy-700">
+          {contact.freeScope}
+        </p>
+      )}
+    </div>
+  );
+}
 
 function Notice({ notice }: { notice: { version: string; text: string } }) {
   return (
@@ -200,7 +232,7 @@ export interface RequestQuery {
   withdrawn?: string;
 }
 
-export function ExpertRequestPageView({ view, query, source, subscribeOpen = false }: { view: ExpertRequestFormView; query: RequestQuery; source: string; /** 브리핑 구독 화면이 열려 있는가 - 접수 완료 뒤 다음 한 걸음 링크 (W10-i) */ subscribeOpen?: boolean }) {
+export function ExpertRequestPageView({ view, query, source, subscribeOpen = false, directContact = null }: { view: ExpertRequestFormView; query: RequestQuery; source: string; /** 브리핑 구독 화면이 열려 있는가 - 접수 완료 뒤 다음 한 걸음 링크 (W10-i) */ subscribeOpen?: boolean; /** 바로 연락 (PO 2026-11-01) — 없으면 상자 0 */ directContact?: DirectContact | null }) {
   const p = view.policy;
   if (!p) return null;
   const err = query.e && query.e in REQUEST_CODES ? REQUEST_CODES[query.e as RequestCode] : null;
@@ -214,6 +246,7 @@ export function ExpertRequestPageView({ view, query, source, subscribeOpen = fal
               <li key={line}>{line}</li>
             ))}
           </ul>
+          {directContact && !query.sent && <DirectContactBox contact={directContact} />}
           {query.sent && (
             <p data-part="request-sent" role="status" className="rounded-2xl border border-navy-100 bg-white p-4 text-[16px] font-bold text-navy-900">
               접수했습니다. 접수 번호 <span className={MONO}>{query.sent}</span> - 첫 연락 목표는 {p.targetBusinessDays}영업일입니다. 철회하려면 아래에서 접수 번호와 연락처로 요청하세요.
@@ -282,10 +315,10 @@ export function ExpertRequestPageView({ view, query, source, subscribeOpen = fal
                 <input id="rq-name" name="name" type="text" required maxLength={40} autoComplete="name" className={INPUT} />
               </div>
               <div>
-                <label htmlFor="rq-time" className={LABEL}>
-                  희망 연락 시간 (선택)
+                <label htmlFor="rq-date" className={LABEL}>
+                  상담 희망 날짜 (선택)
                 </label>
-                <input id="rq-time" name="preferred_time" type="text" maxLength={100} className={INPUT} />
+                <input id="rq-date" name="preferred_date" type="date" className={INPUT} />
               </div>
               <div>
                 <label htmlFor="rq-email" className={LABEL}>
@@ -301,6 +334,29 @@ export function ExpertRequestPageView({ view, query, source, subscribeOpen = fal
               </div>
             </div>
             <p className="text-[14px] text-navy-600">이메일과 전화번호 중 하나 이상을 적어 주세요.</p>
+            {/* 희망 시간대·연락 방법 (PO 2026-11-01) — 서버가 날짜와 함께 한 줄로 묶어 희망 연락 시간에 넣는다 */}
+            <fieldset data-part="preferred-slot">
+              <legend className={LABEL}>희망 시간대 (선택)</legend>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {Object.entries(PREFERRED_SLOTS).map(([key, label]) => (
+                  <label key={key} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-navy-200 bg-white px-4 text-[15px] text-navy-900 has-[:checked]:border-navy-900 has-[:checked]:font-bold">
+                    <input type="radio" name="preferred_slot" value={key} className="h-4 w-4" />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset data-part="contact-method">
+              <legend className={LABEL}>연락 방법 (선택)</legend>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {Object.entries(CONTACT_METHODS).map(([key, label]) => (
+                  <label key={key} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-navy-200 bg-white px-4 text-[15px] text-navy-900 has-[:checked]:border-navy-900 has-[:checked]:font-bold">
+                    <input type="radio" name="contact_method" value={key} className="h-4 w-4" />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <label className="flex items-start gap-2 text-[15px] text-navy-800">
               <input type="checkbox" name="deadline_urgent" value="on" className="mt-1 h-5 w-5" />
               <span>신고·납부·불복 기한이 임박했습니다 (연락을 기다리지 말고 공식 창구에 먼저 문의하세요)</span>

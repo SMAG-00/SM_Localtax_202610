@@ -2,6 +2,7 @@
 // 모양이 틀린 값은 닫힌 쪽으로 읽는다: 기능은 꺼짐, 추천 검색어는 숨김(3~6개가 아니면), 숫자는 기본값 (설계 2.4).
 import { PROGRESS_STAGE_ORDER, type ProgressStageKey } from "@ltr/ui";
 import { parseHeroMedia, type HeroMediaSettings } from "@/lib/site/hero-media";
+import { parseDirectContact, type DirectContact } from "@/lib/experts/direct-contact";
 import { checkPopularRules, type PopularRules } from "@/lib/analytics/settings";
 import { FEATURE_KEYS, NEXT_ACTION_KEYS, SECTION_KEYS, type Features, type NextActionKey, type SectionKey } from "./constants";
 
@@ -29,6 +30,8 @@ export interface PublicSettings {
   shortcutOrder?: unknown;
   /** 홈 바로가기 카드 한 줄 설명 (home_shortcut_copy) */
   shortcutCopy?: unknown;
+  /** 전문가 상담 바로 연락 (expert_direct_contact — PO 2026-11-01) — 보일 것이 없으면 null */
+  directContact?: DirectContact | null;
 }
 
 export const SEARCH_CHIPS_MIN = 3;
@@ -99,5 +102,6 @@ export function parsePublicSettings(rows: readonly { key: string; value: unknown
     heroMedia: parseHeroMedia(v.get("hero_media")),
     shortcutOrder: v.get("shortcut_order"),
     shortcutCopy: v.get("home_shortcut_copy"),
+    directContact: parseDirectContact(v.get("expert_direct_contact")),
   };
 }

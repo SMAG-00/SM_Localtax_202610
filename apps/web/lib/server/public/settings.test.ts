@@ -33,6 +33,7 @@ describe("parsePublicSettings", () => {
       nextActionPriority: [...NEXT_ACTION_KEYS],
       popular: { sidebarSize: 5, listSize: 20, windowHours: 168 },
       heroMedia: { entries: {}, aiLabel: true },
+      directContact: null,
     });
   });
 

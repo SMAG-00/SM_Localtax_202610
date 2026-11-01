@@ -197,8 +197,8 @@ for (const role of ["anon", "authenticated"]) {
       const r = await attempt("select key from public.settings order by key", [], role);
       assert.ok(r.ok, r.message);
       // 뒤 단계가 키 한 줄씩 따로 연 공개 정책 — W2-e company_info(바닥글 회사 정보) · W4 4단계 local_block_fields(지자체 허브 블록 대응, W4 설계 2.2) ·
-      // W4 10단계 search_topics(검색 주제 사전, W4 설계 2.2) · W4 11단계 pilot_regions(시범 지역 — /local 시·도 카드 표시, W4 설계 2.2. 임계값 region_index_threshold는 비공개) · W4 23단계 inheritance_gift_notice·inheritance_gift_situations(상속·증여 안내 고지·상황 목록) · 마이그레이션 71 home_core_highlights(홈 핵심 메시지 강조 낱말) · W10-i(105) home_shortcut_copy·shortcut_order(홈 바로가기 문구·순서)
-      const later = (await attempt("select key from public.settings where key = any($1::text[])", [["company_info", "hero_media", "local_block_fields", "pilot_regions", "search_topics", "inheritance_gift_notice", "inheritance_gift_situations", "home_core_highlights", "home_shortcut_copy", "shortcut_order"]])).rows.map((x) => x.key);
+      // W4 10단계 search_topics(검색 주제 사전, W4 설계 2.2) · W4 11단계 pilot_regions(시범 지역 — /local 시·도 카드 표시, W4 설계 2.2. 임계값 region_index_threshold는 비공개) · W4 23단계 inheritance_gift_notice·inheritance_gift_situations(상속·증여 안내 고지·상황 목록) · 마이그레이션 71 home_core_highlights(홈 핵심 메시지 강조 낱말) · W10-i(105) home_shortcut_copy·shortcut_order(홈 바로가기 문구·순서) · 239 expert_direct_contact(전문가 상담 바로 연락)
+      const later = (await attempt("select key from public.settings where key = any($1::text[])", [["company_info", "hero_media", "local_block_fields", "pilot_regions", "search_topics", "inheritance_gift_notice", "inheritance_gift_situations", "home_core_highlights", "home_shortcut_copy", "shortcut_order", "expert_direct_contact"]])).rows.map((x) => x.key);
       assert.deepEqual(r.rows.map((x) => x.key), [...designList("settings.public_keys"), ...later].sort());
       for (const key of ["forbidden_phrases", "fear_phrases", "similarity_internal"]) {
         const p = await attempt("select count(*)::int n from public.settings where key = $1", [key], role);
@@ -276,3 +276,20 @@ test("service_role(서버)은 숨긴 상황·끝난 배치·비공개 설정을 
     const p = await attempt("select count(*)::int n from public.settings where key = 'forbidden_phrases'", [], "service_role");
     assert.equal(p.rows[0].n, 1);
   }));
+
+test("바로 연락 설정 (239, PO 2026-11-01) — 씨앗은 빈 객체, 모양·번호·카카오 주소·무료 범위 길이를 저장 때 검사", async () => {
+  await client.query("begin");
+  try {
+    const seed = await client.query("select value from public.settings where key = 'expert_direct_contact'");
+    assert.deepEqual(seed.rows[0].value, {});
+    const set = (v) => attempt("update public.settings set value = $1::jsonb where key = 'expert_direct_contact'", [JSON.stringify(v)]);
+    assert.ok((await set({ phone: "010-1234-5678", kakaoUrl: "https://open.kakao.com/o/abcDEF12", freeScope: "첫 상담 30분 전화 무료" })).ok);
+    assert.ok((await set({ phone: "", kakaoUrl: "", freeScope: "" })).ok, "빈 글자는 숨김");
+    for (const bad of [{ email: "a@b.c" }, { phone: 1012345678 }, { phone: "1588-0000" }, { kakaoUrl: "https://example.com/o/x" }, { kakaoUrl: "https://open.kakao.com/o/x?y=1" }, { freeScope: "가".repeat(81) }, []]) {
+      const r = await set(bad);
+      assert.equal(r.code, "23514", JSON.stringify(bad));
+    }
+  } finally {
+    await client.query("rollback");
+  }
+});

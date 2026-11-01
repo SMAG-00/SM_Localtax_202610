@@ -36,12 +36,14 @@ export default async function ExpertRequestPage({ searchParams }: { searchParams
     );
   }
   const source = queryValue(sp.source) ?? "";
+  const directContact = (await readPublicSettings()).directContact ?? null;
   const admin = adminClient();
   const subscribeOpen = admin ? await briefOpen(admin).catch(() => false) : false;
   return (
     <ExpertRequestPageView
       view={view}
       subscribeOpen={subscribeOpen}
+      directContact={directContact}
       source={(REQUEST_SOURCES as readonly string[]).includes(source) ? source : "experts"}
       query={{ sent: queryValue(sp.sent), e: queryValue(sp.e), field: queryValue(sp.field), withdrawn: queryValue(sp.withdrawn) }}
     />

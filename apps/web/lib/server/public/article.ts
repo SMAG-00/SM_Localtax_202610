@@ -1,5 +1,6 @@
 import { applyToolHref } from "@/lib/calc/tool-target";
 import { resolveArticleTool } from "./article-tool";
+import type { DirectContact } from "@/lib/experts/direct-contact";
 import "server-only";
 import { brand } from "@ltr/ui";
 import type { ArticleView, RenderedFacts } from "@ltr/structured-data";
@@ -24,6 +25,7 @@ import {
   stageBanner,
   taxLensSlot,
   updateEntries,
+  consultBox,
   type ActionTargets,
   type CorrectionEntry,
   type NextAction,
@@ -134,6 +136,8 @@ export interface ArticleDetail {
   disclaimer: boolean;
   similarCases: SimilarCase[];
   nextActions: NextAction[];
+  /** 칼럼 끝 무료상담 상자 (PO 2026-11-01) — 칼럼(opinion)이고 전문가 소개·연락 요청이 둘 다 열렸을 때만, 아니면 null */
+  consult: { href: string; directContact: DirectContact | null } | null;
   related: ArticleListItem[];
   /** 확인된 지역 연결 (W4 13단계 — REG1-10) — 편집자가 확인한 연결 중 도착 화면이 지금 열린 것만(기사·공식 원문·지역 허브). 후보 0 */
   links: RegionalLinkItem[];
@@ -354,6 +358,7 @@ export async function getArticleDetail(slug: string, now: Date = new Date()): Pr
     disclaimer: category?.needs_disclaimer === true,
     similarCases,
     nextActions: selectNextActions(settings.nextActionPriority, targets, settings.features),
+    consult: consultBox(a.content_type, settings.features, settings.directContact ?? null),
     related,
     links,
     product: await getArticleProduct(settings.features, id),
