@@ -39,7 +39,7 @@ interface Row {
 }
 
 export const OFFICIAL_LINK_COLUMNS = "id, kind, key, label, url, terms_note, status, checked_at";
-/** SM 계산기 카드 최대 수 — 지방세 5종 + 상속·증여(PO 2026-11-01 SM 플랫폼에 생김) */
+/** SM 계산기 카드 최대 수 — 지방세 5종 + 상속·증여(PO 2026-11-01 SM 부동산 세금 플랫폼에 생김) */
 export const SM_CARD_LIMIT = 6;
 
 export function toLinkCard(r: Row): OfficialLinkCard | null {
