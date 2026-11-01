@@ -7,6 +7,8 @@ import { UiLink } from "../link";
 export type HeaderNavLink = { key: string; label: string; href: string };
 /** 분야 메뉴 한 칸 — 하위 메뉴(분야 데이터에서 온 하위 분야 + 공통 `뉴스 전체`, HOME-02)가 있으면 펼침 단추가 붙는다 */
 export type HeaderNavSection = HeaderNavLink & { children?: readonly HeaderNavLink[] };
+/** 바로 메뉴 한 칸 — `lead`면 구분선 앞(분야 메뉴 바로 옆), 하위 링크가 있으면 분야 메뉴처럼 펼침 단추가 붙는다 */
+export type HeaderNavMenuItem = HeaderNavSection & { lead?: boolean };
 
 const LINK =
   "inline-flex min-h-11 w-full items-center px-1 text-[16px] font-semibold text-navy-100 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:w-auto lg:px-2.5 lg:text-[14px]";
@@ -33,7 +35,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 /**
  * 헤더의 메뉴 — 분야 메뉴(4대 분야) + 유틸 메뉴 자리. 1024px 미만에서는 [메뉴] 공개(disclosure) 버튼으로 열고 닫는다.
  * 메뉴 HTML은 한 벌뿐이다(데스크톱·모바일 공용) — 상단 메뉴가 HTML에 정확히 4개 (HOME-02).
- * 분야마다 하위 메뉴가 있으면 분야 링크 옆에 펼침 단추(공개 단추 — 링크는 그대로 허브로 간다). 하위 메뉴는 한 번에 하나만 열린다.
+ * 분야마다 하위 메뉴가 있으면 분야 링크 옆에 펼침 단추(공개 단추 — 링크는 그대로 허브로 간다). 바로 메뉴 항목도 하위 링크가 있으면 같다. 하위 메뉴는 한 번에 하나만 열린다.
  * Esc로 닫으면 포커스가 그 단추로 돌아온다 (8.9). 메뉴 바깥을 누르거나 포커스가 그 분야 밖으로 나가면 하위 메뉴가 닫힌다.
  */
 export function HeaderNav({
@@ -43,8 +45,8 @@ export function HeaderNav({
   currentSection,
 }: {
   sections: readonly HeaderNavSection[];
-  /** 바로 메뉴 — 분야 메뉴 오른쪽, 펼침 없는 링크 (PO 2026-11-01) */
-  menu?: readonly HeaderNavLink[];
+  /** 바로 메뉴 — 분야 메뉴 오른쪽 링크 (PO 2026-11-01). lead 항목은 구분선 앞 */
+  menu?: readonly HeaderNavMenuItem[];
   utilities: readonly HeaderNavLink[];
   currentSection?: string;
 }) {
@@ -52,7 +54,7 @@ export function HeaderNav({
   const [openSub, setOpenSub] = useState<string | null>(null);
   const panelId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const navRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
   const subButtons = useRef(new Map<string, HTMLButtonElement>());
 
   // 화면 전환(새로고침 없음)에서는 헤더가 그대로 남는다 — 메뉴 항목을 누르면 펼친 메뉴·하위 메뉴를 닫는다
@@ -93,6 +95,63 @@ export function HeaderNav({
     if (openSub === key && next && !e.currentTarget.contains(next)) setOpenSub(null);
   }
 
+  const lead = menu.filter((m) => m.lead);
+  const rest = menu.filter((m) => !m.lead);
+
+  // 분야 메뉴·바로 메뉴 한 칸 — 하위 링크가 있으면 펼침 단추와 하위 목록을 붙인다
+  const item = (s: HeaderNavSection, part: "section-link" | "menu-link", current: boolean) => {
+    const children = s.children ?? [];
+    const subId = `${panelId}-${s.key}`;
+    const expanded = openSub === s.key;
+    return (
+      <li key={s.key} data-menu-section={part === "section-link" ? s.key : undefined} className="lg:relative" onBlur={(e) => onSectionBlur(e, s.key)}>
+        <div className="flex items-center">
+          <UiLink
+            href={s.href}
+            onClick={close}
+            data-part={part}
+            aria-current={current ? "page" : undefined}
+            className={cx(LINK, "flex-1 lg:flex-none", current && "underline decoration-hermes-500 decoration-2 underline-offset-8")}
+          >
+            {s.label}
+          </UiLink>
+          {children.length > 0 && (
+            <button
+              ref={(el) => {
+                if (el) subButtons.current.set(s.key, el);
+                else subButtons.current.delete(s.key);
+              }}
+              type="button"
+              aria-expanded={expanded}
+              aria-controls={subId}
+              onClick={() => setOpenSub((v) => (v === s.key ? null : s.key))}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-navy-200 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:min-w-7"
+            >
+              <ChevronIcon open={expanded} />
+              <span className="sr-only">{`${s.label} 하위 메뉴`}</span>
+            </button>
+          )}
+        </div>
+        {children.length > 0 && (
+          <ul
+            id={subId}
+            aria-label={`${s.label} 하위 메뉴`}
+            hidden={!expanded}
+            className="ml-2 border-l border-navy-700 pl-2 lg:absolute lg:top-full lg:left-0 lg:z-40 lg:ml-0 lg:min-w-52 lg:rounded-xl lg:border lg:bg-navy-800 lg:p-2"
+          >
+            {children.map((c) => (
+              <li key={c.key}>
+                <UiLink href={c.href} onClick={close} data-part="sub-link" className={SUB_LINK}>
+                  {c.label}
+                </UiLink>
+              </li>
+            ))}
+          </ul>
+        )}
+      </li>
+    );
+  };
+
   return (
     <>
       <button
@@ -108,6 +167,7 @@ export function HeaderNav({
         메뉴
       </button>
       <div
+        ref={navRef}
         id={panelId}
         onKeyDown={onKeyDown}
         className={cx(
@@ -115,74 +175,18 @@ export function HeaderNav({
           open ? "flex" : "hidden",
         )}
       >
-        <nav ref={navRef} aria-label="분야 메뉴">
+        <nav aria-label="분야 메뉴">
           <ul className="flex flex-col lg:flex-row lg:items-center">
-            {sections.map((s) => {
-              const children = s.children ?? [];
-              const subId = `${panelId}-${s.key}`;
-              const expanded = openSub === s.key;
-              return (
-                <li key={s.key} data-menu-section={s.key} className="lg:relative" onBlur={(e) => onSectionBlur(e, s.key)}>
-                  <div className="flex items-center">
-                    <UiLink
-                      href={s.href}
-                      onClick={close}
-                      data-part="section-link"
-                      aria-current={s.key === currentSection ? "page" : undefined}
-                      className={cx(LINK, "flex-1 lg:flex-none", s.key === currentSection && "underline decoration-hermes-500 decoration-2 underline-offset-8")}
-                    >
-                      {s.label}
-                    </UiLink>
-                    {children.length > 0 && (
-                      <button
-                        ref={(el) => {
-                          if (el) subButtons.current.set(s.key, el);
-                          else subButtons.current.delete(s.key);
-                        }}
-                        type="button"
-                        aria-expanded={expanded}
-                        aria-controls={subId}
-                        onClick={() => setOpenSub((v) => (v === s.key ? null : s.key))}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-navy-200 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:min-w-7"
-                      >
-                        <ChevronIcon open={expanded} />
-                        <span className="sr-only">{`${s.label} 하위 메뉴`}</span>
-                      </button>
-                    )}
-                  </div>
-                  {children.length > 0 && (
-                    <ul
-                      id={subId}
-                      aria-label={`${s.label} 하위 메뉴`}
-                      hidden={!expanded}
-                      className="ml-2 border-l border-navy-700 pl-2 lg:absolute lg:top-full lg:left-0 lg:z-40 lg:ml-0 lg:min-w-52 lg:rounded-xl lg:border lg:bg-navy-800 lg:p-2"
-                    >
-                      {children.map((c) => (
-                        <li key={c.key}>
-                          <UiLink href={c.href} onClick={close} data-part="sub-link" className={SUB_LINK}>
-                            {c.label}
-                          </UiLink>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              );
-            })}
+            {sections.map((s) => item(s, "section-link", s.key === currentSection))}
           </ul>
         </nav>
         {menu.length > 0 && (
           // 화면이 좁은 데스크톱(1024~1279px)에서는 분야 메뉴 아래 줄로 내려간다(flex-wrap) — 가로 넘침 0
-          <nav aria-label="바로 메뉴" className="border-t border-navy-700 pt-2 lg:ml-auto lg:border-t-0 lg:border-l lg:border-navy-600 lg:pt-0 lg:pl-2">
-            <ul className="flex flex-col lg:flex-row lg:items-center">
-              {menu.map((m) => (
-                <li key={m.key}>
-                  <UiLink href={m.href} onClick={close} data-part="menu-link" className={LINK}>
-                    {m.label}
-                  </UiLink>
-                </li>
-              ))}
-            </ul>
+          <nav aria-label="바로 메뉴" className="border-t border-navy-700 pt-2 lg:flex lg:items-center lg:border-t-0 lg:pt-0">
+            {lead.length > 0 && <ul className="flex flex-col lg:flex-row lg:items-center">{lead.map((m) => item(m, "menu-link", false))}</ul>}
+            {rest.length > 0 && (
+              <ul className="flex flex-col lg:ml-2 lg:flex-row lg:items-center lg:border-l lg:border-navy-600 lg:pl-2">{rest.map((m) => item(m, "menu-link", false))}</ul>
+            )}
           </nav>
         )}
         {utilities.length > 0 && (

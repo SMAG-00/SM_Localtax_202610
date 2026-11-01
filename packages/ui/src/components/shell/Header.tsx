@@ -30,14 +30,15 @@ export const HEADER_UTILITIES: ReadonlyArray<{ key: HeaderUtilityKey; label: str
 export type HeaderMenuKey = "popular" | "brief" | "columns" | "expert_request" | "calc";
 
 /**
- * 바로 메뉴 — 분야 메뉴(4대 분야, 펼침 있음) 오른쪽에 펼침 없는 링크 5개, 이 순서 (PO 2026-11-01 — 기존 매체 사이트 머리글처럼 자주 찾는 곳을 한 줄에).
+ * 바로 메뉴 — 분야 메뉴(4대 분야, 펼침 있음) 오른쪽에 링크 5개, 이 순서 (PO 2026-11-01 — 기존 매체 사이트 머리글처럼 자주 찾는 곳을 한 줄에).
+ * `lead` 항목(전문가칼럼)은 구분선 앞, 지자체뉴스 바로 옆에 둔다 (PO 2026-11-01). 전문가상담 아래에는 전문가 소개가 펼침으로 붙는다(Header).
  * 홈 바로가기와 같은 기능 키(shortcuts)로 켜진다. 도착 화면이 아직 닫혀 있으면 404가 아니라 '준비 중' 안내를 보여 준다(각 도착 page).
  */
-export const HEADER_MENU: ReadonlyArray<{ key: HeaderMenuKey; label: string; href: string }> = [
+export const HEADER_MENU: ReadonlyArray<{ key: HeaderMenuKey; label: string; href: string; lead?: true }> = [
+  { key: "columns", label: "전문가칼럼", href: "/columns", lead: true },
   // 최신인기글 = 많이 본 기사 목록 (홈 최신 인기글과 같은 순위)
   { key: "popular", label: "최신인기글", href: "/news/popular" },
   { key: "brief", label: "최신법령·유권해석", href: "/brief" },
-  { key: "columns", label: "전문가칼럼", href: "/columns" },
   { key: "expert_request", label: "전문가상담", href: "/experts/request" },
   { key: "calc", label: "세금계산기", href: "/calc" },
 ];
@@ -79,9 +80,15 @@ export type HeaderProps = {
  */
 export function Header({ utilities = [], menu = [], currentSection, account, submenus = {} }: HeaderProps) {
   const enabled = new Set(utilities);
-  const utilityLinks = HEADER_UTILITIES.filter((u) => enabled.has(u.key));
   const menuOn = new Set(menu);
-  const menuLinks = HEADER_MENU.filter((m) => menuOn.has(m.key));
+  // 전문가 소개는 유틸 메뉴가 아니라 전문가상담 펼침 아래로 (PO 2026-11-01). 전문가상담이 꺼져 있을 때만 유틸 메뉴에 남는다
+  const expertsUnderRequest = enabled.has("experts") && menuOn.has("expert_request");
+  const utilityLinks = HEADER_UTILITIES.filter((u) => enabled.has(u.key) && !(u.key === "experts" && expertsUnderRequest));
+  const expertsLink = HEADER_UTILITIES.find((u) => u.key === "experts")!;
+  const menuLinks = HEADER_MENU.filter((m) => menuOn.has(m.key)).map((m) => ({
+    ...m,
+    children: m.key === "expert_request" && expertsUnderRequest ? [{ key: "expert_request:experts", label: expertsLink.label, href: expertsLink.href }] : [],
+  }));
   const sections = HEADER_SECTIONS.map((s) => ({ ...s, children: submenus[s.key] ?? [] }));
   return (
     <header data-ui="header" className="bg-navy-800">

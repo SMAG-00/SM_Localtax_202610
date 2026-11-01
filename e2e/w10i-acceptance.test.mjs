@@ -97,10 +97,10 @@ after(async () => {
   }
 });
 
-/** 헤더 바로 메뉴 (PO 2026-11-01 — 홈 바로가기 블록 대신) — [글자, 주소] */
+/** 헤더 바로 메뉴 (PO 2026-11-01 — 홈 바로가기 블록 대신) — [글자, 주소]. 펼침 아래 하위 링크(전문가 소개)는 세지 않는다 */
 const menuLinks = (html) => {
   const nav = html.split('aria-label="바로 메뉴"')[1]?.split("</nav>")[0] ?? "";
-  return [...nav.matchAll(/<a [^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map((m) => [m[2], m[1]]);
+  return [...nav.matchAll(/<a ([^>]*)>([^<]+)<\/a>/g)].filter((m) => m[1].includes('data-part="menu-link"')).map((m) => [m[2], m[1].match(/href="([^"]+)"/)?.[1]]);
 };
 
 /** 홈 히어로의 [무료상담 신청] 버튼 주소 목록 (PO 2026-11-01) */
@@ -125,9 +125,9 @@ test("a) 키 shortcuts 꺼짐이면 헤더 바로 메뉴 0, 켜짐이면 헤더 
   assert.deepEqual(
     menuLinks(on.text),
     [
+      ["전문가칼럼", "/columns"],
       ["최신인기글", "/news/popular"],
       ["최신법령·유권해석", "/brief"],
-      ["전문가칼럼", "/columns"],
       ["전문가상담", "/experts/request"],
       ["세금계산기", "/calc"],
     ],
@@ -145,7 +145,7 @@ test("a2) 바로 메뉴 - 키 shortcuts만 켜면 도착 키·공개 호가 없�
   const home = await page("/");
   assert.equal(home.status, 200);
   const hrefs = menuLinks(home.text).map(([, h]) => h);
-  assert.deepEqual(hrefs, ["/news/popular", "/brief", "/columns", "/experts/request", "/calc"], `헤더 바로 메뉴 5개: ${hrefs.join(",")}`);
+  assert.deepEqual(hrefs, ["/columns", "/news/popular", "/brief", "/experts/request", "/calc"], `헤더 바로 메뉴 5개: ${hrefs.join(",")}`);
   for (const h of [...hrefs, "/realestate/weekly"]) {
     const res = await page(h);
     assert.equal(res.status, 200, `${h} 200 (404 아님)`);

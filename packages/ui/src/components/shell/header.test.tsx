@@ -62,21 +62,77 @@ describe("헤더 — 상단 메뉴 (4대 분야)", () => {
 });
 
 describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
-  it("켜진 항목을 최신인기글 → 최신법령·유권해석 → 전문가칼럼 → 전문가상담 → 세금계산기 순서로, 펼침 단추 없이 분야 메뉴 뒤에 둔다", () => {
+  it("켜진 항목을 전문가칼럼 → 최신인기글 → 최신법령·유권해석 → 전문가상담 → 세금계산기 순서로 분야 메뉴 뒤에 두고, 전문가칼럼만 구분선 앞(지자체뉴스 바로 옆)", () => {
     render(<Header menu={["calc", "expert_request", "columns", "brief", "popular"]} />);
     const nav = screen.getByRole("navigation", { name: "바로 메뉴" });
     expect(pairs(within(nav).getAllByRole("link"))).toEqual([
+      ["전문가칼럼", "/columns"],
       ["최신인기글", "/news/popular"],
       ["최신법령·유권해석", "/brief"],
-      ["전문가칼럼", "/columns"],
       ["전문가상담", "/experts/request"],
       ["세금계산기", "/calc"],
     ]);
+    // 전문가 소개(experts)가 꺼져 있으면 바로 메뉴에 펼침 단추 0
     expect(within(nav).queryAllByRole("button")).toEqual([]);
+    // 구분선(border-l)은 둘째 목록에만 — 전문가칼럼 목록에는 없다
+    const lists = [...nav.querySelectorAll(":scope > ul")];
+    expect(lists.map((ul) => [...ul.querySelectorAll('[data-part="menu-link"]')].map((a) => a.textContent))).toEqual([
+      ["전문가칼럼"],
+      ["최신인기글", "최신법령·유권해석", "전문가상담", "세금계산기"],
+    ]);
+    expect(tokens(lists[0]!)).not.toContain("lg:border-l");
+    expect(tokens(lists[1]!)).toContain("lg:border-l");
     // 분야 메뉴는 그대로 정확히 4개 — 바로 메뉴 링크는 분야 링크(section-link)로 세지 않는다
     expect(document.querySelectorAll('[data-part="section-link"]')).toHaveLength(4);
     const all = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
-    expect(all.indexOf("/news/popular")).toBeGreaterThan(all.indexOf("/local"));
+    expect(all.indexOf("/columns")).toBe(all.indexOf("/local") + 1);
+  });
+
+  it("전문가칼럼이 꺼져 있으면 구분선 앞 목록이 없고, 나머지만 구분선 뒤에", () => {
+    render(<Header menu={["popular", "calc"]} />);
+    const nav = screen.getByRole("navigation", { name: "바로 메뉴" });
+    const lists = [...nav.querySelectorAll(":scope > ul")];
+    expect(lists).toHaveLength(1);
+    expect(tokens(lists[0]!)).toContain("lg:border-l");
+    expect(pairs(within(nav).getAllByRole("link"))).toEqual([
+      ["최신인기글", "/news/popular"],
+      ["세금계산기", "/calc"],
+    ]);
+  });
+
+  it("전문가 소개는 유틸 메뉴가 아니라 전문가상담 펼침 아래에 — 단추로 열면 /experts 링크, 전문가상담 링크는 그대로 상담 요청으로", async () => {
+    render(<Header menu={["expert_request", "calc"]} utilities={["experts", "search"]} />);
+    const utility = screen.getByRole("navigation", { name: "유틸 메뉴" });
+    expect(pairs(within(utility).getAllByRole("link"))).toEqual([["검색", "/search"]]);
+    expect(screen.queryByRole("link", { name: "전문가 소개" })).toBeNull(); // 닫혀 있으면 hidden
+    const button = screen.getByRole("button", { name: "전문가상담 하위 메뉴" });
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    await userEvent.click(button);
+    expect(button.getAttribute("aria-expanded")).toBe("true");
+    const list = document.getElementById(button.getAttribute("aria-controls") ?? "")!;
+    expect(pairs(within(list).getAllByRole("link"))).toEqual([["전문가 소개", "/experts"]]);
+    expect(screen.getByRole("link", { name: "전문가상담" }).getAttribute("href")).toBe("/experts/request");
+    await userEvent.keyboard("{Escape}");
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(button);
+  });
+
+  it("전문가 소개가 꺼져 있으면 전문가상담 펼침 단추 0, 전문가상담이 꺼져 있으면 전문가 소개는 유틸 메뉴에 남는다", () => {
+    const { unmount } = render(<Header menu={["expert_request"]} utilities={["search"]} />);
+    expect(screen.queryByRole("button", { name: "전문가상담 하위 메뉴" })).toBeNull();
+    unmount();
+    render(<Header menu={["popular"]} utilities={["experts"]} />);
+    expect(pairs(within(screen.getByRole("navigation", { name: "유틸 메뉴" })).getAllByRole("link"))).toEqual([["전문가 소개", "/experts"]]);
+  });
+
+  it("분야 하위 메뉴와 전문가상담 하위 메뉴도 한 번에 하나만 열린다", async () => {
+    render(<Header menu={["expert_request"]} utilities={["experts"]} submenus={{ tax: [{ key: "tax:news", label: "뉴스 전체", href: "/news?section=tax" }] }} />);
+    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
+    const expert = screen.getByRole("button", { name: "전문가상담 하위 메뉴" });
+    await userEvent.click(tax);
+    await userEvent.click(expert);
+    expect(tax.getAttribute("aria-expanded")).toBe("false");
+    expect(expert.getAttribute("aria-expanded")).toBe("true");
   });
 
   it("바로 메뉴가 꺼져 있으면(빈 목록) 바로 메뉴 요소 자체가 없다 (빈 링크 0)", () => {

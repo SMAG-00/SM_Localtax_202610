@@ -72,9 +72,9 @@ describe("헤더 메뉴 (HOME-02)", () => {
     expect(closedChrome().menu).toEqual([]);
     const on = buildChrome(CATEGORIES, new Map(), { ...CLOSED_FEATURES, shortcuts: true });
     expect(on.menu.map((m) => [m.label, m.href])).toEqual([
+      ["전문가칼럼", "/columns"],
       ["최신인기글", "/news/popular"],
       ["최신법령·유권해석", "/brief"],
-      ["전문가칼럼", "/columns"],
       ["전문가상담", "/experts/request"],
       ["세금계산기", "/calc"],
     ]);
