@@ -7,7 +7,8 @@ import { isoToKstDateTime } from "@/lib/admin/form-utils";
 import { pageViewer, requirePage } from "@/lib/server/admin/pages";
 import { serviceDb } from "@/lib/server/articles/service";
 
-// 브리핑 (/admin/brief, W10-e - BRIEF-01~04) - 편집 책임자·관리자(review_item.decide).
+// 브리핑 (/admin/brief, W10-e - BRIEF-01~04) - 편집 책임자·관리자(review_item.decide). 주간 소식지 '최신법령·유권해석'(선택 기능)
+//  · 화면 단순화 (PO 2026-11-01 "너무 복잡해"): 호 목록만 펼쳐 두고, 승인된 AI 초안은 있을 때만, 알아둘 날짜·진행 중 개정안·수집 대상은 '부가 자료·자동 수집'으로 접는다
 //  · 호별 초안을 고치고, 검사기 8종을 돌려 차단 0이 되면 승인합니다. 경고는 확인 표시 뒤에 승인됩니다. AI가 쓴 항목은 확인(reviewed) 전에는 승인되지 않습니다
 //  · 발행은 정시 작업만 합니다 - 승인해도 발행 시각 전에는 공개되지 않습니다
 export const metadata: Metadata = { title: "브리핑" };
@@ -43,66 +44,10 @@ export default async function BriefAdminPage() {
   const aiApproved = (pending.data ?? []) as { id: number; title: string; payload: { failed?: boolean } }[];
   return (
     <>
-      <PageTitle title="브리핑" description="호별 초안을 고치고 검사기 8종을 통과시킨 뒤 승인합니다. 승인해도 발행 시각(한국 시간) 전에는 공개되지 않습니다.">
+      <PageTitle title="브리핑" description="주간 소식지 '최신법령·유권해석'입니다(선택 기능 — 쓰지 않아도 기사 발행·사이트 운영에 지장 없음). [다음 호 초안 만들기] → 호를 고치고 검사 → 승인하면 발행 시각(한국 시간)에 공개됩니다.">
         <NewDraftButton />
       </PageTitle>
       <div className="space-y-8">
-        <Panel id="ai-approved" title={`승인된 AI 초안 ${aiApproved.length}건`} description="검수 큐에서 승인한 AI 초안만 초안 호에 넣을 수 있습니다. 넣은 항목은 검수 완료로 표시됩니다.">
-          {aiApproved.length === 0 ? <EmptyNote>반영 대기 중인 초안이 없습니다.</EmptyNote> : (
-            <ul className="space-y-2" data-testid="brief-ai-approved">
-              {aiApproved.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center gap-2 text-[15px] text-navy-900">
-                  <span className={MONO}>#{r.id}</span> {r.title}
-                  {r.payload.failed ? <ToneChip tone="rose">요약 실패 - 검수자 작성</ToneChip> : <ApplyAiDraftButton itemId={r.id} />}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-        <Panel id="brief-calendar" title={`알아둘 날짜 ${calRows.length}건`} description="호의 '알아둘 날짜' 코너에 발행일부터 30일 안에 걸리는 날짜가 최대 7줄 들어갑니다.">
-          {calRows.length === 0 ? <EmptyNote>아직 입력한 날짜가 없습니다.</EmptyNote> : (
-            <ul className="space-y-2" data-testid="brief-calendar-list">
-              {calRows.map((c) => (
-                <li key={c.id} className="flex flex-wrap items-center gap-2 text-[15px] text-navy-900">
-                  <ToneChip tone={c.active ? "emerald" : "navy"}>{c.is_always ? "상시" : c.is_yearly ? `매년 ${c.start_md}${c.end_md ? ` ~ ${c.end_md}` : ""}` : `${c.start_on}${c.end_on ? ` ~ ${c.end_on}` : ""}`}</ToneChip> {c.text}
-                  <ActiveToggle op="calendar_active" id={c.id} active={c.active} label={`날짜 ${c.id}`} />
-                </li>
-              ))}
-            </ul>
-          )}
-          <CalendarForm />
-        </Panel>
-        <Panel id="brief-ongoing" title={`진행 중 개정안 ${ongRows.length}건`} description="국회 제출·통과·공포를 확인하면 단계와 기준일을 고칩니다. 기준일이 45일을 넘으면 확인 표시가 붙습니다.">
-          {ongRows.length === 0 ? <EmptyNote>아직 입력한 개정안이 없습니다.</EmptyNote> : (
-            <ul className="space-y-2" data-testid="brief-ongoing-list">
-              {ongRows.map((o) => (
-                <li key={o.id} className="flex flex-wrap items-center gap-2 text-[15px] text-navy-900">
-                  <ToneChip tone={o.active ? "emerald" : "navy"}>{o.stage}</ToneChip> {o.name} <span className={MONO}>기준일 {o.as_of}</span>
-                  {ongoingNeedsRefresh({ id: o.id, name: o.name, stage: o.stage, asOf: o.as_of }, today) && <ToneChip tone="amber">단계 다시 확인</ToneChip>}
-                  <ActiveToggle op="ongoing_active" id={o.id} active={o.active} label={`개정안 ${o.id}`} />
-                </li>
-              ))}
-            </ul>
-          )}
-          <OngoingForm />
-        </Panel>
-        <Panel id="brief-targets" title={`수집 대상 ${tgtRows.length}개`} description="대상을 켜도 원천의 이용 조건 확인과 견본 계약 확인이 없으면 수집 요청은 0입니다.">
-          {tgtRows.length === 0 ? <EmptyNote>수집 대상이 없습니다.</EmptyNote> : (
-            <ul className="space-y-2" data-testid="brief-targets-list">
-              {tgtRows.map((t) => {
-                const s = srcMap.get(t.source_key);
-                const runnable = s?.terms_status === "allowed" && !!s.contract_verified_at;
-                return (
-                  <li key={t.key} className="flex flex-wrap items-center gap-2 text-[15px] text-navy-900">
-                    <span className={MONO}>{t.key}</span> {t.api_target} · 질의 {t.queries.length}개
-                    <ToneChip tone={runnable ? "emerald" : "rose"}>{runnable ? "원천 허용됨" : `원천 ${s?.terms_status ?? "없음"} - 요청 0`}</ToneChip>
-                    <ActiveToggle op="target_enabled" keyName={t.key} active={t.enabled} label={`수집 대상 ${t.key}`} />
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Panel>
         <Panel id="issues" title={`호 ${rows.length}개`}>
           {rows.length === 0 ? <EmptyNote>아직 호가 없습니다. [다음 호 초안 만들기]로 시작하세요.</EmptyNote> : (
             <ul className="space-y-6" data-testid="brief-issues">
@@ -136,6 +81,67 @@ export default async function BriefAdminPage() {
             </ul>
           )}
         </Panel>
+        {aiApproved.length > 0 && (
+          <Panel id="ai-approved" title={`승인된 AI 초안 ${aiApproved.length}건`} description="검수 큐에서 승인한 AI 초안만 초안 호에 넣을 수 있습니다. 넣은 항목은 검수 완료로 표시됩니다.">
+            <ul className="space-y-2" data-testid="brief-ai-approved">
+              {aiApproved.map((r) => (
+                <li key={r.id} className="flex flex-wrap items-center gap-2 text-[15px] text-navy-900">
+                  <span className={MONO}>#{r.id}</span> {r.title}
+                  {r.payload.failed ? <ToneChip tone="rose">요약 실패 - 검수자 작성</ToneChip> : <ApplyAiDraftButton itemId={r.id} />}
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        )}
+        <details id="brief-extras" className="rounded-2xl border border-navy-100 bg-white">
+          <summary className="cursor-pointer px-6 py-4 text-[15px] font-bold text-navy-900">부가 자료·자동 수집 — 알아둘 날짜 {calRows.length}건 · 진행 중 개정안 {ongRows.length}건 · 수집 대상 {tgtRows.length}개 (필요할 때만 엽니다)</summary>
+          <div className="space-y-8 p-2">
+          <Panel id="brief-calendar" title={`알아둘 날짜 ${calRows.length}건`} description="호의 '알아둘 날짜' 코너에 발행일부터 30일 안에 걸리는 날짜가 최대 7줄 들어갑니다.">
+            {calRows.length === 0 ? <EmptyNote>아직 입력한 날짜가 없습니다.</EmptyNote> : (
+              <ul className="space-y-2" data-testid="brief-calendar-list">
+                {calRows.map((c) => (
+                  <li key={c.id} className="flex flex-wrap items-center gap-2 text-[15px] text-navy-900">
+                    <ToneChip tone={c.active ? "emerald" : "navy"}>{c.is_always ? "상시" : c.is_yearly ? `매년 ${c.start_md}${c.end_md ? ` ~ ${c.end_md}` : ""}` : `${c.start_on}${c.end_on ? ` ~ ${c.end_on}` : ""}`}</ToneChip> {c.text}
+                    <ActiveToggle op="calendar_active" id={c.id} active={c.active} label={`날짜 ${c.id}`} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <CalendarForm />
+          </Panel>
+          <Panel id="brief-ongoing" title={`진행 중 개정안 ${ongRows.length}건`} description="국회 제출·통과·공포를 확인하면 단계와 기준일을 고칩니다. 기준일이 45일을 넘으면 확인 표시가 붙습니다.">
+            {ongRows.length === 0 ? <EmptyNote>아직 입력한 개정안이 없습니다.</EmptyNote> : (
+              <ul className="space-y-2" data-testid="brief-ongoing-list">
+                {ongRows.map((o) => (
+                  <li key={o.id} className="flex flex-wrap items-center gap-2 text-[15px] text-navy-900">
+                    <ToneChip tone={o.active ? "emerald" : "navy"}>{o.stage}</ToneChip> {o.name} <span className={MONO}>기준일 {o.as_of}</span>
+                    {ongoingNeedsRefresh({ id: o.id, name: o.name, stage: o.stage, asOf: o.as_of }, today) && <ToneChip tone="amber">단계 다시 확인</ToneChip>}
+                    <ActiveToggle op="ongoing_active" id={o.id} active={o.active} label={`개정안 ${o.id}`} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <OngoingForm />
+          </Panel>
+          <Panel id="brief-targets" title={`수집 대상 ${tgtRows.length}개`} description="대상을 켜도 원천의 이용 조건 확인과 견본 계약 확인이 없으면 수집 요청은 0입니다.">
+            {tgtRows.length === 0 ? <EmptyNote>수집 대상이 없습니다.</EmptyNote> : (
+              <ul className="space-y-2" data-testid="brief-targets-list">
+                {tgtRows.map((t) => {
+                  const s = srcMap.get(t.source_key);
+                  const runnable = s?.terms_status === "allowed" && !!s.contract_verified_at;
+                  return (
+                    <li key={t.key} className="flex flex-wrap items-center gap-2 text-[15px] text-navy-900">
+                      <span className={MONO}>{t.key}</span> {t.api_target} · 질의 {t.queries.length}개
+                      <ToneChip tone={runnable ? "emerald" : "rose"}>{runnable ? "원천 허용됨" : `원천 ${s?.terms_status ?? "없음"} - 요청 0`}</ToneChip>
+                      <ActiveToggle op="target_enabled" keyName={t.key} active={t.enabled} label={`수집 대상 ${t.key}`} />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+          </div>
+        </details>
       </div>
     </>
   );
