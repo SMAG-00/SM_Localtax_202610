@@ -48,6 +48,12 @@ test("씨앗 — 핵심 메시지는 새 문구, 강조 낱말은 지방세·부
   if (message === NEW_MESSAGE) assert.deepEqual(highlights, ["지방세", "부동산 세금", "재테크"]);
 });
 
+test("씨앗(236, PO 2026-11-01) — 핵심 메시지는 무료상담 문구, 강조 낱말은 월간 지방세연구·무료상담", async () => {
+  const rows = (await client.query("select key, value from public.settings where key in ('home_core_message', 'home_core_highlights')")).rows;
+  assert.equal(rows.find((r) => r.key === "home_core_message").value, "취득·보유·양도·상속·증여 등 모든 순간 — 월간 지방세연구 무료상담 이용하세요.");
+  assert.deepEqual(rows.find((r) => r.key === "home_core_highlights").value, ["월간 지방세연구", "무료상담"]);
+});
+
 test("저장 — 메시지 안 낱말 1~5개는 통과", async () => {
   await tx(async () => {
     await client.query("update public.settings set value = to_jsonb($1::text) where key = 'home_core_message'", [NEW_MESSAGE]);

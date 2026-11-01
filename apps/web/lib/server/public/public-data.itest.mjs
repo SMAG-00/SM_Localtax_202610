@@ -248,7 +248,8 @@ describe("화면 틀·홈·허브·뉴스 전체 (HOME-01·02·04 · CAT-02)", (
   test("홈 — 히어로·4대 분야 카드가 먼저, 최신 자체 취재는 편집 승인된 보도기사만", async () => {
     const home = await api.getHomeData();
     expect(home.sections.slice(0, 2).map((s) => s.key)).toEqual(["hero", "fields"]);
-    expect(home.sections[0].coreMessage).toBe("취득·보유·상속·증여·양도 등 모든 순간 — 지방세와 부동산 세금을 알면 재테크가 보입니다");
+    // 씨앗 문구(마이그레이션 236) — 사이트 이름 글자는 brand.ts 한 곳에만 두므로 가운데 낱말은 비워 맞춘다
+    expect(home.sections[0].coreMessage).toMatch(/^취득·보유·양도·상속·증여 등 모든 순간 — 월간 \S+ 무료상담 이용하세요\.$/);
     const latest = home.sections.find((s) => s.key === "latest_reports");
     expect(latest).toBeDefined();
     expect(idsOf(latest.items)).toContain(Number(w.report.id));
