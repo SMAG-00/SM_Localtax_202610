@@ -67,6 +67,7 @@ describe("국세 연결 — '국세' 배지를 붙이는 카드 (TX-06 · W3 9�
   it("외부 계산기(상속·증여)·SM 양도세 메뉴·국세청 대체 안내만 국세", () => {
     expect(isNationalTaxLink({ kind: "external_calculator", key: "inheritance_gift" })).toBe(true);
     expect(isNationalTaxLink({ kind: "sm_calculator", key: "transfer" })).toBe(true);
+    expect(isNationalTaxLink({ kind: "sm_calculator", key: "inheritance_gift" })).toBe(true); // SM 상속·증여 메뉴 (PO 2026-11-01)
     expect(isNationalTaxLink({ kind: "fallback", key: "nts" })).toBe(true);
     for (const key of ["acquisition", "property_tax", "registration", "comprehensive"]) expect(isNationalTaxLink({ kind: "sm_calculator", key })).toBe(false);
     expect(isNationalTaxLink({ kind: "fallback", key: "wetax" })).toBe(false);
