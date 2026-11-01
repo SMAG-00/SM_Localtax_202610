@@ -313,6 +313,40 @@ test("관리자(PO) 본인 칼럼 발행 (237, PO 2026-11-01) — 작성자 발�
     assert.ok((await attempt("update public.articles set status = 'published', first_published_at = now(), check_log = $2 where id = $1", [col, rec({ authorPublish: true, adminColumnPublish: true })])).ok, "표시가 있으면 발행");
   }));
 
+test("관리자(PO) 본인 칼럼은 이름·초상 동의서 없이 발행 (238) — 표시가 없으면 다른 계정이 발행해도 동의서가 있어야 한다", () =>
+  tx(async () => {
+    const authorUser = await authUser();
+    const otherUser = await authUser();
+    const writer = await person({ user: authorUser, consent: null });
+    const rec = (user, extra) => JSON.stringify({ publish: { at: new Date().toISOString(), by: `user:${user}`, version: 1, ...extra } });
+    const noFlag = await article({ authorId: writer });
+    const r = await attempt("update public.articles set status = 'published', first_published_at = now(), check_log = $2 where id = $1", [noFlag, rec(otherUser, {})]);
+    assert.equal(r.code, "23514");
+    assert.match(r.message, /이름·초상 동의서/);
+    const own = await article({ authorId: writer });
+    assert.ok((await attempt("update public.articles set status = 'published', first_published_at = now(), check_log = $2 where id = $1", [own, rec(authorUser, { authorPublish: true, adminColumnPublish: true })])).ok, "관리자 본인 칼럼 표시면 동의서 없이 발행");
+  }));
+
+test("관리자(PO) 본인 칼럼은 기능 키 tax_columns가 켜져도 필자 검증·기고 계약·칼럼 기록 없이 발행 (238) — 표시가 없으면 칼럼 기록 요구", () =>
+  tx(async () => {
+    await client.query("update public.settings set value = value || '{\"tax_columns\": true}'::jsonb where key = 'feature_flags'");
+    const authorUser = await authUser();
+    const otherUser = await authUser();
+    const writer = await person({ user: authorUser });
+    const rec = (user, extra) => JSON.stringify({ publish: { at: new Date().toISOString(), by: `user:${user}`, version: 1, ...extra } });
+    const noFlag = await article({ authorId: writer });
+    const r = await attempt("update public.articles set status = 'published', first_published_at = now(), check_log = $2 where id = $1", [noFlag, rec(otherUser, {})]);
+    assert.equal(r.code, "23514");
+    assert.match(r.message, /column_meta/);
+    const own = await article({ authorId: writer });
+    const publishOwn = () => attempt("update public.articles set status = 'published', first_published_at = now(), check_log = $2 where id = $1", [own, rec(authorUser, { authorPublish: true, adminColumnPublish: true })]);
+    await client.query("update public.settings set value = to_jsonb(''::text) where key = 'column_opinion_notice'");
+    assert.match((await publishOwn()).message, /의견 고지 문구/, "기능 키가 켜져 있으면 의견 고지 문구 검사는 남는다");
+    await client.query("update public.settings set value = to_jsonb('시험용 의견 고지 문구'::text) where key = 'column_opinion_notice'");
+    const ok = await publishOwn();
+    assert.ok(ok.ok, `관리자 본인 칼럼 표시면 칼럼 기록 없이 발행: ${ok.message}`);
+  }));
+
 // ── 권한 ─────────────────────────────────────────────────────
 
 for (const role of ["anon", "authenticated"]) {
