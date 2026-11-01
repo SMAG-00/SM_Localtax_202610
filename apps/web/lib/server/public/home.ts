@@ -96,6 +96,8 @@ export async function getHomeData(now: Date = new Date()): Promise<HomeData> {
     fieldPoints: fieldCardPoints(hubPoints),
     searchEnabled: settings.features.search,
     searchChips: settings.searchChips,
+    // 무료상담 신청 버튼 (PO 2026-11-01) — 헤더 바로 메뉴 '전문가상담'과 같은 기능 키
+    consultEnabled: settings.features.shortcuts,
     briefing: pickBriefing(briefings.items),
     latestReports: latestReports(latest.items),
     weeklyHot: null,

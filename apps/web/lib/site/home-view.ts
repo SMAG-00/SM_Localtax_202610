@@ -12,6 +12,8 @@ export const heroHighlights = (fromSettings: readonly string[]): readonly string
 /** 홈 큰 입력창 라벨·안내 — 첫 화면 150자(R1)에 들어간다 */
 export const SEARCH_LABEL = "검색어";
 export const SEARCH_PLACEHOLDER = "예: 2026년 지방세제 개편안";
+/** 히어로 주 버튼 글자 — 핵심 메시지 '무료상담 이용하세요'에 이어지는 할 일 (PO 2026-11-01) */
+export const CONSULT_LABEL = "무료상담 신청";
 
 type BodySectionKey = Exclude<HomeSectionKey, "hero">;
 

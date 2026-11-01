@@ -297,6 +297,8 @@ export const GLOSSARY_HREF = "/glossary";
 export const VIDEO_LIST_HREF = "/news/video";
 /** 많이 본 기사 목록 (ART-11) — 홈 최신 인기글의 [더 보기] */
 export const POPULAR_HREF = "/news/popular";
+/** 전문가 상담 요청 (W7c) — 홈 히어로 [무료상담 신청] 버튼의 도착 (PO 2026-11-01) */
+export const EXPERT_REQUEST_HREF = "/experts/request";
 export const PHOTO_LIST_HREF = "/news/photo";
 /** 정책 페이지 묶음(W2-e) — 공개 승인된 정책 페이지(POLICY_LINKS 주소 그대로)만 열린다 (HELP-05) */
 /** 고객센터 폼 화면 (W2-e 5단계 — 기사 제보 /help/report는 POLICY_LINKS가 먼저 판정한다) */

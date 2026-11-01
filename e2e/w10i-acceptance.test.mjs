@@ -103,6 +103,12 @@ const menuLinks = (html) => {
   return [...nav.matchAll(/<a [^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map((m) => [m[2], m[1]]);
 };
 
+/** 홈 히어로의 [무료상담 신청] 버튼 주소 목록 (PO 2026-11-01) */
+const heroConsult = (html) => {
+  const hero = html.split('data-home-section="hero"')[1]?.split("</section>")[0] ?? "";
+  return [...hero.matchAll(/<a [^>]*href="([^"]+)"[^>]*>무료상담 신청<\/a>/g)].map((m) => m[1]);
+};
+
 test("a) 키 shortcuts 꺼짐이면 헤더 바로 메뉴 0, 켜짐이면 헤더 바로 메뉴 4개 — 홈 바로가기 카드는 어느 쪽이든 0 (PO 2026-11-01), AI 계산기 글자·쿼리 주소 0", async () => {
   await setFlags({ shortcuts: false, calc: true });
   await restart();
@@ -110,6 +116,7 @@ test("a) 키 shortcuts 꺼짐이면 헤더 바로 메뉴 0, 켜짐이면 헤더 
   assert.equal(off.status, 200);
   assert.ok(!off.text.includes('aria-label="바로 메뉴"'), "꺼짐: 헤더 바로 메뉴 0");
   assert.ok(!off.text.includes('data-part="shortcut-cards"'), "꺼짐: 홈 카드 0");
+  assert.deepEqual(heroConsult(off.text), [], "꺼짐: 히어로 무료상담 신청 버튼 0");
 
   await setFlags({ shortcuts: true, calc: true });
   await restart();
@@ -126,6 +133,7 @@ test("a) 키 shortcuts 꺼짐이면 헤더 바로 메뉴 0, 켜짐이면 헤더 
     ],
     "헤더 바로 메뉴 5개 이름·순서·주소",
   );
+  assert.deepEqual(heroConsult(on.text), ["/experts/request"], "켜짐: 히어로 무료상담 신청 버튼 1개 → 전문가 상담 요청 (PO 2026-11-01)");
   assert.ok(!/AI\s*(세금\s*)?계산/.test(on.text.replace(/AI 도우미|AI 세금 도우미/g, "")), "AI 계산기 글자 0");
   for (const [, href] of menuLinks(on.text)) assert.ok(!/[?#]/.test(href), `바로 메뉴 주소에 쿼리·해시 0: ${href}`);
 });

@@ -3,7 +3,7 @@
 //  · 트래커 하이라이트: 오늘 노출 중인 지정(순서) → 지정이 0건이면 현재 단계가 가장 최근에 바뀐 공개 트래커 1건 → 공개 트래커가 없으면 섹션 숨김
 //  · 해설 스토리: 지정(순서, 6장까지) → 3장 미만이면 최신 해설(explainer)로 3장까지 (지정과 겹침 0)
 //  · 노출 기간이 끝난 카드는 DB(RLS)가 0행으로 주지만 여기서도 한국 날짜로 다시 거른다
-import { amendmentHref, HOME_BRIEFING_TITLE_PREFIX, HOME_SECTION_KEYS, LIMITS, POPULAR_HREF, SECTION_INFO, SECTION_KEYS, type Features, type HomeSectionKey, type SectionKey } from "./constants";
+import { amendmentHref, HOME_BRIEFING_TITLE_PREFIX, HOME_SECTION_KEYS, EXPERT_REQUEST_HREF, LIMITS, POPULAR_HREF, SECTION_INFO, SECTION_KEYS, type Features, type HomeSectionKey, type SectionKey } from "./constants";
 import type { SignatureHomeItem } from "./signature-logic";
 import type { ArticleListItem, TrackerSource, TrackerState } from "./cards";
 import type { CurationRow } from "./rows";
@@ -129,6 +129,8 @@ export interface HeroSection {
    * 없는 화면으로 가는 폼·칩을 두지 않는다 (HOME-02 빈 링크 0, 설계 9장 #18)
    */
   search: { action: "/search"; chips: string[] } | null;
+  /** 무료상담 신청 버튼 (PO 2026-11-01 — 핵심 메시지가 무료상담을 권한다). 헤더 바로 메뉴와 같은 기능 키 shortcuts가 꺼지면 null — 도착 화면이 없을 때 버튼 0 */
+  consult: { href: typeof EXPERT_REQUEST_HREF } | null;
 }
 export interface FieldsSection {
   key: "fields";
@@ -205,6 +207,8 @@ export interface HomeInput {
   /** 검색 화면 공개 여부 (기능 키 search) */
   searchEnabled: boolean;
   searchChips: string[];
+  /** 무료상담 신청 버튼을 둘지 (기능 키 shortcuts) — 안 주면 버튼 없음 */
+  consultEnabled?: boolean;
   /** 이번 주 브리핑 1건 (pickBriefing) — 없으면 섹션째 뺀다 */
   briefing?: BriefingCard | null;
   latestReports: readonly ArticleListItem[];
@@ -238,7 +242,7 @@ export function homeSections(input: HomeInput): HomeSection[] {
     // 핵심 메시지도 검색 폼도 없으면 히어로째 뺀다 (빈 섹션 0)
     hero:
       input.coreMessage || input.searchEnabled
-        ? { key: "hero", coreMessage: input.coreMessage, coreHighlights: [...(input.coreHighlights ?? [])], search: input.searchEnabled ? { action: "/search", chips: input.searchChips } : null }
+        ? { key: "hero", coreMessage: input.coreMessage, coreHighlights: [...(input.coreHighlights ?? [])], search: input.searchEnabled ? { action: "/search", chips: input.searchChips } : null, consult: input.consultEnabled ? { href: EXPERT_REQUEST_HREF } : null }
         : null,
     popular: input.popular && input.popular.length ? { key: "popular", items: input.popular.slice(0, LIMITS.homePopular), moreHref: POPULAR_HREF } : null,
     fields: { key: "fields", cards: SECTION_KEYS.map((s) => ({ section: s, name: SECTION_INFO[s].name, href: SECTION_INFO[s].href })), points: { ...(input.fieldPoints ?? {}) } },

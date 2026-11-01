@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
-import { Chip, Eyebrow, FieldCards, Hero, HeroMedia, HomeSearch, ProgressStageBadge, UiLink, brand, cx } from "@ltr/ui";
+import { Chip, Eyebrow, FieldCards, Hero, HeroMedia, HomeSearch, PrimaryButton, ProgressStageBadge, UiLink, brand, cx } from "@ltr/ui";
 import type { AmendmentsSection, ColumnSection, HomeData, HomeSection, StoryCard, TrackerCard } from "@/lib/server/public";
-import { SEARCH_LABEL, SEARCH_PLACEHOLDER, SECTION_HEADINGS, heroHighlights, sectionTones, type SectionTone } from "@/lib/site/home-view";
+import { CONSULT_LABEL, SEARCH_LABEL, SEARCH_PLACEHOLDER, SECTION_HEADINGS, heroHighlights, sectionTones, type SectionTone } from "@/lib/site/home-view";
 import type { ResolvedHeroMedia } from "@/lib/site/hero-media";
 import { ArticleItem } from "./ArticleItem";
 import { ClaimBasisLink } from "./ClaimBasisLink";
@@ -201,7 +201,17 @@ export function HomeSections({ home, heroMedia = null, cardImages }: {
       {hero && (
         <div data-home-section="hero">
           <Hero title={hero.coreMessage ?? undefined} highlight={[...heroHighlights(hero.coreHighlights)]} media={heroMedia ? <HeroMedia media={heroMedia} /> : undefined}>
-            {hero.search && <HomeSearch label={SEARCH_LABEL} placeholder={SEARCH_PLACEHOLDER} suggestions={hero.search.chips} />}
+            {hero.consult || hero.search ? (
+              <div className="space-y-8">
+                {/* 무료상담 신청 (PO 2026-11-01) — 핵심 메시지가 권하는 할 일. 기능 키 shortcuts가 꺼지면 버튼 0 */}
+                {hero.consult && (
+                  <PrimaryButton href={hero.consult.href} className="w-full sm:w-auto">
+                    {CONSULT_LABEL}
+                  </PrimaryButton>
+                )}
+                {hero.search && <HomeSearch label={SEARCH_LABEL} placeholder={SEARCH_PLACEHOLDER} suggestions={hero.search.chips} />}
+              </div>
+            ) : undefined}
           </Hero>
         </div>
       )}
