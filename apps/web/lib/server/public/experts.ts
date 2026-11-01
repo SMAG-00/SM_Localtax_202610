@@ -55,7 +55,8 @@ function card(r: ProfileRow): ExpertCardView {
     contactLinks: parseContactLinks(r.contact_links),
     interests: r.interests,
     intro: r.intro,
-    photo: r.photo_path ? { path: r.photo_path, alt: r.photo_alt, credit: r.photo_credit } : null,
+    // 사진 보관(Storage) 경로(storage/v1/object/public/…)는 Supabase 주소를 붙여 화면이 그대로 쓴다 — 기사 사진과 같은 absolute (PO 2026-11-01 첫 프로필 사진)
+    photo: r.photo_path ? { path: absolute(siteUrl(), r.photo_path), alt: r.photo_alt, credit: r.photo_credit } : null,
   };
 }
 
