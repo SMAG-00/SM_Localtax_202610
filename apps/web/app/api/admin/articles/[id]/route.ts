@@ -1,6 +1,6 @@
 import { evaluatePublish, validateRevisionForSave, validateSolvedCaseForSave, validateTaxLensForSave, type UpdateKind } from "@ltr/editorial";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
-import { parseChecklistsInput, readChecklists } from "@/lib/server/articles/content";
+import { parseChecklistsInput, readChecklists, withAdminColumnMark } from "@/lib/server/articles/content";
 import { loadEditorView } from "@/lib/server/articles/editor-view";
 import { POST_PUBLISH_BLOCKERS } from "@/lib/server/articles/gate";
 import { REGIONAL_INPUT_KEYS, parseArticleInput } from "@/lib/server/articles/input";
@@ -98,6 +98,10 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   const now = nowIso();
   const plan = planEdit(before, input, { now, updateKind, reason, checklists });
   if (plan.changed.length === 0) return json({ article: articleSummary(before), unchanged: true });
+  // 관리자(PO)가 자기 발행 글을 칼럼(opinion)으로 바꾸면 관리자 본인 칼럼 발행과 같다 (2026-11-01 PO 결정 237·238) — 표시를 남겨 DB 칼럼 검사가 통과한다
+  if (published && viewer.isAdmin && resource.authorUserId === viewer.userId && input.contentType === "opinion" && before.content_type !== "opinion") {
+    plan.columns.check_log = withAdminColumnMark(plan.columns.check_log ?? before.check_log);
+  }
   // 지역 기사 편집 칸을 바꾸면 편집국만 — 광고·협찬 담당 등은 403 + 감사 (REG1-17 · W4 7단계 · PRD_최종 §9.1)
   if (plan.changed.some((k) => (REGIONAL_INPUT_KEYS as readonly string[]).includes(k))) {
     const regionalDenied = await authorize(viewer, "article.regional_fields", target, resource);

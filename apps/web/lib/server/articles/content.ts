@@ -600,3 +600,10 @@ export function withChecklists(checkLog: unknown, checklists: Checklists): Recor
 export function withPublishRecord(checkLog: unknown, record: Record<string, unknown>): Record<string, unknown> {
   return { ...(isObj(checkLog) ? checkLog : {}), publish: record };
 }
+
+/** 발행된 글에 관리자 본인 칼럼 표시(adminColumnPublish)를 더한다 — 발행 기록의 다른 값은 그대로 (DB 칼럼 검사 237·238이 이 표시를 본다) */
+export function withAdminColumnMark(checkLog: unknown): Record<string, unknown> {
+  const log = isObj(checkLog) ? checkLog : {};
+  const publish = isObj(log.publish) ? log.publish : {};
+  return { ...log, publish: { ...publish, adminColumnPublish: true } };
+}

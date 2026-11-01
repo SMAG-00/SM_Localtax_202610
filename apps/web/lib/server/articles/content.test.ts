@@ -2,7 +2,7 @@
 //  · 저장(parseBodyInput): 인포그래픽 대체 텍스트·같은 내용의 표 없음 → 거부(칸 경로와 문장), 동영상 주소가 youtube-nocookie 임베드가 아님 → 거부, 통과한 주소는 정리해 저장
 //  · 읽기(readStoredBody): 모양만 본다 — 저장 규칙을 어긴 행(DB에 직접 넣은 행·이관 자료)도 읽어 발행 판정이 막게 한다
 import { describe, expect, test } from "vitest";
-import { parseBodyInput, readStoredBody } from "./content";
+import { parseBodyInput, readStoredBody, withAdminColumnMark } from "./content";
 
 const ID = "dQw4w9WgXcQ";
 const URL_OK = `https://www.youtube-nocookie.com/embed/${ID}`;
@@ -111,5 +111,20 @@ describe("읽기 — 모양만 본다 (저장 규칙을 어긴 행도 발행 판
   test("템플릿이 없는 옛 인포그래픽 블록은 모양이 틀려 빠진다", () => {
     const { template: _t, ...old } = infographic();
     expect(readStoredBody({ blocks: [old, { type: "paragraph", text: "본문" }], claims: [] }).blocks.map((b) => b.type)).toEqual(["paragraph"]);
+  });
+});
+
+describe("withAdminColumnMark — 발행 뒤 관리자 본인 칼럼 표시", () => {
+  test("기존 발행 기록과 확인 목록은 그대로 두고 adminColumnPublish만 더한다", () => {
+    const log = { checklists: { isTaxIssue: true }, publish: { at: "2026-11-01T12:27:31Z", version: 5, selfPublish: true } };
+    expect(withAdminColumnMark(log)).toEqual({
+      checklists: { isTaxIssue: true },
+      publish: { at: "2026-11-01T12:27:31Z", version: 5, selfPublish: true, adminColumnPublish: true },
+    });
+  });
+
+  test("발행 기록이 없거나 check_log가 비어 있어도 표시만 담긴 기록을 만든다", () => {
+    expect(withAdminColumnMark(null)).toEqual({ publish: { adminColumnPublish: true } });
+    expect(withAdminColumnMark({ publish: "깨진 값" })).toEqual({ publish: { adminColumnPublish: true } });
   });
 });
