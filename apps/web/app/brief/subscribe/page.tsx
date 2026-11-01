@@ -9,9 +9,9 @@ import { guardSecret } from "@/lib/server/env";
 import { publicDb, rowsOf } from "@/lib/server/public/db";
 import { adminClient } from "@/lib/server/supabase";
 
-// 브리핑·개정 알림 구독 (/brief/subscribe, W10-e - BRIEF-02 · TX-12) - 일반 HTML 폼(JS 없이 동작). 닫혀 있으면 404.
-// 브리핑과 개정 알림은 따로 고른다(따로 구독·해지). 확인 메일의 링크를 눌러야 끝난다(이중 확인). 동의 문구는 사실만 적는다(정책 문구는 법률 검토 뒤 PO 입력).
-export const metadata: Metadata = { title: "브리핑 구독", robots: { index: false, follow: false } };
+// 개정 알림 구독 (/brief/subscribe, W10-e - BRIEF-02 · TX-12) - 일반 HTML 폼(JS 없이 동작). 닫혀 있으면 404.
+// 주간 브리핑 구독 칸은 PO 2026-11-01 브리핑 호 삭제로 뺐다. 개정 알림(amendment_alerts)이 꺼져 있으면 고를 알림이 없다는 안내만. 확인 메일의 링크를 눌러야 끝난다(이중 확인). 동의 문구는 사실만 적는다(정책 문구는 법률 검토 뒤 PO 입력).
+export const metadata: Metadata = { title: "개정 알림 구독", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -38,12 +38,16 @@ export default async function SubscribePage({ searchParams }: Props) {
   return (
     <main className="mx-auto w-full max-w-md px-4 py-16">
       <p className="text-[17px] font-extrabold tracking-tight text-navy-900">
-        {brand.productName} <span className="text-hermes-500">·</span> 브리핑
+        {brand.productName} <span className="text-hermes-500">·</span> 개정 알림
       </p>
       <div className="mt-8 rounded-2xl border border-navy-100 bg-white p-6">
         <Eyebrow>SUBSCRIBE</Eyebrow>
         <h1 className="mt-3 text-[28px] leading-tight font-black text-navy-900">구독하기</h1>
-        {done ? (
+        {!alertsOn && !done ? (
+          <p className="mt-6 text-[15px] text-navy-600" data-testid="subscribe-none">
+            지금 받을 수 있는 알림이 없습니다.
+          </p>
+        ) : done ? (
           <p role="status" data-testid="subscribe-done" data-code={done} className="mt-6 rounded-xl border border-navy-100 bg-navy-50 px-4 py-3 text-[15px] font-bold text-navy-900">
             {SUBSCRIBE_MESSAGES[done]}
           </p>
@@ -60,9 +64,6 @@ export default async function SubscribePage({ searchParams }: Props) {
               </label>
               <input id="sub-email" name="email" type="email" autoComplete="email" required maxLength={254} className={input} />
             </div>
-            <label className={check}>
-              <input type="checkbox" name="agree_brief" className="size-5" /> 주간 브리핑 수신에 동의합니다
-            </label>
             {alertsOn && (
               <fieldset className="space-y-1">
                 <label className={check}>

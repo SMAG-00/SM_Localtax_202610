@@ -45,7 +45,6 @@ export const POST = handle(async (request: Request) => {
     const p = new URLSearchParams(text);
     raw = {
       email: p.get("email") ?? "",
-      agree_brief: p.get("agree_brief") ?? "",
       agree_alert: p.get("agree_alert") ?? "",
       include_docs: p.get("include_docs") ?? "",
       tax_kinds: p.getAll("tax_kinds"),

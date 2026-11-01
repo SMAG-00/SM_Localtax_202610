@@ -2,20 +2,22 @@ import { describe, expect, test } from "vitest";
 import { TOKEN_SHAPE, hashToken } from "./input";
 import { MAX_AMENDMENTS, MAX_TAX_KINDS, deriveToken, parseSubscribeInput, selectPremiumRecipients } from "./subscribe";
 
-const base = { email: " Test@Example.Test ", agree_brief: "on" };
+const base = { email: " Test@Example.Test ", agree_alert: "on" };
 
 describe("parseSubscribeInput", () => {
-  test("이메일은 소문자·공백 제거, 브리핑만 고르면 관심 설정은 버린다", () => {
-    const r = parseSubscribeInput({ ...base, tax_kinds: ["acquisition"], amendment_ids: ["3"] });
-    expect(r).toEqual({ ok: true, value: { email: "test@example.test", brief: true, alert: false, taxKinds: [], amendmentIds: [], includeDocs: false } });
+  test("이메일은 소문자·공백 제거, 관심 설정이 없으면 빈 목록", () => {
+    expect(parseSubscribeInput(base)).toEqual({ ok: true, value: { email: "test@example.test", alert: true, taxKinds: [], amendmentIds: [], includeDocs: false } });
+  });
+  test("주간 브리핑 동의(agree_brief)는 받지 않는다 — 브리핑 호 삭제(PO 2026-11-01), 알림 동의 없이는 consent", () => {
+    expect(parseSubscribeInput({ email: "a@example.test", agree_brief: "on" })).toEqual({ ok: false, code: "consent" });
   });
   test("알림을 고르면 관심 세목·개정안 번호를 중복 없이 받는다", () => {
     const r = parseSubscribeInput({ email: "a@example.test", agree_alert: "true", tax_kinds: "acquisition,property,acquisition", amendment_ids: ["3", "3", "7"], include_docs: "on" });
-    expect(r).toEqual({ ok: true, value: { email: "a@example.test", brief: false, alert: true, taxKinds: ["acquisition", "property"], amendmentIds: [3, 7], includeDocs: true } });
+    expect(r).toEqual({ ok: true, value: { email: "a@example.test", alert: true, taxKinds: ["acquisition", "property"], amendmentIds: [3, 7], includeDocs: true } });
   });
   test("동의를 하나도 고르지 않으면 consent, 이메일 모양이 틀리면 email", () => {
     expect(parseSubscribeInput({ email: "a@example.test" })).toEqual({ ok: false, code: "consent" });
-    expect(parseSubscribeInput({ email: "not-an-email", agree_brief: "on" })).toEqual({ ok: false, code: "email" });
+    expect(parseSubscribeInput({ email: "not-an-email", agree_alert: "on" })).toEqual({ ok: false, code: "email" });
   });
   test("관심 설정 경계 - 세목 12개는 통과, 13개는 prefs / 개정안 50개는 통과, 51개는 prefs / 잘못된 번호·slug는 prefs", () => {
     const kinds = (n: number) => Array.from({ length: n }, (_, i) => `kind-${i}`);

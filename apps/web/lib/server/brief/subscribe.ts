@@ -4,18 +4,18 @@ import { hashToken, newToken } from "@/lib/brief/input";
 import { deriveToken, type SubscribeInput } from "@/lib/brief/subscribe";
 import { sendMail } from "../mail";
 
-// 브리핑·개정 알림 구독 (W10-e - BRIEF-02 · TX-12). 이중 확인: 신청 -> 확인 메일 -> 링크의 버튼 -> 구독 확정(consents.confirmed_at).
-//  · 브리핑(kind brief)과 알림(kind amendment_alert)은 따로 동의 행을 둔다 - 한쪽 해지가 다른 쪽에 영향 0
+// 개정 알림 구독 (W10-e - BRIEF-02 · TX-12, 주간 브리핑 구독은 PO 2026-11-01 브리핑 호 삭제로 없앰). 이중 확인: 신청 -> 확인 메일 -> 링크의 버튼 -> 구독 확정(consents.confirmed_at).
+//  · 동의 행 종류는 amendment_alert 하나 (예전 kind brief 행은 재확인·해지 흐름에서만 읽힌다)
 //  · 이미 확정된 구독은 건드리지 않는다(이메일만 아는 사람이 남의 관심 설정을 바꿀 수 없게). 확인 전 신청은 토큰을 새로 만들어 다시 보낸다
 //  · 평문 이메일은 consents 칸에만 두고, 수신 거부 토큰은 서버 열쇠에서 만든 값이라 해시만 저장한다
 
-type Kind = "brief" | "amendment_alert";
-const LABEL: Record<Kind, string> = { brief: "주간 브리핑", amendment_alert: "개정 알림" };
+type Kind = "amendment_alert";
+const LABEL: Record<Kind, string> = { amendment_alert: "개정 알림" };
 
 export type SubscribeOutcome = "sent" | "already" | "mail_down";
 
 export async function subscribe(db: SupabaseClient, input: SubscribeInput, ctx: { secret: string; base: string }): Promise<SubscribeOutcome> {
-  const kinds: Kind[] = [...(input.brief ? (["brief"] as const) : []), ...(input.alert ? (["amendment_alert"] as const) : [])];
+  const kinds: Kind[] = input.alert ? ["amendment_alert"] : [];
   const outcomes: SubscribeOutcome[] = [];
   for (const kind of kinds) outcomes.push(await subscribeOne(db, kind, input, ctx));
   if (outcomes.includes("mail_down")) return "mail_down";
