@@ -10,7 +10,7 @@ const tokens = (el: Element | null) => (el?.getAttribute("class") ?? "").split(/
 const pairs = (links: HTMLElement[]) => links.map((a) => [a.textContent, a.getAttribute("href")]);
 
 describe("헤더 — 워드마크", () => {
-  it("bg-navy-800 머리에 brand 워드마크를 홈 링크로 두고, 가운뎃점 없이 띄어쓰기로 잇는다", () => {
+  it("bg-navy-800 머리에 brand 워드마크를 홈 링크로 두고, 운영 주체(SM)를 가운뎃점으로 이어 붙이지 않는다", () => {
     const { container } = render(<Header />);
     const root = container.firstElementChild!;
     expect(root.tagName).toBe("HEADER");
@@ -20,7 +20,8 @@ describe("헤더 — 워드마크", () => {
     const home = screen.getByRole("link", { name: brand.productName });
     expect(home.getAttribute("href")).toBe("/");
     expect(home.textContent).toBe(brand.productName);
-    expect(home.textContent).not.toContain("·");
+    // 이름 안의 「·」는 분야 나열이다. 「SM · 이름」처럼 운영 주체를 잇던 옛 표기만 막는다
+    expect(home.textContent).not.toContain("SM");
     expect(tokens(home)).toEqual(expect.arrayContaining(["text-[17px]", "font-extrabold", "text-white"]));
     expect(within(home).queryByText("·")).toBeNull();
     expect(tokens(home)).not.toContain("text-hermes-500");

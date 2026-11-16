@@ -98,7 +98,7 @@ export function Header({ utilities = [], menu = [], currentSection, account, sub
           href="/"
           className="order-1 mr-auto inline-flex min-h-11 items-center text-[17px] font-extrabold tracking-tight text-white transition hover:text-hermes-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:mr-4"
         >
-          {/* 워드마크 — 사이트 이름 글자 그대로 (가운뎃점 없음) */}
+          {/* 워드마크 — 사이트 이름 글자 그대로 (운영 주체를 잇는 가운뎃점 없음) */}
           {brand.productName}
         </UiLink>
         <HeaderNav sections={sections} menu={menuLinks} utilities={utilityLinks} currentSection={currentSection} />

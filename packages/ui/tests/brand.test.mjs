@@ -19,9 +19,10 @@ test("제품명 값이 비어 있지 않다", () => {
   assert.ok(brand.productName.length > 0);
 });
 
-test("사이트 이름은 「지방세연구」, 운영 주체는 따로 SM(선명) (PO 결정 2026-11-01)", () => {
-  assert.equal(brand.productName, "지방세연구");
-  assert.ok(!/[·]/.test(brand.productName));
+test("사이트 이름은 「부동산·지방세연구」, 운영 주체는 따로 SM(선명) (PO 결정 2026-11-16 — 이전 「지방세연구」)", () => {
+  assert.equal(brand.productName, "부동산·지방세연구");
+  // 사이트 이름 안의 「·」는 분야 나열이다. 운영 주체(SM)를 이름에 이어 붙인 「SM · 지방세연구」식 표현만 막는다
+  assert.ok(!brand.productName.includes("SM"));
   assert.equal(brand.operatorName, "SM(선명)");
   assert.notEqual(brand.operatorName, brand.productName);
 });
