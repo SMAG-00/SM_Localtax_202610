@@ -24,4 +24,10 @@ describe("기사 편집 화면 — 사용자가 이해할 수 있는 칸만", ()
     expect(src).toContain("publish-blockers");
     expect(src).toContain("publishFailure");
   });
+
+  it("발행 API는 본문에 내부 표시가 남은 기사를 막는다 (기사 6번 사고)", () => {
+    const route = readFileSync(resolve(__dirname, "../../app/api/admin/articles/[id]/publish/route.ts"), "utf8");
+    expect(route).toContain("leftoverPublishProblem(before.body)");
+    expect(route).toContain("publish.leftover-memo");
+  });
 });

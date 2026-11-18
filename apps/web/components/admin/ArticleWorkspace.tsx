@@ -175,7 +175,8 @@ export function ArticleWorkspace({
   const canPublishNow = !published && perms.canPublish && view.article.status !== "deleted";
   // 체크하지 않은 확인 항목은 '발행 전에 고칠 것'에 한 문장으로 더한다
   const unchecked = uncheckedConfirms(publishConfirms, confirms);
-  const blockers = unchecked.length > 0 ? [...publishBlockers, uncheckedConfirmSentence(unchecked)] : publishBlockers;
+  const baseBlockers = unchecked.length > 0 ? [...publishBlockers, uncheckedConfirmSentence(unchecked)] : publishBlockers;
+  const blockers = leftover.removed > 0 ? [...baseBlockers, `본문에 편집 메모·코멘트 자리 표시가 ${leftover.removed}개 블록 남아 있습니다 — 본문 블록 위 안내에서 지우세요`] : baseBlockers;
   const savePanel = !readOnly && (
     <Panel
       id="save"

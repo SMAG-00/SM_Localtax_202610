@@ -35,6 +35,9 @@ export const isMemoMarkerLine = (line: string): boolean => MEMO_RE.test(line.tri
 // 코멘트 자리 — "[코멘트 자리: …]" 줄 전체. 편집위원이 인터뷰 코멘트를 넣을 자리를 표시한 것이라 독자에게 보이면 안 된다
 const COMMENT_SLOT_RE = /^\*{0,2}\[\s*코멘트 자리\s*[:：][^\]]*\]\*{0,2}$/;
 export const isCommentSlotLine = (line: string): boolean => COMMENT_SLOT_RE.test(line.trim());
+// 작성 메모 줄 — "> 작성 가정: …"(편집위원이 적은 가정 인용)·"썸네일 파일명(계획): …". 독자에게 보이면 안 되는 내부 표시
+const INTERNAL_NOTE_RE = /^>?\s*(?:작성 가정|썸네일 파일명\s*\(계획\))\s*[:：]/;
+export const isInternalNoteLine = (line: string): boolean => INTERNAL_NOTE_RE.test(line.trim());
 /** 본문 맨 끝에 남는 구분선 줄(---·***·___) */
 const RULE_RE = /^(?:-{3,}|\*{3,}|_{3,})$/;
 const EMAIL_RE = /\s*[\w.+-]+@[\w-]+(\.[\w-]+)+\s*/g;
@@ -90,6 +93,8 @@ export function parseArticleMarkdown(source: string): ParsedArticle {
     lines = lines.filter((l) => !isCommentSlotLine(l));
     warnings.push(`[코멘트 자리: …] 표시 ${slotCount}줄은 본문에 넣지 않았습니다 — 코멘트를 받으면 직접 적어 주세요`);
   }
+  // 작성 가정·썸네일 계획 줄도 본문에 넣지 않는다
+  lines = lines.filter((l) => !isInternalNoteLine(l));
 
   // 편집 메모 떼기
   const memoAt = lines.findIndex((l) => MEMO_RE.test(l.trim()));

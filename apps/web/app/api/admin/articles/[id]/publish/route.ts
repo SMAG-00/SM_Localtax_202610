@@ -1,5 +1,6 @@
 import { stageSkipProblem, taxReviewReasons } from "@ltr/editorial";
 import { confirmedChecklist, publishConfirmItems, uncheckedConfirmSentence, uncheckedConfirms } from "@/lib/admin/publish-confirm";
+import { leftoverPublishProblem } from "@/lib/admin/leftover-blocks";
 import { isRegionalRow } from "@/lib/admin/review-form";
 import { actorOf, targetOf, writeAudit } from "@/lib/server/audit";
 import { withPublishRecord } from "@/lib/server/articles/content";
@@ -47,6 +48,9 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   if (authorDenied) return authorDenied;
   if (before.status === "published") return errorJson(409, "이미 발행된 기사입니다 — 고치려면 수정(수정 종류·사유)을 쓰세요");
   if (before.status === "deleted") return errorJson(409, "삭제된 기사는 다시 발행할 수 없습니다");
+  // 본문에 편집 메모·코멘트 자리 같은 내부 표시가 남은 기사는 공개하지 않는다 (기사 6번 사고 2026-11-19)
+  const leftoverProblem = leftoverPublishProblem(before.body);
+  if (leftoverProblem) return errorJson(422, leftoverProblem, { failed: ["publish.leftover-memo"] });
   const signatureErrors = await signaturePublishErrors(db, before);
   if (signatureErrors.length) return errorJson(422, "시그니처 연재 회차를 발행할 수 없습니다", { errors: signatureErrors });
 
