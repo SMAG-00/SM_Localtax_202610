@@ -20,8 +20,8 @@ describe("헤더 — 워드마크", () => {
     const home = screen.getByRole("link", { name: brand.productName });
     expect(home.getAttribute("href")).toBe("/");
     expect(home.textContent).toBe(brand.productName);
-    // 이름 안의 「·」는 분야 나열이다. 「SM · 이름」처럼 운영 주체를 잇던 옛 표기만 막는다
-    expect(home.textContent).not.toContain("SM");
+    // 이름 안의 「·」는 분야 나열이다. 「SM · 이름」처럼 운영 주체를 가운뎃점으로 잇던 옛 표기만 막는다
+    expect(home.textContent).not.toMatch(/SM\s*·/);
     expect(tokens(home)).toEqual(expect.arrayContaining(["text-[17px]", "font-extrabold", "text-white"]));
     expect(within(home).queryByText("·")).toBeNull();
     expect(tokens(home)).not.toContain("text-hermes-500");
