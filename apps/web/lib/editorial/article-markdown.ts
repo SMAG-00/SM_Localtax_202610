@@ -35,8 +35,8 @@ export const isMemoMarkerLine = (line: string): boolean => MEMO_RE.test(line.tri
 // 코멘트 자리 — "[코멘트 자리: …]" 줄 전체. 편집위원이 인터뷰 코멘트를 넣을 자리를 표시한 것이라 독자에게 보이면 안 된다
 const COMMENT_SLOT_RE = /^\*{0,2}\[\s*코멘트 자리\s*[:：][^\]]*\]\*{0,2}$/;
 export const isCommentSlotLine = (line: string): boolean => COMMENT_SLOT_RE.test(line.trim());
-// 작성 메모 줄 — "> 작성 가정: …"(편집위원이 적은 가정 인용)·"썸네일 파일명(계획): …". 독자에게 보이면 안 되는 내부 표시
-const INTERNAL_NOTE_RE = /^>?\s*(?:작성 가정|썸네일 파일명\s*\(계획\))\s*[:：]/;
+// 작성 메모 줄 — "> 작성 가정: …"·"썸네일 파일명(계획): …"·편집 메모 아래 꼬리표([확인 필요]·가정하고 쓴 부분·출처 목록·비워 둔 코멘트 자리·취재 중 메모·[이미지 출처·라이선스]). 독자에게 보이면 안 되는 내부 표시
+const INTERNAL_NOTE_RE = /^>?\s*(?:(?:작성 가정|썸네일 파일명\s*\(계획\)|취재 중 메모|비워 둔 코멘트 자리)\s*[:：]|(?:가정하고 쓴 부분|출처 목록)\s*[-:：]|\[확인 필요\]|\[이미지 출처·라이선스\])/;
 export const isInternalNoteLine = (line: string): boolean => INTERNAL_NOTE_RE.test(line.trim());
 /** 본문 맨 끝에 남는 구분선 줄(---·***·___) */
 const RULE_RE = /^(?:-{3,}|\*{3,}|_{3,})$/;
@@ -93,8 +93,6 @@ export function parseArticleMarkdown(source: string): ParsedArticle {
     lines = lines.filter((l) => !isCommentSlotLine(l));
     warnings.push(`[코멘트 자리: …] 표시 ${slotCount}줄은 본문에 넣지 않았습니다 — 코멘트를 받으면 직접 적어 주세요`);
   }
-  // 작성 가정·썸네일 계획 줄도 본문에 넣지 않는다
-  lines = lines.filter((l) => !isInternalNoteLine(l));
 
   // 편집 메모 떼기
   const memoAt = lines.findIndex((l) => MEMO_RE.test(l.trim()));
@@ -104,6 +102,9 @@ export function parseArticleMarkdown(source: string): ParsedArticle {
     // 메모 바로 앞의 구분선·빈 줄은 본문이 아니다 ("본문 아래에 구분선을 긋고 [편집 메모]를 붙인다")
     while (lines.length && (lines[lines.length - 1]!.trim() === "" || RULE_RE.test(lines[lines.length - 1]!.trim()))) lines.pop();
   }
+
+  // 작성 가정·썸네일 계획·편집 메모 꼬리표 줄이 메모 밖에 남아 있어도 본문에 넣지 않는다 (메모 안의 줄은 위에서 이미 memo로 떼어 냈다)
+  lines = lines.filter((l) => !isInternalNoteLine(l));
 
   // 머리 칸 — 값이 같은 줄에 없으면 다음 빈 줄 뒤 이어지는 줄들(번호 목록 포함)
   const fields = new Map<FieldName, string[]>();

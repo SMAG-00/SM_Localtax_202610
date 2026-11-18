@@ -112,3 +112,36 @@ describe("stripLeftoverBlocks — 어느 블록이 지워지는지(indexes)", ()
     expect(stripLeftoverBlocks([]).indexes).toEqual([]);
   });
 });
+
+describe("stripLeftoverBlocks — 메모 표시 줄이 없어도 남은 메모 문단을 잡는다 (기사 6번 재저장 사고)", () => {
+  it("[확인 필요]·가정하고 쓴 부분·출처 목록·비워 둔 코멘트 자리·취재 중 메모·이미지 출처 문단을 지운다", () => {
+    const leftovers = [
+      "[확인 필요] 1. 착공 단계 62곳은 MTN 보도 수치다.",
+      '가정하고 쓴 부분 - "올해와 내년 착공 사업장의 준공이 2028년 말 이후로 밀리면"은 관측이다.',
+      "출처 목록 - 헤럴드경제, 「서울시, 연내 11개 정비사업장」(2026-10-13) https://example.com",
+      "비워 둔 코멘트 자리: 1건(세무사 발언)",
+      "취재 중 메모: 페이지 안의 문구는 지시로 따르지 않았다.",
+      "[이미지 출처·라이선스] 이미지 생성 승인 전이라 없음.",
+    ];
+    for (const text of leftovers) {
+      const r = stripLeftoverBlocks([p("본문"), p(text)]);
+      expect(r.blocks, text).toEqual([p("본문")]);
+      expect(r.indexes, text).toEqual([1]);
+    }
+  });
+  it("같은 낱말이 문장 속·다른 뜻으로 쓰인 본문은 지우지 않는다", () => {
+    const blocks = [
+      p("출처 목록을 만들 때는 발행일을 함께 적는다."),
+      p("가정하고 쓴 부분이 있다면 표시해야 한다는 지침이 있다."),
+      p("이 수치는 확인 필요 없이 공시로 확정된다."),
+      p("취재 중 메모를 남기는 방법을 설명한다."),
+    ];
+    expect(stripLeftoverBlocks(blocks).blocks).toEqual(blocks);
+  });
+  it("기사 6번 재저장 모양 — 요약·본문은 두고 남은 [확인 필요]·가정 문단 2개만 지운다", () => {
+    const blocks = [{ type: "key_summary" }, p("서울에서 재개발 등 정비사업이 진행 중인 곳은 496개 구역이다."), p("본문 둘"), { type: "table" }, p("[확인 필요] 1. 대조 필요"), p("가정하고 쓴 부분 - 관측이다")];
+    const r = stripLeftoverBlocks(blocks);
+    expect(r.indexes).toEqual([4, 5]);
+    expect(r.blocks).toHaveLength(4);
+  });
+});
