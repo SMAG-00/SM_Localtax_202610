@@ -54,8 +54,8 @@ describe("moreOpenReason — 더 보기를 펼치는 이유", () => {
     expect(moreOpenReason({ ...base, section: "tax", legalBasisDate: "2026-10-01" }, {})).toBe("filled:meta-legal-basis-date");
   });
 
-  test("지자체뉴스 분야는 지역 태그·편집 분야·공익적 질문이 필요하므로 펼친다", () => {
-    expect(moreOpenReason({ ...base, section: "local" }, {})).toBe("required:region");
+  test("지자체뉴스도 지역 칸은 선택 입력이라 비어 있으면 접어 둔다 (2026-11-18 PO 결정)", () => {
+    expect(moreOpenReason({ ...base, section: "local" }, {})).toBeNull();
   });
 
   test("저장 오류가 '더 보기' 안의 칸을 가리키면 값이 비어 있어도 펼친다", () => {

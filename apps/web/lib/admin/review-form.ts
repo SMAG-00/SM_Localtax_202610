@@ -31,8 +31,9 @@ export function deskChecksFor(reportingMethod: string | null, regional = false):
 }
 
 /** 지역 기사 — 지역 태그가 있거나 지자체뉴스, 광고·협찬 제외 (발행 판정 isRegionalArticle·DB 트리거와 같다) */
-export function isRegionalRow(row: { content_type: string | null; region_codes: readonly string[]; section: string }): boolean {
-  return row.content_type !== "sponsored" && (row.region_codes.length > 0 || row.section === "local");
+export function isRegionalRow(_row: { content_type: string | null; region_codes: readonly string[]; section: string }): boolean {
+  // 2026-11-18 PO 결정: 지역 기사 판정(REG1-17)을 쓰지 않는다 — 지자체뉴스도 일반 기사와 같은 편집 승인·발행 길이다
+  return false;
 }
 
 /** 편집 승인 API 422의 errors("칸: 문장") → 폼 칸 오류 — checklist.<키>는 확인 항목 칸, 나머지는 null(실패 문장으로) */

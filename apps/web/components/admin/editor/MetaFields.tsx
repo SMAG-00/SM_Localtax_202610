@@ -233,7 +233,7 @@ export function MetaFields({
               </div>
             </FieldGroup>
           )}
-          <FieldGroup legend="지역" hint="지역 태그를 달면 편집 분야와 공익적 질문을 함께 적습니다 — 지자체뉴스 기사는 지역 태그가 있어야 새로 발행됩니다 (REG1-17)">
+          <FieldGroup legend="지역" hint="선택 입력입니다 — 지자체뉴스도 비워 두고 발행할 수 있습니다">
             <div className="grid gap-4 sm:grid-cols-2">
               <TextField
                 id="meta-region-codes"

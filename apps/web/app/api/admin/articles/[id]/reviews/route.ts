@@ -94,7 +94,7 @@ export const POST = handle(async (request: Request, { params }: Ctx) => {
   if (resourceDenied) return resourceDenied;
   if (article.status === "deleted") return errorJson(409, "삭제된 기사는 검토할 수 없습니다");
   // 지역 기사 편집 승인 (REG1-17 — W4 7단계): 근거·관계·광고 독립성 3항목 확인, 광고·협찬 계약 제휴사를 다룬 원고는 이해관계 표시 (DB 트리거도 막는다)
-  if (kind === "desk_edit" && decision === "approve" && article.content_type !== "sponsored" && (article.region_codes.length > 0 || article.section === "local")) {
+  if (kind === "desk_edit" && decision === "approve" && isRegionalRow(article)) {
     const errors = regionalChecklistErrors(stored);
     const covered = article.covered_partner_ids ?? [];
     if (covered.length > 0 && !(article.interest_disclosure ?? "").trim()) {

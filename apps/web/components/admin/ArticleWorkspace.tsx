@@ -28,7 +28,6 @@ import type { CheckItem } from "@/lib/admin/review-form";
 import { CheckPanel } from "./CheckPanel";
 import { EvidencePanel } from "./EvidencePanel";
 import { ErrorSummary, StatusNote, TextAreaField } from "./fields";
-import { RegionalJudgePanel } from "./RegionalJudgePanel";
 import { SourcesPanel } from "./SourcesPanel";
 import { SubmitForReview } from "./SubmitForReview";
 import { Panel, TEXT_LINK } from "./ui";
@@ -187,17 +186,6 @@ export function ArticleWorkspace({
   const interviewIds = view.evidence.filter((e) => e.interview !== null).map((e) => e.id);
   const fixReason = published ? suggestedFixReason(loaded, state) : "";
 
-  const regionalPanel = view.regional.state !== "not_regional" && (
-    <Panel id="regional" title="지역 기사 판정" description="지역 태그 기사는 편집 분야·공익적 질문, 축제·명소·상권 소재는 관계 유형과 근거가 있어야 기사 후보가 됩니다 (REG1-17).">
-      <RegionalJudgePanel
-        articleId={view.article.id}
-        regional={view.regional}
-        judgement={view.article.editorialJudgement}
-        judgedAt={view.article.judgedAt}
-        canJudge={perms.canJudgeRegional === true}
-      />
-    </Panel>
-  );
   const canPublishNow = !published && perms.canPublish && view.article.status !== "deleted";
   // 체크하지 않은 확인 항목은 '발행 전에 고칠 것'에 한 문장으로 더한다
   const unchecked = uncheckedConfirms(publishConfirms, confirms);
@@ -344,8 +332,6 @@ export function ArticleWorkspace({
         {savePanel}
 
         <MoreSections>
-          {regionalPanel}
-
           <Panel id="claims" title="핵심 주장" description="결론 문장을 표시하고 근거(출처·취재 근거)를 잇습니다. 근거 없는 핵심 주장은 발행되지 않습니다.">
             <ClaimsEditor state={state} update={update} errors={errors} readOnly={readOnly} refs={refs} makeKey={makeKey} />
           </Panel>

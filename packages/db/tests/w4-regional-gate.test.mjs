@@ -1,4 +1,5 @@
-// W4 7단계 DB — 지역 기사 편집 게이트 (docs/dev/W4_설계.md 1장 7단계 · 2.1 · 2.2 · 3장 · 12장 #7·#30, 마이그레이션 20261022000043 · PRD-01B REG1-17)
+// W4 7단계 DB — 지역 기사 편집 게이트 (발행·승인 트리거는 2026-11-18 PO 결정으로 마이그레이션 20261118000243이 지웠다 — 아래 시험이 그 상태를 지킨다)
+// 원래 설명: 지역 기사 편집 게이트 (docs/dev/W4_설계.md 1장 7단계 · 2.1 · 2.2 · 3장 · 12장 #7·#30, 마이그레이션 20261022000043 · PRD-01B REG1-17)
 //  · 값 목록 — 소재 4·관계 유형 6·판정 4 = 설계 2.1 글자(DB check) · 설정 씨앗 regional_judge_fields = 2.2(편집 분야 4종), 저장 검사
 //  · 발행 트리거 — 지자체뉴스 새 발행은 지역 태그 필수(이미 공개된 적 있는 기사·발행일을 넣어 오는 이관 행은 그대로) ·
 //    지역 태그 기사(sponsored 제외)는 편집 분야·공익적 질문 · 판정 책임자 없는 분야 보류 · 비보도 판정 + 보도·해설 거부(공개 중 판정도 거부) ·
@@ -129,133 +130,26 @@ test("판정 책임자 설정 — 편집 분야 0~4개 목록만 (목록 밖·�
     for (const good of [[], ["local_tax"], JUDGE_SEED]) assert.ok((await attempt("update public.settings set value = $1::jsonb where key = 'regional_judge_fields'", [JSON.stringify(good)])).ok, JSON.stringify(good));
   }));
 
-test("지자체뉴스 지역 태그 (W2-b #17 · 12장 #30) — 새 발행·예약은 태그 필수, 이미 공개된 적 있는 기사·이관 행은 그대로", () =>
+test("지역 기사 게이트 트리거는 걷어냈다 (마이그레이션 20261118000243, 2026-11-18 PO 결정) — 태그·편집 분야·승인 3항목 없이도 발행·승인된다", () =>
   tx(async () => {
+    const gone = await client.query("select tgname from pg_trigger where tgname in ('articles_regional_gate', 'editorial_reviews_regional_guard')");
+    assert.deepEqual(gone.rows, [], "발행·승인 트리거가 없어야 한다");
+    // 설정값 모양 검사 트리거는 남는다 (regional_judge_fields)
+    const kept = await client.query("select tgname from pg_trigger where tgname = 'settings_regional_guard'");
+    assert.equal(kept.rows.length, 1);
+    // 지역 태그·편집 분야·공익적 질문이 모두 빈 지자체뉴스도 새로 발행된다
     const noTag = await draft({ region_codes: [], editorial_field: null, public_question: null });
     const r = await publish(noTag.id);
-    assert.equal(r.ok, false);
-    assert.match(r.message, /지역 태그\(regionCodes\)가 있어야 새로 발행/);
-    const scheduled = await attempt("update public.articles set status = 'scheduled', publish_at = now() + interval '1 day' where id = $1", [noTag.id]);
-    assert.equal(scheduled.ok, false, "예약도 새 발행");
-    const directInsert = await tryInsert("articles", { slug: uniq("w4rg"), title: "t", section: "local", content_type: "explainer", status: "published" });
-    assert.equal(directInsert.ok, false, "발행 상태로 바로 넣는 새 행도 거부(한쪽만 우회한 삽입도 실패)");
-    // 지역 태그가 있으면 발행된다
-    const tagged = await draft();
-    assert.equal((await publish(tagged.id)).ok, true);
-    // 이미 공개된 적 있는 기사(first_published_at 있음) — 보류 → 다시 공개는 태그 없이도 된다
-    const old = await draft({ region_codes: [], editorial_field: null, public_question: null, status: "held", first_published_at: new Date(Date.now() - 86_400_000 * 30) });
-    assert.equal((await publish(old.id)).ok, true, "이미 공개된 기사 유지");
-    // 이관 — 발행일을 넣어 오는 공개 행은 이미 공개된 기사
-    const imported = await tryInsert("articles", { slug: uniq("w4rg"), title: "t", section: "local", content_type: "explainer", status: "published", origin: "legacy", first_published_at: "2024-03-01T00:00:00+09:00" });
-    assert.equal(imported.ok, true, imported.message);
-    // 다른 분야의 지역 태그 없는 기사는 이 규칙 밖
-    assert.equal((await publish((await draft({ section: "tax", content_type: "explainer", region_codes: [], editorial_field: null, public_question: null })).id)).ok, true);
-  }));
-
-test("지역 태그 기사 = 편집 분야 + 공익적 질문 (광고·협찬 제외), 판정 책임자 없는 분야는 보류", () =>
-  tx(async () => {
-    const noField = await draft({ editorial_field: null });
-    assert.match((await publish(noField.id)).message, /편집 분야\(editorialField/);
-    const noQuestion = await draft({ public_question: "   " });
-    assert.match((await publish(noQuestion.id)).message, /공익적 질문\(publicQuestion\)/);
-    const otherSection = await draft({ section: "realestate", editorial_field: null });
-    assert.equal((await publish(otherSection.id)).ok, false, "부동산 분야라도 지역 태그가 있으면 같은 규칙");
-    const ad = await draft({ content_type: "sponsored", label: "ad", editorial_field: null, public_question: null });
-    assert.equal((await publish(ad.id)).ok, true, "광고·협찬은 편집 분야 게이트 밖");
-    // 판정 책임자 목록에서 지방재정을 빼면 그 분야의 지역 기사 보류
-    await client.query("update public.settings set value = '[\"local_tax\", \"realestate\"]'::jsonb where key = 'regional_judge_fields'");
-    const held = await draft({ editorial_field: "local_finance" });
-    const r = await publish(held.id);
-    assert.equal(r.ok, false);
-    assert.match(r.message, /판정 책임자가 지정되지 않아 이 지역 기사는 보류\(held\)/);
-    assert.equal((await publish((await draft({ editorial_field: "local_tax" })).id)).ok, true, "목록에 있는 분야는 발행");
-  }));
-
-test("축제·명소·상권 소재 — 관계 유형 0 → 보류, 관계 1 + 근거 0(반려만 있어도) → 보류, 둘 다 → 후보 (광고·협찬 제외)", () =>
-  tx(async () => {
-    for (const subject of ["festival", "attraction", "commerce"]) {
-      const a = await draft({ subject_kind: subject });
-      assert.match((await publish(a.id)).message, /관계 유형\(relationTypes/, subject);
-    }
-    const noEvidence = await draft({ subject_kind: "festival", relation_types: ["budget"] });
-    assert.match((await publish(noEvidence.id)).message, /근거\(evidence\) 1건 이상/);
-    await insert("article_evidence", { article_id: noEvidence.id, evidence_type: "document", location: "시험용 보관함", verification_status: "rejected" });
-    assert.equal((await publish(noEvidence.id)).ok, false, "반려된 근거는 세지 않는다");
-    await insert("article_evidence", { article_id: noEvidence.id, evidence_type: "document", location: "시험용 예산서 사본 보관함" });
-    assert.equal((await publish(noEvidence.id)).ok, true, "'축제 예산의 지방재정 영향' — 관계 + 근거 = 후보");
-    const general = await draft({ subject_kind: "general" });
-    assert.equal((await publish(general.id)).ok, true, "일반 소재는 관계 유형을 보지 않는다");
-    const ad = await draft({ subject_kind: "festival", content_type: "sponsored", label: "ad" });
-    assert.equal((await publish(ad.id)).ok, true, "광고·협찬은 소재 게이트 밖");
-    // 값 모양
-    assert.equal((await tryInsert("articles", { slug: uniq("w4rg"), title: "t", section: "local", content_type: "explainer", subject_kind: "tour" })).code, "23514");
-    assert.equal((await tryInsert("articles", { slug: uniq("w4rg"), title: "t", section: "local", content_type: "explainer", relation_types: ["tourism"] })).code, "23514");
-    const dup = await tryInsert("articles", { slug: uniq("w4rg"), title: "t", section: "local", content_type: "explainer", relation_types: ["budget", "budget"] });
-    assert.match(dup.message, /같은 값이 두 번/);
-  }));
-
-test("편집자 판정 — 여행 후기·맛집 추천·행사 홍보 + 보도·해설 발행 거부, 공개 중 판정 거부, 판정자·시각 필수", () =>
-  tx(async () => {
-    const judged = { judged_by: "user:w4rg-test", judged_at: new Date() };
-    for (const j of ["travel_review", "restaurant_pick", "event_promo"]) {
-      const news = await draft({ editorial_judgement: j, ...judged });
-      assert.match((await publish(news.id)).message, /보도기사·해설로 발행할 수 없습니다/, j);
-    }
-    const explainer = await draft({ content_type: "explainer", editorial_judgement: "travel_review", ...judged });
-    assert.equal((await publish(explainer.id)).ok, false);
-    const guide = await draft({ content_type: "guide", editorial_judgement: "event_promo", ...judged });
-    // 8단계 — 비보도 판정 원고는 별도 상품 검토 큐에 열린 항목이 생겨 어떤 유형이든 공개되지 않는다. 검토를 닫으면 가이드는 ④ 규칙 밖이라 발행된다
-    assert.match((await publish(guide.id)).message, /별도 상품 검토 큐에 열린 항목/, "큐가 열려 있으면 가이드도 공개 0");
-    await client.query("update public.separate_product_queue set status = 'closed', closed_by = 'user:w4rg-test', closed_at = now(), note = '가이드로 유지' where article_id = $1 and status = 'open'", [guide.id]);
-    assert.equal((await publish(guide.id)).ok, true, "가이드는 이 규칙 밖");
-    const candidate = await draft({ editorial_judgement: "news_candidate", ...judged });
-    assert.equal((await publish(candidate.id)).ok, true);
-    // 공개 중인 보도기사를 비보도로 판정 — 거부(먼저 내린다)
-    const onAir = await attempt("update public.articles set editorial_judgement = 'restaurant_pick' where id = $1", [candidate.id]);
-    assert.equal(onAir.ok, false);
-    assert.match(onAir.message, /먼저 내린 뒤 판정하세요/);
-    // 판정자·시각 없는 판정·판정 없이 판정자만 — 거부
-    assert.equal((await tryInsert("articles", { slug: uniq("w4rg"), title: "t", section: "local", content_type: "explainer", editorial_judgement: "news_candidate" })).code, "23514");
-    assert.equal((await tryInsert("articles", { slug: uniq("w4rg"), title: "t", section: "local", content_type: "explainer", judged_by: "user:x", judged_at: new Date() })).code, "23514");
-  }));
-
-test("편집 승인 — 지역 기사 desk_edit approve는 3항목 모두 true, 지역 기사가 아닌 기사·광고·반려·보류는 이 규칙 밖", () =>
-  tx(async () => {
-    const a = await draft();
-    for (const key of CHECKLIST) {
-      const partial = Object.fromEntries(CHECKLIST.filter((k) => k !== key).map((k) => [k, true]));
-      const r = await approve(a.id, partial);
-      assert.equal(r.ok, false, key);
-      assert.match(r.message, new RegExp(`빠진 항목: .*\\(${key}\\)`));
-    }
-    assert.equal((await approve(a.id, { ...FULL, evidence: "true" })).ok, false, "글자 'true'는 확인이 아니다");
-    assert.equal((await approve(a.id, FULL)).ok, true);
-    const untagged = await draft({ region_codes: [], editorial_field: null, public_question: null });
-    assert.equal((await approve(untagged.id, {})).ok, false, "지자체뉴스는 태그가 없어도 지역 기사");
-    const tax = await draft({ section: "tax", content_type: "explainer", region_codes: [] });
-    assert.equal((await approve(tax.id, {})).ok, true, "지역 기사가 아니면 3항목을 보지 않는다");
-    const ad = await draft({ content_type: "sponsored", label: "ad" });
-    assert.equal((await approve(ad.id, {})).ok, true, "광고·협찬 제외");
-    const editor = await person();
-    assert.equal((await tryInsert("editorial_reviews", { article_id: a.id, kind: "desk_edit", reviewer_id: editor.id, decision: "hold", reason: "보류", checklist: "{}" })).ok, true, "보류는 이 규칙 밖");
-  }));
-
-test("광고·협찬 계약 기록이 있는 제휴사를 다룬 원고 — 이해관계 표시 없이 승인 거부, 계약 기록 없는 제휴사·표시가 있으면 승인 · 없는 제휴사 번호 거부", () =>
-  tx(async () => {
-    const contracted = await insert("partners", { name: "시험용 가상상회", kind: "local_business", contract_from: "2026-01-01" });
-    const plain = await insert("partners", { name: "시험용 가상기관", kind: "institution" });
-    const a = await draft({ covered_partner_ids: [contracted.id] });
-    const r = await approve(a.id, FULL);
-    assert.equal(r.ok, false);
-    assert.match(r.message, /시험용 가상상회.*이해관계 표시\(interestDisclosure\)/);
-    await client.query("update public.articles set interest_disclosure = '시험용 가상상회는 이 매체의 광고주입니다' where id = $1", [a.id]);
-    assert.equal((await approve(a.id, FULL)).ok, true);
-    const b = await draft({ covered_partner_ids: [plain.id] });
-    assert.equal((await approve(b.id, FULL)).ok, true, "계약 기록이 없으면 표시를 요구하지 않는다");
-    const missing = await tryInsert("articles", { slug: uniq("w4rg"), title: "t", section: "local", content_type: "explainer", covered_partner_ids: [999999999] });
-    assert.match(missing.message, /없는 제휴사 번호/);
-    const twice = await tryInsert("articles", { slug: uniq("w4rg"), title: "t", section: "local", content_type: "explainer", covered_partner_ids: [plain.id, plain.id] });
-    assert.match(twice.message, /두 번/);
+    assert.equal(r.ok, true, r.message);
+    // 지자체뉴스를 승인 3항목 없이 편집 승인해도 된다
+    const other = await draft({ region_codes: [], editorial_field: null, public_question: null });
+    assert.equal((await approve(other.id, {})).ok, true, "승인 3항목 없이도 승인");
+    // 축제 소재 + 관계 0 + 근거 0도 발행된다
+    const festival = await draft({ subject_kind: "festival", relation_types: [] });
+    assert.equal((await publish(festival.id)).ok, true, "관계 유형·근거 없이도 발행");
+    // 판정 책임자가 없는 분야, 여행 후기 판정 + 보도기사도 발행된다
+    const travel = await draft({ editorial_judgement: "travel_review", judged_by: "user:x", judged_at: new Date() });
+    assert.equal((await publish(travel.id)).ok, true, "비보도 판정도 막지 않는다");
   }));
 
 test("기획 값 목록 — subject_kind·relation_types는 새 값부터 검사, 함수 실행 권한 0", () =>

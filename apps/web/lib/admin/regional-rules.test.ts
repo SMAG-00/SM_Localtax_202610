@@ -76,11 +76,10 @@ describe("편집 승인 폼 — 지역 기사 3항목 (REG1-17)", () => {
     const missing = reviewPayload({ kind: "desk_edit", decision: "approve", reason: "", checks: { ...checks, relation: false } }, "qualitative", true);
     expect(missing).toEqual({ ok: false, errors: { "review-desk_edit-checks": "확인 항목을 모두 체크해야 승인할 수 있습니다" } });
   });
-  test("지역 기사 판정 = 지역 태그 또는 지자체뉴스, 광고·협찬 제외", () => {
-    expect(isRegionalRow({ content_type: "reported_news", region_codes: [], section: "local" })).toBe(true);
-    expect(isRegionalRow({ content_type: "explainer", region_codes: ["1100000000"], section: "tax" })).toBe(true);
+  test("지역 기사 판정을 쓰지 않는다 — 지역 태그·지자체뉴스여도 일반 기사와 같다 (2026-11-18 PO 결정)", () => {
+    expect(isRegionalRow({ content_type: "reported_news", region_codes: [], section: "local" })).toBe(false);
+    expect(isRegionalRow({ content_type: "explainer", region_codes: ["1100000000"], section: "tax" })).toBe(false);
     expect(isRegionalRow({ content_type: "sponsored", region_codes: ["1100000000"], section: "local" })).toBe(false);
-    expect(isRegionalRow({ content_type: "explainer", region_codes: [], section: "tax" })).toBe(false);
   });
   test("편집 승인 API 422 — checklist.<키>는 확인 항목 칸 오류, 이해관계 표시는 실패 문장", () => {
     expect(

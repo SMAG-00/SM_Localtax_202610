@@ -208,36 +208,17 @@ test("열린 큐 항목 원고는 어떤 유형으로도 공개 0 — 공개 뷰
     assert.match(direct.message, /별도 상품 검토 큐로 보낼 수 없습니다/);
   }));
 
-test("단계 순서 — 지역 기사 초안·검토 중·보류 → 공개 거부, 편집 승인 없이 승인 거부, 세무 감수 반려 → 승인 거부, 승인 → 공개 통과", () =>
+test("단계 순서 — 지역 기사 판정을 걷어냈다 (마이그레이션 20261118000243, 2026-11-18 PO 결정): 지자체뉴스도 일반 기사와 같다", () =>
   tx(async () => {
     const a = await draft();
-    for (const to of ["published", "scheduled"]) {
-      const r = await setStatus(a.id, to, to === "scheduled" ? ", publish_at = now() + interval '1 day'" : "");
-      assert.equal(r.ok, false, to);
-      assert.match(r.message, /승인 단계를 거쳐야 공개합니다 — 지금 상태\(draft\)/);
-    }
-    assert.ok((await setStatus(a.id, "in_review")).ok, "초안 → 검토 중(취재 검증)");
-    assert.match((await setStatus(a.id, "published")).message, /지금 상태\(in_review\)/);
-    const skip = await setStatus(a.id, "approved");
-    assert.equal(skip.ok, false);
-    assert.match(skip.message, /편집 승인 기록 없이 승인 단계로 갈 수 없습니다/);
-    assert.equal((await review(a.id, "desk_edit", "approve")).ok, true);
-    assert.equal((await one("select editorial_status from public.articles where id = $1", [a.id])).editorial_status, "approved");
-    assert.ok((await setStatus(a.id, "approved")).ok, "편집 승인 뒤 승인");
+    assert.equal((await one("select public.is_regional_article(a) r from public.articles a where a.id = $1", [a.id])).r, false, "지역 태그·지자체뉴스여도 지역 기사가 아니다");
     const pub = await setStatus(a.id, "published");
     assert.equal(pub.ok, true, pub.message);
     assert.ok(pub.rows[0].first_published_at, "발행일 기록");
-    // 편집 보류(held) 상태에서 바로 공개 0
-    const held = await draft();
-    assert.ok((await review(held.id, "desk_edit", "hold")).ok);
-    assert.ok((await setStatus(held.id, "held")).ok);
-    assert.match((await setStatus(held.id, "published")).message, /지금 상태\(held\)/);
-    // 세무 감수 반려 → 승인 거부 (편집 승인이 있어도)
-    const taxed = await draft({ content_type: "explainer" });
-    assert.ok((await review(taxed.id, "desk_edit", "approve")).ok);
-    assert.ok((await review(taxed.id, "tax_review", "reject")).ok);
-    assert.equal((await one("select tax_review_status from public.articles where id = $1", [taxed.id])).tax_review_status, "rejected");
-    assert.match((await setStatus(taxed.id, "approved")).message, /세무 감수가 반려·보류된 원고는 승인 단계로 갈 수 없습니다/);
+    // 승인 단계를 건너뛴 예약도 막지 않는다
+    const b = await draft();
+    const sched = await setStatus(b.id, "scheduled", ", publish_at = now() + interval '1 day'");
+    assert.equal(sched.ok, true, sched.message);
   }));
 
 test("단계 순서 밖 — 지역 기사 아님·광고·협찬·이미 공개된 기사의 다시 공개·새 행 넣기(이관·시드)", () =>
@@ -250,9 +231,6 @@ test("단계 순서 밖 — 지역 기사 아님·광고·협찬·이미 공개�
     assert.ok((await setStatus(republish.id, "published")).ok, "이미 공개된 기사의 다시 공개");
     const seeded = await tryInsert("articles", { slug: uniq("w4rq"), title: "t", section: "local", content_type: "explainer", status: "published", region_codes: [SEOUL], editorial_field: "local_tax", public_question: Q });
     assert.equal(seeded.ok, true, seeded.message);
-    // 지역 태그를 같은 고치기에서 지워 우회해도 거부 (고치기 전·뒤 중 하나라도 지역 기사면 본다)
-    const dodge = await draft({ section: "realestate" });
-    assert.match((await attempt("update public.articles set status = 'published', region_codes = '{}', editorial_field = null, public_question = null where id = $1", [dodge.id])).message, /승인 단계를 거쳐야/);
   }));
 
 test("AI 초안 역할 ai_drafter — 로그인 0·RLS 우회 0·public 표 쓰기 권한 0, articles·article_sources 쓰기는 권한을 잘못 줘도 RLS가 거부", () =>

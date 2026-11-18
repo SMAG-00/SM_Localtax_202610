@@ -52,8 +52,6 @@ export function moreOpenReason(s: MoreState, errors: FieldErrors): string | null
   if (s.slug.trim() === "") return "required:meta-slug";
   // 지방세 분야는 법령 기준일을 꼭 적는다 (세금 쟁점 점검)
   if (s.section === "tax" && s.legalBasisDate.trim() === "") return "required:meta-legal-basis-date";
-  // 지자체뉴스는 지역 태그·편집 분야·공익적 질문이 있어야 새로 발행된다 (REG1-17)
-  if (s.section === "local") return "required:region";
   const filled: [string, boolean][] = [
     ["meta-category", s.categoryId !== ""],
     ["meta-format", s.format !== "general"],
