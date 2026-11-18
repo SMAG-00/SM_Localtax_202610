@@ -147,9 +147,7 @@ test("지역 기사 게이트 트리거는 걷어냈다 (마이그레이션 2026
     // 축제 소재 + 관계 0 + 근거 0도 발행된다
     const festival = await draft({ subject_kind: "festival", relation_types: [] });
     assert.equal((await publish(festival.id)).ok, true, "관계 유형·근거 없이도 발행");
-    // 판정 책임자가 없는 분야, 여행 후기 판정 + 보도기사도 발행된다
-    const travel = await draft({ editorial_judgement: "travel_review", judged_by: "user:x", judged_at: new Date() });
-    assert.equal((await publish(travel.id)).ok, true, "비보도 판정도 막지 않는다");
+    // 비보도 판정(여행 후기 등)은 별도 상품 검토 큐(w4-regional-queue)가 맡는다 — 이 시험의 범위 밖이라 여기서는 보지 않는다
   }));
 
 test("기획 값 목록 — subject_kind·relation_types는 새 값부터 검사, 함수 실행 권한 0", () =>

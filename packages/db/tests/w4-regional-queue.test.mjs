@@ -178,7 +178,7 @@ test("열린 큐 항목 원고는 어떤 유형으로도 공개 0 — 공개 뷰
     const queued = await draft({ editorial_judgement: "travel_review", ...JUDGED });
     const r = await publishByStages(queued.id);
     assert.equal(r.ok, false);
-    assert.match(r.message, /보도기사·해설로 발행할 수 없습니다/, "보도기사는 7단계 문장이 먼저");
+    assert.match(r.message, /별도 상품 검토 큐에 열린 항목/, "7단계 트리거를 걷어냈으므로 보도기사도 큐 문장으로 막힌다");
     const guide = await draft({ content_type: "guide", editorial_judgement: "event_promo", ...JUDGED });
     const g = await publishByStages(guide.id);
     assert.equal(g.ok, false, "가이드도 큐에 열려 있으면 공개 0");
