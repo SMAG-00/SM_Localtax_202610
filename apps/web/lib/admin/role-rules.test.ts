@@ -42,8 +42,8 @@ describe("부여할 수 있는 역할 목록", () => {
       else expect(c.blockedReason).toBeNull();
     }
   });
-  test("역할 없는 계정 — 7종 모두 막힘 없음", () => {
+  test("역할 없는 계정 — 8종 모두 막힘 없음 (편집위원 포함)", () => {
     expect(grantChoices([]).every((c) => c.blockedReason === null)).toBe(true);
-    expect(grantChoices([]).length).toBe(7);
+    expect(grantChoices([]).length).toBe(8);
   });
 });

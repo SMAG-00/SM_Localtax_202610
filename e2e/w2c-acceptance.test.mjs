@@ -57,7 +57,7 @@ function lineOf(doc, marker) {
 }
 /** analytics_events 칸 — 설계 3장 'PRD-01A 6.1 그대로 14개' */
 const PRD_COLUMNS = ticks(lineOf(DESIGN, "그대로 14개다").split("14개다:")[1]);
-/** 편집국 역할 7종 — 권한 표가 빠짐없이 도는지 (lib/access.ts STAFF_ROLES) */
+/** 서비스 역할 8종 — 권한 표가 빠짐없이 도는지 (lib/access.ts STAFF_ROLES) */
 const STAFF_ROLES = ticks(read("apps", "web", "lib", "access.ts").match(/STAFF_ROLES = \[([^\]]+)\]/)[1].replaceAll('"', "`"));
 
 let sb, server, serverEnv, staff, db, browser, base, debugPort;
@@ -617,6 +617,7 @@ before(async () => {
   u.storeOps = await staff.createUser({ label: "w2c-store", roles: ["store_ops"] });
   u.brandOps = await staff.createUser({ label: "w2c-brand", roles: ["brand_ops"] });
   u.expertOps = await staff.createUser({ label: "w2c-expert", roles: ["expert_ops"] });
+  u.editorialBoard = await staff.createUser({ label: "w2c-editorial-board", roles: ["editorial_board"] });
   fx.interpretations = Number((await one("select id from public.categories where section = 'tax' and slug = 'interpretations'")).id);
 
   // 이미지 기록 — 16:9·4:3 썸네일, 가로·세로 사진, 표기가 빠진 사진 3종, 인포그래픽 그림 (이미지 등록 API는 아직 없다 — DB에 직접)
@@ -1471,7 +1472,7 @@ test("10c) NAV-13 저장소 검사 — 코드·설정 기본값·마이그레이
 
 // ── 11~13) 권한 · 360px · 접근성 ────────────────────────
 
-test("11) 권한 표 — /admin/metrics는 관리자만, /admin/news-readiness·규정 화면·규정 API는 편집 책임자·관리자만: 나머지 편집국 역할 6종은 화면 403·API 403(새 버전 거부는 감사 로그)·메뉴 0, 로그인 안 하면 로그인 화면·401", async () => {
+test("11) 권한 표 — /admin/metrics는 관리자만, /admin/news-readiness·규정 화면·규정 API는 편집 책임자·관리자만: 나머지 역할 7종(편집위원 포함)은 화면 403·API 403(새 버전 거부는 감사 로그)·메뉴 0, 로그인 안 하면 로그인 화면·401", async () => {
   const roles = [
     ["reporter", u.reporter],
     ["editor", u.editor],
@@ -1480,8 +1481,9 @@ test("11) 권한 표 — /admin/metrics는 관리자만, /admin/news-readiness·
     ["store_ops", u.storeOps],
     ["brand_ops", u.brandOps],
     ["expert_ops", u.expertOps],
+    ["editorial_board", u.editorialBoard],
   ];
-  assert.deepEqual(roles.map(([r]) => r), STAFF_ROLES, "편집국 역할 7종 모두 (lib/access.ts)");
+  assert.deepEqual(roles.map(([r]) => r), STAFF_ROLES, "서비스 역할 8종 모두 (lib/access.ts — 편집위원 포함)");
   const ALLOWED = { "/admin/metrics": ["admin"], "/admin/news-readiness": ["editor", "admin"], "/admin/news-readiness/requirements": ["editor", "admin"] };
   const matrix = {};
   for (const [role, user] of [...roles, ["admin", u.admin]]) {

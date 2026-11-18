@@ -89,6 +89,20 @@ describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
     expect(all.indexOf("/columns")).toBe(all.indexOf("/local") + 1);
   });
 
+  it("편집위원(로그인한 편집위원·관리자에게만 넘어오는 키)은 세금계산기 바로 왼쪽 — /editorial (PO 2026-11-18)", () => {
+    render(<Header menu={["calc", "editorial", "columns", "law_updates", "popular", "expert_request"]} />);
+    const nav = screen.getByRole("navigation", { name: "바로 메뉴" });
+    expect(pairs(within(nav).getAllByRole("link")).slice(-2)).toEqual([
+      ["편집위원", "/editorial"],
+      ["세금계산기", "/calc"],
+    ]);
+  });
+
+  it("편집위원 키를 넘기지 않으면(로그인 안 함·권한 없음) 편집위원 링크 요소 0", () => {
+    render(<Header menu={["calc", "expert_request", "columns", "law_updates", "popular"]} />);
+    expect(screen.queryByRole("link", { name: "편집위원" })).toBeNull();
+  });
+
   it("전문가칼럼이 꺼져 있으면 구분선 앞 목록이 없고, 나머지만 구분선 뒤에", () => {
     render(<Header menu={["popular", "calc"]} />);
     const nav = screen.getByRole("navigation", { name: "바로 메뉴" });

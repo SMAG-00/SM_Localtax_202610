@@ -264,7 +264,7 @@ test("설계 문서 2장의 값 목록을 모두 읽었다 (시험 대상이 빠
   const listed = new Set(TARGETS.map((t) => t.list));
   for (const name of LISTS.keys()) assert.ok(listed.has(name), `값 목록 '${name}'을 시험하지 않는다`);
   assert.equal(LISTS.get("section").length, 4);
-  assert.equal(LISTS.get("staff_roles.role").length, 7);
+  assert.equal(LISTS.get("staff_roles.role").length, 8); // 편집위원(editorial_board) 더함 — PO 2026-11-18
   assert.equal(LISTS.get("개정").length, 6);
   assert.deepEqual(LISTS.get("media.rights_status"), ["unconfirmed", "confirmed", "rejected"]);
   assert.deepEqual(LISTS.get("articles.tax_review_status"), ["not_required", "pending", "approved", "rejected", "held"]);

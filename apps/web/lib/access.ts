@@ -9,8 +9,8 @@
 //  · 상황 카드(UX-05)는 기자·편집 책임자·관리자가 쓰고, 공개·허브 배치는 편집 책임자만 한다 (PRD-00 6장 'CMS 작성·상황 카드' 행 · 발행 승인·홈 배치는 editor).
 //  · 편집국 외 역할(ad_ops·store_ops·brand_ops·expert_ops)은 기사 작성·승인·정렬 권한이 없다. ad_ops는 sponsored 콘텐츠만 등록한다.
 
-/** staff_roles.role 7종 (W2-a 설계 §2) */
-export const STAFF_ROLES = ["reporter", "editor", "reviewer", "ad_ops", "store_ops", "brand_ops", "expert_ops"] as const;
+/** staff_roles.role 8종 (W2-a 설계 §2). editorial_board(편집위원)는 편집국 밖의 별도 역할 — 기사 제작 요청·결과물 열람만 (PO 2026-11-18) */
+export const STAFF_ROLES = ["reporter", "editor", "reviewer", "ad_ops", "store_ops", "brand_ops", "expert_ops", "editorial_board"] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
 
 /** 편집국 — 기자 · 편집 책임자 · 세무 감수위원 */
@@ -152,6 +152,8 @@ export const ACTIONS = {
   "licenses.edit": "데이터 라이선스 계약 기록 (W13-i BIZ-11 - 관리자(PO)만)",
   "security_cert.edit": "정보보호 인증 추진 계획·승인 기록 (W13-j SEC-02 - 관리자(PO)만)",
   "special_law.confirm": "특례법 확인 기록 — 공포 확인·철회와 특례법 근거 행의 확인·철회 (관리자(PO)만, W4 20단계 PR-13)",
+  "editorial_desk.request": "편집위원 데스크 — 기사 제작 요청·취소 (편집위원·관리자, PO 2026-11-18)",
+  "editorial_desk.read": "편집위원 데스크 — 요청 현황·결과물 열람·내려받기 (편집위원·관리자, PO 2026-11-18)",
 } as const;
 export type Action = keyof typeof ACTIONS;
 export const ACTION_LIST = Object.keys(ACTIONS) as Action[];
@@ -403,6 +405,10 @@ export function check(viewer: Viewer, action: Action, anyResource?: Resource): D
     // 개발방법 비교 (W4 18단계 — 6장 '개발방법 입력: 편집 책임자 이상', 1인 체제면 관리자·PO). 서명은 review.tax_review(감수위원만) — 이 권한으로는 서명하지 않는다
     case "dev_method.manage":
       return has(viewer, "editor") || viewer.isAdmin ? ALLOW : deny("개발방법 비교(방법 내용·비교 항목·숫자 요건 사실 행)는 편집 책임자와 관리자만 적습니다 — 세무 감수위원은 감수 서명만 합니다 (PR-09·PR-10)");
+    // 편집위원 데스크 (PO 2026-11-18) — 편집위원(editorial_board)과 관리자만. 편집 책임자도 역할을 따로 받아야 한다
+    case "editorial_desk.request":
+    case "editorial_desk.read":
+      return has(viewer, "editorial_board") || viewer.isAdmin ? ALLOW : deny("편집위원 데스크는 편집위원과 관리자만 씁니다 — 관리자에게 편집위원 역할을 요청하세요");
     // 특례법 확인 기록 (W4 20단계 — 6장 '특례법 확인 기록: 관리자(PO)만')
     case "special_law.confirm":
       return viewer.isAdmin ? ALLOW : deny("특례법 확인 기록(공포 확인·철회, 행 확인)은 관리자(PO)만 남깁니다 (PR-13)");

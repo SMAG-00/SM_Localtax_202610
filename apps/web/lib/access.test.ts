@@ -165,6 +165,8 @@ const EXPECTED: Record<Action, readonly boolean[]> = {
   "inquiry.update": [O, O, X, O, O, X, X, O, X], // 문의 — 대상 없이는 하나라도 다룰 종류가 있는 역할 (종류별은 아래 표)
   "inquiry.contact_view": [O, O, X, O, O, X, X, O, X], // 문의 — 대상 없이는 하나라도 다룰 종류가 있는 역할 (종류별은 아래 표)
   "audit.amend": [X, X, X, X, X, X, X, X, X], // 감사 기록 수정·삭제 — 역할과 관계없이 isAuditAdmin(PO)만 (관리자도 거부)
+  "editorial_desk.request": [X, X, X, X, X, X, X, O, X], // 편집위원 데스크 (PO 2026-11-18) — 편집위원(아래 표)·관리자만. 편집 책임자도 역할을 따로 받아야 한다
+  "editorial_desk.read":    [X, X, X, X, X, X, X, O, X],
 };
 
 describe("역할 × 작업 표 (대상 없음) — PRD-00 6장", () => {
@@ -454,9 +456,30 @@ describe("sponsored와 발행 뒤 수정", () => {
   });
 });
 
+describe("편집위원(editorial_board) — 편집위원 데스크만 (PO 2026-11-18)", () => {
+  const board = viewer(["editorial_board"]);
+  test("허용 작업은 기사 제작 요청·결과물 열람 둘뿐 — 기사 작성·승인·발행·관리 화면 권한 0", () => {
+    expect(allowedActions(board).sort()).toEqual(["editorial_desk.read", "editorial_desk.request"]);
+  });
+  test("다른 역할과 함께 가지면 두 역할의 작업을 모두 한다 (기자 + 편집위원)", () => {
+    const both = viewer(["reporter", "editorial_board"]);
+    expect(can(both, "editorial_desk.request")).toBe(true);
+    expect(can(both, "article.create", article())).toBe(true);
+  });
+  test("거부 사유는 편집위원 역할을 받으라는 안내", () => {
+    const d = check(viewer(["editor"]), "editorial_desk.request");
+    expect(d.allowed).toBe(false);
+    if (!d.allowed) expect(d.reason).toContain("편집위원");
+  });
+  test("편집국 외 역할(겸직 금지 대상)에 들지 않는다", () => {
+    expect(NON_NEWSROOM_ROLES).not.toContain("editorial_board");
+  });
+});
+
 describe("역할 값", () => {
-  test("7종만 역할로 인정한다", () => {
-    expect(STAFF_ROLES).toEqual(["reporter", "editor", "reviewer", "ad_ops", "store_ops", "brand_ops", "expert_ops"]);
+  test("8종만 역할로 인정한다 (편집위원 editorial_board — PO 2026-11-18)", () => {
+    expect(STAFF_ROLES).toEqual(["reporter", "editor", "reviewer", "ad_ops", "store_ops", "brand_ops", "expert_ops", "editorial_board"]);
+    expect(isStaffRole("editorial_board")).toBe(true);
     expect(isStaffRole("editor")).toBe(true);
     expect(isStaffRole("admin")).toBe(false);
     expect(isStaffRole("Editor")).toBe(false);

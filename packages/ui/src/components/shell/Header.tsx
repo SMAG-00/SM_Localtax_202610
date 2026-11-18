@@ -26,21 +26,24 @@ export const HEADER_UTILITIES: ReadonlyArray<{ key: HeaderUtilityKey; label: str
   { key: "search", label: "검색", href: "/search" },
 ];
 
-/** 바로 메뉴 항목 키 — 분야 메뉴 오른쪽, 펼침 없는 링크 5개 (PO 2026-11-01) */
-export type HeaderMenuKey = "popular" | "law_updates" | "columns" | "expert_request" | "calc";
+/** 바로 메뉴 항목 키 — 분야 메뉴 오른쪽, 펼침 없는 링크 5개 (PO 2026-11-01) + 로그인한 편집위원·관리자에게만 '편집위원' (PO 2026-11-18) */
+export type HeaderMenuKey = "popular" | "law_updates" | "columns" | "expert_request" | "editorial" | "calc";
 
 /**
  * 바로 메뉴 — 분야 메뉴(4대 분야, 펼침 있음) 오른쪽에 링크 5개, 이 순서 (PO 2026-11-01 — 기존 매체 사이트 머리글처럼 자주 찾는 곳을 한 줄에).
  * `lead` 항목(전문가칼럼)은 구분선 앞, 지자체뉴스 바로 옆에 둔다 (PO 2026-11-01). 전문가상담 아래에는 전문가 소개가 펼침으로 붙는다(Header).
  * 홈 바로가기와 같은 기능 키(shortcuts)로 켜진다. 도착 화면이 아직 닫혀 있으면 404가 아니라 '준비 중' 안내를 보여 준다(각 도착 page).
  */
-export const HEADER_MENU: ReadonlyArray<{ key: HeaderMenuKey; label: string; href: string; lead?: true }> = [
+export const HEADER_MENU: ReadonlyArray<{ key: HeaderMenuKey; label: string; href: string; lead?: true; signedIn?: true }> = [
   { key: "columns", label: "전문가칼럼", href: "/columns", lead: true },
   // 최신인기글 = 많이 본 기사 목록 (홈 최신 인기글과 같은 순위)
   { key: "popular", label: "최신인기글", href: "/news/popular" },
   // 최신법령·유권해석 = 지방세 하위 분야 목록 (PO 2026-11-01 — 주간 브리핑 호 대신 일반 기사로 올리고 이 하위 분야를 고른다)
   { key: "law_updates", label: "최신법령·유권해석", href: "/tax/law-updates" },
   { key: "expert_request", label: "전문가상담", href: "/experts/request" },
+  // 편집위원 데스크 (PO 2026-11-18) — 세금계산기 바로 왼쪽. `signedIn` 항목은 공개 화면 틀(기능 키 shortcuts)이 넣지 않고,
+  // 브라우저가 로그인한 사람의 권한(편집위원·관리자)을 확인한 뒤에만 더한다(apps/web SiteHeader) — 다른 방문자에게는 요소 0
+  { key: "editorial", label: "편집위원", href: "/editorial", signedIn: true },
   { key: "calc", label: "세금계산기", href: "/calc" },
 ];
 

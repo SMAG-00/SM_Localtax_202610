@@ -29,7 +29,7 @@ PRD-01A 9장 W2-a를 구현할 때 DB(packages/db)·발행 판정(packages/edito
 | editorial_reviews.decision | `approve` · `reject` · `hold` |
 | article_corrections.kind | `correction` · `rebuttal` · `follow_up` · `deletion` · `title_change` |
 | story_assignments.status | `idea` · `assigned` · `reporting` · `fact_check` · `review` · `published` · `held` |
-| staff_roles.role | `reporter` · `editor` · `reviewer` · `ad_ops` · `store_ops` · `brand_ops` · `expert_ops` |
+| staff_roles.role | `reporter` · `editor` · `reviewer` · `ad_ops` · `store_ops` · `brand_ops` · `expert_ops` · `editorial_board` |
 | article_evidence.rights_status (근거 권리 상태) | `unconfirmed` · `confirmed` · `restricted` |
 | media.rights_status (이미지 권리 상태) | `unconfirmed` · `confirmed` · `rejected` |
 | article_evidence.verification_status (근거 검증 상태) | `pending` · `verified` · `rejected` |

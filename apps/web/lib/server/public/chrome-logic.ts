@@ -89,7 +89,8 @@ export function buildChrome(
   });
   return {
     sections,
-    menu: features.shortcuts ? HEADER_MENU.map((m) => ({ key: m.key, label: m.label, href: m.href })) : [],
+    // 로그인 전용 항목(편집위원 — signedIn)은 공개 화면 틀에 넣지 않는다 (30초 공용 캐시 — 사람마다 다른 값을 두지 않는다). 헤더가 권한을 확인한 뒤 더한다
+    menu: features.shortcuts ? HEADER_MENU.filter((m) => !m.signedIn).map((m) => ({ key: m.key, label: m.label, href: m.href })) : [],
     utilities: UTILITY_LINKS.filter((u) => features[u.key]).map((u) => ({ key: u.key, label: u.label, href: u.href })),
     policyLinks: POLICY_LINKS.filter((p) => features[p.feature]).map((p) => ({ key: p.key, label: p.label, href: p.href })),
     footerLinks: buildFooterLinks(features),

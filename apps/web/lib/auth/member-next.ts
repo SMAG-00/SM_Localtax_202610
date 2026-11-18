@@ -1,6 +1,6 @@
-// 회원 로그인 뒤 돌아갈 주소(next) — 같은 사이트의 /my · /help · /news · /account 아래 상대 경로만 받는다. 그 밖은 /my (W2-e 4.4). 순수 함수.
+// 회원 로그인 뒤 돌아갈 주소(next) — 같은 사이트의 /my · /help · /news · /account · /editorial 아래 상대 경로만 받는다. 그 밖은 /my (W2-e 4.4). 순수 함수.
 export const MEMBER_HOME = "/my";
-const ROOTS = ["/my", "/help", "/news", "/account"] as const;
+const ROOTS = ["/my", "/help", "/news", "/account", "/editorial"] as const; // /editorial — 편집위원 데스크 (PO 2026-11-18)
 const BASE = "http://member-next.invalid";
 const CONTROL = /[\u0000-\u001f\u007f]/;
 

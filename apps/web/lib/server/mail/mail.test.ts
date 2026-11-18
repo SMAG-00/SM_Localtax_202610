@@ -70,10 +70,10 @@ describe("resolveSiteBase", () => {
 });
 
 describe("memberNextPath", () => {
-  test.each([["/my", "/my"], ["/my/settings?a=1", "/my/settings?a=1"], ["/help", "/help"], ["/news/abc", "/news/abc"], ["/account/password", "/account/password"]])("%s는 허용", (raw, out) => {
+  test.each([["/my", "/my"], ["/my/settings?a=1", "/my/settings?a=1"], ["/help", "/help"], ["/news/abc", "/news/abc"], ["/account/password", "/account/password"], ["/editorial", "/editorial"], ["/editorial/packages/x", "/editorial/packages/x"]])("%s는 허용", (raw, out) => {
     expect(memberNextPath(raw)).toBe(out);
   });
-  test.each([["//evil.test"], ["https://evil.test"], ["/admin"], ["/myx"], ["/\\evil"], ["/my/../admin"], [undefined], [""], ["/my\n/x"]])("%s는 /my로", (raw) => {
+  test.each([["//evil.test"], ["https://evil.test"], ["/admin"], ["/myx"], ["/\\evil"], ["/my/../admin"], [undefined], [""], ["/my\n/x"], ["/editorialx"], ["/editorial-policy"]])("%s는 /my로", (raw) => {
     expect(memberNextPath(raw)).toBe("/my");
   });
 });

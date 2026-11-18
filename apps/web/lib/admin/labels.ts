@@ -98,7 +98,7 @@ export const TAX_LENS_LINK_LABELS = { explainer: "해설", calculator: "계산�
 
 export const PERSPECTIVE_STATUS_LABELS = { interviewed: "취재함", no_response: "접촉했으나 응답 없음" } as const;
 
-/** 서비스 역할 7종 (ACC-04) — 편집국 외 역할은 '편집'이라는 말을 쓰지 않는다 */
+/** 서비스 역할 8종 (ACC-04) — 편집국 외 역할은 '편집'이라는 말을 쓰지 않는다. 편집위원은 기사 제작 요청만 하는 별도 역할 (PO 2026-11-18) */
 export const ROLE_LABELS = {
   reporter: "기자",
   editor: "편집 책임자",
@@ -107,6 +107,7 @@ export const ROLE_LABELS = {
   store_ops: "스토어·구독 담당",
   brand_ops: "브랜드 관리 담당",
   expert_ops: "전문가 담당",
+  editorial_board: "편집위원",
 } as const;
 
 /** 기사 기획 상태 7종 (NAV-09) */
