@@ -27,7 +27,11 @@ export interface ParsedArticle {
 const FIELD_NAMES = ["섹션", "제목", "제목 대안", "부제", "이미지 캡션", "필자", "바이라인", "키워드", "요약"] as const;
 type FieldName = (typeof FIELD_NAMES)[number];
 const FIELD_RE = new RegExp(`^\\*{0,2}\\[(${FIELD_NAMES.join("|")})\\]\\*{0,2}\\s*(.*)$`);
-const MEMO_RE = /^#{1,3}\s*편집 메모\s*$/;
+// 메모 시작 줄 — 지침 v4 11장은 "구분선 아래 [편집 메모]"(대괄호)를 정하고, 출고 파일은 "## 편집 메모"(제목)나 굵은 글씨로도 온다.
+// 줄 전체가 표시일 때만 잘라 낸다(문장 속 '편집 메모'는 본문). 모양: [제목 기호 #~###] [굵게 **] [대괄호 []] 편집 메모 [닫는 기호] [콜론]
+const MEMO_RE = /^(?:#{1,3}\s*)?\*{0,2}\[?\s*편집 메모\s*\]?\*{0,2}\s*[:：]?\s*\*{0,2}$/;
+/** 본문 맨 끝에 남는 구분선 줄(---·***·___) */
+const RULE_RE = /^(?:-{3,}|\*{3,}|_{3,})$/;
 const EMAIL_RE = /\s*[\w.+-]+@[\w-]+(\.[\w-]+)+\s*/g;
 const AI_RE = /AI\s*생성/;
 
@@ -78,7 +82,11 @@ export function parseArticleMarkdown(source: string): ParsedArticle {
   // 편집 메모 떼기
   const memoAt = lines.findIndex((l) => MEMO_RE.test(l.trim()));
   const memoLines = memoAt >= 0 ? lines.slice(memoAt + 1) : [];
-  if (memoAt >= 0) lines = lines.slice(0, memoAt);
+  if (memoAt >= 0) {
+    lines = lines.slice(0, memoAt);
+    // 메모 바로 앞의 구분선·빈 줄은 본문이 아니다 ("본문 아래에 구분선을 긋고 [편집 메모]를 붙인다")
+    while (lines.length && (lines[lines.length - 1]!.trim() === "" || RULE_RE.test(lines[lines.length - 1]!.trim()))) lines.pop();
+  }
 
   // 머리 칸 — 값이 같은 줄에 없으면 다음 빈 줄 뒤 이어지는 줄들(번호 목록 포함)
   const fields = new Map<FieldName, string[]>();

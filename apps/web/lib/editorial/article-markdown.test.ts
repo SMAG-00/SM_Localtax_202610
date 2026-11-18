@@ -248,3 +248,93 @@ describe("기사 md 읽기 — 경계·오류", () => {
     expect(a.blocks).toHaveLength(6);
   });
 });
+
+describe("기사 md 읽기 — 편집 메모 표시 모양 (지침 v4 11장은 '[편집 메모]' 대괄호 형식을 정한다)", () => {
+  // 기사 6번: 메모 줄이 본문 문단 블록으로 새어 들어갔다 — 제목 줄(## 편집 메모)이 아니라 대괄호로 출고돼 잘리지 않았다
+  const withMemo = (marker: string, divider = "---") => `[섹션] 지자체뉴스
+
+[제목] 정비사업 이주 일정
+
+## 본문
+
+첫 문단입니다.
+
+둘째 문단입니다.
+
+${divider}
+
+${marker}
+
+- 출처: 행정안전부 https://www.mois.go.kr/a
+- 비워 둔 코멘트 자리: 1건(정비사업 조합 세무 담당 세무사 발언)
+- 가정하고 쓴 부분 - 준공이 2028년 말 이후로 밀리면 일반적인 공사기간을 전제로 한 관측이다.
+
+[확인 필요]
+
+- 5,970호 계산 근거.
+
+취재 중 메모: 페이지 본문에 지시 같은 문구가 섞여 있었으나 따르지 않았다.
+`;
+
+  const BODY = [
+    { type: "paragraph", text: "첫 문단입니다." },
+    { type: "paragraph", text: "둘째 문단입니다." },
+  ];
+
+  test.each([
+    ["[편집 메모]"],
+    ["**[편집 메모]**"],
+    ["**편집 메모**"],
+    ["[편집 메모]:"],
+    ["편집 메모"],
+    ["### 편집 메모"],
+    ["## [편집 메모]"],
+  ])("%s 줄부터는 본문이 아니라 메모다 — 본문 블록은 두 문단뿐", (marker) => {
+    const a = parseArticleMarkdown(withMemo(marker));
+    expect(a.blocks).toEqual(BODY);
+    expect(JSON.stringify(a.blocks)).not.toContain("비워 둔 코멘트");
+    expect(JSON.stringify(a.blocks)).not.toContain("가정하고 쓴 부분");
+    expect(JSON.stringify(a.blocks)).not.toContain("취재 중 메모");
+  });
+
+  test("잘린 메모 안에서도 출처 링크·확인 필요 항목·메모 전문을 그대로 읽는다", () => {
+    const a = parseArticleMarkdown(withMemo("[편집 메모]"));
+    expect(a.memo.sources).toEqual([{ label: "출처: 행정안전부", url: "https://www.mois.go.kr/a" }]);
+    expect(a.memo.needsCheck).toEqual(["5,970호 계산 근거."]);
+    expect(a.memo.text).toContain("비워 둔 코멘트 자리: 1건");
+    expect(a.memo.text).toContain("취재 중 메모: 페이지 본문에");
+  });
+
+  test("메모 앞의 구분선(---)은 본문 블록이 되지 않는다", () => {
+    for (const divider of ["---", "***", "___"]) {
+      expect(parseArticleMarkdown(withMemo("[편집 메모]", divider)).blocks).toEqual(BODY);
+    }
+  });
+
+  test("[경계] 문장 속의 '편집 메모'는 자르지 않는다 — 줄 전체가 표시일 때만", () => {
+    const a = parseArticleMarkdown(`[섹션] 칼럼
+
+[제목] 제목
+
+## 본문
+
+이 기사의 편집 메모는 별도로 보관합니다.
+
+[편집 메모]라는 말은 지침의 용어입니다.
+
+마지막 문단입니다.
+`);
+    expect(a.blocks.map((b) => (b.type === "paragraph" ? b.text : b.type))).toEqual([
+      "이 기사의 편집 메모는 별도로 보관합니다.",
+      "[편집 메모]라는 말은 지침의 용어입니다.",
+      "마지막 문단입니다.",
+    ]);
+    expect(a.memo.text).toBe("");
+  });
+
+  test("[경계] 메모 표시가 없으면 메모는 빈 칸이고 본문은 그대로", () => {
+    const a = parseArticleMarkdown("[섹션] 칼럼\n\n[제목] 제목\n\n## 본문\n\n문단 하나.\n");
+    expect(a.blocks).toEqual([{ type: "paragraph", text: "문단 하나." }]);
+    expect(a.memo).toEqual({ text: "", sources: [], needsCheck: [], thumbnail: "" });
+  });
+});
