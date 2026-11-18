@@ -101,7 +101,7 @@ test("폴더 목록과 제목 — 하위 폴더까지, 제목은 기사 md의 �
   fs.writeFileSync(path.join(dir, "thread", "2026-11-01_threads.md"), "# 쓰레드");
   assert.deepEqual(
     listFiles(dir).map((f) => f.path),
-    ["보유세_칼럼_20261101.md", "thread/2026-11-01_threads.md"], // 이름순(localeCompare — 한글이 영문 앞)
+    ["thread/2026-11-01_threads.md", "보유세_칼럼_20261101.md"], // 글자 코드 순 — 리눅스 CI·Windows 같은 결과 (CI d8536cf)
   );
   assert.equal(titleOf(dir, "2026_11_01"), "보유세, 누가 더 내나");
   assert.equal(titleOf(path.join(dir, "thread", "없음"), "2026_11_01"), "2026_11_01");

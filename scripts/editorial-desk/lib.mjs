@@ -78,11 +78,11 @@ export function storageKey(folder, rel) {
   return `packages/${folder}/${hash}${ext ? `.${ext}` : ""}`;
 }
 
-/** 폴더 안 파일 목록 (상대 경로 / 구분, 이름순) */
+/** 폴더 안 파일 목록 (상대 경로 / 구분, 이름순 — 글자 코드 순이라 운영체제·언어 설정과 관계없이 같다) */
 export function listFiles(dir) {
   const out = [];
   const walk = (abs, rel) => {
-    for (const ent of fs.readdirSync(abs, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const ent of fs.readdirSync(abs, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
       const r = rel ? `${rel}/${ent.name}` : ent.name;
       if (ent.isDirectory()) walk(path.join(abs, ent.name), r);
       else if (ent.isFile()) out.push({ path: r, size: fs.statSync(path.join(abs, ent.name)).size });
