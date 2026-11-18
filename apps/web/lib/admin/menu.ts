@@ -74,8 +74,8 @@ const RULES: readonly MenuRule[] = [
   { id: "eval", label: "평가·게이트", href: "/admin/eval", when: (a) => a.has("eval.author") || a.has("eval.grade") || a.has("eval.gate_approve"), paths: ["/admin/eval"] },
   // 품질 콘솔 — 경보·차단 로그·표본 판정·평가 실행 (QUAL-01~04 — W12-e) 세무 감수위원·관리자
   { id: "quality", label: "품질 콘솔", href: "/admin/quality", when: (a) => a.has("quality.review"), paths: ["/admin/quality"] },
-  // 지역 기사 판정판 — 별도 상품 검토 큐·편집 분야 승인 대기·보류 (REG1-14·17 — W4 8단계) — 편집 책임자·관리자
-  { id: "regions", label: "지역 기사 판정", href: "/admin/regions", when: (a) => a.has("regional.judge"), paths: ["/admin/regions"] },
+  // 지역 최소선 리포트 — 시범 지역별 자체 취재·공식 자료 수 (지역 기사 판정판은 2026-11-18 PO 결정으로 걷어냄) — 편집 책임자·관리자
+  { id: "regions", label: "지역 최소선 리포트", href: "/admin/regions/report", when: (a) => a.has("regional.judge"), paths: ["/admin/regions"] },
   // 프로젝트 트래커 — 프로젝트·단계 기록·정정·공개 전환·지역 연결 (PR-02·03 — W4 14단계) — 편집 책임자·관리자
   { id: "projects", label: "프로젝트", href: "/admin/projects", when: (a) => a.has("project.manage"), paths: ["/admin/projects"] },
   // 단계별 「지방세로 읽기」 감수 (PR-08 — W4 16단계) — 세무 감수위원의 서명 자리. 편집 책임자·관리자는 '프로젝트' 화면에서 같은 템플릿을 쓴다(메뉴 그대로)

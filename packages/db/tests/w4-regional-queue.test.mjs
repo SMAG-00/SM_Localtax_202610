@@ -114,98 +114,25 @@ test("값 목록 — 큐 상태 = 설계 2.1(open·closed) · 큐 판정 = 비�
     for (const good of [1, 30, 3650, 365]) assert.ok((await attempt("update public.settings set value = $1::jsonb where key = 'stale_statistics_days'", [JSON.stringify(good)])).ok, String(good));
   }));
 
-test("비보도 판정 → 열린 큐 항목 정확히 1건 — 판정을 바꿔도 1건, 기사 후보로 바꾸면 닫힘, 다시 비보도면 새 항목", () =>
+test("별도 상품 검토 큐는 걷어냈다 (마이그레이션 20261118000244, 2026-11-18 PO 결정) — 비보도 판정이 항목을 만들지 않고, 열린 항목이 있어도 공개를 막지 않는다", () =>
   tx(async () => {
-    const a = await draft();
-    assert.equal((await queueOf(a.id)).length, 0, "판정 전 0건");
-    await client.query("update public.articles set editorial_judgement = 'travel_review', judged_by = 'user:w4rq-a', judged_at = '2026-10-20T10:00:00+09:00' where id = $1", [a.id]);
-    let q = await queueOf(a.id);
-    assert.equal(q.length, 1);
-    assert.deepEqual([q[0].judgement, q[0].judged_by, q[0].status, new Date(q[0].at).toISOString()], ["travel_review", "user:w4rq-a", "open", "2026-10-20T01:00:00.000Z"]);
-    // 같은 판정을 다시 적어도·다른 비보도 판정으로 바꿔도 1건 (판정만 맞춘다)
-    await client.query("update public.articles set editorial_judgement = 'travel_review' where id = $1", [a.id]);
-    await client.query("update public.articles set editorial_judgement = 'restaurant_pick', judged_by = 'user:w4rq-b', judged_at = now() where id = $1", [a.id]);
-    q = await queueOf(a.id);
-    assert.equal(q.length, 1, "판정을 바꿔도 항목 1건");
-    assert.deepEqual([q[0].judgement, q[0].judged_by, q[0].status], ["restaurant_pick", "user:w4rq-b", "open"]);
-    // 기사 후보로 바꾸면 닫힌다 (닫은 사람 = 새 판정자, 메모 = 판정 변경)
-    await client.query("update public.articles set editorial_judgement = 'news_candidate', judged_by = 'user:w4rq-c', judged_at = now() where id = $1", [a.id]);
-    q = await queueOf(a.id);
-    assert.deepEqual([q.length, q[0].status, q[0].closed_by, q[0].closed_at !== null], [1, "closed", "user:w4rq-c", true]);
-    assert.match(q[0].note, /news_candidate\(으\)로 바뀌어 닫힘/);
-    // 다시 행사 홍보 → 새 열린 항목 (닫힌 항목은 그대로)
-    await client.query("update public.articles set editorial_judgement = 'event_promo', judged_by = 'user:w4rq-c', judged_at = now() where id = $1", [a.id]);
-    q = await queueOf(a.id);
-    assert.deepEqual(q.map((x) => [x.judgement, x.status]), [["restaurant_pick", "closed"], ["event_promo", "open"]]);
-    // 판정 지우기도 닫는다
-    await client.query("update public.articles set editorial_judgement = null, judged_by = null, judged_at = null where id = $1", [a.id]);
-    assert.deepEqual((await queueOf(a.id)).map((x) => x.status), ["closed", "closed"]);
-    // 처음부터 비보도 판정으로 넣은 원고도 1건
-    const b = await draft({ editorial_judgement: "event_promo", ...JUDGED });
-    assert.deepEqual((await queueOf(b.id)).map((x) => [x.judgement, x.status]), [["event_promo", "open"]]);
-    const c = await draft({ editorial_judgement: "news_candidate", ...JUDGED });
-    assert.equal((await queueOf(c.id)).length, 0, "기사 후보 판정은 큐 0");
-  }));
-
-test("큐 넣기·고치기 — 원고마다 열린 항목 하나, 판정은 원고 판정과 같아야, 닫힌 항목 고정, 닫을 때 닫은 사람·시각·메모 필수", () =>
-  tx(async () => {
+    const gone = await client.query("select tgname from pg_trigger where tgname in ('articles_separate_product_sync_insert', 'articles_separate_product_sync_update', 'articles_stage_order')");
+    assert.deepEqual(gone.rows, [], "큐 동기화·단계 순서 트리거가 없어야 한다");
+    // 비보도 판정 — 큐 항목이 저절로 생기지 않는다
     const a = await draft({ editorial_judgement: "travel_review", ...JUDGED });
-    const [item] = await queueOf(a.id);
-    const second = await tryInsert("separate_product_queue", { article_id: a.id, judgement: "travel_review", judged_by: "user:x" });
-    assert.equal(second.code, "23505", "열린 항목 두 번 0");
-    const mismatch = await tryInsert("separate_product_queue", { article_id: (await draft()).id, judgement: "travel_review", judged_by: "user:x" });
-    assert.match(mismatch.message, /편집자 판정\(없음\)과 다릅니다/);
-    assert.match((await tryInsert("separate_product_queue", { article_id: a.id, judgement: "travel_review", judged_by: "user:x", status: "closed", closed_by: "user:x", closed_at: new Date(), note: "x" })).message, /열린 상태\(open\)로만/);
-    assert.equal((await tryInsert("separate_product_queue", { article_id: a.id, judgement: "tour", judged_by: "user:x" })).code, "23514");
-    // 닫기 — 메모 없이 0, 닫은 사람 없이 0
-    assert.equal((await attempt("update public.separate_product_queue set status = 'closed', closed_by = 'user:x', closed_at = now() where id = $1", [item.id])).code, "23514", "메모 필수");
-    assert.equal((await attempt("update public.separate_product_queue set status = 'closed', closed_at = now(), note = '광고 상품으로 전환' where id = $1", [item.id])).code, "23514", "닫은 사람 필수");
-    assert.equal((await attempt("update public.separate_product_queue set article_id = $2 where id = $1", [item.id, (await draft()).id])).ok, false, "원고 번호 고정");
-    assert.ok((await attempt("update public.separate_product_queue set status = 'closed', closed_by = 'user:x', closed_at = now(), note = '광고·협찬 상품으로 전환' where id = $1", [item.id])).ok);
-    const reopen = await attempt("update public.separate_product_queue set status = 'open', closed_by = null, closed_at = null where id = $1", [item.id]);
-    assert.match(reopen.message, /닫힌 별도 상품 검토 항목.*고칠 수 없습니다/);
-    // anon·authenticated 읽기·쓰기 0 (service_role은 관리자 전체 권한 — admin-rights 시험)
-    for (const role of ["anon", "authenticated"]) {
-      assert.equal((await attempt("select count(*) from public.separate_product_queue", [], role)).code, "42501", role);
-    }
-  }));
-
-test("열린 큐 항목 원고는 어떤 유형으로도 공개 0 — 공개 뷰·자체 취재 집계 0, 닫으면 가이드는 발행 · 공개 중 비보도 판정·비보도 공개 행 거부", () =>
-  tx(async () => {
-    const from = new Date(Date.now() - 3_600_000).toISOString();
-    const control = await draft({ editorial_judgement: "news_candidate", ...JUDGED });
-    assert.equal((await publishByStages(control.id)).ok, true, "기사 후보는 단계를 밟아 발행");
-    const queued = await draft({ editorial_judgement: "travel_review", ...JUDGED });
-    const r = await publishByStages(queued.id);
-    assert.equal(r.ok, false);
-    assert.match(r.message, /별도 상품 검토 큐에 열린 항목/, "7단계 트리거를 걷어냈으므로 보도기사도 큐 문장으로 막힌다");
+    assert.equal((await queueOf(a.id)).length, 0, "판정해도 항목 0");
+    // 보도기사·해설도, 가이드도 그대로 발행된다
+    const pub = await setStatus(a.id, "published");
+    assert.equal(pub.ok, true, pub.message);
     const guide = await draft({ content_type: "guide", editorial_judgement: "event_promo", ...JUDGED });
-    const g = await publishByStages(guide.id);
-    assert.equal(g.ok, false, "가이드도 큐에 열려 있으면 공개 0");
-    assert.match(g.message, /별도 상품 검토 큐에 열린 항목\(\d+\)이 있는 원고는 공개할 수 없습니다/);
-    const scheduled = await setStatus(guide.id, "scheduled", ", publish_at = now() + interval '1 day'");
-    assert.equal(scheduled.ok, false, "예약도 공개");
-    // 공개 뷰(사이트맵 원본) · 자체 취재 집계
-    const publicSlugs = (await attempt("select slug from public.public_articles where slug = any($1::text[])", [[control.slug, queued.slug, guide.slug]], "anon")).rows.map((x) => x.slug);
-    assert.deepEqual(publicSlugs, [control.slug], "공개 뷰에 큐 원고 0");
-    const facts = (await one("select public.news_production_facts($1::timestamptz, now() + interval '1 minute') f", [from])).f;
-    const counted = (facts.articles ?? []).map((x) => Number(x.id));
-    assert.ok(counted.includes(Number(control.id)), "대조 기사는 집계에 1");
-    assert.ok(!counted.includes(Number(queued.id)) && !counted.includes(Number(guide.id)), "큐 원고는 자체 취재 집계 0");
-    // 검토를 닫으면 가이드는 발행된다 (7단계 비보도 규칙은 보도·해설만)
-    await client.query("update public.separate_product_queue set status = 'closed', closed_by = 'user:w4rq-editor', closed_at = now(), note = '가이드로 유지 — 편집 판단' where article_id = $1 and status = 'open'", [guide.id]);
-    assert.equal((await publishByStages(guide.id)).ok, true, "닫힌 뒤 가이드 발행");
-    // 공개 중인 원고(유형 무관)를 비보도로 판정 — 거부
-    const onAir = await attempt("update public.articles set editorial_judgement = 'restaurant_pick', judged_by = 'user:x', judged_at = now() where id = $1", [control.id]);
-    assert.match(onAir.message, /먼저 내린 뒤 판정하세요/);
-    const g2 = await draft({ content_type: "guide" });
-    assert.equal((await publishByStages(g2.id)).ok, true);
-    const onAirGuide = await attempt("update public.articles set editorial_judgement = 'event_promo', judged_by = 'user:x', judged_at = now() where id = $1", [g2.id]);
-    assert.match(onAirGuide.message, /공개\(예약\) 중인 원고는 .*별도 상품 검토 큐로 보낼 수 없습니다/, "가이드도 공개 중이면 큐로 못 보낸다");
-    assert.equal((await queueOf(g2.id)).length, 0);
-    // 비보도 판정으로 공개 행을 바로 넣기 — 거부
-    const direct = await tryInsert("articles", { slug: uniq("w4rq"), title: "t", section: "local", content_type: "guide", status: "published", region_codes: [SEOUL], editorial_field: "local_tax", public_question: Q, editorial_judgement: "event_promo", ...JUDGED });
-    assert.match(direct.message, /별도 상품 검토 큐로 보낼 수 없습니다/);
+    assert.equal((await setStatus(guide.id, "published")).ok, true, "가이드도 발행");
+    // 예전에 열려 있던 항목(표에 남은 기록)이 있어도 공개를 막지 않는다
+    const withRow = await draft({ editorial_judgement: "restaurant_pick", ...JUDGED });
+    await client.query("insert into public.separate_product_queue (article_id, judgement, judged_by) values ($1, 'restaurant_pick', 'user:old')", [withRow.id]);
+    const open = await client.query("select count(*)::int n from public.separate_product_queue where article_id = $1 and status = 'open'", [withRow.id]);
+    assert.equal(open.rows[0].n, 1, "열린 기록이 실제로 있다");
+    const published = await setStatus(withRow.id, "published");
+    assert.equal(published.ok, true, published.message);
   }));
 
 test("단계 순서 — 지역 기사 판정을 걷어냈다 (마이그레이션 20261118000243, 2026-11-18 PO 결정): 지자체뉴스도 일반 기사와 같다", () =>
