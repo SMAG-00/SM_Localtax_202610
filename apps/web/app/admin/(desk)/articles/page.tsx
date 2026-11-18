@@ -2,8 +2,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SelectField } from "@ltr/ui";
 import { DataTable, EmptyNote, OUTLINE_BUTTON, PageTitle, TD, TEXT_LINK, ToneChip } from "@/components/admin/ui";
+import { DeleteArticleButton } from "@/components/admin/DeleteArticleButton";
 import { WeeklyCardNewsButton } from "@/components/admin/WeeklyCardNewsButton";
 import { can } from "@/lib/access";
+import { deleteBlocker } from "@/lib/admin/article-delete";
 import { isoToKstDateTime } from "@/lib/admin/form-utils";
 import {
   ARTICLE_STATUS_LABELS,
@@ -43,6 +45,8 @@ export default async function ArticlesPage({ searchParams }: Props) {
   const person = mine ? await personForUser(db, viewer.userId) : null;
   const rows = mine && !person ? [] : await listArticles(db, { status, section, type, ...(person ? { authorId: person.id } : {}) });
   const canWrite = templatesFor(viewer).length > 0;
+  // 삭제 버튼은 편집 책임자(정정·삭제 결정 권한)만 — 공개 중인 기사에는 그리지 않는다
+  const canDelete = can(viewer, "correction.decide");
   // 이번 주 카드뉴스 초안 — 편집국 기사(해설) 작성 권한과 같다. 광고·협찬 담당 화면에는 두지 않는다
   const canWeeklyCardNews = !onlySponsored && can(viewer, "article.create", { kind: "article", authorUserId: viewer.userId, contentType: "explainer", published: false });
 
@@ -78,7 +82,7 @@ export default async function ArticlesPage({ searchParams }: Props) {
       {rows.length === 0 ? (
         <EmptyNote>조건에 맞는 기사가 없습니다.</EmptyNote>
       ) : (
-        <DataTable caption="기사 목록" head={["제목", "분야·유형", "게재 상태", "편집 승인", "세무 감수", "버전", "고친 시각"]}>
+        <DataTable caption="기사 목록" head={["제목", "분야·유형", "게재 상태", "편집 승인", "세무 감수", "버전", "고친 시각", ...(canDelete ? ["삭제"] : [])]}>
           {rows.map((a) => (
             <tr key={a.id} data-testid={`article-row-${a.id}`}>
               <td className={TD}>
@@ -97,6 +101,7 @@ export default async function ArticlesPage({ searchParams }: Props) {
               <td className={TD}>{labelOf(TAX_REVIEW_STATUS_LABELS, a.tax_review_status)}</td>
               <td className={`${TD} font-mono`}>{a.version}</td>
               <td className={`${TD} font-mono text-[13px]`}>{isoToKstDateTime(a.updated_at)}</td>
+              {canDelete && <td className={TD}>{deleteBlocker(a.status) === null ? <DeleteArticleButton id={a.id} title={a.title} /> : null}</td>}
             </tr>
           ))}
         </DataTable>

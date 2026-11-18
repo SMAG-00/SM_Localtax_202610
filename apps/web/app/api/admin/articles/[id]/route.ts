@@ -11,9 +11,10 @@ import { episodeRowErrors, loadEpisode } from "@/lib/server/articles/signature";
 import { articleResource, currentRevisionId, loadArticle, loadArticleGraph, loadGateSettings } from "@/lib/server/articles/repository";
 import type { ArticleRow } from "@/lib/server/articles/rows";
 import { afterSave, findingsError, nowIso, saveContext, serviceDb } from "@/lib/server/articles/service";
-import { articleSummary, recordCorrection, saveNewVersion } from "@/lib/server/articles/writes";
+import { articleSummary, recordCorrection, saveNewVersion, updateArticle } from "@/lib/server/articles/writes";
 import { authorize, requireViewer } from "@/lib/server/dal";
 import { errorJson, handle, json, parseId, readJson } from "@/lib/server/http";
+import { deleteBlocker, deletedSlug } from "@/lib/admin/article-delete";
 
 // 기사 한 건 — GET: 편집 화면용 전체 기록(편집국만 — 백오피스 편집기와 같은 모양, editor-view.ts) · PATCH: 수정 (ART-05 · NAV-06)
 //  · 발행 전: 자유 수정, 저장마다 새 버전 + 수정 이력. 편집 승인은 다시 받는다.
@@ -179,3 +180,31 @@ export const PATCH = handle(async (request: Request, { params }: Ctx) => {
   });
   return json({ article: articleSummary(article), revisionId: saved.revisionId, changed: plan.changed, corrections, checks });
 }, { revalidatesPublic: true });
+
+// DELETE — 기사 삭제 (목록의 [삭제] 버튼). 편집 책임자만(correction.decide). 공개 중·예약 기사는 거부(먼저 내린다).
+// 게재 상태만 deleted 로 바꾸고 기록은 남긴다. 주소는 -deleted-번호를 붙여 비운다 — 같은 주소로 새 기사를 만들 수 있게(공개된 적 있는 기사의 410 안내 주소도 이 주소로 남는다).
+export const DELETE = handle(async (request: Request, { params }: Ctx) => {
+  const id = parseId((await params).id);
+  const viewer = await requireViewer(request);
+  if (viewer instanceof Response) return viewer;
+  const target = targetOf.article(id);
+  const denied = await authorize(viewer, "correction.decide", target);
+  if (denied) return denied;
+
+  const db = serviceDb();
+  const before = await loadArticle(db, id);
+  const blocked = deleteBlocker(before.status);
+  if (blocked) return errorJson(409, blocked);
+  const actor = actorOf(viewer);
+  const slug = deletedSlug(before.slug, id);
+  const article = await updateArticle(db, before, { status: "deleted", slug, updated_reason: "편집 책임자 삭제" }, "articles 삭제");
+  await writeAudit(db, {
+    actor,
+    action: "article.delete",
+    target,
+    before: { status: before.status, slug: before.slug, version: before.version, title: before.title },
+    after: { status: "deleted", slug },
+    reason: "편집 책임자가 목록에서 삭제",
+  });
+  return json({ article: articleSummary(article) });
+});
