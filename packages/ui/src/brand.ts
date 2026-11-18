@@ -3,11 +3,11 @@
  * 사이트 이름은 「SM 부동산·지방세 연구소」(PO 결정 2026-11-18 — 이전 「부동산·지방세연구」 11-16, 「지방세연구」 11-01, 「김의효 지방세연구」 10-24)다. 이름이 SM으로 시작해도 운영 주체(operatorName)와 따로 둔다. 운영 주체·발행 기관은 따로 operatorName(SM(선명))으로 둔다.
  * 제품명은 확정이다 (PO 2026-11-01 — 「(가칭)」 뗌, PRD_최종 §13 #1, PRD-00 2.6 #1).
  * 'SM(선명)'은 브랜드·운영 주체, 'SM 안심세금계산기'는 연결하는 계산기 사이트다 — 섞어 쓰지 않는다 (PRD_최종 §1 #9).
- * 계산기 사이트는 2026-11-01 양도세와 상속·증여세를 한 사이트로 합쳤고 이름도 하나다 (PO 2026-11-18).
+ * 상속·증여 외부 계산기('안심 상속증여계산기')는 SM 계산기와 별개 사이트라 이름을 따로 둔다 (PO 2026-11-18).
  */
 const productName = "SM 부동산·지방세 연구소";
-/** 연결하는 계산기 사이트 이름 — 양도세·상속세·증여세를 한 사이트에서 계산한다 */
-const calculatorSiteName = "SM 안심세금계산기";
+/** 연결하는 SM 계산기 사이트 이름 — 양도세 등 부동산 세금을 계산하는 사이트 (PO 2026-11-18) */
+const smCalculatorSiteName = "SM 안심세금계산기";
 
 export const brand = {
   productName,
@@ -16,7 +16,8 @@ export const brand = {
   /** 운영 주체·발행 기관 — 바닥글 운영 표시·구조화 데이터 publisher. 사이트 이름(productName)과 섞지 않는다 */
   operatorName: "SM(선명)",
   /** 연결만 하는 기존 계산기 사이트 (TX-01) — 양도세도 이 사이트 안의 메뉴다 */
-  smCalculatorSiteName: calculatorSiteName,
-  /** 상속세·증여세 계산을 연결하는 별도 사이트 (FAM-08) — PO가 만든 사이트, 운영 주체 관계 문구는 결정 안건 */
-  externalCalculatorSiteName: calculatorSiteName,
+  smCalculatorSiteName,
+  /** 상속세·증여세 계산을 연결하는 별도 사이트 (FAM-08) — PO가 만든 사이트, 운영 주체 관계 문구는 결정 안건.
+   *  SM 계산기와 이름을 섞지 않는다: 연결하지 않는 별개 사이트다 (PO 2026-11-18) */
+  externalCalculatorSiteName: "안심 상속증여계산기",
 } as const;

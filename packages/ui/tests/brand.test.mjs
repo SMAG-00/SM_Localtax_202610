@@ -43,7 +43,11 @@ test("화면 코드에 'SM 플랫폼'처럼 두 이름을 섞은 표현이 없�
   assert.deepEqual(hits, []);
 });
 
-test("연결하는 계산기 사이트 이름은 'SM 안심세금계산기'로 따로 둔다 — 양도세와 상속·증여세가 한 사이트다 (PO 2026-11-18)", () => {
+test("SM 계산기 사이트 이름은 'SM 안심세금계산기'로 따로 둔다 (PO 2026-11-18)", () => {
   assert.equal(brand.smCalculatorSiteName, "SM 안심세금계산기");
-  assert.equal(brand.externalCalculatorSiteName, "SM 안심세금계산기");
+});
+
+test("상속·증여 외부 계산기는 별도 사이트 「안심 상속증여계산기」로 SM 계산기와 이름을 섞지 않는다 (PO 2026-11-18 — 연결하지 않는 별개 사이트)", () => {
+  assert.equal(brand.externalCalculatorSiteName, "안심 상속증여계산기");
+  assert.notEqual(brand.externalCalculatorSiteName, brand.smCalculatorSiteName);
 });
