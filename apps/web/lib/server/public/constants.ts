@@ -275,6 +275,9 @@ const BLOCKED_PREFIXES = [
   "/terms",
   "/privacy",
   "/no-email-collection",
+  // 최신법령·유권해석 화면은 지웠다 (PO 2026-11-18) — 헤더 하위 메뉴·허브 탭·기사 본문 링크에 내지 않는다. 접속은 지방세 허브로 이동한다.
+  // DB의 하위 분야(law-updates)와 그 기사는 그대로 둔다 (되돌리기 쉽게) — 이 줄과 tax/law-updates/page.tsx 를 지우면 다시 열린다
+  "/tax/law-updates",
 ] as const;
 
 /** 주소의 경로 — 쿼리·조각·끝의 '/'를 뗀다 */

@@ -48,6 +48,21 @@ describe("헤더 메뉴 (HOME-02)", () => {
     expect(c.sections[3]!.children.map((x) => x.label)).toEqual(["뉴스 전체"]);
   });
 
+  test("최신법령·유권해석 하위 분야(law-updates)는 기사가 있어도 헤더 하위 메뉴에 내지 않는다 (PO 2026-11-18 — 화면 삭제)", () => {
+    const withLaw = [...CATEGORIES, cat(7, "tax", "law-updates", "최신법령·유권해석", 5)];
+    const counts = new Map([
+      [1, 1],
+      [2, 3],
+      [7, 9],
+    ]);
+    const labels = buildChrome(withLaw, counts, CLOSED_FEATURES).sections[0]!.children.map((x) => [x.label, x.href]);
+    expect(labels).toEqual([
+      ["개정 트래커", "/tax/amendments"],
+      ["해석", "/tax/interpretations"],
+      ["뉴스 전체", "/news?section=tax"],
+    ]);
+  });
+
   test("편집자가 분야를 비공개로 바꾸면(목록에서 빠지면) 메뉴에서 사라진다 — 배포 없이", () => {
     const counts = new Map([
       [1, 1],

@@ -144,7 +144,7 @@ test("a2) 바로 메뉴 - 키 shortcuts만 켜면 도착 키·공개 호가 없�
   const home = await page("/");
   assert.equal(home.status, 200);
   const hrefs = menuLinks(home.text).map(([, h]) => h);
-  assert.deepEqual(hrefs, ["/columns", "/news/popular", "/tax/law-updates", "/experts/request", "/calc"], `헤더 바로 메뉴 5개: ${hrefs.join(",")}`);
+  assert.deepEqual(hrefs, ["/columns", "/news/popular", "/experts/request", "/calc"], `헤더 바로 메뉴 4개: ${hrefs.join(",")}`);
   for (const h of [...hrefs, "/realestate/weekly"]) {
     const res = await page(h);
     assert.equal(res.status, 200, `${h} 200 (404 아님)`);
@@ -156,8 +156,13 @@ test("a2) 바로 메뉴 - 키 shortcuts만 켜면 도착 키·공개 호가 없�
   assert.match((await page("/calc")).text, /준비하고 있습니다/, "계산기 키 꺼짐 -> 준비 중");
   assert.match((await page("/experts/request")).text, /준비하고 있습니다/, "상담 요청 닫힘 -> 준비 중");
   assert.match((await page("/experts/request")).text, /<meta name="robots" content="[^"]*noindex/);
-  // 최신법령·유권해석 = 지방세 하위 분야 목록 (PO 2026-11-01, 마이그레이션 240) — 기사 0건이면 허브 안내
-  assert.match((await page("/tax/law-updates")).text, /최신법령·유권해석/, "하위 분야 목록 제목");
+  // 최신법령·유권해석 화면은 지웠다 (PO 2026-11-18) — 접속하면 지방세 허브로 이동한다 (DB 하위 분야·기사는 그대로)
+  const gone = await page("/tax/law-updates");
+  assert.equal(gone.status, 307, "최신법령·유권해석 -> 이동");
+  assert.equal(new URL(gone.headers.get("location"), base).pathname, "/tax", "지방세 허브로");
+  const oldBrief = await page("/brief");
+  assert.equal(oldBrief.status, 308, "옛 브리핑 주소는 영구 이동");
+  assert.equal(new URL(oldBrief.headers.get("location"), base).pathname, "/tax", "옛 브리핑도 지방세 허브로");
 
   // 바로가기 키가 꺼지면 도착은 예전처럼 404 (메뉴가 없으면 빈 화면도 없다)
   await setFlags({ shortcuts: false });

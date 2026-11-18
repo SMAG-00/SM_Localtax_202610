@@ -86,9 +86,12 @@ describe("숨긴 경로·v1.2 경로 (HOME-02 · MIG-02)", () => {
     "/terms",
     "/privacy",
     "/no-email-collection",
+    "/tax/law-updates",
+    "/tax/law-updates?page=2",
+    "/tax/law-updates/x",
   ])("%s — 막는다", (href) => expect(isBlockedPath(href)).toBe(true));
 
-  test.each(["/law", "/law/123", "/cases", "/cases/tribunal/7", "/calc", "/news/law-update", "/local/seoul", "/about/privacy", "/about/corrections", "/tax/columns", "/lawyer", "/regions", "https://example.go.kr/law", "/"])(
+  test.each(["/law", "/law/123", "/cases", "/cases/tribunal/7", "/calc", "/news/law-update", "/local/seoul", "/about/privacy", "/about/corrections", "/tax/columns", "/tax/law-updates-archive", "/lawyer", "/regions", "https://example.go.kr/law", "/"])(
     "%s — 막지 않는다",
     (href) => expect(isBlockedPath(href)).toBe(false),
   );
