@@ -238,7 +238,7 @@ export function MetaFields({
               <TextField
                 id="meta-region-codes"
                 label="지역 코드"
-                hint="쉼표로 나눕니다 (예: 11680, 11650)"
+                hint="법정동코드 10자리, 쉼표로 나눕니다 (예: 1100000000 서울 전체, 1165000000 서초구)"
                 disabled={readOnly}
                 value={state.regionCodesText}
                 onChange={(e) => update({ regionCodesText: e.target.value })}
