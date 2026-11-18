@@ -30,6 +30,11 @@ const FIELD_RE = new RegExp(`^\\*{0,2}\\[(${FIELD_NAMES.join("|")})\\]\\*{0,2}\\
 // 메모 시작 줄 — 지침 v4 11장은 "구분선 아래 [편집 메모]"(대괄호)를 정하고, 출고 파일은 "## 편집 메모"(제목)나 굵은 글씨로도 온다.
 // 줄 전체가 표시일 때만 잘라 낸다(문장 속 '편집 메모'는 본문). 모양: [제목 기호 #~###] [굵게 **] [대괄호 []] 편집 메모 [닫는 기호] [콜론]
 const MEMO_RE = /^(?:#{1,3}\s*)?\*{0,2}\[?\s*편집 메모\s*\]?\*{0,2}\s*[:：]?\s*\*{0,2}$/;
+/** 줄 전체가 편집 메모 시작 표시인가 — 가져오기와 편집 화면 정리(leftover-blocks)가 같은 기준을 쓴다 */
+export const isMemoMarkerLine = (line: string): boolean => MEMO_RE.test(line.trim());
+// 코멘트 자리 — "[코멘트 자리: …]" 줄 전체. 편집위원이 인터뷰 코멘트를 넣을 자리를 표시한 것이라 독자에게 보이면 안 된다
+const COMMENT_SLOT_RE = /^\*{0,2}\[\s*코멘트 자리\s*[:：][^\]]*\]\*{0,2}$/;
+export const isCommentSlotLine = (line: string): boolean => COMMENT_SLOT_RE.test(line.trim());
 /** 본문 맨 끝에 남는 구분선 줄(---·***·___) */
 const RULE_RE = /^(?:-{3,}|\*{3,}|_{3,})$/;
 const EMAIL_RE = /\s*[\w.+-]+@[\w-]+(\.[\w-]+)+\s*/g;
@@ -77,6 +82,13 @@ export function parseArticleMarkdown(source: string): ParsedArticle {
       }
       lines = lines.slice(end + 1);
     }
+  }
+
+  // 코멘트 자리 표시 줄은 본문에 넣지 않는다
+  const slotCount = lines.filter((l) => isCommentSlotLine(l)).length;
+  if (slotCount > 0) {
+    lines = lines.filter((l) => !isCommentSlotLine(l));
+    warnings.push(`[코멘트 자리: …] 표시 ${slotCount}줄은 본문에 넣지 않았습니다 — 코멘트를 받으면 직접 적어 주세요`);
   }
 
   // 편집 메모 떼기
