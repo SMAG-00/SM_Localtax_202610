@@ -153,7 +153,7 @@ test("b) /calc — SM 카드 정확히 5장·이동 주소 = 저장 주소·새 
     assert.equal(hrefOf(html, key), urls[key], `${key} 이동 주소가 저장 주소와 글자 단위 일치`);
     assert.ok(html.includes(`시험용 이용 조건 ${key}`));
   }
-  assert.ok(html.includes("SM 부동산 세금 플랫폼(별도 사이트) · 새 창"));
+  assert.ok(html.includes("SM 안심세금계산기(별도 사이트) · 새 창"));
   assert.ok(html.includes(`data-link-card="inheritance_gift"`));
   assert.ok(!/<iframe/i.test(html), "iframe 0");
   assert.ok(!/fetch\(|XMLHttpRequest/.test(html.replace(/<script[\s\S]*?<\/script>/g, "") ), "화면 본문에 fetch 호출 0");

@@ -43,6 +43,7 @@ test("화면 코드에 'SM 플랫폼'처럼 두 이름을 섞은 표현이 없�
   assert.deepEqual(hits, []);
 });
 
-test("기존 계산기 사이트 이름은 'SM 부동산 세금 플랫폼'으로 따로 둔다", () => {
-  assert.equal(brand.smCalculatorSiteName, "SM 부동산 세금 플랫폼");
+test("연결하는 계산기 사이트 이름은 'SM 안심세금계산기'로 따로 둔다 — 양도세와 상속·증여세가 한 사이트다 (PO 2026-11-18)", () => {
+  assert.equal(brand.smCalculatorSiteName, "SM 안심세금계산기");
+  assert.equal(brand.externalCalculatorSiteName, "SM 안심세금계산기");
 });

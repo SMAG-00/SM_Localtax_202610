@@ -85,7 +85,7 @@ export function TaxLifecycleView({ title, view, lastReviewedAt, asOf, sm }: { ti
               </fieldset>
             )}
             <p data-part="transfer-notice" className="text-[15px] text-navy-800">
-              이 사이트는 양도 단계의 세금을 계산하지 않습니다. 계산은 아래 SM 부동산 세금 플랫폼에서 하세요. 입력한 값은 넘어가지 않습니다.
+              이 사이트는 양도 단계의 세금을 계산하지 않습니다. 계산은 아래 SM 안심세금계산기에서 하세요. 입력한 값은 넘어가지 않습니다.
             </p>
             {sm && <SmCalculatorCard calcKey="transfer" link={sm.link} fallback={sm.fallback} usageNote={sm.usageNote} />}
           </>

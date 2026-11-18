@@ -11,7 +11,7 @@ import { MeasureCalculatorCards } from "./Measure";
 
 /** 카드의 사이트 표시 — 연결 종류별 */
 export function linkSiteLabel(kind: LinkKind): string {
-  if (kind === "sm_calculator") return "SM 부동산 세금 플랫폼(별도 사이트) · 새 창";
+  if (kind === "sm_calculator") return "SM 안심세금계산기(별도 사이트) · 새 창";
   if (kind === "external_calculator") return "외부 사이트 · 새 창 · 이 사이트의 결과와 합산하지 않습니다";
   return "공식 안내 · 새 창";
 }

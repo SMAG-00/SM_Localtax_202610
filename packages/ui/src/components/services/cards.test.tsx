@@ -47,7 +47,7 @@ describe("외부 계산기 연결 카드 (FAM-08 · TX-02 · TX-03)", () => {
     render(<ExternalCalculatorCard link={link} fallback={fallback} />);
     const card = document.querySelector('[data-ui="external-calculator-card"]')!;
     expect(card.textContent).toContain("국세");
-    expect(screen.getByText("상속세·증여세 계산은 안심 상속증여계산기(별도 사이트)에서")).toBeTruthy();
+    expect(screen.getByText("상속세·증여세 계산은 SM 안심세금계산기(별도 사이트)에서")).toBeTruthy();
     expect(card.textContent).toContain("이 사이트는 상속세·증여세를 계산하지 않습니다 · 입력한 내용은 넘어가지 않습니다");
     expect(card.textContent).toContain("별도 사이트 · 새 창");
     const date = card.querySelector("time")!;
@@ -77,7 +77,7 @@ describe("외부 계산기 연결 카드 (FAM-08 · TX-02 · TX-03)", () => {
     expect(card.getAttribute("data-state")).toBe("fallback");
     const a = screen.getByRole("link", { name: /국세청 공식 안내.*새 창에서 별도 사이트 열기/ });
     expect(a.getAttribute("href")).toBe("https://www.nts.go.kr/inheritance");
-    expect(card.textContent).not.toContain("안심 상속증여계산기");
+    expect(card.textContent).not.toContain("SM 안심세금계산기");
     expect(card.querySelector("time")?.textContent).toBe("2026-10-11");
   });
 

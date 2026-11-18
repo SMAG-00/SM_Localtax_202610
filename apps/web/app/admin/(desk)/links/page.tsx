@@ -42,7 +42,7 @@ export default async function LinksPage() {
   const stale = rows.filter((r) => r.active && isStale(r, now)).length;
   return (
     <>
-      <PageTitle title="바깥 연결" description="SM 부동산 세금 플랫폼 계산기와 외부 계산기·대체 안내의 주소입니다. 주소가 비어 있으면 화면에서 숨습니다." />
+      <PageTitle title="바깥 연결" description="SM 안심세금계산기와 외부 계산기·대체 안내의 주소입니다. 주소가 비어 있으면 화면에서 숨습니다." />
       <div className="space-y-8">
         {smReady < 5 && (
           <p data-part="warn-sm-count" role="status" className="rounded-xl border border-hermes-200 bg-hermes-50 p-4 text-[15px] text-navy-900">

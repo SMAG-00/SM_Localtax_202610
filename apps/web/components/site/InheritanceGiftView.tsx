@@ -82,7 +82,7 @@ export function InheritanceGiftView({ view, after }: { view: View; after?: React
       )}
       {view.fam08 && !(view.own && view.own.gift && view.own.inheritance) && (
         <section data-part="fam08" aria-labelledby="ig-fam08-title" className="mt-10">
-          <h2 id="ig-fam08-title" className={H2}>상속세·증여세 계산은 안심 상속증여계산기(별도 사이트)에서</h2>
+          <h2 id="ig-fam08-title" className={H2}>상속세·증여세 계산은 SM 안심세금계산기(별도 사이트)에서</h2>
           <ul className="mt-3 grid gap-4 sm:grid-cols-2">
             <OfficialLinkCard card={view.fam08.card} site={RELATION} fallbacks={view.fam08.fallbacks} rank={1} />
           </ul>

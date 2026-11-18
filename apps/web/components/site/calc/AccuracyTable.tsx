@@ -32,7 +32,7 @@ export function AccuracyTable({ rows }: { rows: AccuracyRow[] }) {
           ))}
         </tbody>
       </table>
-      <p className="mt-4 text-[13px] text-navy-500">아직 공개하지 않은 세목은 SM 부동산 세금 플랫폼 계산기 연결로 안내해요. 입력값은 어느 사이트로도 넘어가지 않아요.</p>
+      <p className="mt-4 text-[13px] text-navy-500">아직 공개하지 않은 세목은 SM 안심세금계산기 연결로 안내해요. 입력값은 어느 사이트로도 넘어가지 않아요.</p>
     </div>
   );
 }
