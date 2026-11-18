@@ -29,21 +29,21 @@ describe("헤더 — 워드마크", () => {
 });
 
 describe("헤더 — 상단 메뉴 (4대 분야)", () => {
-  it("상단 메뉴는 정확히 4개 — 지방세·부동산세금·부동산재테크·부동산금융·지자체뉴스 순서와 경로", () => {
+  it("상단 메뉴는 정확히 4개 — 부동산·지방세 세금·부동산재테크·부동산금융·지자체뉴스 순서와 경로", () => {
     render(<Header />);
     const nav = screen.getByRole("navigation", { name: "분야 메뉴" });
     expect(pairs(within(nav).getAllByRole("link"))).toEqual([
-      ["지방세·부동산세금", "/tax"],
+      ["부동산·지방세 세금", "/tax"],
       ["부동산재테크", "/realestate"],
       ["부동산금융", "/finance"],
       ["지자체뉴스", "/local"],
     ]);
   });
 
-  it("메뉴 링크는 데스크톱 14px 600 navy-100이고 터치 영역 44px(min-h-11) 이상", () => {
+  it("메뉴 링크는 데스크톱 18px(PO 2026-11-18, 이전 14px) 600 navy-100이고 터치 영역 44px(min-h-11) 이상", () => {
     render(<Header utilities={["calc"]} />);
     for (const a of screen.getAllByRole("link").filter((l) => l.getAttribute("href") !== "/")) {
-      expect(tokens(a)).toEqual(expect.arrayContaining(["lg:text-[14px]", "font-semibold", "text-navy-100", "min-h-11"]));
+      expect(tokens(a)).toEqual(expect.arrayContaining(["lg:text-[18px]", "font-semibold", "text-navy-100", "min-h-11"]));
     }
   });
 
@@ -63,7 +63,7 @@ describe("헤더 — 상단 메뉴 (4대 분야)", () => {
 });
 
 describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
-  it("켜진 항목을 전문가칼럼 → 최신인기글 → 최신법령·유권해석 → 전문가상담 → 세금계산기 순서로 분야 메뉴 뒤에 두고, 전문가칼럼만 구분선 앞(지자체뉴스 바로 옆)", () => {
+  it("켜진 항목을 전문가칼럼 → 최신인기글 → 최신법령·유권해석 → 전문가상담 → 세금계산기 순서로 분야 메뉴 뒤 구분선 오른쪽에 모두 둔다 (PO 2026-11-18 — 전문가칼럼도 구분선 뒤)", () => {
     render(<Header menu={["calc", "expert_request", "columns", "law_updates", "popular"]} />);
     const nav = screen.getByRole("navigation", { name: "바로 메뉴" });
     expect(pairs(within(nav).getAllByRole("link"))).toEqual([
@@ -75,18 +75,22 @@ describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
     ]);
     // 전문가 소개(experts)가 꺼져 있으면 바로 메뉴에 펼침 단추 0
     expect(within(nav).queryAllByRole("button")).toEqual([]);
-    // 구분선(border-l)은 둘째 목록에만 — 전문가칼럼 목록에는 없다
+    // 구분선(border-l)을 가진 목록 하나에 전부 — 구분선 앞(분야 메뉴 바로 옆)에는 바로 메뉴 항목이 없다
     const lists = [...nav.querySelectorAll(":scope > ul")];
-    expect(lists.map((ul) => [...ul.querySelectorAll('[data-part="menu-link"]')].map((a) => a.textContent))).toEqual([
-      ["전문가칼럼"],
-      ["최신인기글", "최신법령·유권해석", "전문가상담", "세금계산기"],
+    expect(lists).toHaveLength(1);
+    expect([...lists[0]!.querySelectorAll('[data-part="menu-link"]')].map((a) => a.textContent)).toEqual([
+      "전문가칼럼",
+      "최신인기글",
+      "최신법령·유권해석",
+      "전문가상담",
+      "세금계산기",
     ]);
-    expect(tokens(lists[0]!)).not.toContain("lg:border-l");
-    expect(tokens(lists[1]!)).toContain("lg:border-l");
+    expect(tokens(lists[0]!)).toContain("lg:border-l");
     // 분야 메뉴는 그대로 정확히 4개 — 바로 메뉴 링크는 분야 링크(section-link)로 세지 않는다
     expect(document.querySelectorAll('[data-part="section-link"]')).toHaveLength(4);
-    const all = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
-    expect(all.indexOf("/columns")).toBe(all.indexOf("/local") + 1);
+    // 전문가칼럼은 분야 메뉴(지자체뉴스)와 구분선으로 갈린 바로 메뉴 첫 항목이다
+    const sectionNav = screen.getByRole("navigation", { name: "분야 메뉴" });
+    expect(sectionNav.contains(screen.getByRole("link", { name: "전문가칼럼" }))).toBe(false);
   });
 
   it("편집위원(로그인한 편집위원·관리자에게만 넘어오는 키)은 세금계산기 바로 왼쪽 — /editorial (PO 2026-11-18)", () => {
@@ -142,7 +146,7 @@ describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
 
   it("분야 하위 메뉴와 전문가상담 하위 메뉴도 한 번에 하나만 열린다", async () => {
     render(<Header menu={["expert_request"]} utilities={["experts"]} submenus={{ tax: [{ key: "tax:news", label: "뉴스 전체", href: "/news?section=tax" }] }} />);
-    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
+    const tax = screen.getByRole("button", { name: "부동산·지방세 세금 하위 메뉴" });
     const expert = screen.getByRole("button", { name: "전문가상담 하위 메뉴" });
     await userEvent.click(tax);
     await userEvent.click(expert);
@@ -233,7 +237,7 @@ describe("헤더 — 360px 메뉴 열기 버튼 (공개·닫기)", () => {
     await userEvent.keyboard("{Enter}");
     expect(button.getAttribute("aria-expanded")).toBe("true");
     await userEvent.tab();
-    expect(document.activeElement?.textContent).toBe("지방세·부동산세금");
+    expect(document.activeElement?.textContent).toBe("부동산·지방세 세금");
     await userEvent.keyboard("{Escape}");
     expect(button.getAttribute("aria-expanded")).toBe("false");
     expect(document.activeElement).toBe(button);
@@ -286,8 +290,8 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
 
   it("하위 메뉴를 줘도 상단 메뉴는 정확히 4개 — 펼침 단추는 하위 메뉴가 있는 분야에만", () => {
     render(<Header submenus={SUB} />);
-    expect(topLinks()).toEqual(["지방세·부동산세금", "부동산재테크", "부동산금융", "지자체뉴스"]);
-    expect(screen.getAllByRole("button", { name: /하위 메뉴$/ }).map((b) => b.textContent)).toEqual(["지방세·부동산세금 하위 메뉴", "지자체뉴스 하위 메뉴"]);
+    expect(topLinks()).toEqual(["부동산·지방세 세금", "부동산재테크", "부동산금융", "지자체뉴스"]);
+    expect(screen.getAllByRole("button", { name: /하위 메뉴$/ }).map((b) => b.textContent)).toEqual(["부동산·지방세 세금 하위 메뉴", "지자체뉴스 하위 메뉴"]);
     // 닫힌 하위 메뉴는 hidden — 화면 읽기·탭 이동에도 없다
     expect(screen.queryByRole("link", { name: "해석" })).toBeNull();
     expect(document.querySelectorAll('[data-part="sub-link"]')).toHaveLength(3);
@@ -295,7 +299,7 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
 
   it("펼침 단추로 열고 닫는다 — 링크는 그대로 허브로 가고, 한 번에 하나만 열린다", async () => {
     render(<Header submenus={SUB} />);
-    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
+    const tax = screen.getByRole("button", { name: "부동산·지방세 세금 하위 메뉴" });
     const local = screen.getByRole("button", { name: "지자체뉴스 하위 메뉴" });
     expect(tax.getAttribute("aria-expanded")).toBe("false");
     await userEvent.click(tax);
@@ -305,7 +309,7 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
       ["해석", "/tax/interpretations"],
       ["뉴스 전체", "/news?section=tax"],
     ]);
-    expect(screen.getByRole("link", { name: "지방세·부동산세금" }).getAttribute("href")).toBe("/tax");
+    expect(screen.getByRole("link", { name: "부동산·지방세 세금" }).getAttribute("href")).toBe("/tax");
     await userEvent.click(local);
     expect(tax.getAttribute("aria-expanded")).toBe("false");
     expect(local.getAttribute("aria-expanded")).toBe("true");
@@ -317,7 +321,7 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
     render(<Header submenus={SUB} />);
     const menu = screen.getByRole("button", { name: "메뉴" });
     await userEvent.click(menu);
-    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
+    const tax = screen.getByRole("button", { name: "부동산·지방세 세금 하위 메뉴" });
     await userEvent.click(tax);
     screen.getByRole("link", { name: "해석" }).focus();
     await userEvent.keyboard("{Escape}");
@@ -346,7 +350,7 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
     );
     const menu = screen.getByRole("button", { name: "메뉴" });
     await userEvent.click(menu);
-    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
+    const tax = screen.getByRole("button", { name: "부동산·지방세 세금 하위 메뉴" });
     await userEvent.click(tax);
     await userEvent.click(screen.getByRole("link", { name: "해석" }));
     expect(tax.getAttribute("aria-expanded")).toBe("false");
@@ -360,7 +364,7 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
         <button type="button">바깥</button>
       </>,
     );
-    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
+    const tax = screen.getByRole("button", { name: "부동산·지방세 세금 하위 메뉴" });
     await userEvent.click(tax);
     await userEvent.click(screen.getByRole("button", { name: "바깥" }));
     expect(tax.getAttribute("aria-expanded")).toBe("false");
@@ -373,9 +377,27 @@ describe("헤더 — 분야별 하위 메뉴 (HOME-02 '하위 메뉴는 분야 �
 
   it("펼침 단추·하위 메뉴 항목의 터치 영역 44px(min-h-11) 이상", async () => {
     render(<Header submenus={SUB} />);
-    const tax = screen.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" });
+    const tax = screen.getByRole("button", { name: "부동산·지방세 세금 하위 메뉴" });
     expect(tokens(tax)).toEqual(expect.arrayContaining(["min-h-11", "min-w-11"]));
     await userEvent.click(tax);
     for (const a of within(document.getElementById(tax.getAttribute("aria-controls")!)!).getAllByRole("link")) expect(tokens(a)).toContain("min-h-11");
+  });
+});
+
+describe("헤더 — 메뉴 글자 크기 (PO 2026-11-18, 14px → 18px · 16px → 21px · 하위 15px → 19px)", () => {
+  it("분야 메뉴·바로 메뉴 링크는 데스크톱 18px, 모바일 21px", () => {
+    render(<Header menu={["calc", "columns"]} />);
+    for (const name of ["부동산·지방세 세금", "부동산재테크", "부동산금융", "지자체뉴스", "전문가칼럼", "세금계산기"]) {
+      const link = screen.getByRole("link", { name });
+      expect(tokens(link), name).toEqual(expect.arrayContaining(["text-[21px]", "lg:text-[18px]"]));
+      expect(tokens(link), name).not.toContain("lg:text-[14px]");
+    }
+  });
+
+  it("하위 메뉴 링크도 같은 비율로 커진다 (모바일 19px · 데스크톱 18px)", async () => {
+    render(<Header submenus={{ tax: [{ key: "tax:all", label: "뉴스 전체", href: "/tax/news" }] }} />);
+    await userEvent.click(screen.getByRole("button", { name: "부동산·지방세 세금 하위 메뉴" }));
+    const sub = screen.getByRole("link", { name: "뉴스 전체" });
+    expect(tokens(sub)).toEqual(expect.arrayContaining(["text-[19px]", "lg:text-[18px]"]));
   });
 });

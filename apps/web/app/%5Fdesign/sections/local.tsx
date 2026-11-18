@@ -387,7 +387,7 @@ export function LocalSection() {
             title="○○구역 관리처분, 무엇이 달라지나"
             summary="같은 구역을 다룬 지방세·부동산·지자체 기사를 한곳에 모았습니다."
             articles={[
-              { id: "a1", field: "지방세·부동산세금", card: article("입주권과 취득세 주택 수", "관리처분 뒤 입주권이 주택 수에 들어가는 때를 정리했습니다."), approval },
+              { id: "a1", field: "부동산·지방세 세금", card: article("입주권과 취득세 주택 수", "관리처분 뒤 입주권이 주택 수에 들어가는 때를 정리했습니다."), approval },
               { id: "a2", field: "부동산재테크", card: article("○○구역 관리처분계획 인가", "인가 고시 원문과 다음 단계를 봅니다."), approval },
               { id: "a3", field: "지자체뉴스", card: article("강남구, 주민설명회 연다", "관리처분 내용 설명회 일정과 장소입니다."), approval },
             ]}

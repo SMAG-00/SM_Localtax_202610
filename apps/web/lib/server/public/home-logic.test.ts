@@ -224,7 +224,7 @@ describe("홈 섹션 순서 (HOME-01)", () => {
   test("4대 분야 카드는 정확히 4장 — 지방세 /tax · 부동산 /realestate · 부동산금융 /finance · 지자체뉴스 /local", () => {
     const fields = homeSections(empty).find((x) => x.key === "fields")!;
     expect(fields.key === "fields" && fields.cards.map((c) => [c.name, c.href])).toEqual([
-      ["지방세·부동산세금", "/tax"],
+      ["부동산·지방세 세금", "/tax"],
       ["부동산재테크", "/realestate"],
       ["부동산금융", "/finance"],
       ["지자체뉴스", "/local"],

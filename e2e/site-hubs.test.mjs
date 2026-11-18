@@ -19,7 +19,7 @@ import { StaffFixture } from "./lib/staff.mjs";
 const ADMIN_EMAIL = "site-hubs-e2e@example.test";
 const SITE = "https://e2e.example.test";
 const HUBS = [
-  { key: "tax", path: "/tax", name: "지방세·부동산세금" },
+  { key: "tax", path: "/tax", name: "부동산·지방세 세금" },
   { key: "realestate", path: "/realestate", name: "부동산재테크" },
   { key: "finance", path: "/finance", name: "부동산금융" },
   { key: "local", path: "/local", name: "지자체뉴스" },
@@ -315,7 +315,7 @@ test("c) 뉴스 전체 — 편집 승인된 reported_news만(해설·칼럼·광
   assert.equal(sk.h1, "뉴스 전체");
   assert.deepEqual(sk.tabs.map((t) => [t[0], t[1]]), [
     ["전체", "/news"],
-    ["지방세·부동산세금", "/news?section=tax"],
+    ["부동산·지방세 세금", "/news?section=tax"],
     ["부동산재테크", "/news?section=realestate"],
     ["부동산금융", "/news?section=finance"],
     ["지자체", "/news?section=local"],
@@ -409,7 +409,7 @@ test("f) 화면 전환 — 홈 → 허브 → 하위 분야 → 뒤로·뒤로, 
   await page.locator('nav[aria-label="분야 메뉴"] a[href="/tax"]').click();
   await page.waitForURL(`${base}/tax`);
   await page.locator('[data-ui="hub"][data-hub="tax"]').waitFor();
-  assert.equal(await page.locator('nav[aria-label="분야 메뉴"] a[aria-current="page"]').textContent(), "지방세·부동산세금", "지금 보는 분야 표시");
+  assert.equal(await page.locator('nav[aria-label="분야 메뉴"] a[aria-current="page"]').textContent(), "부동산·지방세 세금", "지금 보는 분야 표시");
   await page.locator('[data-ui="tab-nav"] a[href="/tax/interpretations"]').click();
   await page.waitForURL(`${base}/tax/interpretations`);
   await page.locator('[data-ui="category-list"]').waitFor();
@@ -426,11 +426,11 @@ test("f) 화면 전환 — 홈 → 허브 → 하위 분야 → 뒤로·뒤로, 
   await page.locator('[data-part="hub-situations"] a').first().click();
   await page.locator('[data-ui="situation-page"]').waitFor();
   // 헤더 하위 메뉴 → 뉴스 전체(지방세)
-  await page.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" }).click();
+  await page.getByRole("button", { name: "부동산·지방세 세금 하위 메뉴" }).click();
   await page.locator('[data-menu-section="tax"] [data-part="sub-link"][href="/news?section=tax"]').click();
   await page.waitForURL((url) => url.pathname === "/news" && url.searchParams.get("section") === "tax");
   await page.locator('[data-ui="news-list"][data-section="tax"]').waitFor();
-  assert.equal(await page.getByRole("button", { name: "지방세·부동산세금 하위 메뉴" }).getAttribute("aria-expanded"), "false", "누르면 하위 메뉴가 닫힌다");
+  assert.equal(await page.getByRole("button", { name: "부동산·지방세 세금 하위 메뉴" }).getAttribute("aria-expanded"), "false", "누르면 하위 메뉴가 닫힌다");
   assert.equal(await page.evaluate(() => window.__e2eMarker), "kept", "페이지 표식 유지 — 문서 새로고침 0");
   assert.deepEqual(documents, []);
   assert.equal(await page.evaluate(() => performance.getEntriesByType("navigation").length), 1);

@@ -11,7 +11,7 @@ export type HeaderShortcutKey = "calc" | "expert_request" | "brief_weekly" | "re
 
 /** 상단 메뉴 — 정확히 4개, 이 순서 (PRD_최종 §4.1, HOME-02) */
 export const HEADER_SECTIONS: ReadonlyArray<{ key: HeaderSectionKey; label: string; href: string }> = [
-  { key: "tax", label: "지방세·부동산세금", href: "/tax" },
+  { key: "tax", label: "부동산·지방세 세금", href: "/tax" },
   { key: "realestate", label: "부동산재테크", href: "/realestate" },
   { key: "finance", label: "부동산금융", href: "/finance" },
   { key: "local", label: "지자체뉴스", href: "/local" },
@@ -31,11 +31,13 @@ export type HeaderMenuKey = "popular" | "law_updates" | "columns" | "expert_requ
 
 /**
  * 바로 메뉴 — 분야 메뉴(4대 분야, 펼침 있음) 오른쪽에 링크 5개, 이 순서 (PO 2026-11-01 — 기존 매체 사이트 머리글처럼 자주 찾는 곳을 한 줄에).
- * `lead` 항목(전문가칼럼)은 구분선 앞, 지자체뉴스 바로 옆에 둔다 (PO 2026-11-01). 전문가상담 아래에는 전문가 소개가 펼침으로 붙는다(Header).
+ * 바로 메뉴는 전부 구분선 뒤에 둔다 — 전문가칼럼도 구분선 앞이 아니라 뒤 첫 항목이다 (PO 2026-11-18). `lead` 칸 자체는 남겨 두지만 지금 쓰는 항목은 없다.
+ * 전문가상담 아래에는 전문가 소개가 펼침으로 붙는다(Header).
  * 홈 바로가기와 같은 기능 키(shortcuts)로 켜진다. 도착 화면이 아직 닫혀 있으면 404가 아니라 '준비 중' 안내를 보여 준다(각 도착 page).
  */
 export const HEADER_MENU: ReadonlyArray<{ key: HeaderMenuKey; label: string; href: string; lead?: true; signedIn?: true }> = [
-  { key: "columns", label: "전문가칼럼", href: "/columns", lead: true },
+  // 전문가칼럼도 구분선 뒤 첫 항목이다 (PO 2026-11-18 — 이전에는 구분선 앞 지자체뉴스 바로 옆)
+  { key: "columns", label: "전문가칼럼", href: "/columns" },
   // 최신인기글 = 많이 본 기사 목록 (홈 최신 인기글과 같은 순위)
   { key: "popular", label: "최신인기글", href: "/news/popular" },
   // 최신법령·유권해석 = 지방세 하위 분야 목록 (PO 2026-11-01 — 주간 브리핑 호 대신 일반 기사로 올리고 이 하위 분야를 고른다)
@@ -78,7 +80,7 @@ export type HeaderProps = {
 };
 
 /**
- * 헤더 — SM 헤더 그대로 (PRD-00 8.6): bg-navy-800 · 텍스트 워드마크(17px 800 흰 글자 + 오렌지 가운뎃점) · 링크 14px 600 navy-100 ·
+ * 헤더 — SM 헤더 그대로 (PRD-00 8.6): bg-navy-800 · 텍스트 워드마크(17px 800 흰 글자 + 오렌지 가운뎃점) · 메뉴 링크 18px 600 navy-100(PO 2026-11-18 14px→18px) ·
  * 버튼 rounded-lg hermes-500 + navy-900 굵은 글자. 유틸 메뉴 자리를 더했다 (DS-02). 회사·정책 링크와 AI 도우미는 헤더에 두지 않는다 (HELP-05·HOME-02).
  * 화면 순서: 워드마크 → 분야 메뉴 → 바로 메뉴 → 유틸 메뉴 → 계정 버튼 (모바일은 워드마크 · 계정 버튼 · [메뉴] 한 줄, 그 아래 펼친 메뉴).
  */

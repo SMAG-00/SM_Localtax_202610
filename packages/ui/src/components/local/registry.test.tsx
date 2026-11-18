@@ -97,7 +97,7 @@ const SAMPLES: Record<string, ReactElement> = {
       title="제목"
       summary="요약"
       articles={[
-        { id: "1", field: "지방세·부동산세금", card: <p>기사 1</p>, approval },
+        { id: "1", field: "부동산·지방세 세금", card: <p>기사 1</p>, approval },
         { id: "2", field: "부동산재테크", card: <p>기사 2</p>, approval },
       ]}
       taxLens={<aside>지방세로 읽기</aside>}

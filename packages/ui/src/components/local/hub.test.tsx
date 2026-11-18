@@ -431,14 +431,14 @@ describe("이슈 묶음 머리 (CORE-04)", () => {
       <IssueBundleHead
         title="○○구역 관리처분, 무엇이 달라지나"
         summary="같은 구역을 다룬 부동산·지방세 기사를 한곳에 모았습니다."
-        articles={[art("r1", "부동산재테크"), art("t1", "지방세·부동산세금"), art("l1", "지자체뉴스")]}
+        articles={[art("r1", "부동산재테크"), art("t1", "부동산·지방세 세금"), art("l1", "지자체뉴스")]}
         taxLens={<aside data-slot="tax-lens">지방세로 읽기</aside>}
       />,
     );
     expect(container.firstElementChild?.getAttribute("data-ui")).toBe("issue-bundle-head");
     expect(screen.getByText("ISSUE")).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("○○구역 관리처분, 무엇이 달라지나");
-    expect([...container.querySelectorAll("[data-issue-field]")].map((el) => el.getAttribute("data-issue-field"))).toEqual(["지방세·부동산세금", "부동산재테크", "지자체뉴스"]);
+    expect([...container.querySelectorAll("[data-issue-field]")].map((el) => el.getAttribute("data-issue-field"))).toEqual(["부동산·지방세 세금", "부동산재테크", "지자체뉴스"]);
     expect(container.querySelectorAll('[data-slot="tax-lens"]').length).toBe(1);
   });
 
@@ -447,7 +447,7 @@ describe("이슈 묶음 머리 (CORE-04)", () => {
       <IssueBundleHead
         title="제목"
         summary="요약"
-        articles={[art("t1", "지방세·부동산세금"), art("r1", "부동산재테크"), art("r2", "부동산재테크", false), { ...art("f1", "부동산금융"), approval: { ...approval, reason: "" } }]}
+        articles={[art("t1", "부동산·지방세 세금"), art("r1", "부동산재테크"), art("r2", "부동산재테크", false), { ...art("f1", "부동산금융"), approval: { ...approval, reason: "" } }]}
         taxLens={<aside>박스</aside>}
       />,
     );
@@ -458,7 +458,7 @@ describe("이슈 묶음 머리 (CORE-04)", () => {
   });
 
   it("승인된 기사가 서로 다른 분야 2개 미만이면 묶음을 그리지 않는다", () => {
-    const { container } = render(<IssueBundleHead title="제목" summary="요약" articles={[art("r1", "부동산재테크"), art("r2", "부동산재테크"), art("t1", "지방세·부동산세금", false)]} taxLens={<aside>박스</aside>} />);
+    const { container } = render(<IssueBundleHead title="제목" summary="요약" articles={[art("r1", "부동산재테크"), art("r2", "부동산재테크"), art("t1", "부동산·지방세 세금", false)]} taxLens={<aside>박스</aside>} />);
     expect(container.innerHTML).toBe("");
   });
 });

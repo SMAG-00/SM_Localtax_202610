@@ -187,10 +187,10 @@ test("d) 구조화 데이터 — 기사·허브 JSON-LD 오류 0, 화면 값 대
   assert.equal(news.publisher.name, "SM(선명)");
   const crumbs = article.nodes.find((n) => n["@type"] === "BreadcrumbList").itemListElement.map((i) => i.name);
   assert.equal(crumbs[0], "홈");
-  assert.equal(crumbs[1], "지방세·부동산세금");
+  assert.equal(crumbs[1], "부동산·지방세 세금");
   assert.equal(crumbs.at(-1), art.normal.title);
 
-  for (const [p, name] of [["/tax", "지방세·부동산세금"], ["/realestate", "부동산재테크"], ["/finance", "부동산금융"]]) {
+  for (const [p, name] of [["/tax", "부동산·지방세 세금"], ["/realestate", "부동산재테크"], ["/finance", "부동산금융"]]) {
     const hub = await nodesOf(p);
     assert.deepEqual(validate(hub.nodes), [], `${p} 검사기 오류 0`);
     const list = hub.nodes.find((n) => n["@type"] === "BreadcrumbList");

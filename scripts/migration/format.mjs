@@ -8,7 +8,7 @@ export const FORMAT_VERSION = 1;
 
 export const SECTIONS = ["tax", "realestate", "finance", "local"];
 /** 새 사이트 분야 이름 (PRD-00 5.3) */
-export const SECTION_LABELS = { tax: "지방세·부동산세금", realestate: "부동산재테크", finance: "부동산금융", local: "지자체뉴스" };
+export const SECTION_LABELS = { tax: "부동산·지방세 세금", realestate: "부동산재테크", finance: "부동산금융", local: "지자체뉴스" };
 /** 기사 slug로 쓸 수 없는 이름 (articles check · ART-01) */
 export const RESERVED_SLUGS = ["video", "photo", "popular"];
 

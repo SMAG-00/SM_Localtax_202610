@@ -260,8 +260,8 @@ describe("Hero · FieldHubHead · FieldCards 연결", () => {
     const imgs = Array.from(container.querySelectorAll("img")).map((i) => i.getAttribute("src"));
     expect(imgs).toEqual(["/media/hero/tax-card.avif", "/media/hero/finance-card.avif"]);
     expect(container.querySelector("img")!.getAttribute("alt")).toBe("");
-    expect(links[0]!.textContent).toBe("지방세·부동산세금포인트 글");
-    expect(screen.getByText("지방세·부동산세금").className).toContain("text-white");
+    expect(links[0]!.textContent).toBe("부동산·지방세 세금포인트 글");
+    expect(screen.getByText("부동산·지방세 세금").className).toContain("text-white");
     expect(screen.getByText("부동산재테크").className).toContain("text-navy-900");
   });
 });

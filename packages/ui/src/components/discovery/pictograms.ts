@@ -222,7 +222,7 @@ export const PICTOGRAMS: Record<PictogramName, PictogramDef> = {
   // ── 4대 분야 ───────────────────────────────────────────
   "field-local-tax": {
     group: "field",
-    label: "지방세·부동산세금",
+    label: "부동산·지방세 세금",
     // 영수증 + 채운 인장
     lines: [path("M5.5 3.5 H18.5 V20.5 L16.33 19 L14.17 20.5 L12 19 L9.83 20.5 L7.67 19 L5.5 20.5 Z"), path("M8.5 7.5 H15.5 M8.5 11 H13")],
     point: circle(14.5, 15, 2),

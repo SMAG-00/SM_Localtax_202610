@@ -214,7 +214,7 @@ test("c) 분야 거르개(탭 — JS 없이 링크) · 용어 쪽 /glossary/[번
   const { context, page } = await open(`${base}/glossary`, { javaScriptEnabled: false });
   const tabs = await page.$$eval('[data-ui="tab-nav"] a', (as) => as.map((a) => [a.textContent, a.getAttribute("href"), a.getAttribute("aria-current")]));
   assert.deepEqual(tabs[0], ["전체", "/glossary", "page"]);
-  for (const [label, href] of [["지방세·부동산세금", "/glossary?section=tax"], ["부동산재테크", "/glossary?section=realestate"], ["부동산금융", "/glossary?section=finance"], ["지자체뉴스", "/glossary?section=local"]]) {
+  for (const [label, href] of [["부동산·지방세 세금", "/glossary?section=tax"], ["부동산재테크", "/glossary?section=realestate"], ["부동산금융", "/glossary?section=finance"], ["지자체뉴스", "/glossary?section=local"]]) {
     assert.ok(tabs.some((t) => t[0] === label && t[1] === href), `${label} 탭`);
   }
   await page.locator('[data-ui="tab-nav"] a', { hasText: "부동산금융" }).click();

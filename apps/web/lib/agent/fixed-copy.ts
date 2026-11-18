@@ -49,7 +49,7 @@ export interface ScopeResponseSpec {
 
 // 사이트 안 링크는 분야 허브뿐이다(지역 허브·관광 링크 0). 이름은 packages/ui brand가 아니라 분야 이름이며 사이트 이름이 아니다.
 const FIELD_HUBS: readonly LinkSpec[] = [
-  { kind: "site", label: "지방세·부동산세금", href: "/tax" },
+  { kind: "site", label: "부동산·지방세 세금", href: "/tax" },
   { kind: "site", label: "부동산재테크", href: "/realestate" },
 ];
 

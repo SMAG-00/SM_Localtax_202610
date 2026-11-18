@@ -7,14 +7,14 @@ import { UiLink } from "../link";
 export type HeaderNavLink = { key: string; label: string; href: string };
 /** 분야 메뉴 한 칸 — 하위 메뉴(분야 데이터에서 온 하위 분야 + 공통 `뉴스 전체`, HOME-02)가 있으면 펼침 단추가 붙는다 */
 export type HeaderNavSection = HeaderNavLink & { children?: readonly HeaderNavLink[] };
-/** 바로 메뉴 한 칸 — `lead`면 구분선 앞(분야 메뉴 바로 옆), 하위 링크가 있으면 분야 메뉴처럼 펼침 단추가 붙는다 */
+/** 바로 메뉴 한 칸 — `lead`면 구분선 앞(분야 메뉴 바로 옆, 지금 쓰는 항목 없음), 하위 링크가 있으면 분야 메뉴처럼 펼침 단추가 붙는다 */
 export type HeaderNavMenuItem = HeaderNavSection & { lead?: boolean };
 
 const LINK =
-  "inline-flex min-h-11 w-full items-center px-1 text-[16px] font-semibold text-navy-100 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:w-auto lg:px-2.5 lg:text-[14px]";
+  "inline-flex min-h-11 w-full items-center px-1 text-[21px] font-semibold text-navy-100 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:w-auto lg:px-2.5 lg:text-[18px]";
 
 const SUB_LINK =
-  "inline-flex min-h-11 w-full items-center px-3 text-[15px] font-semibold text-navy-100 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:text-[14px]";
+  "inline-flex min-h-11 w-full items-center px-3 text-[19px] font-semibold text-navy-100 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hermes-400 lg:text-[18px]";
 
 function MenuIcon() {
   return (
@@ -26,7 +26,7 @@ function MenuIcon() {
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className={cx("size-[18px] transition", open && "rotate-180")} fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={cx("size-[22px] transition", open && "rotate-180")} fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
       <path d="M6 9l6 6 6-6" />
     </svg>
   );

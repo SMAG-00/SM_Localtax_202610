@@ -17,7 +17,7 @@ describe("4대 분야 카드", () => {
     expect(links).toHaveLength(4);
     expect(links.map((a) => a.getAttribute("href"))).toEqual(["/tax", "/realestate", "/finance", "/local"]);
     expect(links.map((a) => a.textContent)).toEqual([
-      `지방세·부동산세금${POINTS.tax}`,
+      `부동산·지방세 세금${POINTS.tax}`,
       `부동산재테크${POINTS.realestate}`,
       `부동산금융${POINTS.finance}`,
       `지자체뉴스${POINTS.local}`,
@@ -37,7 +37,7 @@ describe("4대 분야 카드", () => {
 
   it("분야 이름은 19px 900 글자다", () => {
     render(<FieldCards points={POINTS} />);
-    for (const name of ["지방세·부동산세금", "부동산재테크", "부동산금융", "지자체뉴스"]) {
+    for (const name of ["부동산·지방세 세금", "부동산재테크", "부동산금융", "지자체뉴스"]) {
       const el = screen.getByText(name);
       expect(el.className).toContain("text-[19px]");
       expect(el.className).toContain("font-black");
@@ -67,13 +67,13 @@ describe("4대 분야 카드", () => {
   it("지방세 포인트 한 줄을 주지 않으면 그 줄 없이 이름만 보인다 (R1 넘침 대응)", () => {
     render(<FieldCards />);
     const links = screen.getAllByRole("link");
-    expect(links.map((a) => a.textContent)).toEqual(["지방세·부동산세금", "부동산재테크", "부동산금융", "지자체뉴스"]);
+    expect(links.map((a) => a.textContent)).toEqual(["부동산·지방세 세금", "부동산재테크", "부동산금융", "지자체뉴스"]);
   });
 
   it("일부 분야만 포인트를 주면 그 분야만 한 줄이 붙는다", () => {
     render(<FieldCards points={{ finance: POINTS.finance }} />);
     expect(screen.getByRole("link", { name: /부동산금융/ }).textContent).toBe(`부동산금융${POINTS.finance}`);
-    expect(screen.getByRole("link", { name: /^지방세·부동산세금$/ }).textContent).toBe("지방세·부동산세금");
+    expect(screen.getByRole("link", { name: /^부동산·지방세 세금$/ }).textContent).toBe("부동산·지방세 세금");
   });
 
   it("분석용 분야 표식(data-field)이 카드마다 있다 (home_entry_clicked)", () => {

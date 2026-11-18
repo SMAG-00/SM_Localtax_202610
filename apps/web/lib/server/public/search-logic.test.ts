@@ -186,7 +186,7 @@ describe("DB 인자", () => {
 describe("행 → 보기 값", () => {
   test("기사 — 주소 /news/[slug], 유형 배지 글자, 형식(일반이면 null), 한국 날짜", () => {
     const v = searchHitView(row({ meta: { format: "cardnews", label: "none", partner_badge_name: null, region_codes: ["1100000000"] } }), CLOSED_FEATURES);
-    expect(v).toMatchObject({ kind: "article", href: "/news/a-1", typeLabel: "해설", format: "cardnews", publishedOn: "2026-10-02", sponsor: null, sponsorBadge: null, regionCodes: ["1100000000"], sectionName: "지방세·부동산세금" });
+    expect(v).toMatchObject({ kind: "article", href: "/news/a-1", typeLabel: "해설", format: "cardnews", publishedOn: "2026-10-02", sponsor: null, sponsorBadge: null, regionCodes: ["1100000000"], sectionName: "부동산·지방세 세금" });
   });
 
   test("광고는 유형 배지 '광고', 공동 기획은 유형 배지 대신 '공동 기획 ○○' (W2-b #49), 유형 없는 이관 기사는 '기사'", () => {
@@ -243,7 +243,7 @@ describe("행 → 보기 값", () => {
       docType: "tribunal",
       docTypeLabel: "심판",
       decidedOn: "2026-03-02",
-      sectionName: "지방세·부동산세금",
+      sectionName: "부동산·지방세 세금",
       sourceUrl: "https://example.test/doc",
     });
     expect(searchHitView(r, { ...ALL_OPEN, interpretations: false })).toMatchObject({ href: null, sourceUrl: "https://example.test/doc" });

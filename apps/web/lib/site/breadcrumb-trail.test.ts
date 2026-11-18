@@ -9,7 +9,7 @@ const nodesOf = (content: string | null) => JSON.parse(content!) as Record<strin
 
 describe("고정 주소 경로 표시 (BreadcrumbList · OPT-02)", () => {
   test("분야 허브는 홈 > 새 분야 이름 — 세 분야 이름이 바뀐 이름 그대로 (옛 이름 0)", () => {
-    expect(staticTrail("/tax")!.map((t) => t.name)).toEqual(["홈", "지방세·부동산세금"]);
+    expect(staticTrail("/tax")!.map((t) => t.name)).toEqual(["홈", "부동산·지방세 세금"]);
     expect(staticTrail("/realestate")!.map((t) => t.name)).toEqual(["홈", "부동산재테크"]);
     expect(staticTrail("/finance")!.map((t) => t.name)).toEqual(["홈", "부동산금융"]);
     expect(staticTrail("/local")!.map((t) => t.name)[0]).toBe("홈");
@@ -37,7 +37,7 @@ describe("고정 주소 경로 표시 (BreadcrumbList · OPT-02)", () => {
     const items = (nodes[0] as { itemListElement: { position: number; name: string; item: string }[] }).itemListElement;
     expect(items.map((i) => [i.position, i.name, i.item])).toEqual([
       [1, "홈", `${SITE}/`],
-      [2, "지방세·부동산세금", `${SITE}/tax`],
+      [2, "부동산·지방세 세금", `${SITE}/tax`],
       [3, "개정 트래커", `${SITE}/tax/amendments`],
     ]);
     expect(trailJsonLd(staticTrail("/tax")!, undefined)).toBeNull();

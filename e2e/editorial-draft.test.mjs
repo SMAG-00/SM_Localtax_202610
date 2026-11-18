@@ -278,7 +278,7 @@ test("c) 입력 오류 — 제목 41자·모르는 분야는 422, 아무것도 �
   const before = Number((await one("select count(*)::int as n from public.media")).n);
   const r = await call("POST", `/api/editorial/packages/${fx.columnId}/draft`, u.deskEditor, { title: "가".repeat(41), summary: "", section: "nowhere", contentType: "opinion", categorySlug: "", slug: "desk-e2e" });
   assert.equal(r.status, 422, show(r));
-  assert.deepEqual(r.body.errors, ["제목: 40자 이하로 줄여 주세요 (지금 41자)", "분야: 지방세·부동산세금·부동산재테크·부동산금융·지자체뉴스 중에서 골라 주세요"]);
+  assert.deepEqual(r.body.errors, ["제목: 40자 이하로 줄여 주세요 (지금 41자)", "분야: 부동산·지방세 세금·부동산재테크·부동산금융·지자체뉴스 중에서 골라 주세요"]);
   assert.equal(Number((await one("select count(*)::int as n from public.media")).n), before, "사진 보관함에 새 행 0");
   assert.equal((await one("select article_id from public.editorial_packages where id = $1", [fx.columnId])).article_id, null);
 });
