@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { DarkButton, PrimaryButton, SelectField } from "@ltr/ui";
 import type { Finding } from "@ltr/editorial";
@@ -11,8 +11,6 @@ import {
   editorPayload,
   editorStateFromArticle,
   fieldErrorsFromServer,
-  qualitativeRecords,
-  quantitativeGroups,
   validateEditor,
   type EditorArticle,
   type EditorState,
@@ -23,21 +21,13 @@ import { uncheckedConfirmSentence, uncheckedConfirms } from "@/lib/admin/publish
 import { suggestedFixReason } from "@/lib/admin/quick-fix";
 import { UPDATE_KIND_LABELS, optionsOf } from "@/lib/admin/labels";
 import type { EditorMedia } from "@/lib/admin/media-blocks";
-import type { EvidenceRowView } from "@/lib/admin/records-form";
 import type { CheckItem } from "@/lib/admin/review-form";
-import { CheckPanel } from "./CheckPanel";
-import { EvidencePanel } from "./EvidencePanel";
 import { ErrorSummary, StatusNote, TextAreaField } from "./fields";
 import { SourcesPanel } from "./SourcesPanel";
 import { SubmitForReview } from "./SubmitForReview";
 import { Panel, TEXT_LINK } from "./ui";
 import { BlockEditor } from "./editor/BlockEditor";
-import { ChecklistsEditor } from "./editor/ChecklistsEditor";
-import { ClaimsEditor } from "./editor/ClaimsEditor";
 import { MetaFields } from "./editor/MetaFields";
-import { MethodGuide } from "./editor/MethodGuide";
-import { SolvedCaseEditor } from "./editor/SolvedCaseEditor";
-import { TaxLensEditor } from "./editor/TaxLensEditor";
 import { refOptions, type EditorPermissions } from "./editor/types";
 import { useHydrated } from "./useHydrated";
 
@@ -117,9 +107,6 @@ export function ArticleWorkspace({
   const readOnly = !perms.canEdit || view.article.status === "deleted";
   const update = (patch: Partial<EditorState>) => setState((s) => ({ ...s, ...patch }));
   const refs = refOptions(view.sources, view.evidence);
-  const evidence = view.evidence as unknown as EvidenceRowView[];
-  const storedBlockTypes = view.article.body.blocks.map((b) => b.type);
-  const method = state.contentType === "reported_news" ? state.reportingMethod : "";
   const refresh = () => router.refresh();
 
   async function save(e: FormEvent) {
@@ -181,9 +168,6 @@ export function ArticleWorkspace({
     setPublishFailure({ title: apiErrorMessage(r), details: apiErrorDetails(r) });
   }
 
-  const quant = method === "quantitative" || method === "mixed";
-  const qual = method === "qualitative" || method === "mixed";
-  const interviewIds = view.evidence.filter((e) => e.interview !== null).map((e) => e.id);
   const fixReason = published ? suggestedFixReason(loaded, state) : "";
 
   const canPublishNow = !published && perms.canPublish && view.article.status !== "deleted";
@@ -296,11 +280,6 @@ export function ArticleWorkspace({
                 </a>
               </li>
             ))}
-            <li>
-              <a href="#more-sections" className={TEXT_LINK}>
-                그 밖의 칸
-              </a>
-            </li>
           </ul>
         </nav>
         {readOnly && (
@@ -331,54 +310,12 @@ export function ArticleWorkspace({
 
         {savePanel}
 
-        <MoreSections>
-          <Panel id="claims" title="핵심 주장" description="결론 문장을 표시하고 근거(출처·취재 근거)를 잇습니다. 근거 없는 핵심 주장은 발행되지 않습니다.">
-            <ClaimsEditor state={state} update={update} errors={errors} readOnly={readOnly} refs={refs} makeKey={makeKey} />
-          </Panel>
-
-          <Panel id="sources" title="출처 (공개)" description="독자에게 보이는 출처입니다.">
-            <SourcesPanel articleId={view.article.id} sources={view.sources} readOnly={readOnly} officialSourceTypes={view.officialSourceTypes} />
-          </Panel>
-
-          <Panel id="evidence" title="취재 근거 (비공개)" description="원자료 재현 정보와 인터뷰 기록을 남깁니다.">
-            <EvidencePanel articleId={view.article.id} evidence={evidence} readOnly={readOnly} />
-          </Panel>
-
-          {(quant || qual) && (
-            <Panel id="method-guide" title="필수 기록 안내" description="지금 화면에 적은 내용 기준입니다. 저장한 뒤 점검 패널이 최종 판정합니다.">
-              {quant && <MethodGuide title="정량형 필수 7묶음 (NAV-10)" groups={quantitativeGroups(state, view.evidence.flatMap((e) => (e.dataset ? [e.dataset] : [])))} testId="quant-groups" />}
-              {qual && <MethodGuide title="정성형 필수 기록 (NAV-11)" groups={qualitativeRecords(state, view.evidence, interviewIds)} testId="qual-records" />}
-            </Panel>
-          )}
-
-          <Panel id="checklists" title="취재 확인 목록 (비공개)">
-            <ChecklistsEditor state={state} update={update} readOnly={readOnly} refs={refs} />
-          </Panel>
-
-          <Panel id="taxlens" title="「지방세로 읽기」">
-            <TaxLensEditor state={state} update={update} errors={errors} readOnly={readOnly} canSkip={perms.canSkipTaxLens} stored={view.article.taxLens} />
-          </Panel>
-
-          {state.subtype === "solved_case" && (
-            <Panel id="solved-case" title="해결 사례 4칸">
-              <SolvedCaseEditor state={state} update={update} errors={errors} readOnly={readOnly} />
-            </Panel>
-          )}
-        </MoreSections>
+        <Panel id="sources" title="출처 (공개)" description="독자에게 보이는 출처입니다.">
+          <SourcesPanel articleId={view.article.id} sources={view.sources} readOnly={readOnly} officialSourceTypes={view.officialSourceTypes} />
+        </Panel>
       </div>
 
       <aside aria-label="점검·발행" className="mt-6 space-y-4 lg:sticky lg:top-4 lg:mt-0 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
-        <CheckFold>
-          <CheckPanel
-            articleId={view.article.id}
-            status={view.article.status}
-            canPublishRole={perms.canPublish}
-            blockTypes={storedBlockTypes}
-            refreshKey={`${view.article.version}-${view.article.status}-${view.reviews.length}-${view.sources.length}-${view.evidence.length}`}
-            draft={readOnly || draftJson === savedJson ? null : draftBody}
-            onChanged={refresh}
-          />
-        </CheckFold>
         {/* 검토 요청·검토 화면 — 발행 권한이 없는 사람(예: 남의 기사를 고치는 기자)만 쓴다 */}
         {perms.canSubmit && !perms.canPublish && <SubmitForReview articleId={view.article.id} status={view.article.status} onChanged={refresh} />}
         {perms.canReview && !perms.canPublish && (
@@ -390,25 +327,5 @@ export function ArticleWorkspace({
         )}
       </aside>
     </div>
-  );
-}
-
-/** 기본 정보·본문 밖의 칸(지역 판정·핵심 주장·출처·취재 근거·확인 목록·「지방세로 읽기」)을 하나로 접는다 — 칸 오류로 포커스가 가면 focusField가 연다 */
-function MoreSections({ children }: { children: ReactNode }) {
-  return (
-    <details id="more-sections" className="scroll-mt-4 rounded-2xl border border-navy-100 bg-white">
-      <summary className="cursor-pointer px-6 py-4 text-[17px] font-black text-navy-900">그 밖의 칸 — 핵심 주장·출처·취재 근거·확인 목록·「지방세로 읽기」 (바로잡을 때만 엽니다)</summary>
-      <div className="space-y-6 p-2">{children}</div>
-    </details>
-  );
-}
-
-/** 점검 결과(경고·점수)는 접어 둔다 — 발행을 막는 항목은 저장·발행 칸에 따로 보인다 (간편 발행) */
-function CheckFold({ children }: { children: ReactNode }) {
-  return (
-    <details id="check-fold" className="rounded-2xl border border-navy-100 bg-white">
-      <summary className="cursor-pointer px-6 py-4 text-[15px] font-bold text-navy-900">점검 결과 보기 (경고·점수)</summary>
-      {children}
-    </details>
   );
 }

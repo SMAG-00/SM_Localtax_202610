@@ -206,18 +206,18 @@ test("a) 기자가 자기 기사를 [발행] 한 번 — 저장 안 한 요약�
   await publicHtml(fx.own);
 });
 
-test("a') 기사 편집 화면 — 단계표·검토 요청 없이 기본 정보·본문·저장·그 밖의 칸, 점검 결과는 접혀 있다", async () => {
+test("a') 기사 편집 화면 — 단계표·검토 요청 없이 기본 정보·본문·저장만 있고, 점검 결과·그 밖의 칸은 없다 (2026-11-19 PO 결정)", async () => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   try {
     const page = await context.newPage();
     const path = `/admin/articles/${fx.byEditor.id}`;
     await loginAt(page, u.reporter, path);
     await page.locator("#publish-now").waitFor();
-    assert.deepEqual(await page.locator('nav[aria-label="편집 화면 칸"] a').allInnerTexts(), ["기본 정보", "본문", "저장", "그 밖의 칸"]);
+    assert.deepEqual(await page.locator('nav[aria-label="편집 화면 칸"] a').allInnerTexts(), ["기본 정보", "본문", "저장"]);
     assert.equal(await page.getByTestId("publish-steps").count(), 0, "발행 단계표 없음");
     assert.equal(await page.getByRole("button", { name: "검토 요청" }).count(), 0, "발행할 수 있는 작성자에게 검토 요청 없음");
-    assert.equal(await page.locator("details#more-sections").evaluate((d) => d.open), false);
-    assert.equal(await page.getByTestId("check-panel").isVisible(), false, "점검 결과는 접혀 있다");
+    assert.equal(await page.locator("details#more-sections").count(), 0, "그 밖의 칸 묶음 없음");
+    assert.equal(await page.getByTestId("check-panel").count(), 0, "점검 결과 칸 없음");
     assert.equal(await page.getByTestId("publish-blockers").count(), 0, "막힘이 없으면 '발행 전에 고칠 것'도 없다");
   } finally {
     await context.close();
@@ -312,14 +312,10 @@ test("e) 발행 기사 빠른 수정 — 고칠 칸만 보이고, 요약만 고�
     await loginAt(page, u.editor, path);
     const nav = page.locator('nav[aria-label="편집 화면 칸"] a');
     await nav.first().waitFor();
-    assert.deepEqual(await nav.allInnerTexts(), ["기본 정보", "본문", "저장", "그 밖의 칸"]);
-    // 핵심 주장·「지방세로 읽기」는 접힌 '그 밖의 칸' 안 — 화면에 없다가 펼치면 보인다
-    const more = page.locator("details#more-sections");
-    assert.equal(await more.evaluate((d) => d.open), false);
-    assert.equal(await page.locator("#claims").isVisible(), false);
-    assert.equal(await page.getByTestId("check-panel").isVisible(), false, "발행 점검 결과는 접혀 있다");
-    // 저장 칸은 본문 바로 다음 (그 밖의 칸보다 앞)
-    assert.equal(await page.evaluate(() => document.querySelector("#save").compareDocumentPosition(document.querySelector("#more-sections")) & Node.DOCUMENT_POSITION_FOLLOWING), 4);
+    assert.deepEqual(await nav.allInnerTexts(), ["기본 정보", "본문", "저장"]);
+    // 핵심 주장·취재 근거·확인 목록·「지방세로 읽기」·점검 결과는 화면에서 걷어냈다 (2026-11-19 PO 결정)
+    assert.equal(await page.locator("#claims").count(), 0);
+    assert.equal(await page.getByTestId("check-panel").count(), 0, "점검 결과 칸 없음");
 
     const summary = "요약 문구를 다듬었습니다. 본문은 그대로입니다.";
     await page.fill("#meta-summary", summary);
