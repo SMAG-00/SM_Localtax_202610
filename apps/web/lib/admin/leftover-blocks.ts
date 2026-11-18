@@ -14,14 +14,17 @@ export interface LeftoverBlockLike {
 const RULE_RE = /^(?:-{3,}|\*{3,}|_{3,})$/;
 const textOf = (b: LeftoverBlockLike): string => (typeof b.text === "string" ? b.text.trim() : "");
 
-export function stripLeftoverBlocks<T extends LeftoverBlockLike>(blocks: readonly T[]): { blocks: T[]; removed: number } {
-  let kept = blocks.filter((b) => !isCommentSlotLine(textOf(b)) && !isInternalNoteLine(textOf(b)));
-  const memoAt = kept.findIndex((b) => isMemoMarkerLine(textOf(b)));
+export function stripLeftoverBlocks<T extends LeftoverBlockLike>(blocks: readonly T[]): { blocks: T[]; removed: number; indexes: number[] } {
+  // 원래 위치를 들고 다니며 거른다 — 화면이 '어느 블록이 지워지는지' 보여 주려면 위치가 필요하다
+  let kept = blocks.map((b, i) => ({ b, i })).filter(({ b }) => !isCommentSlotLine(textOf(b)) && !isInternalNoteLine(textOf(b)));
+  const memoAt = kept.findIndex(({ b }) => isMemoMarkerLine(textOf(b)));
   if (memoAt >= 0) {
     kept = kept.slice(0, memoAt);
-    while (kept.length > 0 && RULE_RE.test(textOf(kept[kept.length - 1]!))) kept.pop();
+    while (kept.length > 0 && RULE_RE.test(textOf(kept[kept.length - 1]!.b))) kept.pop();
   }
-  return { blocks: kept, removed: blocks.length - kept.length };
+  const keptIndexes = new Set(kept.map(({ i }) => i));
+  const indexes = blocks.map((_, i) => i).filter((i) => !keptIndexes.has(i));
+  return { blocks: kept.map(({ b }) => b), removed: indexes.length, indexes };
 }
 
 /** 발행 전 검사 — 저장된 본문(body)에 내부 표시가 남아 있으면 그 문장, 깨끗하면 null. 모양이 이상한 body는 판정하지 않는다(null) */

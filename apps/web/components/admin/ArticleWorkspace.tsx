@@ -311,6 +311,9 @@ export function ArticleWorkspace({
           {!readOnly && leftover.removed > 0 && (
             <div data-testid="leftover-blocks" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[15px] text-amber-800">
               <p className="font-bold">본문에 편집 메모·코멘트 자리 표시가 {leftover.removed}개 블록 남아 있습니다. 독자에게 그대로 보이니 지워야 합니다.</p>
+              <ul className="mt-2 list-disc pl-5" data-testid="leftover-list">
+                {leftover.indexes.map((at) => (<li key={at}>블록 {at + 1}번 — {(state.blocks[at]?.text ?? "").replace(/\s+/g, " ").trim().slice(0, 40) || "(내용 없음)"}</li>))}
+              </ul>
               <button type="button" className={`${TEXT_LINK} mt-1`} onClick={() => update({ blocks: stripLeftoverBlocks(state.blocks).blocks })}>
                 지우기 (저장해야 반영됩니다)
               </button>

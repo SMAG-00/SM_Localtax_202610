@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { CheckboxField, SelectField, TextField } from "@ltr/ui";
 import { BLOCK_TYPES, INFOGRAPHIC_TEMPLATES, ROSE_BOX_TITLE, YOUTUBE_EMBED_PREFIX, type BlockType, type InfographicTemplate } from "@ltr/editorial";
+import { stripLeftoverBlocks } from "@/lib/admin/leftover-blocks";
 import { addBlock, moveBlock, needsActionCheck, removeBlock, updateBlock, type BlockDraft } from "@/lib/admin/editor-state";
 import { BLOCK_TYPE_LABELS, CALLOUT_KIND_LABELS, optionsOf } from "@/lib/admin/labels";
 import {
@@ -56,6 +57,8 @@ export function BlockEditor({ state, update, errors, readOnly, refs, media, make
   const photo = state.format === "photo";
   const photoSet = photo ? photoSetSummary(blocks, media) : null;
   const has = (type: BlockType) => blocks.some((b) => b.type === type);
+  // 편집 메모·코멘트 자리 같은 내부 표시 블록 — 지워야 발행된다. 어느 블록인지 눈에 띄게 표시한다
+  const leftoverAt = new Set(stripLeftoverBlocks(blocks).indexes);
 
   function add() {
     setBlocks(addBlock(blocks, addType, makeKey));
@@ -80,8 +83,8 @@ export function BlockEditor({ state, update, errors, readOnly, refs, media, make
           const quoteRefs = refs.filter((r) => (b.origin === "interview" ? r.kind === "evidence" && r.type === "interview" : r.kind === "source" || r.type === "document"));
           return (
             <li key={b.key} data-testid={`block-${i}`} data-block-type={b.type}>
-              <fieldset className="min-w-0 space-y-3 rounded-xl border border-navy-100 bg-ivory p-4">
-                <legend className="px-1 text-[15px] font-black text-navy-900">{label}</legend>
+              <fieldset className={leftoverAt.has(i) ? "min-w-0 space-y-3 rounded-xl border-2 border-amber-500 bg-amber-50 p-4" : "min-w-0 space-y-3 rounded-xl border border-navy-100 bg-ivory p-4"} data-leftover={leftoverAt.has(i) ? "true" : undefined}>
+                <legend className="px-1 text-[15px] font-black text-navy-900">{leftoverAt.has(i) ? `${label} — 지울 블록 (독자에게 보이면 안 되는 내부 표시)` : label}</legend>
                 {!readOnly && (
                   <div className="flex flex-wrap gap-2">
                     <button type="button" className={OUTLINE_BUTTON} disabled={i === 0} onClick={() => setBlocks(moveBlock(blocks, i, -1))} aria-label={`${label} 위로 옮기기`}>

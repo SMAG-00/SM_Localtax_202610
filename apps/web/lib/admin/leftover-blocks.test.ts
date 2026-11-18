@@ -35,9 +35,9 @@ describe("stripLeftoverBlocks — 본문에 남은 편집 메모·코멘트 자�
   });
 
   it("지울 것이 없으면 그대로 돌려주고 0건이다 (빈 목록 포함)", () => {
-    expect(stripLeftoverBlocks([])).toEqual({ blocks: [], removed: 0 });
+    expect(stripLeftoverBlocks([])).toEqual({ blocks: [], removed: 0, indexes: [] });
     const blocks = [p("본문 하나")];
-    expect(stripLeftoverBlocks(blocks)).toEqual({ blocks, removed: 0 });
+    expect(stripLeftoverBlocks(blocks)).toEqual({ blocks, removed: 0, indexes: [] });
   });
 
   it("편집 메모 앞에 남은 구분선 문단은 함께 지운다", () => {
@@ -93,5 +93,22 @@ describe("leftoverPublishProblem — 본문에 내부 표시가 남은 기사는
   });
   it("모양이 이상한 body(null·blocks 없음·문자열)는 막지 않는다 — 다른 검사가 판정한다", () => {
     for (const body of [null, undefined, "x", {}, { blocks: "x" }, { blocks: [null, 3] }]) expect(leftoverPublishProblem(body)).toBeNull();
+  });
+});
+
+describe("stripLeftoverBlocks — 어느 블록이 지워지는지(indexes)", () => {
+  it("지워질 블록의 원래 위치(0부터)를 순서대로 알려 준다 — 기사 6번 모양", () => {
+    const blocks = [p("요약"), p("> 작성 가정: 비운 항목"), p("본문 하나"), p("[코멘트 자리: 세무사 발언]"), p("본문 둘"), p("[편집 메모]"), p("출처"), p("썸네일 파일명(계획): a.png")];
+    const r = stripLeftoverBlocks(blocks);
+    expect(r.indexes).toEqual([1, 3, 5, 6, 7]);
+    expect(r.removed).toBe(r.indexes.length);
+    expect(r.blocks).toEqual([p("요약"), p("본문 하나"), p("본문 둘")]);
+  });
+  it("메모 앞 구분선 블록의 위치도 포함한다", () => {
+    expect(stripLeftoverBlocks([p("본문"), p("---"), p("[편집 메모]"), p("출처")]).indexes).toEqual([1, 2, 3]);
+  });
+  it("지울 것이 없으면 빈 목록", () => {
+    expect(stripLeftoverBlocks([p("본문")]).indexes).toEqual([]);
+    expect(stripLeftoverBlocks([]).indexes).toEqual([]);
   });
 });

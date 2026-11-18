@@ -30,4 +30,11 @@ describe("기사 편집 화면 — 사용자가 이해할 수 있는 칸만", ()
     expect(route).toContain("leftoverPublishProblem(before.body)");
     expect(route).toContain("publish.leftover-memo");
   });
+
+  it("지울 블록이 무엇인지 보여 준다 — 안내에 블록 목록, 편집 화면의 그 블록에 표시 (개수만 알려 주던 것을 고침)", () => {
+    expect(src).toContain("leftover-list");
+    const blockEditor = readFileSync(resolve(__dirname, "../../components/admin/editor/BlockEditor.tsx"), "utf8");
+    expect(blockEditor).toContain("data-leftover");
+    expect(blockEditor).toContain("지울 블록");
+  });
 });
