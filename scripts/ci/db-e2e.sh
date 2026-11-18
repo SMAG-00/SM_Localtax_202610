@@ -48,6 +48,7 @@ step "기사 생산·제휴 준비 대시보드 E2E (W2-c 5단계 — 확정 버
 step "편집국 화면 E2E (정량형·정성형 기획→공개·정정·역할별 메뉴·403)"; node --test --test-concurrency=1 e2e/admin-ui.test.mjs
 step "운영 화면 E2E (겸직 금지 화면 차단·사전→점검 패널·분야 순서·360px)"; node --test --test-concurrency=1 e2e/admin-settings-ui.test.mjs
 step "간편 발행 E2E (기자가 자기 기사 [발행] 한 번 → 게재·공개 200·작성자 발행 기록 · 세금 내용 기사 작성자 책임 발행·감수 표시 없음 · 편집 책임자 발행 · 남의 기사 403·저작권 막힘 422 · 발행 기사 빠른 수정)"; node --test --test-concurrency=1 e2e/simple-publish.test.mjs
+step "편집위원 결과물 → 기사 초안 E2E (PO 2026-11-18 — 권한 401·403·버튼 0 / 확인 창 기본값 / 입력 오류 422 / 화면 [초안 만들기] → 초안·핵심 요약·표 제목·사진 보관함 AI 그림 권리 확인·실사진 미확인·출처·감사 기록·중복 409 / AI 그림만 있는 초안 [발행] 200·칼럼 본인 발행 403·실사진 미확인 422)"; node --test --test-concurrency=1 e2e/editorial-draft.test.mjs
 step "공개 홈·공통 틀 E2E (섹션 순서·첫 화면 R1·R2·화면 전환·숨긴 메뉴 링크 0·1분 안 반영)"; node --test --test-concurrency=1 e2e/site-home.test.mjs
 step "허브·하위 분야·뉴스 전체·상황 페이지 E2E (네 허브 같은 골격·빈 하위 분야 noindex·취재 기사만·먼저 확인할 것 3·화면 전환·R1~R3)"; node --test --test-concurrency=1 e2e/site-hubs.test.mjs
 step "상황 카드 백오피스 E2E (2·4개 거부·감수 서명은 감수위원만·허브 5번째 409·저장 즉시 공개 반영)"; node --test --test-concurrency=1 e2e/admin-situations.test.mjs

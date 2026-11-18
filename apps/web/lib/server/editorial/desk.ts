@@ -46,12 +46,14 @@ export interface DeskPackage {
   source: "web" | "cowork";
   files: PackageFile[];
   report: string | null;
+  /** 이 결과물로 만든 기사 초안 (마이그레이션 242) */
+  article_id: number | null;
   created_at: string;
   updated_at: string;
 }
 
 const REQUEST_COLUMNS = "id, requester_label, requested_by, status, input, attachments, package_id, progress, error, created_at, queued_at, started_at, finished_at";
-const PACKAGE_COLUMNS = "id, folder, work_date, title, source, files, report, created_at, updated_at";
+const PACKAGE_COLUMNS = "id, folder, work_date, title, source, files, report, article_id, created_at, updated_at";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function deskId(raw: string): string {

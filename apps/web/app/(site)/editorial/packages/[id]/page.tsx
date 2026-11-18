@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Eyebrow } from "@ltr/ui";
+import { DraftFromPackage } from "@/components/editorial/DraftFromPackage";
 import { can } from "@/lib/access";
 import { formatBytes, isPreviewImage, packageFileGroups } from "@/lib/editorial/package-files";
 import { getViewer } from "@/lib/server/dal";
+import { existingArticle } from "@/lib/server/editorial/article-draft";
 import { getPackage } from "@/lib/server/editorial/desk";
 import { serviceDb } from "@/lib/server/articles/service";
 import { HttpError } from "@/lib/server/http";
@@ -25,6 +27,8 @@ export default async function PackagePage({ params }: Props) {
     if (err instanceof HttpError && err.status === 404) notFound();
     throw err;
   });
+  const canDraft = can(viewer, "article.create") && packageFileGroups(pkg.files).some((g) => g.key === "article");
+  const draft = canDraft ? await existingArticle(serviceDb(), pkg) : null;
   const fileHref = (path: string) => `/api/editorial/files?package=${pkg.id}&path=${encodeURIComponent(path)}`;
 
   return (
@@ -34,6 +38,12 @@ export default async function PackagePage({ params }: Props) {
       </Link>
       <Eyebrow>{`${pkg.folder} · ${pkg.source === "web" ? "웹 요청" : "코워크"}`}</Eyebrow>
       <h1 className="mt-3 text-[26px] leading-tight font-black text-navy-900 [overflow-wrap:anywhere]">{pkg.title}</h1>
+      {canDraft && (
+        <section aria-labelledby="draft-title" className="mt-6 rounded-2xl border border-navy-100 bg-white p-5">
+          <h2 id="draft-title" className="mb-3 text-[17px] font-black text-navy-900">사이트 기사로 옮기기</h2>
+          <DraftFromPackage packageId={pkg.id} existingArticleId={draft?.id ?? null} />
+        </section>
+      )}
       {pkg.report && (
         <section aria-labelledby="report-title" className="mt-6 rounded-2xl border border-navy-100 bg-navy-50 p-5">
           <h2 id="report-title" className="text-[17px] font-black text-navy-900">완료 보고</h2>
