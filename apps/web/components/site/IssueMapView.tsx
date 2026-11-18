@@ -182,7 +182,7 @@ export function IssueMapPage({ view, entry }: { view: IssuePageView; entry: Issu
             })}
           </svg>
           </FigureToggle>
-          <figcaption className="mt-1 text-[13px] text-navy-500">실선은 관계 라벨(위임·준용·요건·판례)로 구분합니다. 색이 아니라 글자로 읽을 수 있습니다.</figcaption>
+          <figcaption className="mt-1 text-[13px] text-navy-500">관계는 색이 아니라 글자 라벨(위임·준용·요건·판례)로 구분합니다.</figcaption>
         </figure>
       </div>
       {view.guides.length > 0 && (
