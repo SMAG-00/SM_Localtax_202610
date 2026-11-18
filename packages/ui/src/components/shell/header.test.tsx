@@ -4,7 +4,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { brand } from "../../brand";
 import { LinkProvider, type UiLinkProps } from "../link";
-import { Header } from "./Header";
+import { Header, HEADER_MENU } from "./Header";
 
 const tokens = (el: Element | null) => (el?.getAttribute("class") ?? "").split(/\s+/);
 const pairs = (links: HTMLElement[]) => links.map((a) => [a.textContent, a.getAttribute("href")]);
@@ -63,13 +63,12 @@ describe("헤더 — 상단 메뉴 (4대 분야)", () => {
 });
 
 describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
-  it("켜진 항목을 전문가칼럼 → 최신인기글 → 최신법령·유권해석 → 전문가상담 → 세금계산기 순서로 분야 메뉴 뒤 구분선 오른쪽에 모두 둔다 (PO 2026-11-18 — 전문가칼럼도 구분선 뒤)", () => {
-    render(<Header menu={["calc", "expert_request", "columns", "law_updates", "popular"]} />);
+  it("켜진 항목을 전문가칼럼 → 최신인기글 → 전문가상담 → 세금계산기 순서로 분야 메뉴 뒤 구분선 오른쪽에 모두 둔다 (PO 2026-11-18 — 전문가칼럼도 구분선 뒤)", () => {
+    render(<Header menu={["calc", "expert_request", "columns", "popular"]} />);
     const nav = screen.getByRole("navigation", { name: "바로 메뉴" });
     expect(pairs(within(nav).getAllByRole("link"))).toEqual([
       ["전문가칼럼", "/columns"],
       ["최신인기글", "/news/popular"],
-      ["최신법령·유권해석", "/tax/law-updates"],
       ["전문가상담", "/experts/request"],
       ["세금계산기", "/calc"],
     ]);
@@ -81,7 +80,6 @@ describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
     expect([...lists[0]!.querySelectorAll('[data-part="menu-link"]')].map((a) => a.textContent)).toEqual([
       "전문가칼럼",
       "최신인기글",
-      "최신법령·유권해석",
       "전문가상담",
       "세금계산기",
     ]);
@@ -94,7 +92,7 @@ describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
   });
 
   it("편집위원(로그인한 편집위원·관리자에게만 넘어오는 키)은 세금계산기 바로 왼쪽 — /editorial (PO 2026-11-18)", () => {
-    render(<Header menu={["calc", "editorial", "columns", "law_updates", "popular", "expert_request"]} />);
+    render(<Header menu={["calc", "editorial", "columns", "popular", "expert_request"]} />);
     const nav = screen.getByRole("navigation", { name: "바로 메뉴" });
     expect(pairs(within(nav).getAllByRole("link")).slice(-2)).toEqual([
       ["편집위원", "/editorial"],
@@ -103,8 +101,11 @@ describe("헤더 — 바로 메뉴 (PO 2026-11-01)", () => {
   });
 
   it("편집위원 키를 넘기지 않으면(로그인 안 함·권한 없음) 편집위원 링크 요소 0", () => {
-    render(<Header menu={["calc", "expert_request", "columns", "law_updates", "popular"]} />);
+    render(<Header menu={["calc", "expert_request", "columns", "popular"]} />);
     expect(screen.queryByRole("link", { name: "편집위원" })).toBeNull();
+    // 최신법령·유권해석은 메뉴에서 뺐다 (PO 2026-11-18) — 어떤 키 조합으로도 링크 0
+    expect(screen.queryByRole("link", { name: "최신법령·유권해석" })).toBeNull();
+    expect(HEADER_MENU.map((m) => m.key)).not.toContain("law_updates");
   });
 
   it("전문가칼럼이 꺼져 있으면 구분선 앞 목록이 없고, 나머지만 구분선 뒤에", () => {

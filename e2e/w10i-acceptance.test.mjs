@@ -127,11 +127,10 @@ test("a) 키 shortcuts 꺼짐이면 헤더 바로 메뉴 0, 켜짐이면 헤더 
     [
       ["전문가칼럼", "/columns"],
       ["최신인기글", "/news/popular"],
-      ["최신법령·유권해석", "/tax/law-updates"],
       ["전문가상담", "/experts/request"],
       ["세금계산기", "/calc"],
     ],
-    "헤더 바로 메뉴 5개 이름·순서·주소",
+    "헤더 바로 메뉴 4개 이름·순서·주소 (최신법령·유권해석은 PO 2026-11-18 메뉴에서 뺌)",
   );
   assert.deepEqual(heroConsult(on.text), ["/experts/request"], "켜짐: 히어로 무료상담 신청 버튼 1개 → 전문가 상담 요청 (PO 2026-11-01)");
   assert.ok(!/AI\s*(세금\s*)?계산/.test(on.text.replace(/AI 도우미|AI 세금 도우미/g, "")), "AI 계산기 글자 0");
