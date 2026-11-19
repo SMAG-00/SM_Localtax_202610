@@ -313,7 +313,14 @@ test("화면 — 360px 가로 스크롤 0 (상황 카드 고치기·검색 동�
   const narrow = await login(u.editor, { width: 360, height: 740 });
   for (const p of [`/admin/situations/${fx.car}`, "/admin/dictionaries?tab=synonyms"]) {
     await open(narrow, p);
-    assert.ok((await narrow.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 0, `${p}: 360px 가로 스크롤`);
+    const wide = await narrow.evaluate(() => {
+      const cw = document.documentElement.clientWidth;
+      return [...document.querySelectorAll("body *")]
+        .map((e) => ({ tag: e.tagName, id: e.id, cls: String(e.className).slice(0, 60), text: (e.textContent ?? "").slice(0, 30), right: Math.round(e.getBoundingClientRect().right) }))
+        .filter((r) => r.right > cw + 1)
+        .slice(0, 6);
+    });
+    assert.ok((await narrow.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 0, `${p}: 360px 가로 스크롤 — 넘친 요소 ${JSON.stringify(wide)}`);
   }
 });
 

@@ -99,7 +99,7 @@ export function SituationForm({
           <TextField id={FIELD.slug} label="주소 (slug)" required hint="영문 소문자·숫자·'-' — 만든 뒤에는 바꾸지 않습니다 (/situations/주소)" value={form.slug} onChange={text("slug")} error={errors[FIELD.slug]} />
         ) : (
           <p className="text-[15px] text-navy-700">
-            주소 <span className="font-mono text-[13px]">/situations/{form.slug}</span> — 만든 뒤에는 바꾸지 않습니다
+            주소 <span className="font-mono text-[13px] [overflow-wrap:anywhere]">/situations/{form.slug}</span> — 만든 뒤에는 바꾸지 않습니다
           </p>
         )}
         <SelectField
