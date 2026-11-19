@@ -17,7 +17,7 @@ const LENS_BOX_KIND = { explainer: "explainer", book: "product", expert: "expert
 
 /** 화면 고정 문구 — 숫자 요건·세율·기한을 쓰지 않는다 */
 export const DEV_METHODS_COPY = {
-  lead: "재개발·재건축 등 개발방법을 같은 비교 항목으로 나란히 놓았습니다. 숫자 요건은 근거 조문과 기준일, 감수한 세무 전문가 이름과 함께 보입니다.",
+  lead: "개발방법을 같은 비교 항목으로 나란히 놓았습니다. 숫자 요건은 근거 조문·기준일·감수한 세무 전문가 이름과 함께 보입니다.",
   reviewPrefix: "감수",
   reviewDatePrefix: "감수일",
   stepsTitle: "절차 단계",

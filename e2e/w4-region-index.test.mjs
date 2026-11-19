@@ -368,13 +368,13 @@ test("e) 최소선 판정 리포트 — 숫자 = 넣은 자료 · 서로 다른 
   assert.ok(rep.indexedCount >= 5, "전국 색인 대상 — 시험 지역 5곳 이상");
   assert.equal((await api("GET", "/regions?view=bogus", u.editor)).status, 422);
 
-  // 화면 — 편집 책임자가 판정판 → 리포트 링크로 연다
+  // 화면 — 편집 책임자가 /admin/regions를 열면 리포트로 간다
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   try {
     const page = await ctx.newPage();
     await login(page, u.editor);
-    await page.goto(`${base}/admin/regions`);
-    await Promise.all([page.waitForURL(/\/admin\/regions\/report$/), page.locator('[data-testid="region-report-link"]').click()]);
+    await page.goto(`${base}/admin/regions`); // 옛 판정판 주소 — 최소선 리포트로 보낸다 (2026-11-18)
+    await page.waitForURL(/\/admin\/regions\/report$/);
     assert.equal(await page.locator('[data-testid="region-report-summary"]').getAttribute("data-status"), "met");
     const rows = await page.$$eval('[data-testid="pilot-row"]', (trs) =>
       trs.map((tr) => [

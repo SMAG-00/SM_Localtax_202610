@@ -503,8 +503,6 @@ test("f) 편집 화면 — 공식 자료 칸 오류 · 자료 종류 목록 = �
     await page.getByRole("button", { name: "로그인" }).click();
     await page.waitForURL((url) => url.pathname !== "/admin/login");
     await page.goto(`${base}/admin/articles/${id}`);
-    // 출처 칸은 접힌 '그 밖의 칸' 안에 있다 (간편 발행 2026-10-31) — 눌러서 편다
-    await page.locator("details#more-sections > summary").click();
     const form = page.getByRole("form", { name: "출처 더하기" });
     await form.getByRole("button", { name: "출처 더하기" }).waitFor();
     await page.waitForFunction(() => [...document.querySelectorAll("form[aria-label='출처 더하기'] button")].some((b) => !b.disabled));

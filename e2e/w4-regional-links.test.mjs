@@ -347,7 +347,7 @@ test("d) 목적지가 비공개가 되면 다음 렌더부터 링크 0 · 되돌
   assert.equal(again.status, 409, "지운 연결은 되살리지 않는다");
 });
 
-test("e) 권한 — 기자·광고 담당 API·화면 403 + 거부 감사 · 편집 책임자 판정판·기사 편집 화면 링크 · 메뉴 항목 그대로", async () => {
+test("e) 권한 — 기자·광고 담당 API·화면 403 + 거부 감사 · 편집 책임자 기사 편집 화면 링크 · 메뉴 항목 그대로", async () => {
   for (const who of [u.reporter, u.adOps]) {
     const r = await links(who, { op: "create", fromType: "article", fromId: fx.FROM.id, toType: "article", toId: fx.T1.id, relation: "related_tax", reason: "x", confirm: true });
     assert.equal(r.status, 403, show(r));
@@ -366,12 +366,10 @@ test("e) 권한 — 기자·광고 담당 API·화면 403 + 거부 감사 · 편
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await login(page, u.editor);
-  await page.goto(`${base}/admin/regions`);
-  assert.equal(await page.locator('[data-testid="regional-links-link"]').getAttribute("href"), "/admin/regions/links");
   await page.goto(`${base}/admin/articles/${fx.FROM.id}`);
   assert.equal(await page.locator('[data-testid="regional-links-link"]').getAttribute("href"), `/admin/regions/links?from=article:${fx.FROM.id}`);
   await page.goto(`${base}/admin/regions/links`);
-  assert.ok((await page.locator("nav a").allTextContents()).every((t) => t.trim() !== "지역 연결"), "관리 메뉴 항목은 늘리지 않았다 (판정판·기사 편집 화면에서 연다)");
+  assert.ok((await page.locator("nav a").allTextContents()).every((t) => t.trim() !== "지역 연결"), "관리 메뉴 항목은 늘리지 않았다 (기사 편집 화면에서 연다 — 판정판은 2026-11-18 없앴다)");
   await page.goto(`${base}/admin/regions/links?t=article&n=${fx.FROM.id}`);
   assert.equal(await page.locator('[data-testid="link-from"]').getAttribute("data-from"), `article:${fx.FROM.id}`, "JS 없는 '보기' 폼 주소(t·n)도 같은 대상");
   await ctx.close();

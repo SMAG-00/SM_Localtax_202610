@@ -170,11 +170,10 @@ before(async () => {
   await article("A6", { title: "시험용 이웃구 지방세 해설", codes: [OTHER.code], hours: 3 });
   await article("E1", { title: "시험용 블록구 지방재정 감수 해설", field: "local_finance", hours: 4 });
   await article("E2", { title: "시험용 블록구 지방세 감수 해설", section: "tax", hours: 5 });
-  // 비공개 — 초안(D)·보류(H — held)·별도 상품 검토 큐(Q — 여행 후기 판정 → 큐 1건)
+  // 비공개 — 초안(D)·보류(H — held)·여행 후기 초안(Q — 별도 상품 큐는 2026-11-18 없앰, 그냥 초안)
   await article("D", { title: "시험용 초안 원고", status: "draft" });
   await article("H", { title: "시험용 보류 원고", status: "held" });
   await article("Q", { title: "시험용 주말 여행 후기", status: "draft", judgement: "travel_review" });
-  assert.equal((await one("select count(*)::int n from public.separate_product_queue where article_id = $1 and status = 'open'", [fx.Q.id])).n, 1, "큐 원고 — 열린 항목 1건 (8단계)");
 
   await source("A1", "S1", { verified: hoursAgo(20) });
   await source("A1", "S2", { snapshot: false, title: "시험용 스냅샷 없는 자료" });

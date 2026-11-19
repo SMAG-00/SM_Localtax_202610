@@ -497,25 +497,13 @@ test("e) 허브 블록 순서 — ②③⑤ 순서(DOM 순서 = 화면 위치, 3
   }
 });
 
-test("f) 지역 기사 편집 범위 — 지역 태그 없음 발행 422 + DB 거부 · 편집 분야·공익적 질문 422 · 자료 출처(기준일·지역 단위) 빔 422(빈 칸 이름) · 채우면 발행", async () => {
+test("f) 지역 기사 — 지역 태그·편집 분야·공익적 질문이 비어도 발행 200(지역 판정 삭제 2026-11-18) · 자료 출처(기준일·지역 단위) 빔 422(빈 칸 이름) · 발행 0", async () => {
   const a = await draftLocal("tagless", "시험용 수용군 취득세 신고 흐름");
+  assert.equal((await get(a.href)).status, 404, "발행 전 공개 0");
   await approve(a);
   let r = await publish(a);
-  assert.equal(r.status, 422, show(r));
-  assert.deepEqual((r.body.failed ?? []).filter((id) => id.startsWith("reg1_17.")), ["reg1_17.region-tag-required"], show(r));
-  await assert.rejects(dbPublish(a.id), /지역 태그\(regionCodes\)가 있어야 새로 발행/, "DB 직접 발행도 거부");
-  const tag = await api("PATCH", `/articles/${a.id}`, u.reporter, { regionCodes: [GU.code] });
-  assert.equal(tag.status, 200, show(tag));
-  await approve(a);
-  r = await publish(a);
-  assert.equal(r.status, 422, show(r));
-  assert.deepEqual((r.body.failed ?? []).filter((id) => id.startsWith("reg1_17.")), ["reg1_17.editorial-field", "reg1_17.public-question"]);
-  assert.equal((await get(a.href)).status, 404, "발행 전 공개 0");
-  const fill = await api("PATCH", `/articles/${a.id}`, u.reporter, { editorialField: "local_tax", publicQuestion: "취득세 신고 기한을 놓친 주민은 무엇을 해야 하는가" });
-  assert.equal(fill.status, 200, show(fill));
-  await approve(a);
-  r = await publish(a);
   assert.equal(r.status, 200, show(r));
+  assert.deepEqual((r.body.failed ?? []).filter((id) => id.startsWith("reg1_17.")), [], "지역 판정 실패 항목 0");
   assert.equal((await get(a.href)).status, 200);
 
   const b = await draftLocal("nodates", "시험용 수용군 세수 결산 자료", { regionCodes: [GU.code], editorialField: "local_tax", publicQuestion: "시험용 결산 자료는 어느 기준일인가" }, DATASET_NO_DATES);

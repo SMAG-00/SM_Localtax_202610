@@ -66,8 +66,6 @@ after(async () => {
 /** 화면 스크립트가 살아날 때까지 — 작업 버튼은 그 전까지 꺼져 있다(useHydrated). 머리의 로그아웃·로그인 버튼이 켜지면 화면 전체가 살아났다 */
 async function interactive(page) {
   await page.waitForFunction(() => [...document.querySelectorAll("button")].some((b) => /^(로그아웃|로그인)$/.test(b.textContent.trim()) && !b.disabled));
-  // 기사 편집 화면의 접힌 칸('그 밖의 칸')과 점검 결과를 편다 — 이 시험은 그 안의 칸까지 채운다 (간편 발행 2026-10-31, F4 설계 2.2)
-  await page.evaluate(() => document.querySelectorAll("details#more-sections, details#check-fold").forEach((d) => (d.open = true)));
 }
 
 /** 화면을 연다 — 연 백오피스 화면마다 AI 도우미 런처 0을 확인한다 (ADM-01) */
@@ -191,25 +189,55 @@ async function addSource(page, s) {
   return (await note.innerText()).match(/src:\d+/)[0];
 }
 
-async function addEvidence(page, e) {
-  const form = page.getByRole("form", { name: "근거 더하기" });
-  await form.locator("#ev-type").selectOption(e.type);
-  await form.locator("#ev-location").fill(e.location);
-  await form.locator("#ev-rights").selectOption("confirmed");
-  await form.locator("#ev-verification").selectOption("verified");
-  await form.locator("#ev-verified-date").fill(e.verified);
-  await form.locator("#ev-retention").fill("2031-10-09");
-  for (const [key, value] of Object.entries(e.dataset ?? {})) await form.locator(`#ev-ds-${key}`).fill(value);
+// 취재 근거·핵심 주장·확인 목록·「지방세로 읽기」는 편집 화면에서 걷어냈다 (2026-11-19, 커밋 4a0142b — 칸·API·DB는 그대로).
+// 같은 자료를 화면이 쓰는 API로 넣는다 — 이 시험이 보는 것은 그 자료가 검토·발행·공개까지 이어지는 것이다.
+async function api(method, path, user, body) {
+  const res = await fetch(`${base}/api/admin${path}`, {
+    method,
+    headers: { authorization: `Bearer ${user.token}`, ...(body === undefined ? {} : { "content-type": "application/json" }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  return { status: res.status, body: await res.json().catch(() => ({})) };
+}
+const show = (r) => JSON.stringify(r.body).slice(0, 1500);
+
+/** 취재 근거(비공개) 더하기 — POST /evidence. 근거 참조("ev:<번호>")를 돌려준다 */
+async function addEvidence(user, articleId, e) {
+  const body = {
+    evidenceType: e.type,
+    location: e.location,
+    rightsStatus: "confirmed",
+    verificationStatus: "verified",
+    verifiedAt: `${e.verified}T10:00:00+09:00`,
+    retentionUntil: "2031-10-09",
+  };
+  if (e.dataset) body.dataset = e.dataset;
   if (e.interview) {
-    await form.locator("#ev-iv-role").fill(e.interview.role);
-    await form.locator("#ev-iv-contacted").fill(e.interview.contacted);
-    await form.locator("#ev-iv-record").fill(e.interview.record);
-    await form.locator("#ev-iv-consent").selectOption("full");
+    body.interview = {
+      subjectRole: e.interview.role,
+      contactedAt: `${e.interview.contacted}T10:00:00+09:00`,
+      recordLocation: e.interview.record,
+      quoteConsent: "full",
+      anonymity: "named",
+    };
   }
-  await form.getByRole("button", { name: "근거 더하기" }).click();
-  const note = form.getByRole("status").filter({ hasText: "근거를 더했습니다" });
-  await note.waitFor();
-  return (await note.innerText()).match(/ev:\d+/)[0];
+  const r = await api("POST", `/articles/${articleId}/evidence`, user, body);
+  assert.equal(r.status, 201, show(r));
+  assert.match(r.body.evidence.ref, /^ev:\d+$/);
+  return r.body.evidence.ref;
+}
+
+/** 기사 칸 고치기 — PATCH. 낙관적 잠금 없이 보내는 API 시험과 같은 방식 (초안 단계) */
+async function patchArticle(user, articleId, body) {
+  const r = await api("PATCH", `/articles/${articleId}`, user, body);
+  assert.equal(r.status, 200, show(r));
+  return r;
+}
+
+/** 저장된 본문 블록 그대로에 핵심 주장만 더해 저장 */
+async function setClaims(user, articleId, claims) {
+  const stored = await one("select body from public.articles where id = $1", [articleId]);
+  await patchArticle(user, articleId, { body: { blocks: stored.body.blocks, claims } });
 }
 
 const block = (page, i) => page.getByTestId(`block-${i}`);
@@ -366,8 +394,10 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   assert.deepEqual([created.content_type, created.reporting_method], ["reported_news", "quantitative"]);
   assert.deepEqual(created.check_log.checklists.quantitative, { sourceCrossCheck: null, limitations: null, relatedPartyCheck: null }, "정량형 확인 칸이 미리 놓인다");
   assert.deepEqual(await reporter.locator('[data-testid^="block-"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-block-type"))), ["key_summary", "paragraph", "table", "paragraph"]);
-  // 7묶음 안내 — 처음에는 모두 빔
-  await reporter.getByTestId("quant-groups").getByText("정량형 필수 7묶음 (NAV-10) — 0/7 채움").waitFor();
+  // 편집 화면에는 '필수 7묶음' 안내·핵심 주장·취재 근거·확인 목록 칸이 없다 (2026-11-19 단순화 — 기본 정보·본문·저장·출처만)
+  for (const gone of ["quant-groups", "qual-records", "check-panel"]) assert.equal(await reporter.getByTestId(gone).count(), 0, `편집 화면에 ${gone} 없음`);
+  for (const gone of ["#claims", "#evidence", "#checklists", "#taxlens", "details#more-sections", "details#check-fold"]) assert.equal(await reporter.locator(gone).count(), 0, `편집 화면에 ${gone} 없음`);
+  await reporter.locator("#sources").waitFor();
 
   // 출처 — 공공 데이터는 URL·발표기관·확인일·이용 조건이 모두 있어야 한다 (FND-04): 비우면 칸 오류, 저장 0
   const sourceForm = reporter.getByRole("form", { name: "출처 더하기" });
@@ -390,14 +420,14 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
     regionUnit: "시·구",
   });
 
-  const ev = await addEvidence(reporter, {
+  const ev = await addEvidence(u.reporter, id, {
     type: "dataset",
     location: "편집국 자료실/2026/e2e/징수실적_2026H1.xlsx",
     verified: "2026-10-09",
     dataset: {
       sourceUrl: "https://www.gaon-si.example/open-data/local-tax-collection-2026-06",
       provider: "가온시 세정과",
-      collectedDate: "2026-10-07",
+      collectedAt: "2026-10-07",
       license: "공공누리 제1유형",
       definition: "취득세 징수액 — 신고·납부가 끝난 취득세(지방교육세 제외)",
       period: "2025년·2026년 각 1월 1일~6월 30일",
@@ -422,29 +452,30 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   await textbox(reporter, 2, "출처").fill("가온시 세목별 징수 실적(편집국 집계)");
   await textbox(reporter, 3, "문단").fill("이 수치는 거래량과 세수가 함께 줄었다는 사실만 보여 준다. 감면 확대 같은 다른 요인은 따로 떼어 보지 않았다.");
 
-  // 확인 목록 — 관계자 확인은 일부러 비워 둔다 (편집자 화면에서 차단 항목으로 보여야 한다)
-  await reporter.fill("#chk-q-source-cross-check", "징수 실적 파일 구별 합계를 재정공시 화면 값과 2026-10-09에 대조함");
-  await reporter.fill("#chk-q-limitations", "상관관계만 확인 — 감면 확대·신고 시점 요인은 분리하지 않음");
-
-  // 핵심 주장 + 근거
-  const claims = reporter.locator("#claims");
-  await claims.getByRole("button", { name: "핵심 주장 더하기" }).click();
-  await claims.getByLabel("주장 문장").fill("올해 1~6월 가온시 취득세 징수액은 1,284억 원이다.");
-  await claims.getByLabel("문장이 있는 블록").selectOption({ label: "블록 2 · 문단" });
-  await claims.getByLabel(new RegExp(`^${ev} `)).check();
-  await claims.getByLabel(new RegExp(`^${src} `)).check();
+  // 본문 저장 — 화면이 하는 일은 여기까지 (기본 정보·본문·저장)
   assert.equal(await save(reporter), 2);
-  await reporter.getByTestId("quant-groups").getByText("정량형 필수 7묶음 (NAV-10) — 6/7 채움").waitFor();
+  assert.equal(await reporter.locator("#publish-now").count(), 1, "기자는 자기 기사에서 [발행]을 본다");
+
+  // 확인 목록 — 관계자 확인은 일부러 비워 둔다 (편집자 화면에서 경고로 보여야 한다) · 핵심 주장 + 근거 — 화면 칸은 걷어냈으니 API로
+  await patchArticle(u.reporter, id, {
+    checklists: {
+      quantitative: {
+        sourceCrossCheck: "징수 실적 파일 구별 합계를 재정공시 화면 값과 2026-10-09에 대조함",
+        limitations: "상관관계만 확인 — 감면 확대·신고 시점 요인은 분리하지 않음",
+        relatedPartyCheck: null,
+      },
+    },
+  });
+  await setClaims(u.reporter, id, [{ id: "claim-1", text: "올해 1~6월 가온시 취득세 징수액은 1,284억 원이다.", kind: "fact", evidenceIds: [ev, src], blockIndex: 1 }]);
 
   const stored = await one("select body, check_log from public.articles where id = $1", [id]);
   assert.deepEqual(stored.body.claims, [{ id: "claim-1", text: "올해 1~6월 가온시 취득세 징수액은 1,284억 원이다.", kind: "fact", evidenceIds: [ev, src], blockIndex: 1 }]);
   assert.deepEqual(stored.body.blocks[2].chart, { axis: "구", unit: "억 원", source: "가온시 세목별 징수 실적(편집국 집계)" });
   assert.equal(stored.check_log.checklists.quantitative.relatedPartyCheck, null);
 
-  // 기자 — 지역 기사도 자기 기사는 [발행]과 확인 3항목이 보인다 (간편 발행, 2026-11-01 PO 결정 — simple-publish f)가 발행까지 본다).
+  // 기자 — 지역 기사도 자기 기사는 [발행]이 보이고 확인 항목은 없다 (지역 판정 3항목은 2026-11-18에 걷어냄 — simple-publish가 발행까지 본다).
   // 이 시험은 편집자 검토 흐름을 보므로 검토 요청은 기자 세션으로 API에 보낸다
-  await reporter.locator("#publish-now").waitFor();
-  assert.deepEqual(await reporter.locator("[data-confirm]").evaluateAll((els) => els.map((e) => e.getAttribute("data-confirm"))), ["evidence", "relation", "ad_independence"]);
+  assert.equal(await reporter.locator("[data-confirm]").count(), 0, "지역 기사 확인 3항목 없음");
   assert.equal(await reporter.getByRole("button", { name: "검토 요청" }).count(), 0);
   assert.equal(await submitAsPage(reporter, id), 200);
   assert.equal((await one("select status from public.articles where id = $1", [id])).status, "in_review");
@@ -467,13 +498,13 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   // 점수 안내 문구는 접힌 '품질 점수 보기' 안에 있다 — 숨은 글자까지 읽는다
   assert.match(await panel.textContent(), /내부 품질 지표 — 검색 순위 예측이 아닙니다/);
 
-  // 편집자 — 관계자 확인을 채우고 「지방세로 읽기」 생략 사유(편집 책임자만)를 적어 저장
-  await open(editor, `/admin/articles/${id}`);
-  await editor.fill("#chk-q-related-party", "가온시 세정과 관계자 전화 확인(2026-10-08)");
-  await editor.locator("#taxlens").getByLabel("생략 사유 쓰기").check();
-  await editor.fill("#taxlens-omission", "세금 영향은 후속 기사에서 다룬다");
-  assert.equal(await save(editor), 3);
-  await editor.getByTestId("quant-groups").getByText("정량형 필수 7묶음 (NAV-10) — 7/7 채움").waitFor();
+  // 편집자 — 관계자 확인을 채우고 「지방세로 읽기」 생략 사유(편집 책임자만)를 적어 저장 (화면 칸은 걷어냈으니 API로)
+  await patchArticle(u.editor, id, {
+    checklists: { quantitative: { sourceCrossCheck: "징수 실적 파일 구별 합계를 재정공시 화면 값과 2026-10-09에 대조함", limitations: "상관관계만 확인 — 감면 확대·신고 시점 요인은 분리하지 않음", relatedPartyCheck: "가온시 세정과 관계자 전화 확인(2026-10-08)" } },
+    taxLens: { topics: [], points: [], links: [], omissionReason: "세금 영향은 후속 기사에서 다룬다" },
+  });
+  const afterEdits = await one("select check_log, version from public.articles where id = $1", [id]);
+  assert.equal(afterEdits.check_log.checklists.quantitative.relatedPartyCheck, "가온시 세정과 관계자 전화 확인(2026-10-08)", "관계자 확인이 저장됐다");
 
   await open(editor, `/admin/reviews/${id}`);
   assert.deepEqual(await blockers(editor, { expectCount: 0 }), []);
@@ -483,7 +514,7 @@ test("a) 정량형 보도 — 기획 등록·상태 진행 → 템플릿 → 출
   await publishFromPanel(editor, id);
   const review = await one("select checklist, version from public.editorial_reviews where article_id = $1 and kind = 'desk_edit' order by id desc limit 1", [id]);
   assert.equal(review.checklist.noCausalClaim, true, "'인과 단정 없음' 확인이 승인 기록에 남는다");
-  assert.equal(review.version, 3);
+  assert.equal(review.version, afterEdits.version, "승인 기록은 승인한 때의 기사 버전을 가리킨다");
 
   // 공개 — 공개 키(anon)로 읽힌다. 비공개 근거는 공개 키로 0
   const pub = await anonPublic(id);
@@ -524,10 +555,13 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
     verified: "2026-10-13",
     interview: { role, contacted: "2026-10-13", record: `편집국 취재 기록함 R-2026-1013-0${n}` },
   });
-  const gov = await addEvidence(reporter, interview("가온시 세정과 주무관", 1));
-  const resident = await addEvidence(reporter, interview("누리구 상가 임대인", 2));
-  const expert = await addEvidence(reporter, interview("세무사", 3));
-  await addEvidence(reporter, { type: "document", location: "편집국 자료실/2026/0102/감면조례_원문.pdf", verified: "2026-10-14" });
+  const gov = await addEvidence(u.reporter, id, interview("가온시 세정과 주무관", 1));
+  const resident = await addEvidence(u.reporter, id, interview("누리구 상가 임대인", 2));
+  const expert = await addEvidence(u.reporter, id, interview("세무사", 3));
+  await addEvidence(u.reporter, id, { type: "document", location: "편집국 자료실/2026/0102/감면조례_원문.pdf", verified: "2026-10-14" });
+  // 근거는 API로 넣었으니 화면을 새로 읽어야 인용 블록의 '인터뷰 기록' 목록에 보인다
+  await reporter.reload();
+  await interactive(reporter);
   const interviews = (await one("select count(*)::int n from public.article_interviews i join public.article_evidence e on e.id = i.evidence_id where e.article_id = $1", [id])).n;
   assert.equal(interviews, 3, "인터뷰 기록 3건 — 연락처·녹취 원문 없이 보존 위치만");
 
@@ -538,21 +572,23 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
   await block(reporter, 2).getByRole("combobox", { name: "인터뷰 기록", exact: true }).selectOption(resident);
   await textbox(reporter, 3, "문단").fill("시는 신청 절차가 간단하다고 설명했다. 세무사는 임대인과 임차인이 특수관계인인지부터 확인하라고 조언했다.");
 
-  await reporter.fill("#chk-ql-questions", "① 신청이 적은 이유 ② 증빙 준비에 걸리는 시간 ③ 시의 안내·접수 방식");
-  await reporter.fill("#chk-ql-field", "2026-10-13 누리구 상가 3곳 방문, 임대인 2명·임차인 1명 면담");
-  await reporter.fill("#chk-ql-counter", "시는 신청 절차가 간단하다고 설명 — 임대인·세무사의 증빙 부담 관점을 함께 실음");
-  await reporter.fill("#chk-ql-conflicts", "취재 대상과 SM 사이 광고·제휴·자문 관계 없음(2026-10-14 확인)");
-  await reporter.getByLabel(/지역 정책 쟁점 원고입니다/).check();
-  for (const [key, ref] of [["local_gov", gov], ["residents_taxpayers", resident], ["experts", expert]]) {
-    await reporter.locator(`#chk-p-${key}-status`).selectOption("interviewed");
-    await reporter.locator(`#chk-p-${key}-evidence`).selectOption(ref);
-    await reporter.locator(`#chk-p-${key}-date`).fill("2026-10-13");
-  }
-  await reporter.getByRole("button", { name: "원문 대조 더하기" }).click();
-  await reporter.locator("#chk-otc-0-source").selectOption(ordinance);
-  await reporter.locator("#chk-otc-0-date").fill("2026-10-14");
+  // 본문 저장 — 화면이 하는 일은 여기까지 (확인 목록·관점별 기록·원문 대조 칸은 2026-11-19에 편집 화면에서 걷어냄 — API로)
   assert.equal(await save(reporter), 2);
-  await reporter.getByTestId("qual-records").getByText("정성형 필수 기록 (NAV-11) — 7/7 채움").waitFor();
+  for (const gone of ["qual-records", "check-panel"]) assert.equal(await reporter.getByTestId(gone).count(), 0, `편집 화면에 ${gone} 없음`);
+  assert.equal(await reporter.locator("#checklists").count(), 0, "편집 화면에 취재 확인 칸 없음");
+  await patchArticle(u.reporter, id, {
+    checklists: {
+      isLocalPolicyIssue: true,
+      qualitative: {
+        interviewQuestions: "① 신청이 적은 이유 ② 증빙 준비에 걸리는 시간 ③ 시의 안내·접수 방식",
+        fieldRecord: "2026-10-13 누리구 상가 3곳 방문, 임대인 2명·임차인 1명 면담",
+        counterPerspective: "시는 신청 절차가 간단하다고 설명 — 임대인·세무사의 증빙 부담 관점을 함께 실음",
+        conflictsOfInterest: "취재 대상과 SM 사이 광고·제휴·자문 관계 없음(2026-10-14 확인)",
+      },
+      perspectives: Object.fromEntries([["local_gov", gov], ["residents_taxpayers", resident], ["experts", expert]].map(([key, ref]) => [key, { status: "interviewed", evidenceId: ref, contactedAt: "2026-10-13" }])),
+      originalTextChecks: [{ sourceId: ordinance, checkedAt: "2026-10-14" }],
+    },
+  });
   const log = (await one("select check_log, body from public.articles where id = $1", [id])).check_log.checklists;
   assert.deepEqual(log.perspectives.residents_taxpayers, { status: "interviewed", evidenceId: resident, contactedAt: "2026-10-13" });
   assert.deepEqual(log.originalTextChecks, [{ sourceId: ordinance, checkedAt: "2026-10-14" }]);
@@ -564,18 +600,15 @@ test("b) 정성형 보도 — 인터뷰 기록·인용·관점별 기록·원문
   const before = await warnings(editor);
   assert.ok(before.includes("core01.box-or-reason") && !before.includes("nav03.desk-edit-required"), `${before}`);
   assert.ok(!before.some((r) => r.startsWith("nav11.")), `정성형 필수 기록은 모두 채웠다: ${before}`);
-  await open(editor, `/admin/articles/${id}`);
-  await editor.locator("#taxlens").getByLabel("생략 사유 쓰기").check();
-  await editor.fill("#taxlens-omission", "세금 계산이 아닌 신청 절차 기사 — 감면 해설은 별도 해설 기사로");
-  assert.equal(await save(editor), 3);
+  await patchArticle(u.editor, id, { taxLens: { topics: [], points: [], links: [], omissionReason: "세금 계산이 아닌 신청 절차 기사 — 감면 해설은 별도 해설 기사로" } });
   await open(editor, `/admin/reviews/${id}`);
   assert.deepEqual(await blockers(editor, { expectCount: 0 }), []);
   assert.ok(!(await warnings(editor)).includes("nav03.desk-edit-required"), "편집 승인 없음은 화면 경고 0");
   const deskForm = editor.getByRole("form", { name: "편집 승인 결정" });
   assert.equal(await deskForm.getByLabel(/인과 단정 없음/).count(), 0, "정성형 승인에는 '인과 단정 없음' 항목이 없다");
-  // 지역 기사면 W4 7단계 지역 확인 3항목(근거·관계·광고 독립성)이 더 붙는다 — 그것을 뺀 기본 항목은 4개
-  const regionalChecks = await deskForm.getByLabel(/^(근거|관계|광고 독립성) — /).count();
-  assert.equal((await deskForm.locator('input[type="checkbox"]').count()) - regionalChecks, 4, "정성형 승인 기본 확인 항목 4개");
+  // 지역 기사여도 지역 확인 3항목(근거·관계·광고 독립성)은 붙지 않는다 (2026-11-18 걷어냄) — 기본 항목 4개뿐
+  assert.equal(await deskForm.getByLabel(/^(근거|관계|광고 독립성) — /).count(), 0, "지역 확인 3항목 없음");
+  assert.equal(await deskForm.locator('input[type="checkbox"]').count(), 4, "정성형 승인 기본 확인 항목 4개");
   await approveDesk(editor);
   await publishFromPanel(editor, id);
   assert.equal((await anonPublic(id)).length, 1, "공개 키로 읽힌다");
@@ -651,7 +684,7 @@ test("d) 편집국 외 역할 4종 — 승인·정렬·발행 메뉴 0, 검토·
 
   const editor = await login(u.editor);
   const menu = await menuLabels(editor);
-  assert.deepEqual([...menu].sort(), [...["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "바깥 연결", "계산기 연결", "캠페인 랜딩", "금주 부동산 재테크", "허브 지방세 포인트", "원문 검수", "공통 검수", "감수 가이드", "조례 연결", "쟁점 연결 지도", "쟁점 태그", "편집국 AI", "지방세 통계", "채널 배포 키트", "지식창고", "프리미엄 리포트", "지역 기사 판정", "프로젝트", "분양 정보", "개발방법 비교", "부동산금융", "지자체뉴스", "상황 카드", "사진 보관함", "분야", "사전", "검색어", "라운지 관리", "해결 사례", "제휴 준비", "검색 최적화", "문의함", "정책 페이지"]].sort());
+  assert.deepEqual([...menu].sort(), [...["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "바깥 연결", "계산기 연결", "캠페인 랜딩", "금주 부동산 재테크", "허브 지방세 포인트", "원문 검수", "공통 검수", "감수 가이드", "조례 연결", "쟁점 연결 지도", "쟁점 태그", "편집국 AI", "지방세 통계", "채널 배포 키트", "지식창고", "프리미엄 리포트", "지역 최소선 리포트", "프로젝트", "분양 정보", "개발방법 비교", "부동산금융", "지자체뉴스", "상황 카드", "사진 보관함", "분야", "사전", "검색어", "라운지 관리", "해결 사례", "제휴 준비", "검색 최적화", "문의함", "정책 페이지"]].sort());
   assert.deepEqual(await menuGroupLabels(editor), ["기사 만들기·발행", "배치·노출", "지방세 자료·연결", "검수·품질", "분야 콘텐츠", "수익·제휴", "운영·설정"], "편집자 그룹 7개 (F4)");
   assert.equal((await open(editor, "/admin/home")).status(), 200, "편집자 홈 배치 화면");
   for (const label of OPERATIONS_MENUS) assert.ok(!menu.includes(label));

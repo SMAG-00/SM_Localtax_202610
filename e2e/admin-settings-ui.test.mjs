@@ -76,8 +76,6 @@ after(async () => {
 
 async function interactive(page) {
   await page.waitForFunction(() => [...document.querySelectorAll("button")].some((b) => /^(로그아웃|로그인)$/.test(b.textContent.trim()) && !b.disabled));
-  // 기사 편집 화면의 점검 결과는 접혀 있다(간편 발행 2026-10-31) — 이 시험은 점검 패널을 읽으므로 편다
-  await page.evaluate(() => document.querySelectorAll("details#check-fold").forEach((d) => (d.open = true)));
 }
 
 async function open(page, path) {
@@ -117,7 +115,7 @@ async function warningRules(page) {
 
 test("a) 역할별 메뉴 — 편집 책임자 분야·사전(제휴사 편집 메뉴 0), 관리자 설정·회원·역할, 광고 담당 제휴사 / 화면 403", async () => {
   const editor = await login(u.editor);
-  assert.deepEqual([...await menuLabels(editor)].sort(), [...["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "바깥 연결", "계산기 연결", "캠페인 랜딩", "금주 부동산 재테크", "허브 지방세 포인트", "원문 검수", "공통 검수", "감수 가이드", "조례 연결", "쟁점 연결 지도", "쟁점 태그", "편집국 AI", "지방세 통계", "채널 배포 키트", "지식창고", "프리미엄 리포트", "지역 기사 판정", "프로젝트", "분양 정보", "개발방법 비교", "부동산금융", "지자체뉴스", "상황 카드", "사진 보관함", "분야", "사전", "검색어", "라운지 관리", "해결 사례", "제휴 준비", "검색 최적화", "문의함", "정책 페이지"]].sort());
+  assert.deepEqual([...await menuLabels(editor)].sort(), [...["첫 화면", "기사 기획", "기사", "검토·발행", "기사 배치", "홈 배치", "개정 트래커", "바깥 연결", "계산기 연결", "캠페인 랜딩", "금주 부동산 재테크", "허브 지방세 포인트", "원문 검수", "공통 검수", "감수 가이드", "조례 연결", "쟁점 연결 지도", "쟁점 태그", "편집국 AI", "지방세 통계", "채널 배포 키트", "지식창고", "프리미엄 리포트", "지역 최소선 리포트", "프로젝트", "분양 정보", "개발방법 비교", "부동산금융", "지자체뉴스", "상황 카드", "사진 보관함", "분야", "사전", "검색어", "라운지 관리", "해결 사례", "제휴 준비", "검색 최적화", "문의함", "정책 페이지"]].sort());
   for (const path of ["/admin/settings", "/admin/members"]) {
     assert.equal((await open(editor, path)).status(), 403, `편집자 ${path}`);
     await editor.getByRole("heading", { name: "이 화면을 쓸 권한이 없습니다" }).waitFor();
@@ -201,7 +199,7 @@ test("b) 회원·역할 — 편집 책임자 + 광고 담당은 화면이 막고
 
 // ── c) 사전 → 점검 패널 ───────────────────────────────
 
-test("c) 사전 화면에서 금지 표현을 더하면 기사 편집 화면 점검 패널에 경고로 나오고(간편 발행 — 발행은 막지 않음), 빼면 사라진다 (배포 없음)", async () => {
+test("c) 사전 화면에서 금지 표현을 더하면 검토·발행 화면 점검 패널에 경고로 나오고(기사 편집 화면에서는 점검 패널을 걷어냄 — 2026-11-19)(간편 발행 — 발행은 막지 않음), 빼면 사라진다 (배포 없음)", async () => {
   const phrase = `화면금지${staff.run}`;
   const created = await api("POST", "/articles", u.reporter, {
     slug: `e2e-ui-dict-${staff.run}`,
@@ -215,7 +213,7 @@ test("c) 사전 화면에서 금지 표현을 더하면 기사 편집 화면 점
   staff.trackArticle(articleId);
 
   const page = await login(u.editor);
-  await open(page, `/admin/articles/${articleId}`);
+  await open(page, `/admin/reviews/${articleId}`);
   assert.ok(!(await warningRules(page)).includes("ux01.forbidden-phrase"));
 
   await open(page, "/admin/dictionaries?tab=forbidden");
@@ -225,7 +223,7 @@ test("c) 사전 화면에서 금지 표현을 더하면 기사 편집 화면 점
   await page.getByTestId("dict-forbidden-list").locator(`li[data-phrase="${phrase}"]`).waitFor();
   assert.ok((await one("select value from public.settings where key = 'forbidden_phrases'")).value.phrases.includes(phrase));
 
-  await open(page, `/admin/articles/${articleId}`);
+  await open(page, `/admin/reviews/${articleId}`);
   await page.getByTestId("check-panel").locator('[data-testid="check-warnings"] li[data-rule="ux01.forbidden-phrase"]').waitFor();
   assert.equal(await page.getByTestId("check-panel").locator('[data-testid="check-blockers"] li[data-rule="ux01.forbidden-phrase"]').count(), 0, "발행을 막는 항목은 아니다");
   await page.getByTestId("check-panel").getByText(phrase).first().waitFor();
@@ -235,7 +233,7 @@ test("c) 사전 화면에서 금지 표현을 더하면 기사 편집 화면 점
   await page.getByRole("status").filter({ hasText: `금지 표현 사전에서 뺐습니다 — ${phrase}` }).waitFor();
   assert.ok(!(await one("select value from public.settings where key = 'forbidden_phrases'")).value.phrases.includes(phrase));
 
-  await open(page, `/admin/articles/${articleId}`);
+  await open(page, `/admin/reviews/${articleId}`);
   assert.ok(!(await warningRules(page)).includes("ux01.forbidden-phrase"), "사전에서 빼면 다음 점검부터 경고도 없다");
 });
 

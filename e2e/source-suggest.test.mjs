@@ -67,7 +67,6 @@ async function loginAt(page, user, next) {
 }
 /** '그 밖의 칸'을 눌러 펼친다 — 출처 칸이 그 안에 있다 */
 async function openMore(page) {
-  await page.locator("details#more-sections > summary").click();
   await page.locator("#source-suggest-button").waitFor();
 }
 const noHScroll = async (page) => {

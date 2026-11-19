@@ -8,8 +8,7 @@
 //  c) 편집 책임자가 기자의 기사를 [발행] → publishApproval만(authorPublish 없음) · 감사 로그 '발행'
 //  d) 기자는 남의 기사를 발행할 수 없다 — API 403 + 감사 로그, 화면에 [발행] 없음 · 저작권 막힘(사진 권리 미확인)은 '발행 전에 고칠 것'에 보이고 발행 422
 //  e) 발행 기사 빠른 수정 — 칸 바로 가기·접힘·요약만 고친 뒤 수정 종류만 고르면 사유 '요약 수정'이 자동으로 남는다
-//  f) 지역 기사(2026-11-01 PO 결정 — 예외 없앰): 기자 화면에 [발행]과 확인 3항목(근거·관계·광고 독립성). 체크 없이 발행하면 422·편집 승인 0행,
-//     체크하고 [발행] → 승인 단계를 거쳐 게재 · 편집 승인 checklist에 체크한 3항목 + authorPublish · 공개 200
+//  f) 지역 기사도 일반 기사와 같다(2026-11-18 지역 판정 삭제): 확인 3항목 없이 [발행] 한 번 → 게재 · 편집 승인 checklist = publishApproval·authorPublish만
 //  g) 금융 사례: 공개 자료 범위 체크 없이 422 → 체크하면 게재 · checklist public_scope
 // 만든 계정·기사·감사 로그는 끝나면 지운다.
 import { test, before, after } from "node:test";
@@ -20,7 +19,7 @@ import { StaffFixture } from "./lib/staff.mjs";
 
 // W4 5단계 (REG1-09 · PR-07) — 공식 자료 출처의 공공누리 유형·발표일·기준일·지역 단위·수집일 (시험용 값, site-article.test.mjs와 같다)
 const OFFICIAL_W4 = { licenseType: "kogl_1", publishedOn: "2026-10-01", referenceDate: "2026-10-01", regionUnit: "전국", collectedAt: "2026-10-10T09:00:00+09:00" };
-// 지역 기사 칸 (REG1-17 — 시험용 값, w4-regional-gate.test.mjs와 같은 지역 코드)
+// 지역 기사 칸 (시험용 값, w4-regional-gate.test.mjs와 같은 지역 코드 — 지역 판정은 2026-11-18 없앴고 칸은 선택 입력)
 const REGIONAL_FIELDS = { regionCodes: ["1100000000"], editorialField: "local_tax", publicQuestion: "취득세 신고 기한을 놓친 주민은 무엇을 해야 하는가" };
 
 let sb, server, staff, db, base, browser;
@@ -336,46 +335,31 @@ test("e) 발행 기사 빠른 수정 — 고칠 칸만 보이고, 요약만 고�
   assert.deepEqual({ reason: rev.reason, kind: rev.update_kind }, { reason: "요약 수정", kind: "typo" });
 });
 
-test("f) 지역 기사도 기자가 [발행] — 확인 3항목을 직접 체크해야 발행, 체크한 값만 편집 승인에 남고 승인 단계를 거쳐 게재", async () => {
-  // 체크 없이 API 발행 → 422, 편집 승인·게재 변화 0
-  const none = await api("POST", `/articles/${fx.regional.id}/publish`, u.reporter);
-  assert.equal(none.status, 422, show(none));
-  assert.deepEqual(none.body.failed, ["publish.author-confirm"]);
-  assert.deepEqual(none.body.unchecked, ["evidence", "relation", "ad_independence"]);
-  assert.equal(none.body.error, "발행 전 확인 항목에 체크해 주세요 — 근거·관계·광고 독립성 (작성자 책임 확인)");
-  // 'true' 글자는 체크가 아니다 — 하나만 체크하면 나머지 둘이 남는다
-  const partial = await api("POST", `/articles/${fx.regional.id}/publish`, u.reporter, { confirms: { evidence: true, relation: "true" } });
-  assert.equal(partial.status, 422, show(partial));
-  assert.deepEqual(partial.body.unchecked, ["relation", "ad_independence"]);
-  assert.deepEqual(await deskOf(fx.regional.id), [], "거부되면 편집 승인 0행");
-  assert.equal((await one("select status from public.articles where id = $1", [fx.regional.id])).status, "draft");
-
-  // 화면 — 검토 요청 대신 [발행]과 확인 3항목, 체크 전에는 '발행 전에 고칠 것'에 한 문장
+test("f) 지역 기사도 일반 기사와 같다 — 기자가 확인 항목 없이 [발행] 한 번, 편집 승인에 근거·관계·광고 독립성 값이 남지 않는다 (REG1-17 삭제 2026-11-18)", async () => {
+  // 화면 — 확인 3항목(체크 상자)도 '발행 전에 고칠 것'의 확인 문장도 없다
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   try {
     const page = await context.newPage();
     await loginAt(page, u.reporter, `/admin/articles/${fx.regional.id}`);
     await page.locator("#publish-now").waitFor();
     assert.equal(await page.getByRole("button", { name: "검토 요청" }).count(), 0, "지역 기사도 검토 요청 없음");
-    assert.deepEqual(await page.locator("[data-confirm]").evaluateAll((els) => els.map((e) => e.getAttribute("data-confirm"))), ["evidence", "relation", "ad_independence"]);
-    const blockers = page.getByTestId("publish-blockers");
-    assert.match(await blockers.innerText(), /발행 전 확인 항목에 체크해 주세요 — 근거·관계·광고 독립성/);
-    await page.locator('[data-confirm="evidence"]').check();
-    assert.match(await blockers.innerText(), /체크해 주세요 — 관계·광고 독립성 \(작성자 책임 확인\)/, "체크하면 남은 항목만");
+    assert.equal(await page.locator("[data-confirm]").count(), 0, "확인 3항목 없음");
+    assert.equal(await page.getByTestId("publish-blockers").count(), 0, "막힘이 없으면 '발행 전에 고칠 것'도 없다");
   } finally {
     await context.close();
   }
 
-  const { body, context: ctx } = await clickPublish(u.reporter, fx.regional, { confirms: ["evidence", "relation", "ad_independence"] });
+  const { body, context: ctx } = await clickPublish(u.reporter, fx.regional);
   await ctx.close();
   const row = await one("select status, editorial_status, check_log -> 'publish' as pub from public.articles where id = $1", [fx.regional.id]);
   assert.equal(row.status, "published");
   assert.equal(row.editorial_status, "approved");
   assert.equal(row.pub.authorPublish, true);
-  assert.deepEqual(
-    (await deskOf(fx.regional.id)).map((d) => [Number(d.reviewer_id), d.decision, d.checklist]),
-    [[u.reporter.personId, "approve", { publishApproval: true, evidence: true, relation: true, ad_independence: true, authorPublish: true }]],
-  );
+  const desk = await deskOf(fx.regional.id);
+  assert.deepEqual(desk.map((d) => [Number(d.reviewer_id), d.decision]), [[u.reporter.personId, "approve"]]);
+  assert.equal(desk[0].checklist.publishApproval, true);
+  assert.equal(desk[0].checklist.authorPublish, true);
+  for (const key of ["evidence", "relation", "ad_independence"]) assert.equal(key in desk[0].checklist, false, `승인 기록에 ${key} 없음`);
   assert.deepEqual(
     (await auditOf(fx.regional.id)).map((x) => x.reason),
     ["작성자 발행 — 발행과 함께 편집 승인", publishReason("작성자 발행", body.warnings)],
