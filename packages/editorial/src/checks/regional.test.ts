@@ -90,7 +90,7 @@ describe("지역 기사 판정을 쓰지 않는다 (2026-11-18 PO 결정)", () =
   });
   it("승인 3항목이 비어 있어도, 계약 제휴사 이해관계 표시가 없어도 막지 않는다", () => {
     noRegionalFindings(withDeskChecklist(q, { noCausalClaim: true }));
-    noRegionalFindings(reg({ contractedPartners: [{ id: 7, name: "시험용 가상상회" }], interestDisclosure: null }));
+    noRegionalFindings(reg({ contractedPartners: [{ id: "7", name: "시험용 가상상회" }], interestDisclosure: null }));
   });
   it("그래도 발행 가능 여부는 다른 규칙이 정한다 — 견본은 통과", () => {
     expect(evaluatePublish(q, BASE_CONTEXT).canPublish).toBe(true);
