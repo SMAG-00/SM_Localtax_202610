@@ -358,7 +358,7 @@ test("다른 편집자의 편집 승인 → 불완전한 정량형 원고도 간
   assert.equal(row.first_published_at, null, "점검은 발행하지 않는다");
 });
 
-test("빠진 칸을 채우면 새 버전 — 지역 기사는 이 버전의 편집 확인 3항목 없이 발행 409(DB REG1-17), 승인 뒤 발행 200", async () => {
+test("빠진 칸을 채우면 새 버전 — 지역 기사도 편집 확인 3항목 없이 [발행] 한 번으로 발행 200 (지역 판정 REG1-17은 2026-11-18 삭제)", async () => {
   const skipByReporter = await api("PATCH", `/articles/${ids.quant}`, u.reporter, { taxLens: { topics: [], points: [], links: [], omissionReason: "세금 영향은 후속 기사에서 다룬다" } });
   assert.equal(skipByReporter.status, 403, "「지방세로 읽기」 생략 사유는 편집 책임자만");
 
@@ -376,15 +376,7 @@ test("빠진 칸을 채우면 새 버전 — 지역 기사는 이 버전의 편�
   const skipAudit = await one("select after from public.audit_logs where actor = $1 and action = 'article.edit' and target = $2 order by id desc limit 1", [`user:${u.editorA.id}`, `articles:${ids.quant}`]);
   assert.equal(skipAudit.after.tax_lens.skip_reason, "세금 영향은 후속 기사에서 다룬다", "생략 사유·편집자·시각이 감사 로그에 남는다 (CORE-01)");
 
-  // 이전 버전의 승인은 세지 않는다 — 발행 API가 발행자 이름으로 편집 승인을 남기는데, 지역 기사는 발행하는 사람이 근거·관계·광고 독립성을 직접 체크해야 한다 (체크 없으면 422)
-  const stale = await api("POST", `/articles/${ids.quant}/publish`, u.editorA);
-  assert.equal(stale.status, 422, show(stale));
-  assert.deepEqual(stale.body.failed, ["publish.author-confirm"]);
-  assert.deepEqual(stale.body.unchecked, ["evidence", "relation", "ad_independence"]);
-  assert.equal((await one("select status from public.articles where id = $1", [ids.quant])).status, "in_review", "거부되면 게재 상태 그대로");
-
-  const again = await api("POST", `/articles/${ids.quant}/reviews`, u.editorA, { kind: "desk_edit", decision: "approve", checklist: { noCausalClaim: true, ...REGIONAL_CHECKS } });
-  assert.equal(again.status, 201, show(again));
+  // 지역 기사 판정(REG1-17)은 없어졌다 (2026-11-18 PO 결정) — 편집 확인 3항목 없이도 새 버전을 [발행] 한 번으로 발행한다
   const r = await api("POST", `/articles/${ids.quant}/publish`, u.editorA);
   assert.equal(r.status, 200, show(r));
   assert.equal(r.body.article.status, "published");

@@ -3,13 +3,24 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-step() { printf '\n== %s\n' "$1"; }
+# 첫 실패에서 멈추지 않고 끝까지 돌려 실패한 단계를 한꺼번에 보여 준다 (처음 실패에서 멈추려면 FAIL_FAST=1)
+# step은 앞 단계 명령의 종료 코드($?)를 보고 실패를 모은다. 의존성 설치·Supabase 시작은 실패하면 바로 멈춘다
+CURRENT=""
+FAILED=()
+step() {
+  local rc=$?
+  if [ -n "$CURRENT" ] && [ "$rc" -ne 0 ]; then FAILED+=("$CURRENT"); fi
+  CURRENT="$1"
+  printf '\n== %s\n' "$1"
+}
 
 step "의존성 설치 (lockfile 고정)"
 pnpm install --frozen-lockfile
 
 step "로컬 Supabase 시작 (마이그레이션 적용)"
 (cd packages/db && supabase start -x vector,logflare,edge-runtime,imgproxy,realtime,studio)
+
+if [ "${FAIL_FAST:-}" != "1" ]; then set +e; fi
 
 step "DB 시험 (감사 로그·관리자 권한·RLS)"; pnpm --filter @ltr/db test
 step "RLS 검증 (anon·authenticated 접근 0)"; node packages/db/scripts/verify-rls.mjs
@@ -148,3 +159,11 @@ step "W13-d 수용 E2E (알림·맞춤 브리핑 - 작업 인증 401·키 꺼짐
 step "W13-e 수용 E2E (리서치 코파일럿 - 기능 키 꺼짐·공개 단계 none·월 한도 빈 값이면 404와 모델 호출 0 / 권한 없는 회원 403 / 결정례 1건·9건 422 / 월 한도 n 허용·n+1 거부 429·기록에 글 칸 없음 / 요약 권리 확인 출판물 없으면 422 / 서비스 함수 anon 거부)"; node --test --test-concurrency=1 e2e/w13e-acceptance.test.mjs
 step "W13-i 수용 E2E (제휴 피드·라이선스·네이버 연재 - 권한 403·401 / 계약 없는 키 발급 거부·키 원문 저장 0 / 키 없음·틀린 키 401·기능 키 꺼짐·한도 없음 503·n번째 200 n+1번째 429·폐기·계약 종료 401 / 무료 공개 기사만·유료 본문 0 / 연재 기능 키 꺼짐 409 / 외부 호출 0)"; node --test --test-concurrency=1 e2e/w13i-acceptance.test.mjs
 step "W13-z 수용 E2E (5단계 닫는 묶음 - EXPL-11 외부 전문가 경로·표·칸·이벤트 0 / 키를 모두 켠 채 비구독자 교차 누출 0(권호·위키·칼럼·메타·검색·사이트맵·RSS·내보내기·분할 화면·코파일럿 근거·제휴 피드·알림 메일·브리핑) / 새 화면 접근성 95·360px·R2·R3 / 키를 모두 끄면 새 경로 404·새 링크 0)"; node --test --test-concurrency=1 e2e/w13-acceptance.test.mjs
+
+rc=$?
+if [ -n "$CURRENT" ] && [ "$rc" -ne 0 ]; then FAILED+=("$CURRENT"); fi
+if [ "${#FAILED[@]}" -gt 0 ]; then
+  printf '\n== 실패한 단계 %d개\n' "${#FAILED[@]}"
+  for f in "${FAILED[@]}"; do printf ' ✖ %s\n' "${f:0:90}"; done
+  exit 1
+fi
